@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Layout\Ranked;
 
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
@@ -20,7 +20,7 @@ final class RankedBoxes
      */
     public function place(array $items, array $edges, string $direction, float $rankGap = 8.0, float $nodeGap = 6.0, float $padding = 4.0): \Generator
     {
-        $work = MermaidRanks::resolve(\array_keys($items), $edges);
+        $work = Ranks::resolve(\array_keys($items), $edges);
         yield from $work;
         $ranks = $work->getReturn();
         $levels = [];

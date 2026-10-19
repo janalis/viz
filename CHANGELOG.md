@@ -12,6 +12,7 @@ Breaking: shared code moves out of the Mermaid and Graphviz namespaces.
 - A source that does not parse is refused as `The <language> source cannot be read: …`; parsers' errors implement `Source\ParseError`.
 - One `Process\CommandRenderer` replaces `MmdcRenderer`, `DotRenderer::render()` and `PlantUmlRenderer`; `MermaidCommand`, `DotCommand` and `PlantUmlCommand` implement `Process\Command`. `GraphViz\DotRenderer` becomes `GraphViz\DotTool`, which keeps `layout()` and `json()`. A temporary mmdc directory is now named `viz-mmdc-…`.
 - `Viz` takes an `engine` (`Render\Engine::Auto`, `Native` or `Cli`) and draws every language through a `FallbackRenderer`, native first where a native renderer exists.
+- Graph layout has a neutral seam: `Layout\Engine\LayoutEngine` places a `LayoutGraph` of measured nodes, clusters and edges into a `Placement`. Mermaid's ranked layout becomes `Layout\Ranked\RankedEngine` (from `CompoundGraphPlacement`), with `Layout\Ranked\RankedBoxes` and `Ranks` (from `MermaidRanks`); `Mermaid\MermaidLayoutInput` measures a Mermaid graph for it, and `RankedGraphLayout` takes any engine. `MermaidPlacement` gives way to `Placement`, whose `routes` were `lanes` and whose directions are `Model\Direction`.
 - `GraphViz\DotColor` becomes `Color\ColorValue`; `Mermaid\CssColorNames` becomes `Color\CssColorNames`.
 
 ## 0.1.1 — 2026-10-19

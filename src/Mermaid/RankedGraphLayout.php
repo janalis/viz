@@ -4,17 +4,27 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Layout\Engine\LayoutEngine;
+use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
+use Janalis\Viz\Layout\Ranked\RankedEngine;
+use Janalis\Viz\Model\Direction;
 
 /** Stable Kahn ranks; one explicit cycle break per stalled component, never recursion. */
-final class RankedGraphLayout
+final readonly class RankedGraphLayout
 {
+    public function __construct(
+        private LayoutEngine $engine = new RankedEngine(),
+    ) {}
+
     /** @return \Generator<int, null, mixed, MermaidScene> */
     public function layout(MermaidGraph $source): \Generator
     {
-        $work = new CompoundGraphPlacement()->place($source);
+        $input = MermaidLayoutInput::from($source);
+        yield from $input;
+        $work = $this->engine->place($input->getReturn());
         yield from $work;
         $placement = $work->getReturn();
         $nodes = $placement->graph->nodes;
@@ -74,7 +84,7 @@ final class RankedGraphLayout
     }
 
     /** @return \Generator<int, null, mixed, list<GraphEdge>> */
-    private static function edges(MermaidGraph $source, MermaidPlacement $placement): \Generator
+    private static function edges(MermaidGraph $source, Placement $placement): \Generator
     {
         $edges = [];
         $outgoing = [];
@@ -98,8 +108,8 @@ final class RankedGraphLayout
                 $source->shapes[$edge['from']] ?? 'rect',
                 $source->shapes[$edge['to']] ?? 'rect',
                 $source->edgeStyles->curve($index, $source->flowchart?->curve()),
-                $placement->directions[self::scope($source, $edge['from'])],
-                $placement->lanes[$index] ?? [],
+                $placement->directions[self::scope($source, $edge['from'])]->value,
+                $placement->routes[$index] ?? [],
                 $placement->endpoints[$anchor],
             ), $index);
             yield null;
@@ -157,14 +167,14 @@ final class RankedGraphLayout
     }
 
     /**
-     * @param array<array-key, string> $directions
+     * @param array<array-key, Direction> $directions
      * @return list<array{text: string, origin: int}>
      */
     private function legend(MermaidGraph $source, array $directions): array
     {
         $legend = [];
         foreach ($source->groups as $id => $group) {
-            $legend[] = ['text' => '['.$group['label'].' · '.$directions[$id].']', 'origin' => $group['origin']];
+            $legend[] = ['text' => '['.$group['label'].' · '.$directions[$id]->value.']', 'origin' => $group['origin']];
         }
         foreach ($source->nodes as $id => $node) {
             $legend[] = ['text' => $id.('' === $node['label'] || (string) $id === $node['label'] ? '' : ': '.$node['label']), 'origin' => $node['origin']];

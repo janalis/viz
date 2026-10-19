@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Layout\Ranked;
 
 /** Stable directed ranks break each stalled cycle once, without recursive graph traversal. */
-final class MermaidRanks
+final class Ranks
 {
     /**
      * @param list<array-key> $keys

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Layout\Ranked\RankedBoxes;
 use Janalis\Viz\Text\FontFace;
 use Janalis\Viz\Text\Wrap;
 
@@ -58,7 +60,7 @@ final class SwimlanePlacement
         $this->horizontal = \in_array($source->direction, ['LR', 'RL'], strict: true);
     }
 
-    /** @return \Generator<int, null, mixed, MermaidPlacement> */
+    /** @return \Generator<int, null, mixed, Placement> */
     public function place(): \Generator
     {
         $preparation = $this->rank();
@@ -217,7 +219,7 @@ final class SwimlanePlacement
         return null;
     }
 
-    /** @return \Generator<int, null, mixed, MermaidPlacement> */
+    /** @return \Generator<int, null, mixed, Placement> */
     private function expand(float $crossExtent): \Generator
     {
         foreach ($this->cards as $name => $node) {
@@ -285,7 +287,7 @@ final class SwimlanePlacement
         $width = $this->horizontal ? $end + 4 : $crossExtent;
         $height = $this->horizontal ? $crossExtent : $end + 4;
 
-        return new MermaidPlacement(new GraphLayout($width, $height, $this->nodes, edges: [], clusters: $clusters), $endpoints, directions: []);
+        return new Placement(new GraphLayout($width, $height, $this->nodes, edges: [], clusters: $clusters), $endpoints, directions: []);
     }
 
     /** @return \Generator<int, null, mixed, null> */

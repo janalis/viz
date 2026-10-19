@@ -6,6 +6,7 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Layout\Ranked\Ranks;
 
 /** Independent axis constraints preserve explicit rows/columns and separate repeated port peers. */
 final class ArchitectureGrid
@@ -136,7 +137,7 @@ final class ArchitectureGrid
             }
             yield null;
         }
-        $work = MermaidRanks::resolve(\array_values(\array_unique($owners)), $constraints);
+        $work = Ranks::resolve(\array_values(\array_unique($owners)), $constraints);
         yield from $work;
         $ranks = $work->getReturn();
         $result = [];
