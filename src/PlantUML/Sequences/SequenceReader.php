@@ -28,7 +28,7 @@ final class SequenceReader
     private ?int $box = null;
     /** @var list<SequenceGroup> the groups open, innermost first */
     private array $groups = [];
-    private SequenceMessage|SequenceExo|SequenceGroup|null $lastWithDeactivate = null;
+    private SequenceMessage|SequenceExo|SequenceGroup|SequenceMark|null $lastWithDeactivate = null;
     private ?SequenceMark $lastDelay = null;
     private ?SequenceLife $pendingCreate = null;
     /** @var list<SequenceMessage|SequenceExo> the messages whose activations are open, last on top */
@@ -89,7 +89,7 @@ final class SequenceReader
             'FactorySequenceNoteOnArrowCommand$1', 'FactorySequenceNoteOnArrowCommand$2' => $this->noteOnArrow($command),
             'CommandBoxStart' => $this->boxStart($command),
             'CommandBoxEnd' => $this->box = null === $this->box ? throw new PlantUmlRefusal('A box ends that never started') : $this->boxes[$this->box]->parent,
-            'CommandDivider' => $this->events[] = new SequenceMark('divider', self::lines(\trim((string) $command->get('LABEL')))),
+            'CommandDivider' => $this->divider($command),
             'CommandDelay' => $this->delay($command),
             'CommandHSpace' => $this->events[] = new SequenceMark('space', size: null === $command->get('VALUE') ? null : (int) $command->get('VALUE')),
             'CommandReferenceOverSeveral', 'CommandReferenceMultilinesOverSeveral' => $this->reference($command),
@@ -175,6 +175,9 @@ final class SequenceReader
         $message->anchor = $command->get('ANCHOR', 1);
         if ([] !== \array_filter(\array_map(\trim(...), \explode('&', (string) $command->get('MULTICAST'))), static fn (string $name): bool => '' !== $name)) {
             throw new Unsupported('The native PlantUML renderer does not draw multicast messages: '.$command->line());
+        }
+        if (null !== $command->get('PART1ANCHOR', 1) || null !== $command->get('PART2ANCHOR', 1)) {
+            throw new Unsupported('The native PlantUML renderer does not draw anchored messages: '.$command->line());
         }
         $this->addMessage($message);
         $this->afterMessage($activation, $from, $to, $arrow, $command->get('LIFECOLOR'));
@@ -300,23 +303,24 @@ final class SequenceReader
         if (!$this->dealsWith($last, $participant)) {
             return;
         }
-        // Only a message deals with a participant, never a group's end.
-        \assert(!$last instanceof SequenceGroup, description: 'only a message deals with a participant');
+        // Only a message deals with a participant, never a group's end or a divider.
+        \assert($last instanceof SequenceMessage || $last instanceof SequenceExo, description: 'only a message deals with a participant');
         match ($type) {
             'activate' => $this->activations[] = $last,
             'deactivate' => \array_pop($this->activations),
             default => null,
         };
+        // As PlantUML, a participant deactivated or destroyed by a message cannot be activated by it again.
         foreach ($last->lives as $earlier) {
-            if ($earlier->participant === $participant && $earlier->type === $type) {
+            if ('activate' === $type && $earlier->participant === $participant && \in_array($earlier->type, ['deactivate', 'destroy'], strict: true)) {
                 throw new PlantUmlRefusal('Activate/Deactivate already done on '.$participant);
             }
         }
         $last->lives[] = $life;
     }
 
-    /** Whether the last message or group end is one an activation of a participant follows. */
-    private function dealsWith(SequenceMessage|SequenceExo|SequenceGroup $last, string $participant): bool
+    /** Whether the last message, group end or divider is one an activation of a participant follows. */
+    private function dealsWith(SequenceMessage|SequenceExo|SequenceGroup|SequenceMark $last, string $participant): bool
     {
         return match (true) {
             $last instanceof SequenceMessage => $last->from === $participant || $last->to === $participant,
@@ -424,6 +428,9 @@ final class SequenceReader
     private function noteOnArrow(PlantUmlCommand $command): void
     {
         $last = $this->lastWithDeactivate;
+        if ($last instanceof SequenceGroup) {
+            throw new Unsupported('The native PlantUML renderer does not draw notes on a group\'s end: '.$command->line());
+        }
         if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo) {
             throw new PlantUmlRefusal('A note on an arrow needs an arrow before it');
         }
@@ -436,6 +443,14 @@ final class SequenceReader
         $title = $command->get('NAME1') ?? $command->get('NAME2') ?? '';
         $this->boxes[] = new SequenceBox(self::lines(\trim($title, characters: '"')), $command->get('COLOR'), $this->box);
         $this->box = \count($this->boxes) - 1;
+    }
+
+    /** A divider, which closes off the message before it: an activation after it stands on its own. */
+    private function divider(PlantUmlCommand $command): void
+    {
+        $divider = new SequenceMark('divider', self::lines(\trim((string) $command->get('LABEL'))));
+        $this->events[] = $divider;
+        $this->lastWithDeactivate = $divider;
     }
 
     private function delay(PlantUmlCommand $command): void

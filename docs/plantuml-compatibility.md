@@ -29,7 +29,7 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | Class | yes, below |
 | Description (component, deployment, use case) | yes, below |
 | State | yes, below |
-| Sequence | read natively into the shared model, below; drawn by PlantUML until teoz is ported |
+| Sequence | read natively into the shared model and drawn natively by a port of teoz, below |
 | Activity | not yet: drawn by PlantUML |
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
@@ -69,12 +69,14 @@ Component, deployment and use case diagrams are laid out as svek lays them out, 
 
 ### Sequence diagrams
 
-PlantUML 1.2026.8 draws every sequence diagram with teoz, its newer layout. Sequence diagrams are read natively — with PlantUML's own rules for arrows, activations, `return`, `autoactivate`, groups, notes and autonumbering, refusing what PlantUML refuses — into the shared sequence model, so they convert to Mermaid; teoz's constraint solver (`PlantUML\Teoz\Real`) is ported, and the drawing follows.
+PlantUML 1.2026.8 draws every sequence diagram with teoz, its newer layout. Sequence diagrams are read natively — with PlantUML's own rules for arrows, activations, `return`, `autoactivate`, groups, notes and autonumbering, refusing what PlantUML refuses — into the shared sequence model, so they convert to Mermaid — and drawn natively by a port of teoz (`PlantUML\Teoz`). Its reals put the participants' columns and the rows of the diagram where teoz puts them: each tile — message, loop, message from the edge, note, group, divider, delay, space, reference, change of life — pushes its participants apart as teoz pushes them, activations shift arrow ends 5 a level, and the boxes around participants, the heads, the lifelines cut by creation, destruction and delays, and every arrow, note and frame are drawn as PlantUML's Rose skin draws them, PlantUML's quirks included. Text is measured in the bundled monospace font, so diagrams come out somewhat wider than PlantUML's.
+
+A diagram PlantUML fails to draw is left to it too: a second note beside a message to itself, which teoz cannot cast; and, out of the native drawing's reach, notes across beside another note and diagrams without participants.
 
 | Read natively | Left to PlantUML |
 | --- | --- |
-| Participants of every kind, `as`, `order`, stereotypes, colours, `create`, over several lines, in nested boxes; `hide unlinked`; footbox | `newpage`, URLs, anchors and their links |
+| Participants of every kind, `as`, `order`, stereotypes, colours, `create`, over several lines, in nested boxes; `hide unlinked`; footbox | `newpage`, `mainframe`, URLs, anchors and their links, notes on a group's `end` |
 | Messages with every arrow (`->`, `-->`, `->>`, `<-`, `<->`, `x`, `o`, halves, slants, `[#color,dashed,hidden]`), `++`, `--`, `!!`, `**` and their pairs, `&` in parallel, `[->`, `->]`, `?->` and their kin | Multicast (`A -> B & C`) |
-| `activate`, `deactivate`, `destroy`, `create`, `X++`, `X--`, `return`, `autoactivate`; groups (`alt`, `else`, `opt`, `loop`, `par`, `break`, `critical`, `group … [label]`) | Parallel notes (`& note`) |
+| `activate`, `deactivate`, `destroy`, `create`, `X++`, `X--`, `return`, `autoactivate`; groups (`alt`, `else`, `opt`, `loop`, `par`, `break`, `critical`, `group … [label]`), `&` before a group | Parallel notes (`& note`) |
 | Notes left, right and over one or two participants, across, `hnote`, `rnote`, on a row with `/`, on messages; dividers, delays, space, `ref over`; `autonumber` with its start, step, format, `stop`, `resume` and `inc` | |
 

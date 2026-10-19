@@ -7,7 +7,7 @@ namespace Janalis\Viz\PlantUML\Sequences;
 use Janalis\Viz\Model\Sequence\SequenceDiagram;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\PlantUmlDiagram;
-use Janalis\Viz\Source\Unsupported;
+use Janalis\Viz\PlantUML\Teoz\TeozDrawing;
 
 /** A PlantUML sequence diagram read natively. */
 final readonly class PlantUmlSequence implements PlantUmlDiagram
@@ -32,12 +32,12 @@ final readonly class PlantUmlSequence implements PlantUmlDiagram
         return SequenceModel::of($this);
     }
 
-    /** @throws Unsupported until teoz, PlantUML's sequence layout, is drawn natively */
     #[\Override]
     public function drawing(): \Generator
     {
-        yield null;
+        $drawing = TeozDrawing::draw($this);
+        yield from $drawing;
 
-        throw new Unsupported('The native PlantUML renderer does not draw sequence diagrams yet');
+        return $drawing->getReturn();
     }
 }

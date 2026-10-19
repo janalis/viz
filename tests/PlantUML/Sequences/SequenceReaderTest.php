@@ -20,7 +20,6 @@ use Janalis\Viz\PlantUML\Sequences\SequenceNote;
 use Janalis\Viz\PlantUML\Sequences\SequenceNotes;
 use Janalis\Viz\PlantUML\Sequences\SequenceParticipant;
 use Janalis\Viz\PlantUML\Sequences\SequenceReader;
-use Janalis\Viz\Render\Work;
 use Janalis\Viz\Source\Unsupported;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -363,7 +362,7 @@ final class SequenceReaderTest extends TestCase
     public static function failing(): iterable
     {
         yield 'deactivate nothing' => ['deactivate A', 'You cannot deactivate here'];
-        yield 'twice' => ["A -> B\nactivate B\nactivate B", 'Activate/Deactivate already done on B'];
+        yield 'again after deactivating' => ["A -> B\ndeactivate B\nactivate B", 'Activate/Deactivate already done on B'];
         yield 'after delay' => ["A -> B\n...\nactivate B", 'You cannot Activate/Deactivate just after a ...'];
         yield 'create unsent' => ["create C\nA -> B", 'After create command, you have to send a message to "C"'];
         yield 'nowhere to return' => ['return x', 'Nowhere to return to.'];
@@ -395,11 +394,32 @@ final class SequenceReaderTest extends TestCase
         }
     }
 
-    public function testTheDrawingIsLeftToPlantUmlForNow(): void
+    public function testAParticipantMayBeActivatedTwiceByOneMessage(): void
     {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw sequence diagrams yet'));
+        $sequence = self::read("A -> B\nactivate B\nactivate B");
 
-        Work::run(PlantUmlPipeline::native()->drawing("@startuml\nA -> B\n@enduml"));
+        $this->assertSame(['activate', 'activate'], self::lives($sequence->events[0]));
+    }
+
+    public function testADividerClosesOffTheMessageBeforeIt(): void
+    {
+        $sequence = self::read("A -> B\n== d ==\nactivate B");
+
+        $this->assertSame([], self::lives($sequence->events[0]));
+    }
+
+    public function testNotesOnAGroupsEndAreNotDrawnNatively(): void
+    {
+        $this->expectExceptionObject(new Unsupported("The native PlantUML renderer does not draw notes on a group's end: note right : after"));
+
+        self::read("group g\nA -> B\nend\nnote right : after");
+    }
+
+    public function testAnchoredMessagesAreNotDrawnNatively(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw anchored messages: A{start} -> B'));
+
+        self::read('A{start} -> B');
     }
 
     /** @return list<string> */

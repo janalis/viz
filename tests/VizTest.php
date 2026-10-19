@@ -97,9 +97,9 @@ final class VizTest extends TestCase
     {
         $this->assertStringContainsString('<svg', new Viz(engine: Engine::Native)->render("@startuml\nclass A\n@enduml", SourceFormat::PlantUml, Format::Svg)->bytes);
         $this->expectException(RenderFailure::class);
-        $this->expectExceptionMessage('does not draw sequence diagrams');
+        $this->expectExceptionMessage('does not draw multicast messages');
 
-        new Viz(engine: Engine::Native)->render("@startuml\nAlice -> Bob\n@enduml", SourceFormat::PlantUml, Format::Svg);
+        new Viz(engine: Engine::Native)->render("@startuml\nAlice -> Bob & Carol\n@enduml", SourceFormat::PlantUml, Format::Svg);
     }
 
     public function testDotDrawsNativelyAndFallsBackToDotForWhatItLeaves(): void
