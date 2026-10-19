@@ -10,6 +10,7 @@ use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
+use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
 use Janalis\Viz\Source\Unsupported;
 
@@ -32,7 +33,7 @@ final readonly class PlantUmlPipeline implements Pipeline
     /** The pipeline with every family drawn natively. */
     public static function native(): self
     {
-        return new self(['class' => new ClassFamily(), 'description' => new DescriptionFamily(), 'state' => new StateFamily()]);
+        return new self(['sequence' => new SequenceFamily(), 'class' => new ClassFamily(), 'description' => new DescriptionFamily(), 'state' => new StateFamily()]);
     }
 
     #[\Override]

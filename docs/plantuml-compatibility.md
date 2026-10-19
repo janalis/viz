@@ -29,7 +29,8 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | Class | yes, below |
 | Description (component, deployment, use case) | yes, below |
 | State | yes, below |
-| Sequence, activity | not yet: drawn by PlantUML |
+| Sequence | read natively into the shared model, below; drawn by PlantUML until teoz is ported |
+| Activity | not yet: drawn by PlantUML |
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
@@ -65,4 +66,15 @@ Component, deployment and use case diagrams are laid out as svek lays them out, 
 | `actor`, `usecase` (and their business forms with `/`), `component`, `interface`, `node`, `database`, `cloud`, `folder`, `file`, `artifact`, `card`, `rectangle`, `agent`, `frame`, `package`, `queue`, `stack`, `storage`, `collections`, `hexagon`, `label`, `action`, `process`, `person`, `boundary`, `control`, `entity`, `circle`; the short forms `[component]`, `(use case)`, `:actor:`, `() interface`; text over several lines in `[ … ]` or `as " … "`; stereotypes and colours | Ports, archimate, maps and JSON, sprites as symbols; a lone name on its own line, which PlantUML answers with its welcome page |
 | Containers of any of those symbols, nested, and `together` | Links to a container |
 | Links with their marks, directions, styles, labels and `<<stereotypes>>`; notes beside elements, floating and linked like elements, and on links | Middle circles on links |
+
+### Sequence diagrams
+
+PlantUML 1.2026.8 draws every sequence diagram with teoz, its newer layout. Sequence diagrams are read natively — with PlantUML's own rules for arrows, activations, `return`, `autoactivate`, groups, notes and autonumbering, refusing what PlantUML refuses — into the shared sequence model, so they convert to Mermaid; teoz's constraint solver (`PlantUML\Teoz\Real`) is ported, and the drawing follows.
+
+| Read natively | Left to PlantUML |
+| --- | --- |
+| Participants of every kind, `as`, `order`, stereotypes, colours, `create`, over several lines, in nested boxes; `hide unlinked`; footbox | `newpage`, URLs, anchors and their links |
+| Messages with every arrow (`->`, `-->`, `->>`, `<-`, `<->`, `x`, `o`, halves, slants, `[#color,dashed,hidden]`), `++`, `--`, `!!`, `**` and their pairs, `&` in parallel, `[->`, `->]`, `?->` and their kin | Multicast (`A -> B & C`) |
+| `activate`, `deactivate`, `destroy`, `create`, `X++`, `X--`, `return`, `autoactivate`; groups (`alt`, `else`, `opt`, `loop`, `par`, `break`, `critical`, `group … [label]`) | Parallel notes (`& note`) |
+| Notes left, right and over one or two participants, across, `hnote`, `rnote`, on a row with `/`, on messages; dividers, delays, space, `ref over`; `autonumber` with its start, step, format, `stop`, `resume` and `inc` | |
 
