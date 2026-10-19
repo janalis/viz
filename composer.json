@@ -1,0 +1,67 @@
+{
+    "name": "janalis/viz",
+    "description": "Mermaid, Graphviz and PlantUML for PHP: native rendering with a CLI fallback, SVG/PNG/PDF export and conversion between the three",
+    "type": "library",
+    "keywords": [
+        "mermaid",
+        "graphviz",
+        "dot",
+        "plantuml",
+        "diagram",
+        "svg",
+        "png",
+        "pdf"
+    ],
+    "homepage": "https://github.com/janalis/viz",
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/janalis/viz/issues",
+        "source": "https://github.com/janalis/viz"
+    },
+    "require": {
+        "php": ">=8.5",
+        "ext-mbstring": "*",
+        "symfony/filesystem": "^8.0",
+        "symfony/process": "^8.0",
+        "symfony/string": "^8.0",
+        "symfony/polyfill-intl-grapheme": "^1.33",
+        "symfony/yaml": "^8.2"
+    },
+    "require-dev": {
+        "carthage-software/mago": "1.47.*",
+        "infection/infection": "^0.35.4",
+        "phpunit/phpunit": "^13.2"
+    },
+    "suggest": {
+        "ext-gd": "Native PNG export of Mermaid diagrams (needs FreeType)",
+        "ext-zlib": "Compressed native PDF export"
+    },
+    "autoload": {
+        "psr-4": {
+            "Janalis\\Viz\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Janalis\\Viz\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "carthage-software/mago": true,
+            "infection/extension-installer": true
+        }
+    },
+    "scripts": {
+        "format": "mago format",
+        "format:check": "mago format --check",
+        "lint": "mago lint --minimum-fail-level=note",
+        "analyze": "mago analyze --minimum-fail-level=note",
+        "test": "phpunit",
+        "coverage": "@php -d pcov.enabled=1 vendor/bin/phpunit --coverage-clover=var/coverage/clover.xml",
+        "mutate": "@php -d pcov.enabled=1 vendor/bin/infection --threads=max"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

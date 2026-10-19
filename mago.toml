@@ -1,0 +1,60 @@
+# Mago configuration — https://mago.carthage.software
+#
+# The Symfony coding standard, spelled out because mago ships no symfony preset:
+# single quotes, next-line braces for classes and methods, no spaces around
+# concatenation, a blank line before `return`, ordered imports. The formatter
+# never re-wraps: a wide print width plus "preserve breaking" keeps every line
+# where its author put it.
+
+php-version = "8.5"
+
+[source]
+paths = ["src", "tests"]
+excludes = ["tests/fixtures"]
+includes = ["vendor"]
+
+[analyzer]
+# Static analysis targets the library. Tests build fixtures through dynamic
+# lookups an analyzer cannot follow; the support code they share is analysed.
+excludes = ["tests/Mermaid", "tests/GraphViz", "tests/PlantUML", "tests/Pdf", "tests/Render", "tests/Process", "tests/Source", "tests/Diagram", "tests/Text", "tests/Layout", "tests/VizTest.php"]
+
+[formatter]
+print-width = 200
+preserve-breaking-argument-list = true
+preserve-breaking-parameter-list = true
+preserve-breaking-conditional-expression = true
+preserve-breaking-attribute-list = true
+preserve-breaking-member-access-chain = true
+preserve-redundant-logical-binary-expression-parentheses = true
+space-around-concatenation-binary-operator = false
+space-before-arrow-function-parameter-list-parenthesis = true
+empty-line-before-return = true
+single-quote = true
+tab-width = 4
+use-tabs = false
+trailing-comma = true
+null-type-hint = "question"
+control-brace-style = "same_line"
+closure-brace-style = "same_line"
+function-brace-style = "next_line"
+method-brace-style = "next_line"
+classlike-brace-style = "always_next_line"
+sort-uses = true
+
+[linter]
+integrations = ["phpunit"]
+
+[linter.rules]
+# The thresholds the native Mermaid pipeline was written under: ports of
+# upstream JavaScript layouts keep upstream's shape, dense as it is.
+cyclomatic-complexity = { threshold = 143 }
+too-many-methods = { threshold = 90 }
+too-many-properties = { threshold = 31 }
+too-many-enum-cases = { threshold = 76 }
+excessive-parameter-list = { threshold = 26 }
+kan-defect = { threshold = 8 }
+halstead = { effort-threshold = 18673, difficulty-threshold = 26, volume-threshold = 3163 }
+assertion-style = { style = "this" }
+yoda-conditions = { enabled = true, level = "warning", mode = "require" }
+ambiguous-function-call = { enabled = true, level = "warning" }
+ambiguous-constant-access = { enabled = true, level = "warning" }

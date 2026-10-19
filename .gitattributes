@@ -1,0 +1,11 @@
+/.github export-ignore
+/tests export-ignore
+/tools export-ignore
+/docs/mermaid-compatibility-history.md export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/Makefile export-ignore
+/mago.toml export-ignore
+/phpunit.xml.dist export-ignore
+/infection.json5.dist export-ignore
+*.ttf binary
