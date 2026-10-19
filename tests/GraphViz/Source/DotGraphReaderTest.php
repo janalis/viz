@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\GraphViz\Source;
 
-use Janalis\Viz\GraphViz\DotRenderer;
+use Janalis\Viz\GraphViz\DotTool;
 use Janalis\Viz\GraphViz\GraphParseException;
 use Janalis\Viz\GraphViz\Source\DotGraphReader;
 use Janalis\Viz\GraphViz\Source\DotGraphWriter;
@@ -116,7 +116,7 @@ final class DotGraphReaderTest extends TestCase
         }
         $sample = Sample::graph();
 
-        $graph = DotGraphReader::read(new DotRenderer()->json(DotGraphWriter::write($sample)));
+        $graph = DotGraphReader::read(new DotTool()->json(DotGraphWriter::write($sample)));
 
         $this->assertSame($sample->direction, $graph->direction);
         $this->assertSame($sample->title, $graph->title);

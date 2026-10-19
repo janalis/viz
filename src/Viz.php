@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace Janalis\Viz;
 
 use Janalis\Viz\Draw\NativeRenderer;
+use Janalis\Viz\GraphViz\DotCommand;
 use Janalis\Viz\GraphViz\DotReader;
-use Janalis\Viz\GraphViz\DotRenderer;
+use Janalis\Viz\GraphViz\DotTool;
+use Janalis\Viz\Mermaid\MermaidCommand;
 use Janalis\Viz\Mermaid\MermaidPipeline;
-use Janalis\Viz\Mermaid\MmdcRenderer;
-use Janalis\Viz\PlantUML\PlantUmlRenderer;
+use Janalis\Viz\PlantUML\PlantUmlCommand;
 use Janalis\Viz\Process\Cli;
+use Janalis\Viz\Process\CommandRenderer;
 use Janalis\Viz\Process\Tool;
+use Janalis\Viz\Render\Engine;
 use Janalis\Viz\Render\Exporter;
 use Janalis\Viz\Render\FallbackRenderer;
 use Janalis\Viz\Render\Format;
@@ -26,9 +29,9 @@ use Janalis\Viz\Source\UnsupportedConversion;
 
 /**
  * The library in one place: render, export and convert any of the three
- * languages. Each language is drawn natively where a native renderer exists
- * (Mermaid), and by its command-line tool otherwise or as the fallback. A tool
- * path left null is looked up on the PATH when first needed.
+ * languages. Each language is drawn natively where a native renderer exists,
+ * with its command-line tool as the fallback; the engine can also force one or
+ * the other. A tool path left null is looked up on the PATH when first needed.
  */
 final readonly class Viz
 {
@@ -37,17 +40,18 @@ final readonly class Viz
         private ?string $plantuml = null,
         private ?string $mmdc = null,
         private ?string $workingDirectory = null,
+        private Engine $engine = Engine::Auto,
     ) {}
 
     public function renderer(SourceFormat $format): Renderer
     {
-        $cli = new Cli($this->workingDirectory);
+        $native = $this->native($format);
 
-        return match ($format) {
-            SourceFormat::Mermaid => new FallbackRenderer([new NativeRenderer(new MermaidPipeline()), new MmdcRenderer(new Tool('mmdc', $this->mmdc), $cli)]),
-            SourceFormat::Dot => $this->dotRenderer(),
-            SourceFormat::PlantUml => new PlantUmlRenderer(new Tool('plantuml', $this->plantuml), $cli),
-        };
+        return new FallbackRenderer(match ($this->engine) {
+            Engine::Auto => null === $native ? [$this->cli($format)] : [$native, $this->cli($format)],
+            Engine::Native => null === $native ? [] : [$native],
+            Engine::Cli => [$this->cli($format)],
+        });
     }
 
     /** @throws RenderFailure */
@@ -70,11 +74,25 @@ final readonly class Viz
     /** @throws UnsupportedConversion|RenderFailure */
     public function convert(string $source, SourceFormat $from, SourceFormat $to): string
     {
-        return new Converter(new Languages(dot: new DotReader($this->dotRenderer())))->convert($source, $from, $to);
+        return new Converter(new Languages(dot: new DotReader(new DotTool(new Tool('dot', $this->dot), new Cli($this->workingDirectory)))))->convert($source, $from, $to);
     }
 
-    private function dotRenderer(): DotRenderer
+    private function native(SourceFormat $format): ?Renderer
     {
-        return new DotRenderer(new Tool('dot', $this->dot), new Cli($this->workingDirectory));
+        return match ($format) {
+            SourceFormat::Mermaid => new NativeRenderer(new MermaidPipeline()),
+            SourceFormat::Dot, SourceFormat::PlantUml => null,
+        };
+    }
+
+    private function cli(SourceFormat $format): Renderer
+    {
+        [$command, $tool] = match ($format) {
+            SourceFormat::Mermaid => [new MermaidCommand(), new Tool('mmdc', $this->mmdc)],
+            SourceFormat::Dot => [new DotCommand(), new Tool('dot', $this->dot)],
+            SourceFormat::PlantUml => [new PlantUmlCommand(), new Tool('plantuml', $this->plantuml)],
+        };
+
+        return new CommandRenderer($command, $tool, new Cli($this->workingDirectory));
     }
 }

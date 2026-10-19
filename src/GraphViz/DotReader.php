@@ -14,7 +14,7 @@ use Janalis\Viz\Source\Reader;
 final readonly class DotReader implements Reader
 {
     public function __construct(
-        private DotRenderer $dot = new DotRenderer(),
+        private DotTool $dot = new DotTool(),
     ) {}
 
     #[\Override]

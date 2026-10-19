@@ -35,4 +35,12 @@ final class PlantUmlCommandTest extends TestCase
         $this->assertSame(['plantuml', '-tpdf', '-pipe', '-failfast2', '-charset', 'UTF-8'], PlantUmlCommand::render('plantuml', Format::Pdf, dpi: 300));
         $this->assertSame('-Sdpi=300', PlantUmlCommand::render('plantuml', Format::Png, dpi: 300)[6]);
     }
+
+    public function testTheCommandDescribesItself(): void
+    {
+        $command = new PlantUmlCommand();
+
+        $this->assertSame(['plantuml', 96, false], [$command->name(), $command->baseDpi(), $command->writesFile()]);
+        $this->assertSame(['plantuml', '-tsvg', '-pipe', '-failfast2', '-charset', 'UTF-8'], $command->argv('plantuml', Format::Svg, 96, null));
+    }
 }

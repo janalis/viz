@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Process;
 
-use Janalis\Viz\Process\Cli;
-use Janalis\Viz\Process\Tool;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Render\Image;
 use Janalis\Viz\Render\Renderer;
@@ -14,14 +12,14 @@ use Janalis\Viz\Render\RenderOptions;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
- * Mermaid through mermaid-cli, which drives a headless browser: the reference
- * rendering, at the cost of Node and Chromium. It writes only to files, so each
- * render gets a private directory that is removed whatever happens.
+ * A language drawn by its own command-line tool, the source on stdin. A tool that
+ * writes only to files gets a private directory per render, removed whatever happens.
  */
-final readonly class MmdcRenderer implements Renderer
+final readonly class CommandRenderer implements Renderer
 {
     public function __construct(
-        private Tool $tool = new Tool('mmdc'),
+        private Command $command,
+        private Tool $tool,
         private Cli $cli = new Cli(),
         private Filesystem $files = new Filesystem(),
     ) {}
@@ -35,18 +33,22 @@ final readonly class MmdcRenderer implements Renderer
     #[\Override]
     public function render(string $source, Format $format, RenderOptions $options = new RenderOptions()): Image
     {
-        $tool = $this->tool->path() ?? throw new RenderFailure('mmdc not found: install @mermaid-js/mermaid-cli, or configure the path to mmdc');
-        $directory = \sys_get_temp_dir().'/viz-mermaid-'.\bin2hex(\random_bytes(16));
+        $tool = $this->tool->path() ?? throw new RenderFailure($this->command->missing());
+        $dpi = $options->dpi ?? $this->command->baseDpi();
+        if (!$this->command->writesFile()) {
+            return new Image($this->cli->run($this->command->argv($tool, $format, $dpi, null), $source, $options->timeout), $format);
+        }
+        $directory = \sys_get_temp_dir().'/viz-'.$this->command->name().'-'.\bin2hex(\random_bytes(16));
         $this->files->mkdir($directory, 0o700);
         $output = $directory.'/diagram.'.$format->extension();
         try {
-            $this->cli->run(MermaidCommand::render($tool, $format, $output, $options->dpi ?? MermaidCommand::BASE_DPI), $source, $options->timeout);
+            $this->cli->run($this->command->argv($tool, $format, $dpi, $output), $source, $options->timeout);
             $bytes = \is_file($output) ? (string) \file_get_contents($output) : '';
         } finally {
             $this->files->remove($directory);
         }
         if ('' === $bytes) {
-            throw new RenderFailure('mmdc produced no '.\strtoupper($format->value));
+            throw new RenderFailure($this->command->name().' produced no '.\strtoupper($format->value));
         }
 
         return new Image($bytes, $format);

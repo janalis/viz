@@ -34,17 +34,17 @@ An export writes the file only once the image has rendered in full, so a failed 
 | Graphviz (`dot`) | yes | yes, when dot has libgd | yes |
 | PlantUML | yes | yes | needs the Batik and FOP jars beside plantuml |
 
-Tool paths can be configured: `new Viz(dot: '/opt/graphviz/bin/dot', plantuml: '~/plantuml.jar', mmdc: null)`.
+Tool paths can be configured: `new Viz(dot: '/opt/graphviz/bin/dot', plantuml: '~/plantuml.jar', mmdc: null)`. A language is drawn natively where it can be, with its tool as the fallback; `engine: Engine::Native` or `Engine::Cli` forces one or the other.
 
 Each renderer can also be used on its own, and each implements `Janalis\Viz\Render\Renderer`:
 
 | Class | What it is |
 | --- | --- |
 | `Draw\NativeRenderer` | the native renderer, over a language's `Draw\Pipeline` (`new NativeRenderer(new MermaidPipeline())`) |
-| `Mermaid\MmdcRenderer` | the `mmdc` renderer |
-| `GraphViz\DotRenderer` | the `dot` renderer; it also exposes `layout()`, the laid-out geometry |
-| `PlantUML\PlantUmlRenderer` | the `plantuml` renderer |
+| `Process\CommandRenderer` | a command-line tool, described by a `Process\Command`: `MermaidCommand` (`mmdc`), `DotCommand`, `PlantUmlCommand` |
 | `Render\FallbackRenderer` | chains renderers, native first |
+
+`GraphViz\DotTool` also exposes `layout()`, dot's own laid-out geometry.
 
 The native pipeline is also exposed step by step, for a host with an event loop (`NativeRenderer::image()`, and `Mermaid\MermaidPipeline` for the scene and the drawing). Every step is a generator that yields between small units of work, so a large diagram can be spread over several frames; `Render\Work::run()` runs one to the end.
 

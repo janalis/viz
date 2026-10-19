@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests;
 
+use Janalis\Viz\Render\Engine;
 use Janalis\Viz\Render\FallbackRenderer;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Render\RenderFailure;
@@ -78,5 +79,26 @@ final class VizTest extends TestCase
         $this->expectException(RenderFailure::class);
 
         new Viz(plantuml: '/nonexistent/plantuml')->render('@startuml', SourceFormat::PlantUml, Format::Png);
+    }
+
+    public function testTheEngineChoosesTheNativeRendererTheToolOrBoth(): void
+    {
+        $this->tool = new FakeTool('cat > "$7"');
+
+        $this->assertSame('not mermaid', new Viz(mmdc: $this->tool->path(), engine: Engine::Cli)->render('not mermaid', SourceFormat::Mermaid, Format::Svg)->bytes);
+        $this->assertStringStartsWith('<svg', new Viz(mmdc: $this->tool->path(), engine: Engine::Native)->render("flowchart LR\n a-->b", SourceFormat::Mermaid, Format::Svg)->bytes);
+        try {
+            new Viz(mmdc: $this->tool->path(), engine: Engine::Native)->render('not mermaid', SourceFormat::Mermaid, Format::Svg);
+            $this->fail('Expected a failure');
+        } catch (RenderFailure $failure) {
+            $this->assertStringContainsString('Line 1', $failure->getMessage(), 'the native failure, with no fallback');
+        }
+    }
+
+    public function testALanguageWithoutANativeRendererHasNoneToForce(): void
+    {
+        $this->expectExceptionObject(new RenderFailure('No renderer can produce Svg'));
+
+        new Viz(engine: Engine::Native)->render('digraph {}', SourceFormat::Dot, Format::Svg);
     }
 }

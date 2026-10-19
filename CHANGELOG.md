@@ -10,6 +10,8 @@ Breaking: shared code moves out of the Mermaid and Graphviz namespaces.
 - `Mermaid\MermaidRenderer` gives way to `Draw\NativeRenderer`, which draws any `Draw\Pipeline`; `MermaidPipeline::export()` becomes `NativeRenderer::image()`.
 - Conversion goes through contracts: each language has a `Source\Reader` and a `Source\Writer` (`MermaidReader`, `DotReader`, `MermaidWriter`, `DotWriter`, `PlantUmlWriter`, now instances), gathered in `Source\Languages`. Models implement `Model\Diagram` and name their `Model\Family`; `Converter::write()` is an instance method that sends a family directly or through its graph, as [docs/conversion.md](docs/conversion.md) lists. The former static readers and writers become `Mermaid\Source\MermaidGraphReader`, `MermaidGraphWriter`, `GraphViz\Source\DotGraphReader`, `DotGraphWriter` and `PlantUML\Source\PlantUmlGraphWriter`.
 - A source that does not parse is refused as `The <language> source cannot be read: …`; parsers' errors implement `Source\ParseError`.
+- One `Process\CommandRenderer` replaces `MmdcRenderer`, `DotRenderer::render()` and `PlantUmlRenderer`; `MermaidCommand`, `DotCommand` and `PlantUmlCommand` implement `Process\Command`. `GraphViz\DotRenderer` becomes `GraphViz\DotTool`, which keeps `layout()` and `json()`. A temporary mmdc directory is now named `viz-mmdc-…`.
+- `Viz` takes an `engine` (`Render\Engine::Auto`, `Native` or `Cli`) and draws every language through a `FallbackRenderer`, native first where a native renderer exists.
 - `GraphViz\DotColor` becomes `Color\ColorValue`; `Mermaid\CssColorNames` becomes `Color\CssColorNames`.
 
 ## 0.1.1 — 2026-10-19

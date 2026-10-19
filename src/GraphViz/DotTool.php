@@ -7,33 +7,15 @@ namespace Janalis\Viz\GraphViz;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Process\Cli;
 use Janalis\Viz\Process\Tool;
-use Janalis\Viz\Render\Format;
-use Janalis\Viz\Render\Image;
-use Janalis\Viz\Render\Renderer;
 use Janalis\Viz\Render\RenderFailure;
-use Janalis\Viz\Render\RenderOptions;
 
-/** Graphviz through its `dot` command. A dot built without libgd has no PNG, and says so on stderr. */
-final readonly class DotRenderer implements Renderer
+/** Graphviz's `dot` command, for what only it knows: its own layout of a graph, and its JSON reading of the language. */
+final readonly class DotTool
 {
     public function __construct(
         private Tool $tool = new Tool('dot'),
         private Cli $cli = new Cli(),
     ) {}
-
-    #[\Override]
-    public function supports(Format $format): bool
-    {
-        return true;
-    }
-
-    #[\Override]
-    public function render(string $source, Format $format, RenderOptions $options = new RenderOptions()): Image
-    {
-        $argv = DotCommand::render($this->path(), $format, $options->dpi ?? DotCommand::BASE_DPI);
-
-        return new Image($this->cli->run($argv, $source, $options->timeout), $format);
-    }
 
     /**
      * The graph as dot lays it out, in points with the origin top left.
@@ -62,6 +44,6 @@ final readonly class DotRenderer implements Renderer
 
     private function path(): string
     {
-        return $this->tool->path() ?? throw new RenderFailure('graphviz not found: install it, or configure the path to dot');
+        return $this->tool->path() ?? throw new RenderFailure(new DotCommand()->missing());
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Source;
 
 use Janalis\Viz\GraphViz\DotReader;
-use Janalis\Viz\GraphViz\DotRenderer;
+use Janalis\Viz\GraphViz\DotTool;
 use Janalis\Viz\Mermaid\MermaidWriter;
 use Janalis\Viz\Model\Diagram;
 use Janalis\Viz\Model\Family;
@@ -37,7 +37,7 @@ final class ConverterTest extends TestCase
 
     public function testAFlowchartIsWrittenInEachLanguage(): void
     {
-        $converter = self::converter(new DotRenderer(new Tool('viz-no-dot')));
+        $converter = self::converter(new DotTool(new Tool('viz-no-dot')));
         $source = "flowchart LR\n  a[Start] --> b{Ok?}";
 
         $this->assertSame("flowchart LR\n    a[\"Start\"]\n    b{\"Ok?\"}\n    a --> b\n", $converter->convert($source, SourceFormat::Mermaid, SourceFormat::Mermaid));
@@ -49,7 +49,7 @@ final class ConverterTest extends TestCase
     {
         $this->tool = new FakeTool("echo '{\"rankdir\":\"LR\",\"objects\":[{\"name\":\"a\"},{\"name\":\"b\"}],\"edges\":[{\"tail\":0,\"head\":1}]}'");
 
-        $mermaid = self::converter(new DotRenderer(new Tool('dot', $this->tool->path())))->convert('digraph { a -> b }', SourceFormat::Dot, SourceFormat::Mermaid);
+        $mermaid = self::converter(new DotTool(new Tool('dot', $this->tool->path())))->convert('digraph { a -> b }', SourceFormat::Dot, SourceFormat::Mermaid);
 
         $this->assertSame("flowchart LR\n    a[\"a\"]\n    b[\"b\"]\n    a --> b\n", $mermaid);
         $this->assertSame(['-Tjson0'], $this->tool->argv());
@@ -62,7 +62,7 @@ final class ConverterTest extends TestCase
         $this->expectException(RenderFailure::class);
         $this->expectExceptionMessage('dot produced invalid JSON');
 
-        self::converter(new DotRenderer(new Tool('dot', $this->tool->path())))->read('x', SourceFormat::Dot);
+        self::converter(new DotTool(new Tool('dot', $this->tool->path())))->read('x', SourceFormat::Dot);
     }
 
     public function testPlantUmlIsWrittenButNotRead(): void
@@ -166,7 +166,7 @@ final class ConverterTest extends TestCase
         $this->assertStringContainsString(\implode("\n", $rows)."\n", $document, 'docs/conversion.md lists every route Converter::route() takes');
     }
 
-    private static function converter(DotRenderer $dot): Converter
+    private static function converter(DotTool $dot): Converter
     {
         return new Converter(new Languages(dot: new DotReader($dot)));
     }
