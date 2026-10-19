@@ -15,7 +15,7 @@ Every model belongs to a family (`Model\Family`). A diagram reaches a language b
 | Family | Mermaid | DOT | PlantUML |
 | --- | --- | --- | --- |
 | graph | direct | direct | direct |
-| sequence | unsupported | unsupported | unsupported |
+| sequence | direct | unsupported | direct |
 | class | direct | via graph | direct |
 | state | direct | via graph | direct |
 | activity | via graph | via graph | via graph |
@@ -26,7 +26,7 @@ Every model belongs to a family (`Model\Family`). A diagram reaches a language b
 
 | Language | Families read |
 | --- | --- |
-| Mermaid | graph (flowcharts), state, class and entity, natively |
+| Mermaid | graph (flowcharts), sequence, state, class and entity, natively |
 | DOT | graph, through `dot -Tjson0`, which resolves the whole language |
 | PlantUML | none yet |
 
@@ -52,6 +52,14 @@ Each language lacks something the others have. Where it does, the writer degrade
 - **Mermaid** writes an entity's label as its alias and groups as subgraphs; it reads its `u` cardinality as exactly one. Styles and classes are not read.
 - **PlantUML** writes entities in information-engineering notation, keys as stereotypes and groups as packages. It lays out only top-down or left-to-right, and renames an id it would misread to `e0`, `e1` and so on.
 - **DOT** draws the graph: each entity a record of its attributes, each relationship labelled with both cardinalities.
+
+### Sequence
+
+A sequence is about time, which a graph cannot show, so it reaches only Mermaid and PlantUML; DOT has no form for it.
+
+- **Mermaid** has no group fragment, which becomes an `opt`, and no divider or delay, which become a note over every participant. A two-way message always has filled heads. Its activation shortcuts read as separate activation steps; autonumbers are already in the labels it reads, half arrowheads read as filled ones, and a box keeps its color in its label. Links, menus and central-connection marks are not read.
+- **PlantUML** has no headless message, which gets a filled head, and no highlight band, which becomes a group. It refuses an activation right after a delay, so a delay is written after the activations that follow it.
+- Both rename a participant id they would misread to `p0`, `p1` and so on, keeping its name as the label.
 
 ### State
 

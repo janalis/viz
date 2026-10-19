@@ -73,14 +73,11 @@ final class ConverterTest extends TestCase
         new Converter()->read('@startuml\n@enduml', SourceFormat::PlantUml);
     }
 
-    public function testAMermaidDiagramOtherThanAFlowchartDoesNotConvert(): void
+    public function testAMermaidFamilyWithoutASharedModelDoesNotConvert(): void
     {
-        try {
-            new Converter()->read("sequenceDiagram\n  A->>B: hi", SourceFormat::Mermaid);
-            $this->fail('Expected a refusal');
-        } catch (UnsupportedConversion $refusal) {
-            $this->assertSame('A Mermaid sequence diagram cannot be read yet', $refusal->getMessage());
-        }
+        $this->expectExceptionObject(new UnsupportedConversion('A Mermaid pie diagram cannot be read yet'));
+
+        new Converter()->read("pie\n  \"a\" : 1", SourceFormat::Mermaid);
     }
 
     public function testTheRealDotRoundTripsTheSampleThroughMermaid(): void
@@ -147,9 +144,9 @@ final class ConverterTest extends TestCase
 
     public function testASequenceIsNeverLoweredToAGraph(): void
     {
-        $this->expectExceptionObject(new UnsupportedConversion('A sequence diagram has no PlantUML form'));
+        $this->expectExceptionObject(new UnsupportedConversion('A sequence diagram has no DOT form'));
 
-        new Converter()->write(self::diagram(Family::Sequence, new Graph()), SourceFormat::PlantUml);
+        new Converter()->write(self::diagram(Family::Sequence, new Graph()), SourceFormat::Dot);
     }
 
     public function testTheRouteMatrixIsTheOneDocumented(): void

@@ -7,12 +7,14 @@ namespace Janalis\Viz\Mermaid;
 use Janalis\Viz\Mermaid\Source\MermaidClassWriter;
 use Janalis\Viz\Mermaid\Source\MermaidEntityWriter;
 use Janalis\Viz\Mermaid\Source\MermaidGraphWriter;
+use Janalis\Viz\Mermaid\Source\MermaidSequenceWriter;
 use Janalis\Viz\Mermaid\Source\MermaidStateWriter;
 use Janalis\Viz\Model\Classes\ClassDiagram;
 use Janalis\Viz\Model\Diagram;
 use Janalis\Viz\Model\Entity\EntityDiagram;
 use Janalis\Viz\Model\Family;
 use Janalis\Viz\Model\Graph\Graph;
+use Janalis\Viz\Model\Sequence\SequenceDiagram;
 use Janalis\Viz\Model\State\StateDiagram;
 use Janalis\Viz\Source\UnsupportedConversion;
 use Janalis\Viz\Source\Writer;
@@ -23,7 +25,7 @@ final readonly class MermaidWriter implements Writer
     #[\Override]
     public function families(): array
     {
-        return [Family::Graph, Family::State, Family::Classes, Family::Entity];
+        return [Family::Graph, Family::State, Family::Classes, Family::Entity, Family::Sequence];
     }
 
     #[\Override]
@@ -33,6 +35,7 @@ final readonly class MermaidWriter implements Writer
             $diagram instanceof StateDiagram => MermaidStateWriter::write($diagram),
             $diagram instanceof ClassDiagram => MermaidClassWriter::write($diagram),
             $diagram instanceof EntityDiagram => MermaidEntityWriter::write($diagram),
+            $diagram instanceof SequenceDiagram => MermaidSequenceWriter::write($diagram),
             $diagram instanceof Graph => MermaidGraphWriter::write($diagram),
             default => throw new UnsupportedConversion('A '.$diagram->family()->value.' diagram has no Mermaid writer'),
         };
