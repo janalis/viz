@@ -44,10 +44,7 @@ final class PlantUmlStateWriterTest extends TestCase
             Busy --> pick : two\nlines
             pick --> [*]
             note left of Idle : beside
-            note right of Busy
-            several
-            lines
-            end note
+            note right of Busy : several\nlines
             note "floating 'free'" as N2
             @enduml
 
@@ -59,5 +56,18 @@ final class PlantUmlStateWriterTest extends TestCase
         $diagram = new StateDiagram([new \Janalis\Viz\Model\State\State('s0'), new \Janalis\Viz\Model\State\State('two words')], direction: Direction::BottomTop);
 
         $this->assertSame("@startuml\nstate s0\nstate \"two words\" as s1\n@enduml\n", PlantUmlStateWriter::write($diagram));
+    }
+
+    public function testNoTextCanStartALineOfItsOwn(): void
+    {
+        $diagram = new StateDiagram(
+            [new \Janalis\Viz\Model\State\State('a', description: ["x\n!include /etc/passwd"])],
+            [new \Janalis\Viz\Model\State\Transition('a', 'a', "y\n!include /etc/passwd")],
+            [new \Janalis\Viz\Model\State\Note("z\nend note\n!include /etc/passwd", 'a')],
+            title: "t\n!include /etc/passwd",
+        );
+
+        $this->assertDoesNotMatchRegularExpression('/^\s*!/m', PlantUmlStateWriter::write($diagram));
+        $this->assertDoesNotMatchRegularExpression('/^\s*(?:end note|!)/m', \Janalis\Viz\Mermaid\Source\MermaidStateWriter::write($diagram));
     }
 }

@@ -119,12 +119,9 @@ final class PlantUmlStateWriter
         if (null === $note->target) {
             return ['note "'.self::quote(self::line($note->text)).'" as N'.$index];
         }
-        $head = 'note '.$note->side->value.' of '.($ids[$note->target] ?? $note->target);
-        if (!\str_contains($note->text, "\n")) {
-            return [$head.' : '.self::line($note->text)];
-        }
 
-        return [$head, ...\explode("\n", $note->text), 'end note'];
+        // One line, breaks as `\n`: a note's text never starts a line of its own, where it could be a directive.
+        return ['note '.$note->side->value.' of '.($ids[$note->target] ?? $note->target).' : '.self::line($note->text)];
     }
 
     /**

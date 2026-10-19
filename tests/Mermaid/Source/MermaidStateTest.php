@@ -100,10 +100,7 @@ final class MermaidStateTest extends TestCase
                 Busy --> pick : two<br>lines
                 pick --> [*]
                 note left of Idle : beside
-                note right of Busy
-            several
-            lines
-                end note
+                note right of Busy : several<br>lines
                 note "floating #quot;free#quot;" as note2
 
             MMD, MermaidStateWriter::write(StateSample::diagram()));

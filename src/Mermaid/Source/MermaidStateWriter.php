@@ -122,12 +122,9 @@ final class MermaidStateWriter
         if (null === $note->target) {
             return ['    note "'.self::quote(\str_replace("\n", replace: ' ', subject: $note->text)).'" as note'.$index];
         }
-        $head = '    note '.$note->side->value.' of '.($ids[$note->target] ?? $note->target);
-        if (!\str_contains($note->text, "\n")) {
-            return [$head.' : '.self::line($note->text)];
-        }
 
-        return [$head, ...\explode("\n", $note->text), '    end note'];
+        // One line, breaks as `<br>`: a note's text never starts a line of its own.
+        return ['    note '.$note->side->value.' of '.($ids[$note->target] ?? $note->target).' : '.self::line($note->text)];
     }
 
     /**
