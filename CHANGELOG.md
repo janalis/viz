@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 — 2026-10-19
+
+- Remove a stray file from the package root.
+
 ## 0.1.0 — 2026-10-19
 
 First release, extracted from the Porta IDE's graph viewer.
