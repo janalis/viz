@@ -11,6 +11,7 @@ use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Source\Unsupported;
 
 /**
  * dot's layout, after Gansner, Koutsofios, North and Vo: ranks by network simplex, clusters
@@ -18,10 +19,14 @@ use Janalis\Viz\Model\Direction;
  * edges; coordinates by network simplex on an auxiliary graph. In points. A left-to-right
  * graph is laid out top-down with every size turned, then turned back. Each edge's route is
  * the polyline through its virtual nodes, from centre to centre, for a drawing to smooth and
- * clip.
+ * clip. A graph whose edges would need more virtual nodes than {@see MAX_VIRTUAL} is refused
+ * as {@see Unsupported}.
  */
 final readonly class DotEngine implements LayoutEngine
 {
+    /** The most virtual nodes a layout may need: past it, the graph is too large to lay out here. */
+    public const int MAX_VIRTUAL = 20_000;
+
     #[\Override]
     public function place(LayoutGraph $graph): \Generator
     {
@@ -70,6 +75,13 @@ final readonly class DotEngine implements LayoutEngine
             }
             [$labelWidth, $labelHeight] = $turned ? [$edge->labelHeight, $edge->labelWidth] : [$edge->labelWidth, $edge->labelHeight];
             $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->weight, $labelWidth, $labelHeight];
+        }
+        $span = 0;
+        foreach ($edges as [$tail, $head]) {
+            $span += \max(0, \abs($ranks[$tail] - $ranks[$head]) - 1);
+        }
+        if ($span > self::MAX_VIRTUAL) {
+            throw new Unsupported('The graph is too large to lay out natively: its edges span '.$span.' ranks');
         }
         $layers = new DotLayers($ranks, $sizes, $owner, $parents, \array_values($edges));
         $order = new DotOrdering($layers)->order();

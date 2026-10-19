@@ -24,6 +24,11 @@ use Janalis\Viz\Model\Direction;
 final class DotLayoutInput
 {
     public const float POINTS = 72.0;
+    /** The longest an edge may ask to be, in ranks, and the most it may weigh: far past any drawing, short of exhausting memory. */
+    public const int MAX_MINLEN = 100;
+    public const int MAX_WEIGHT = 10_000;
+    /** The largest size or separation taken, in inches. */
+    public const float MAX_INCHES = 1000.0;
 
     /**
      * @param ?\Closure(string, string): array{float, float} $measure a node's size from its name and label, in points; null takes width and height alone
@@ -55,8 +60,8 @@ final class DotLayoutInput
                 $index,
                 $edge->tail,
                 $edge->head,
-                \max(0, (int) $edge->attribute('minlen', '1')),
-                \max(0, (int) $edge->attribute('weight', '1')),
+                self::bounded($edge->attribute('minlen', '1'), self::MAX_MINLEN),
+                self::bounded($edge->attribute('weight', '1'), self::MAX_WEIGHT),
                 'false' !== \strtolower($edge->attribute('constraint', 'true')),
                 $labelWidth,
                 $labelHeight,
@@ -77,8 +82,8 @@ final class DotLayoutInput
             $clusters,
             Direction::tryFrom(\strtoupper($graph->attribute('rankdir'))) ?? Direction::TopBottom,
             new Spacing(
-                \max(0.02, self::inches($graph->attribute('ranksep'), 0.5)),
-                \max(0.02, self::inches($graph->attribute('nodesep'), 0.25)),
+                \max(0.02 * self::POINTS, self::inches($graph->attribute('ranksep'), 0.5)),
+                \max(0.02 * self::POINTS, self::inches($graph->attribute('nodesep'), 0.25)),
                 4.0,
             ),
             rankSets: $sets,
@@ -124,6 +129,14 @@ final class DotLayoutInput
 
     private static function inches(string $value, float $default): float
     {
-        return (\is_numeric($value) ? (float) $value : $default) * self::POINTS;
+        $inches = \is_numeric($value) ? (float) $value : $default;
+
+        return \min(\max(\is_finite($inches) ? $inches : $default, 0.0), self::MAX_INCHES) * self::POINTS;
+    }
+
+    /** An integer attribute held between zero and a ceiling. */
+    private static function bounded(string $value, int $ceiling): int
+    {
+        return \is_numeric($value) ? \min(\max(0, (int) \min((float) $value, $ceiling)), $ceiling) : 1;
     }
 }

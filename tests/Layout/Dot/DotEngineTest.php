@@ -111,6 +111,20 @@ final class DotEngineTest extends TestCase
         $this->assertSame([8.0, 8.0], [$empty->graph->width, $empty->graph->height], 'an empty graph is its pad');
     }
 
+    public function testAGraphNeedingTooManyVirtualNodesIsRefused(): void
+    {
+        $edges = [];
+        for ($index = 0; $index < 250; ++$index) {
+            $edges[] = new LayoutEdge($index, 'a', 'b', minLength: 100);
+        }
+
+        $this->expectException(\Janalis\Viz\Source\Unsupported::class);
+
+        Work::run(new DotEngine()->place(
+            new LayoutGraph([new LayoutNode('a', 'a', 10, 10), new LayoutNode('b', 'b', 10, 10)], [...$edges, new LayoutEdge(250, 'b', 'a', minLength: 100, labelWidth: 1)]),
+        ));
+    }
+
     /**
      * @param list<string> $nodes
      * @param list<array{string, string}> $edges

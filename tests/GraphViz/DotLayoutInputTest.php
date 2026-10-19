@@ -70,6 +70,16 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame([RankKind::Same, ['a', 'd']], [$input->rankSets[0]->kind, $input->rankSets[0]->nodes]);
     }
 
+    public function testHugeLengthsWeightsAndSizesAreHeldDown(): void
+    {
+        $input = self::input('digraph { ranksep="1e300"; nodesep=-5; a [width=inf, height="1e9"]; a -> b [minlen="1e12", weight=99999999]; b -> c [minlen=x, weight=-3] }');
+
+        $this->assertSame([DotLayoutInput::MAX_MINLEN, DotLayoutInput::MAX_WEIGHT], [$input->edges[0]->minLength, $input->edges[0]->weight]);
+        $this->assertSame([1, 0], [$input->edges[1]->minLength, $input->edges[1]->weight], 'unreadable falls back to one, negative to zero');
+        $this->assertSame([54.0, 72000.0], [$input->nodes[0]->width, $input->nodes[0]->height]);
+        $this->assertSame([72000.0, 1.44], [$input->spacing->rankGap, $input->spacing->nodeGap]);
+    }
+
     private static function input(string $source): LayoutGraph
     {
         return DotLayoutInput::from(Work::run(new DotParser()->parse($source)));
