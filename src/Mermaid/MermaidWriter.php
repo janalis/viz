@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Mermaid\Source\MermaidGraphWriter;
+use Janalis\Viz\Mermaid\Source\MermaidStateWriter;
 use Janalis\Viz\Model\Diagram;
 use Janalis\Viz\Model\Family;
 use Janalis\Viz\Model\Graph\Graph;
+use Janalis\Viz\Model\State\StateDiagram;
 use Janalis\Viz\Source\UnsupportedConversion;
 use Janalis\Viz\Source\Writer;
 
@@ -17,13 +19,14 @@ final readonly class MermaidWriter implements Writer
     #[\Override]
     public function families(): array
     {
-        return [Family::Graph];
+        return [Family::Graph, Family::State];
     }
 
     #[\Override]
     public function write(Diagram $diagram): string
     {
         return match (true) {
+            $diagram instanceof StateDiagram => MermaidStateWriter::write($diagram),
             $diagram instanceof Graph => MermaidGraphWriter::write($diagram),
             default => throw new UnsupportedConversion('A '.$diagram->family()->value.' diagram has no Mermaid writer'),
         };

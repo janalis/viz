@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\Source;
 
 use Janalis\Viz\GraphViz\DotReader;
 use Janalis\Viz\GraphViz\DotTool;
+use Janalis\Viz\GraphViz\DotWriter;
 use Janalis\Viz\Mermaid\MermaidWriter;
 use Janalis\Viz\Model\Diagram;
 use Janalis\Viz\Model\Family;
@@ -122,11 +123,10 @@ final class ConverterTest extends TestCase
 
     public function testAFamilyGoesDirectlyWhereTheLanguageHasItAndAsAGraphOtherwise(): void
     {
-        $writer = new MermaidWriter();
-
-        $this->assertSame(Route::Direct, Converter::route(Family::Graph, $writer));
-        $this->assertSame(Route::ViaGraph, Converter::route(Family::State, $writer));
-        $this->assertSame(Route::Unsupported, Converter::route(Family::Sequence, $writer));
+        $this->assertSame(Route::Direct, Converter::route(Family::Graph, new DotWriter()));
+        $this->assertSame(Route::Direct, Converter::route(Family::State, new MermaidWriter()));
+        $this->assertSame(Route::ViaGraph, Converter::route(Family::State, new DotWriter()));
+        $this->assertSame(Route::Unsupported, Converter::route(Family::Sequence, new DotWriter()));
     }
 
     public function testADiagramWithoutAGraphFormIsRefused(): void
@@ -142,7 +142,7 @@ final class ConverterTest extends TestCase
     {
         $diagram = self::diagram(Family::State, new Graph());
 
-        $this->assertSame("flowchart TB\n", new Converter()->write($diagram, SourceFormat::Mermaid));
+        $this->assertSame("digraph \"G\" {\n    rankdir=TB;\n    node [shape=box];\n}\n", new Converter()->write($diagram, SourceFormat::Dot));
     }
 
     public function testASequenceIsNeverLoweredToAGraph(): void

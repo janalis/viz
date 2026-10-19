@@ -33,11 +33,12 @@ final class LanguagesTest extends TestCase
         $languages = new Languages();
 
         foreach ([SourceFormat::Mermaid, SourceFormat::Dot] as $format) {
-            $this->assertSame([Family::Graph], $languages->reader($format)->families(), $format->label());
+            $this->assertContains(Family::Graph, $languages->reader($format)->families(), $format->label());
         }
         foreach (SourceFormat::cases() as $format) {
-            $this->assertSame([Family::Graph], $languages->writer($format)->families(), $format->label());
+            $this->assertContains(Family::Graph, $languages->writer($format)->families(), $format->label());
         }
+        $this->assertSame([Family::Graph], $languages->writer(SourceFormat::Dot)->families(), 'DOT has only the graph');
     }
 
     public function testALanguageWithoutAReaderIsRefused(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Mermaid\Source\MermaidGraphReader;
+use Janalis\Viz\Mermaid\Source\MermaidStateReader;
 use Janalis\Viz\Model\Diagram;
 use Janalis\Viz\Model\Family;
 use Janalis\Viz\Source\Reader;
@@ -16,7 +17,7 @@ final readonly class MermaidReader implements Reader
     #[\Override]
     public function families(): array
     {
-        return [Family::Graph];
+        return [Family::Graph, Family::State];
     }
 
     /**
@@ -31,6 +32,7 @@ final readonly class MermaidReader implements Reader
 
         return match ($kind) {
             'flowchart' => MermaidGraphReader::read($source),
+            'state' => MermaidStateReader::read($source),
             default => throw new UnsupportedConversion('A Mermaid '.$kind.' diagram cannot be read yet'),
         };
     }
