@@ -90,9 +90,11 @@ final readonly class DotEngine implements LayoutEngine
         $layers = new DotLayers($ranks, $sizes, $owner, $parents, \array_values($edges));
         $order = new DotOrdering($layers)->order();
         yield from $order;
-        $clusterLabels = \array_map(static fn ($cluster): array => [$cluster->minWidth, $cluster->labelHeight], $graph->clusters);
+        // Laid out top-down to be turned left to right, a cluster keeps its label's band on its left, which becomes its top.
+        $clusterLabels = \array_map(static fn ($cluster): array => $turned ? [0.0, 0.0] : [$cluster->minWidth, $cluster->labelHeight], $graph->clusters);
+        $bands = \array_map(static fn ($cluster): float => $turned ? $cluster->labelHeight : 0.0, $graph->clusters);
         $rankSeparation = $labelled ? $graph->spacing->rankGap / 2 : $graph->spacing->rankGap;
-        $position = new DotPosition($layers, $clusterLabels, $graph->spacing->nodeGap, $rankSeparation, $graph->spacing->padding);
+        $position = new DotPosition($layers, $clusterLabels, $graph->spacing->nodeGap, $rankSeparation, $graph->spacing->padding, $bands);
         $placing = $position->place();
         yield from $placing;
 

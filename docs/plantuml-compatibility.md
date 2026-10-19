@@ -27,8 +27,9 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | Diagram | Native |
 | --- | --- |
 | Class | yes, below |
+| Description (component, deployment, use case) | yes, below |
 | State | yes, below |
-| Sequence, description, activity | not yet: drawn by PlantUML |
+| Sequence, activity | not yet: drawn by PlantUML |
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
@@ -54,4 +55,14 @@ Each scope is laid out as svek lays it out: a composite state no transition cros
 | `state`, `state "Name" as S`, `state S as "Name"`, descriptions after `:` or as `S : text`; `<<choice>>`, `<<fork>>`, `<<join>>`, `<<start>>`, `<<end>>`, `<<history>>`, `<<history*>>`; `#colours` | `<<entryPoint>>`, `<<exitPoint>>`, pins and expansion nodes, `<<sdlreceive>>`; `frame`; names with a namespace |
 | Composite states with `{ … }` or `end state`, concurrent regions with `--` and `||` | Concurrent regions a transition crosses into |
 | Transitions with `[*]`, `[H]`, `[H*]`, `S[H]`, `==bar==`, `x` at the start and `o` at the end, directions, styles and labels; notes beside states, floating, and on transitions; `hide empty description`; `left to right direction` | `remove`, `restore`, URLs, maps and JSON |
+
+### Description diagrams
+
+Component, deployment and use case diagrams are laid out as svek lays them out, each element a box of its symbol's size — its text within the margins PlantUML's symbol keeps — and containers as clusters drawn with their own symbol, a package's or folder's title in its tab and any other's centred at its top. A name only links use becomes an actor in a diagram with actors or use cases, and an interface otherwise, as PlantUML settles it. They read into the shared use case model when they have actors or use cases, and into the shared graph otherwise.
+
+| Drawn natively | Left to PlantUML |
+| --- | --- |
+| `actor`, `usecase` (and their business forms with `/`), `component`, `interface`, `node`, `database`, `cloud`, `folder`, `file`, `artifact`, `card`, `rectangle`, `agent`, `frame`, `package`, `queue`, `stack`, `storage`, `collections`, `hexagon`, `label`, `action`, `process`, `person`, `boundary`, `control`, `entity`, `circle`; the short forms `[component]`, `(use case)`, `:actor:`, `() interface`; text over several lines in `[ … ]` or `as " … "`; stereotypes and colours | Ports, archimate, maps and JSON, sprites as symbols; a lone name on its own line, which PlantUML answers with its welcome page |
+| Containers of any of those symbols, nested, and `together` | Links to a container |
+| Links with their marks, directions, styles, labels and `<<stereotypes>>`; notes beside elements, floating and linked like elements, and on links | Middle circles on links |
 

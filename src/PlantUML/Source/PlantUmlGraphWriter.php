@@ -141,9 +141,10 @@ final class PlantUmlGraphWriter
         return $aliases[$edge->from].' '.$tail.'-'.$style.'-'.$head.' '.$aliases[$edge->to].$label;
     }
 
+    /** Text in quotes; an empty one as a space, since PlantUML refuses empty quotes there. */
     private static function quote(string $text): string
     {
-        return '"'.self::text($text).'"';
+        return '"'.('' === $text ? ' ' : self::text($text)).'"';
     }
 
     /** One line of text: quotes as entities, line breaks as PlantUML's `\n`. */

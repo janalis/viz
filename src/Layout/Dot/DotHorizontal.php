@@ -27,12 +27,16 @@ final class DotHorizontal
     private readonly int $rootLeft;
     private readonly int $rootRight;
 
-    /** @param list<float> $labelWidths each cluster's label width */
+    /**
+     * @param list<float> $labelWidths each cluster's label width
+     * @param list<float> $bands each cluster's label band on its left, for a layout turned left to right, where that side becomes its top
+     */
     public function __construct(
         private readonly DotLayers $layers,
         private readonly array $labelWidths,
         private readonly float $nodeSeparation,
         private readonly float $padding,
+        private readonly array $bands = [],
     ) {
         $nodes = \count($layers->rank) + (2 * \count($layers->parents));
         $this->rootLeft = $nodes;
@@ -98,7 +102,7 @@ final class DotHorizontal
             if (-1 === $cluster) {
                 continue;
             }
-            $this->edges[] = [$this->left($cluster), $node, self::length($this->layers->left[$node] + DotPosition::MARGIN), 0];
+            $this->edges[] = [$this->left($cluster), $node, self::length($this->layers->left[$node] + DotPosition::MARGIN + $this->band($cluster)), 0];
             $this->edges[] = [$node, $this->right($cluster), self::length($this->layers->right[$node] + DotPosition::MARGIN), 0];
         }
         foreach ($this->layers->parents as $cluster => $parent) {
@@ -108,7 +112,7 @@ final class DotHorizontal
             if (-1 === $parent) {
                 continue;
             }
-            $this->edges[] = [$this->left($parent), $this->left($cluster), self::length(DotPosition::MARGIN), 0];
+            $this->edges[] = [$this->left($parent), $this->left($cluster), self::length(DotPosition::MARGIN + $this->band($parent)), 0];
             $this->edges[] = [$this->right($cluster), $this->right($parent), self::length(DotPosition::MARGIN), 0];
         }
     }
@@ -155,6 +159,14 @@ final class DotHorizontal
         }
 
         return $outermost;
+    }
+
+    /** The room a cluster keeps on its left for its label, with a margin under it. */
+    private function band(int $cluster): float
+    {
+        $band = $this->bands[$cluster] ?? 0.0;
+
+        return $band > 0 ? $band + DotPosition::MARGIN : 0.0;
     }
 
     private function left(int $cluster): int

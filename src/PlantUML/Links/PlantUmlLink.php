@@ -23,6 +23,8 @@ final class PlantUmlLink
     public ?string $firstLabel = null;
     public ?string $secondLabel = null;
     public ?float $weight = null;
+    /** The stereotype written after the link, such as `include` in `A ..> B <<include>>`. */
+    public ?string $stereotype = null;
 
     /** @param int $length the dashes in the arrow, 1 for a link drawn across */
     public function __construct(
