@@ -28,7 +28,7 @@ Every model belongs to a family (`Model\Family`). A diagram reaches a language b
 | --- | --- |
 | Mermaid | graph (flowcharts), sequence, state, class, entity and use case, natively |
 | DOT | graph, natively: the whole language, with its rules for defaults, subgraphs, strict graphs and clusters, checked against dot itself |
-| PlantUML | none yet |
+| PlantUML | class, natively: the diagrams the native renderer reads (see [the compatibility notes](plantuml-compatibility.md)); others are refused |
 
 ## What each writer loses
 

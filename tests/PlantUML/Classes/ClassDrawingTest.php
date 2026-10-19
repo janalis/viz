@@ -1,0 +1,177 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Janalis\Viz\Tests\PlantUML\Classes;
+
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\Classes\ClassBox;
+use Janalis\Viz\PlantUML\Classes\ClassColors;
+use Janalis\Viz\PlantUML\Classes\ClassEntity;
+use Janalis\Viz\PlantUML\Classes\ClassPortions;
+use Janalis\Viz\PlantUML\PlantUmlPipeline;
+use Janalis\Viz\PlantUML\Style\StyleSheet;
+use Janalis\Viz\Render\Work;
+use PHPUnit\Framework\TestCase;
+
+final class ClassDrawingTest extends TestCase
+{
+    public function testAnEmptyClassIsAHeaderAndTwoEmptyCompartments(): void
+    {
+        $box = ClassBox::of(new ClassEntity('Dog', ['Dog']), StyleSheet::skin(), new ClassPortions([]));
+
+        // As PlantUML: a 32-point header around the circled character, two 8-point compartments.
+        $this->assertSame([32.0, 48.0], [$box->header, $box->height]);
+        $this->assertEqualsWithDelta(26 + (3 * Units::cell(14.0)) + 6, $box->width, 1e-9);
+        $texts = \array_values(\array_filter($box->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
+        $this->assertSame(['C', 'Dog'], \array_map(static fn (Mark $mark): string => $mark->text, $texts));
+    }
+
+    public function testHeadersCarryStereotypesTypeParametersAndTheSpotOfTheirKind(): void
+    {
+        $entity = new ClassEntity('Box', ['Box'], 'interface');
+        $entity->stereotypes = ['service'];
+        $entity->generic = 'T';
+        $box = ClassBox::of($entity, StyleSheet::skin(), new ClassPortions([]));
+
+        $texts = \array_values(\array_filter($box->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
+        $this->assertSame(['I', '«service»', 'Box', 'T'], \array_map(static fn (Mark $mark): string => $mark->text, $texts));
+        $this->assertGreaterThan(32.0, $box->header);
+        $other = new ClassEntity('Odd', ['Odd'], 'circle');
+        $this->assertSame(
+            'C',
+            \array_values(\array_filter(ClassBox::of($other, StyleSheet::skin(), new ClassPortions([]))->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind))[0]->text,
+        );
+    }
+
+    public function testMembersFallIntoCompartmentsWithTheirIcons(): void
+    {
+        $entity = new ClassEntity('A', ['A']);
+        $entity->body = ['- secret : int', '+ run()', '# guard()', '~ local : int', '{static} {method} counter', '{abstract} shape()', 'plain'];
+        $marks = ClassBox::of($entity, StyleSheet::skin(), new ClassPortions([]))->marks(0.0, 0.0);
+
+        $texts = \array_map(static fn (Mark $mark): string => $mark->text, \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)));
+        $this->assertSame(['C', 'A', 'secret : int', 'local : int', 'plain', 'run()', 'guard()', 'counter', 'shape()'], $texts);
+        $icons = \array_filter($marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 1.0 === $mark->strokeWidth && \count($mark->points) < 24);
+        $this->assertCount(4, $icons, 'one icon per member written with a visibility');
+        $this->assertCount(
+            1,
+            \array_filter(
+                $marks,
+                static fn (Mark $mark): bool => (
+                    MarkKind::Polyline === $mark->kind
+                    && \count($mark->points) === 2
+                    && 0.5 === $mark->strokeWidth
+                    && $mark->points[0][1] === $mark->points[1][1]
+                    && $mark->points[0][0] > 0.0
+                ),
+            ),
+            'a static member underlined',
+        );
+        $plain = ClassBox::of($entity, StyleSheet::skin(), new ClassPortions([]), iconSize: 0.0);
+        $this->assertLessThan(ClassBox::of($entity, StyleSheet::skin(), new ClassPortions([]))->width, $plain->width);
+    }
+
+    public function testSeparatorsKeepTheBodyInOrder(): void
+    {
+        $entity = new ClassEntity('A', ['A']);
+        $entity->body = ['first', '.. dotted ..', 'second', '==', 'third', '__ thick __', 'fourth', '-- plain --'];
+        $marks = ClassBox::of($entity, StyleSheet::skin(), new ClassPortions([]))->marks(0.0, 0.0);
+
+        $texts = \array_map(static fn (Mark $mark): string => $mark->text, \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)));
+        $this->assertSame(['C', 'A', 'first', 'dotted', 'second', 'third', 'thick', 'fourth', 'plain'], $texts);
+        $this->assertNotEmpty(\array_filter($marks, static fn (Mark $mark): bool => [1.0, 2.0] === $mark->dashes));
+    }
+
+    public function testHideAndShowTakeOutPartsAndClassifiers(): void
+    {
+        $entity = new ClassEntity('A', ['A'], 'enum');
+        $entity->stereotypes = ['x'];
+        $portions = new ClassPortions([
+            [false, null,    true,  'member'],
+            [false, 'enum',  false, 'circle'],
+            [false, '<<x>>', false, 'stereotype'],
+            [true,  'A',     false, 'method'],
+            [false, '<<y>>', false, 'field'],
+            [false, '"A"',   false, 'entity'],
+        ]);
+
+        $box = ClassBox::of($entity, StyleSheet::skin(), $portions);
+        $this->assertSame(8.0, $box->height - $box->header, 'only the shown, empty methods compartment');
+        $this->assertSame(Units::line(14.0) + 10, $box->header, 'no circle, no stereotype');
+        $this->assertFalse($portions->shown($entity, 'circle'));
+        $this->assertTrue($portions->shown($entity, 'field', 3));
+        $this->assertFalse($portions->shown($entity, 'field', 0));
+        $this->assertTrue($portions->hidden($entity, linked: true));
+        $this->assertTrue(new ClassPortions([[false, '@unlinked', false, 'entity']])->hidden($entity, linked: false));
+        $this->assertFalse(new ClassPortions([
+            [false, '@unlinked', false, 'entity'],
+            [false, 'B',         false, 'member'],
+        ])->hidden($entity, linked: true));
+    }
+
+    public function testColourSpecsReadTheirParts(): void
+    {
+        $this->assertSame('#ffc0cb', ClassColors::back('#pink'));
+        $this->assertSame('#ff0000', ClassColors::line('#back:pink;line:red;text:blue'));
+        $this->assertSame('#0000ff', ClassColors::text('#back:pink;line:red;text:blue'));
+        $this->assertNull(ClassColors::line('#pink'));
+        $this->assertNull(ClassColors::back(null));
+    }
+
+    public function testWholeDiagramsDrawPackagesLinksLabelsAndNotes(): void
+    {
+        $drawing = self::draw(<<<'PUML'
+            skinparam nodesep 50
+            skinparam ranksep 80
+            package zoo <<cloud>> #lightblue {
+              class Keeper
+              together {
+                class Mate
+              }
+            }
+            class Animal
+            class Dog #back:pink;line:red
+            Animal <|-- Dog
+            Dog "1" *-- "many" Leg : has >
+            Dog -up-> Ball : < plays
+            Keeper --> Animal : feeds
+            note on link : daily
+            Dog -[#blue,dashed,thickness=2]-> Bowl
+            Dog -[dotted]- Bone
+            Dog -[hidden]- Cage
+            Dog ---> Ghost
+            hide Ghost
+            note left of Dog : good boy
+            note bottom of Animal : base
+            note "free" as Free
+            title Zoo
+            PUML);
+
+        $texts = \array_map(static fn (Mark $mark): string => $mark->text, \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)));
+        foreach (['Zoo', 'zoo', 'has', '1', 'many', 'plays', 'feeds', 'daily', 'good boy', 'base', 'free', 'Keeper', 'Mate'] as $text) {
+            $this->assertContains($text, $texts);
+        }
+        $this->assertNotContains('Ghost', $texts);
+        $this->assertNotEmpty(\array_filter($drawing->marks, static fn (Mark $mark): bool => '#ffc0cb' === $mark->fill), 'the coloured class');
+        $this->assertNotEmpty(\array_filter($drawing->marks, static fn (Mark $mark): bool => '#add8e6' === $mark->fill), 'the coloured package');
+        $this->assertNotEmpty(\array_filter($drawing->marks, static fn (Mark $mark): bool => '#0000ff' === $mark->stroke && [7.0 * Units::POINT, 7.0 * Units::POINT] === $mark->dashes));
+        $this->assertSame('#ffffff', $drawing->background);
+    }
+
+    public function testCustomIconSizesAndBackgroundsAreHonoured(): void
+    {
+        $drawing = self::draw("skinparam classAttributeIconSize 0\nskinparam backgroundColor transparent\nclass A {\n  - x\n}\nA --> B");
+
+        $this->assertNull($drawing->background);
+        $this->assertContains('x', \array_map(static fn (Mark $mark): string => $mark->text, $drawing->marks));
+    }
+
+    private static function draw(string $lines): Drawing
+    {
+        return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+    }
+}

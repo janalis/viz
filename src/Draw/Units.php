@@ -26,4 +26,28 @@ final class Units
     {
         return (2 * self::fontScale($points)) / self::POINT;
     }
+
+    /**
+     * A mark laid out in one unit, such as points, scaled into another: its points, its
+     * strokes and dashes, and a text mark's size.
+     */
+    public static function scaled(Mark $mark, float $scale): Mark
+    {
+        return new Mark(
+            $mark->kind,
+            \array_map(static fn (array $point): array => [$point[0] * $scale, $point[1] * $scale], $mark->points),
+            $mark->text,
+            $mark->stroke,
+            $mark->fill,
+            $mark->dashed,
+            $mark->strokeWidth * $scale,
+            $mark->font,
+            MarkKind::Text === $mark->kind ? $mark->fontScale * $scale : $mark->fontScale,
+            $mark->fillOpacity,
+            $mark->opacity,
+            $mark->angle,
+            $mark->gradient,
+            null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
+        );
+    }
 }

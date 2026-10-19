@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML;
 
+use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\Source\Unsupported;
 
-/** One kind of PlantUML diagram read natively: it takes a block's lines when every one is its own. */
+/** One kind of PlantUML diagram read natively, from the commands its lines matched. */
 interface PlantUmlFamily
 {
     /**
-     * The diagram these lines make, or null when a line is not this family's, so the next
-     * family may try them.
-     *
-     * @throws Unsupported when the lines are this family's but use something not drawn natively
+     * @param list<PlantUmlCommand> $commands
+     * @throws Unsupported when a command is not drawn natively
      */
-    public function read(PlantUmlDocument $document): ?PlantUmlDiagram;
+    public function read(PlantUmlDocument $document, array $commands): PlantUmlDiagram;
 }

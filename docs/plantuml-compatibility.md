@@ -22,8 +22,22 @@ Styles cascade as PlantUML's do: a declaration applies to an element when the el
 
 ## Diagrams
 
-No diagram family is drawn natively yet; the claims below send diagrams no native family reads to PlantUML before any family tries them.
+PlantUML tries its diagram factories in order — sequence, class, the legacy activity syntax, description, state, then the new activity syntax — and the first whose commands take every line reads the diagram. The native renderer does the same with the commands of each factory, exported from the MIT jar by `tools/PlantUmlCommands.java` into `resources/plantuml/commands.json`, so it picks the factory PlantUML picks. A factory without a native family leaves its diagrams to PlantUML. Kinds of diagram PlantUML reads after these (salt, network, timing, Gantt, ditaa, formulas, embedded DOT, its information pages) are left to it too.
 
-| Claimed for PlantUML |
-| --- |
-| Salt wireframes, network diagrams, embedded DOT, ditaa, formulas, timing diagrams, Gantt charts, the legacy `(*)` activity syntax, and PlantUML's information pages |
+| Diagram | Native |
+| --- | --- |
+| Class | yes, below |
+| Sequence, description, state, activity | not yet: drawn by PlantUML |
+
+### Class diagrams
+
+Laid out as PlantUML's svek lays them out, by the native dot engine: each classifier and note a box of its drawn size, a link's dashes less one its minimum length (`->` across, `-->` down, `-up->`, `-left->` and the like turned round), a label a box of its own, packages as clusters; 35 points between nodes and 60 between ranks unless `skinparam nodesep` or `ranksep` say.
+
+| Drawn natively | Left to PlantUML |
+| --- | --- |
+| `class`, `abstract`, `interface`, `enum`, `annotation`, `entity`, `protocol`, `struct`, `exception`, `metaclass`, `stereotype`, `dataclass`, `record`, `circle`, `diamond`; `as`, `<T>`, `<<stereotypes>>`, `#colours`, `extends`, `implements`, bodies and `Name : member` | `object`, `map`, `json`; names with a namespace (`a.B`); lollipops, qualifiers, middle circles, `<>` associations |
+| Members with their visibility icons (or as text with `skinparam classAttributeIconSize 0`), `{static}`, `{abstract}`, `{field}`, `{method}`, separators `--`, `..`, `==`, `__` with titles | URLs, tips, `remove`/`restore`, `set separator`, `allowmixing`, `layout_new_line` |
+| Links with every end mark, dashed and styled bodies (`[#red,dashed,bold,dotted,hidden,norank,thickness=n]`), labels with `<`/`>`, labels at each end, `@weight` | `constraint on links` |
+| Packages and namespaces, `together`, notes (floating, beside a classifier, on a link), `hide`/`show` of members, fields, methods, circles, stereotypes and classifiers, `left to right direction` | Styles by stereotype on links |
+
+Text is set in the bundled monospace font, so boxes are wider than PlantUML's, and positions follow the native dot engine, whose tie-breaking can order a rank differently from `dot`.

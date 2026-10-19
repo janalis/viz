@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
-// Imports PlantUML's default styles and its skinparam-to-style table from the sources of its
-// MIT distribution (plantuml-mit-<version>-sources.jar, unzipped):
-//   php tools/import-plantuml.php <unzipped sources> <version>
-// It copies skin/plantuml.skin and skin/rose.skin to resources/plantuml/ and writes
-// resources/plantuml/skinparams.json from FromSkinparamToStyle's table.
+// Imports PlantUML's default styles, its skinparam-to-style table and its diagrams' commands
+// from its MIT distribution: the sources (plantuml-mit-<version>-sources.jar, unzipped) and
+// the jar itself, with a JDK to run tools/PlantUmlCommands.java against it:
+//   php tools/import-plantuml.php <unzipped sources> <version> <plantuml-mit jar>
+// It copies skin/plantuml.skin and skin/rose.skin to resources/plantuml/, writes
+// resources/plantuml/skinparams.json from FromSkinparamToStyle's table, and
+// resources/plantuml/commands.json from the factories' command lists.
 
 $sources = \rtrim($argv[1] ?? '', '/');
 $version = $argv[2] ?? '';
+$jar = $argv[3] ?? '';
 $table = $sources.'/net/sourceforge/plantuml/style/FromSkinparamToStyle.java';
-if ('' === $version || !\is_file($table) || !\is_file($sources.'/skin/plantuml.skin')) {
-    \fwrite(\STDERR, "Usage: php tools/import-plantuml.php <unzipped plantuml-mit sources> <version>\n");
+if ('' === $version || !\is_file($table) || !\is_file($sources.'/skin/plantuml.skin') || !\is_file($jar)) {
+    \fwrite(\STDERR, "Usage: php tools/import-plantuml.php <unzipped plantuml-mit sources> <version> <plantuml-mit jar>\n");
     exit(1);
 }
 $target = __DIR__.'/../resources/plantuml';
@@ -63,3 +66,31 @@ foreach ($calls as [, $call, $arguments]) {
 }
 \file_put_contents($target.'/skinparams.json', \json_encode(['version' => $version, 'skinparams' => $knowledge], \JSON_UNESCAPED_SLASHES)."\n");
 \fwrite(\STDOUT, \sprintf("Imported PlantUML %s: %d skinparams\n", $version, \count($knowledge)));
+
+$classes = \sys_get_temp_dir().'/viz-plantuml-commands-'.\getmypid();
+@\mkdir($classes, 0o755, true);
+$run = static function (string $command): string {
+    $output = [];
+    \exec($command.' 2>&1', $output, $status);
+    if (0 !== $status) {
+        \fwrite(\STDERR, \implode("\n", $output)."\n");
+        exit(1);
+    }
+
+    return \implode("\n", $output);
+};
+$run(\sprintf('javac -cp %s -d %s %s', \escapeshellarg($jar), \escapeshellarg($classes), \escapeshellarg(__DIR__.'/PlantUmlCommands.java')));
+$factories = [
+    'net.sourceforge.plantuml.sequencediagram.SequenceDiagramFactory',
+    'net.sourceforge.plantuml.classdiagram.ClassDiagramFactory',
+    'net.sourceforge.plantuml.descdiagram.DescriptionDiagramFactory',
+    'net.sourceforge.plantuml.statediagram.StateDiagramFactory',
+    'net.sourceforge.plantuml.activitydiagram3.ActivityDiagramFactory3',
+];
+$commands = \json_decode($run(\sprintf('java -cp %s PlantUmlCommands %s', \escapeshellarg($jar.\PATH_SEPARATOR.$classes), \implode(' ', $factories))), associative: true, flags: \JSON_THROW_ON_ERROR);
+$families = [];
+foreach ($commands as $factory => $list) {
+    $families[\lcfirst(\str_replace('DiagramFactory', '', \substr($factory, (int) \strrpos($factory, '.') + 1)))] = $list;
+}
+\file_put_contents($target.'/commands.json', \json_encode(['version' => $version, 'families' => $families], \JSON_UNESCAPED_SLASHES)."\n");
+\fwrite(\STDOUT, \sprintf("Imported the commands of %d diagram families\n", \count($families)));

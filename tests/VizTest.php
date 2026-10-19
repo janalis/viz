@@ -93,11 +93,13 @@ final class VizTest extends TestCase
         }
     }
 
-    public function testALanguageWithoutANativeRendererHasNoneToForce(): void
+    public function testANativeRendererThatRefusesHasNothingToFallBackOnWhenForced(): void
     {
-        $this->expectExceptionObject(new RenderFailure('No renderer can produce Svg'));
+        $this->assertStringContainsString('<svg', new Viz(engine: Engine::Native)->render("@startuml\nclass A\n@enduml", SourceFormat::PlantUml, Format::Svg)->bytes);
+        $this->expectException(RenderFailure::class);
+        $this->expectExceptionMessage('does not draw sequence diagrams');
 
-        new Viz(engine: Engine::Native)->render('@startuml', SourceFormat::PlantUml, Format::Svg);
+        new Viz(engine: Engine::Native)->render("@startuml\nAlice -> Bob\n@enduml", SourceFormat::PlantUml, Format::Svg);
     }
 
     public function testDotDrawsNativelyAndFallsBackToDotForWhatItLeaves(): void

@@ -12,7 +12,6 @@ use Janalis\Viz\Model\Family;
 use Janalis\Viz\PlantUML\PlantUmlWriter;
 use Janalis\Viz\Source\Languages;
 use Janalis\Viz\Source\SourceFormat;
-use Janalis\Viz\Source\UnsupportedConversion;
 use PHPUnit\Framework\TestCase;
 
 final class LanguagesTest extends TestCase
@@ -41,11 +40,14 @@ final class LanguagesTest extends TestCase
         $this->assertSame([Family::Graph], $languages->writer(SourceFormat::Dot)->families(), 'DOT has only the graph');
     }
 
-    public function testALanguageWithoutAReaderIsRefused(): void
+    public function testPlantUmlIsReadForTheFamiliesItDrawsNatively(): void
     {
-        $this->expectExceptionObject(new UnsupportedConversion('PlantUML cannot be read yet: only written'));
-
-        new Languages()->reader(SourceFormat::PlantUml);
+        $this->assertSame(
+            [Family::Classes],
+            new Languages()
+                ->reader(SourceFormat::PlantUml)
+                ->families(),
+        );
     }
 
     public function testEachLanguageIsNamedAsItsDocumentationWritesIt(): void

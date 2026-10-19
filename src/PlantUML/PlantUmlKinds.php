@@ -7,9 +7,9 @@ namespace Janalis\Viz\PlantUML;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 
 /**
- * The kinds of diagram a `@startuml` block may hold that no native family reads, known by
- * the lines PlantUML recognises them by, so they go to PlantUML rather than to a native
- * family that might misread them.
+ * The kinds of diagram a `@startuml` block may hold that no factory here reads, known by the
+ * lines PlantUML recognises them by: the legacy activity syntax, whose factory PlantUML tries
+ * after class diagrams and before description ones, and the kinds it tries after all of them.
  */
 final class PlantUmlKinds
 {
@@ -24,11 +24,22 @@ final class PlantUmlKinds
         '/^@[+\d]/' => 'timing diagrams',
         '/^\[[^\]]+\][\s\x{a0}]+(?:lasts|requires|starts|ends|happens|is[\s\x{a0}]+colored|displays)\b/iu' => 'Gantt charts',
         '/^project[\s\x{a0}]+starts\b/iu' => 'Gantt charts',
-        '/\(\*(?:top)?\)/i' => 'the legacy activity syntax',
         '/^(?:license|version|help|listfonts|listopeniconic|listsprites?|stdlib|colors|donors|keywords?)\b/i' => 'PlantUML\'s information pages',
     ];
 
-    /** What the block holds that no native family reads, or null. */
+    /** Whether the block uses the legacy activity syntax, `(*)` for its start and end. */
+    public static function legacyActivity(PlantUmlDocument $document): bool
+    {
+        foreach ($document->lines as $line) {
+            if (1 === \preg_match('/\(\*(?:top)?\)/i', $line)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** What the block holds that PlantUML's later factories read, or null. */
     public static function claimed(PlantUmlDocument $document): ?string
     {
         foreach ($document->lines as $line) {

@@ -10,6 +10,7 @@ use Janalis\Viz\GraphViz\DotPipeline;
 use Janalis\Viz\Mermaid\MermaidCommand;
 use Janalis\Viz\Mermaid\MermaidPipeline;
 use Janalis\Viz\PlantUML\PlantUmlCommand;
+use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\Process\Cli;
 use Janalis\Viz\Process\CommandRenderer;
 use Janalis\Viz\Process\Tool;
@@ -43,11 +44,9 @@ final readonly class Viz
 
     public function renderer(SourceFormat $format): Renderer
     {
-        $native = $this->native($format);
-
         return new FallbackRenderer(match ($this->engine) {
-            Engine::Auto => null === $native ? [$this->cli($format)] : [$native, $this->cli($format)],
-            Engine::Native => null === $native ? [] : [$native],
+            Engine::Auto => [$this->native($format), $this->cli($format)],
+            Engine::Native => [$this->native($format)],
             Engine::Cli => [$this->cli($format)],
         });
     }
@@ -75,12 +74,12 @@ final readonly class Viz
         return new Converter()->convert($source, $from, $to);
     }
 
-    private function native(SourceFormat $format): ?Renderer
+    private function native(SourceFormat $format): Renderer
     {
         return match ($format) {
             SourceFormat::Mermaid => new NativeRenderer(new MermaidPipeline()),
             SourceFormat::Dot => new NativeRenderer(new DotPipeline()),
-            SourceFormat::PlantUml => null,
+            SourceFormat::PlantUml => new NativeRenderer(PlantUmlPipeline::native()),
         };
     }
 

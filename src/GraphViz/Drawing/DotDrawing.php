@@ -7,6 +7,7 @@ namespace Janalis\Viz\GraphViz\Drawing;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Route;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\GraphViz\DotLayoutInput;
 use Janalis\Viz\GraphViz\Model\DotEdge;
@@ -71,7 +72,7 @@ final class DotDrawing
         return new Drawing(
             \max(1.0, $this->placement->graph->width * $scale),
             \max(1.0, $height * $scale),
-            \array_map(static fn (Mark $mark): Mark => self::units($mark, $scale), $this->marks),
+            \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $this->marks),
             'none' === $background ? null : $background,
         );
     }
@@ -131,7 +132,7 @@ final class DotDrawing
         $head = $this->placement->endpoints[$edge->head];
         $route = $this->placement->routes[$index] ?? null;
         // Only a loop has no route.
-        $points = null === $route ? self::loop($tail) : self::smooth($route);
+        $points = null === $route ? self::loop($tail) : Route::smooth($route);
         $points = $this->clip($points, $edge->tail, $tail, $edge->head, $head);
         $color = DotColors::resolve($edge->attribute('color'), '#000000');
         $penWidth = self::penWidth($edge->attribute('penwidth'), $styles);
@@ -143,7 +144,7 @@ final class DotDrawing
             }
             $arrow = DotArrow::parse($edge->attribute('arrow'.$end, 'normal'));
             $points = 'head' === $end ? $points : \array_reverse($points);
-            [$points, $tip, $along] = self::shorten($points, $arrow->length($size));
+            [$points, $tip, $along] = Route::shorten($points, $arrow->length($size));
             \array_push($this->marks, ...$arrow->marks($tip, $along, $size, $color, $background, $penWidth));
             $points = 'head' === $end ? $points : \array_reverse($points);
         }
@@ -229,39 +230,6 @@ final class DotDrawing
         }
     }
 
-    /**
-     * A route smoothed into a curve through its points, as a polyline.
-     *
-     * @param list<array{float, float}> $route
-     * @return list<array{float, float}>
-     */
-    private static function smooth(array $route): array
-    {
-        if (\count($route) < 3) {
-            return $route;
-        }
-        $points = [$route[0]];
-        $count = \count($route);
-        for ($index = 0; $index < ($count - 1); ++$index) {
-            $p0 = $route[\max(0, $index - 1)];
-            [$p1, $p2] = [$route[$index], $route[$index + 1]];
-            $p3 = $route[\min($count - 1, $index + 2)];
-            // A Catmull-Rom segment between p1 and p2, as a cubic Bézier, flattened.
-            $c1 = [$p1[0] + (($p2[0] - $p0[0]) / 6), $p1[1] + (($p2[1] - $p0[1]) / 6)];
-            $c2 = [$p2[0] - (($p3[0] - $p1[0]) / 6), $p2[1] - (($p3[1] - $p1[1]) / 6)];
-            for ($step = 1; $step <= 8; ++$step) {
-                $t = $step / 8;
-                $u = 1 - $t;
-                $points[] = [
-                    (($u ** 3) * $p1[0]) + (3 * $u * $u * $t * $c1[0]) + (3 * $u * $t * $t * $c2[0]) + (($t ** 3) * $p2[0]),
-                    (($u ** 3) * $p1[1]) + (3 * $u * $u * $t * $c1[1]) + (3 * $u * $t * $t * $c2[1]) + (($t ** 3) * $p2[1]),
-                ];
-            }
-        }
-
-        return $points;
-    }
-
     /** @param array{float, float} $point */
     private function inside(string $name, GraphNode $node, array $point): bool
     {
@@ -289,7 +257,7 @@ final class DotDrawing
         $right = $node->x + ($node->w / 2);
         $reach = \max(DotLayers::LOOP, $node->h / 2);
 
-        return self::smooth([
+        return Route::smooth([
             [$node->x, $node->y - ($node->h / 4)],
             [$right + ($reach / 2), $node->y - ($node->h / 2)],
             [$right + $reach, $node->y],
@@ -335,36 +303,6 @@ final class DotDrawing
         }
 
         return [$out, ...\array_slice($points, $index)];
-    }
-
-    /**
-     * Shortens a path's end by an arrowhead's length: the path, the arrow's tip, and its unit direction.
-     *
-     * @param list<array{float, float}> $points
-     * @return array{list<array{float, float}>, array{float, float}, array{float, float}}
-     */
-    private static function shorten(array $points, float $length): array
-    {
-        $tip = $points[\count($points) - 1];
-        $remaining = $length;
-        $kept = $points;
-        while (\count($kept) >= 2) {
-            $end = $kept[\count($kept) - 1];
-            $before = $kept[\count($kept) - 2];
-            $segment = \hypot($end[0] - $before[0], $end[1] - $before[1]);
-            if ($segment >= $remaining) {
-                $share = $segment > 0 ? $remaining / $segment : 0.0;
-                $kept[\count($kept) - 1] = [$end[0] + (($before[0] - $end[0]) * $share), $end[1] + (($before[1] - $end[1]) * $share)];
-                break;
-            }
-            $remaining -= $segment;
-            \array_pop($kept);
-        }
-        $base = $kept[\count($kept) - 1];
-        $distance = \hypot($tip[0] - $base[0], $tip[1] - $base[1]);
-        $along = $distance > 0 ? [($tip[0] - $base[0]) / $distance, ($tip[1] - $base[1]) / $distance] : [0.0, 1.0];
-
-        return [\count($kept) >= 2 ? $kept : [$base, $base], $tip, $along];
     }
 
     /**
@@ -439,26 +377,5 @@ final class DotDrawing
         $fit = \min($limitWidth / $width, $limitHeight / $height);
 
         return \str_ends_with($size, '!') ? $fit : \min(1.0, $fit);
-    }
-
-    /** A mark in points as a mark in drawing units, scaled. */
-    private static function units(Mark $mark, float $scale): Mark
-    {
-        return new Mark(
-            $mark->kind,
-            \array_map(static fn (array $point): array => [$point[0] * $scale, $point[1] * $scale], $mark->points),
-            $mark->text,
-            $mark->stroke,
-            $mark->fill,
-            $mark->dashed,
-            $mark->strokeWidth * $scale,
-            $mark->font,
-            MarkKind::Text === $mark->kind ? $mark->fontScale * $scale : $mark->fontScale,
-            $mark->fillOpacity,
-            $mark->opacity,
-            $mark->angle,
-            $mark->gradient,
-            null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
-        );
     }
 }

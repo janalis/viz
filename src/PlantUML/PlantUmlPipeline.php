@@ -5,21 +5,33 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML;
 
 use Janalis\Viz\Draw\Pipeline;
+use Janalis\Viz\PlantUML\Classes\ClassFamily;
+use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
 use Janalis\Viz\Source\Unsupported;
 
 /**
  * PlantUML drawn natively: the block read as PlantUML reads it before any diagram does,
- * then each native family tried in PlantUML's order, the first to take every line drawing
- * it. A kind of diagram no native family reads is left to PlantUML.
+ * then PlantUML's diagram factories tried in its order, by their commands, the first whose
+ * commands take every line choosing the diagram. A native family draws it; a factory without
+ * one leaves it to PlantUML, as does a kind of diagram no factory here reads.
  */
 final readonly class PlantUmlPipeline implements Pipeline
 {
-    /** @param list<PlantUmlFamily> $families in the order PlantUML tries them */
+    /** PlantUML's factories, in the order it tries them, by the name of their commands, and what their diagrams are called. */
+    public const array FACTORIES = ['sequence' => 'sequence', 'class' => 'class', 'description' => 'description', 'state' => 'state', 'activity3' => 'activity'];
+
+    /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
     public function __construct(
         private array $families = [],
     ) {}
+
+    /** The pipeline with every family drawn natively. */
+    public static function native(): self
+    {
+        return new self(['class' => new ClassFamily()]);
+    }
 
     #[\Override]
     public function drawing(string $source): \Generator
@@ -34,17 +46,24 @@ final readonly class PlantUmlPipeline implements Pipeline
     public function diagram(string $source): PlantUmlDiagram
     {
         $document = PlantUmlDocument::read(PlantUmlSource::parse($source));
-        $claimed = PlantUmlKinds::claimed($document);
-        if (null !== $claimed) {
-            throw new Unsupported('The native PlantUML renderer does not draw '.$claimed);
-        }
-        foreach ($this->families as $family) {
-            $diagram = $family->read($document);
-            if (null !== $diagram) {
-                return $diagram;
+        foreach (self::FACTORIES as $factory => $name) {
+            if ('description' === $factory && PlantUmlKinds::legacyActivity($document)) {
+                throw new Unsupported('The native PlantUML renderer does not draw the legacy activity syntax');
             }
+            $commands = PlantUmlCommands::family($factory)->match($document->lines);
+            if (null === $commands) {
+                continue;
+            }
+            $family = $this->families[$factory] ?? null;
+            if (null === $family) {
+                throw new Unsupported('The native PlantUML renderer does not draw '.$name.' diagrams');
+            }
+
+            return $family->read($document, $commands);
         }
 
-        throw new Unsupported('No native PlantUML diagram reads this source');
+        $claimed = PlantUmlKinds::claimed($document);
+
+        throw new Unsupported(null === $claimed ? 'No PlantUML diagram reads this source' : 'The native PlantUML renderer does not draw '.$claimed);
     }
 }
