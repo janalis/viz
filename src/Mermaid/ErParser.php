@@ -78,6 +78,7 @@ final class ErParser
             $left = self::card($match['left']);
             $right = self::card($match['right']);
             $this->diagram->cardinalities[] = ['left' => $left, 'right' => $right];
+            $this->diagram->roles[] = self::text($match['role']);
             $label = $left.' : '.$right.' · '.self::text($match['role']);
             $this->diagram->graph->edge($fromId, $toId, $label, \in_array(\strtolower($match['ident']), ['--', 'to'], strict: true) ? '--' : '-.-', $statement);
 

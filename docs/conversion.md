@@ -19,14 +19,14 @@ Every model belongs to a family (`Model\Family`). A diagram reaches a language b
 | class | direct | via graph | direct |
 | state | direct | via graph | direct |
 | activity | via graph | via graph | via graph |
-| entity | via graph | via graph | via graph |
+| entity | direct | via graph | direct |
 | usecase | via graph | via graph | via graph |
 
 ## Readers
 
 | Language | Families read |
 | --- | --- |
-| Mermaid | graph (flowcharts), state and class, natively |
+| Mermaid | graph (flowcharts), state, class and entity, natively |
 | DOT | graph, through `dot -Tjson0`, which resolves the whole language |
 | PlantUML | none yet |
 
@@ -46,6 +46,12 @@ Each language lacks something the others have. Where it does, the writer degrade
 - **Mermaid** writes each kind other than a plain class as its annotation, such as `<<interface>>` or `<<enumeration>>`, and reads those annotations back as kinds. It has no cross at a relation's end, which is dropped. Classes, styles, clicks and links are not read.
 - **PlantUML** lays out only top-down or left-to-right. It has no lollipop at a relation's end, which is dropped. An id it would misread is renamed `c0`, `c1` and so on, keeping its name as the label.
 - **DOT** draws the graph: each classifier a record of its name, fields and methods, packages as clusters, relations marked at both ends.
+
+### Entity
+
+- **Mermaid** writes an entity's label as its alias and groups as subgraphs; it reads its `u` cardinality as exactly one. Styles and classes are not read.
+- **PlantUML** writes entities in information-engineering notation, keys as stereotypes and groups as packages. It lays out only top-down or left-to-right, and renames an id it would misread to `e0`, `e1` and so on.
+- **DOT** draws the graph: each entity a record of its attributes, each relationship labelled with both cardinalities.
 
 ### State
 

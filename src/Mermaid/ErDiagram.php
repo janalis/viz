@@ -11,6 +11,8 @@ final class ErDiagram
     public readonly MermaidNodeStyles $styles;
     /** @var list<array{left: string, right: string}> */
     public array $cardinalities = [];
+    /** @var list<string> each relationship's role, as written */
+    public array $roles = [];
     /** @var array<array-key, string> */
     public array $aliases = [];
     /** @var array<array-key, list<array{text: string, origin: int, cells: list<string>}>> */
