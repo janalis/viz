@@ -16,6 +16,7 @@ final readonly class LayoutGraph
      * @param list<LayoutNode>    $nodes
      * @param list<LayoutEdge>    $edges
      * @param list<LayoutCluster> $clusters every cluster, each after its parent
+     * @param list<LayoutRankSet> $rankSets nodes whose ranks are tied together
      */
     public function __construct(
         public array $nodes,
@@ -29,5 +30,6 @@ final readonly class LayoutGraph
         public ?Direction $undeclared = null,
         /** The gap between a cluster's label and its content. */
         public float $titleGap = 0.0,
+        public array $rankSets = [],
     ) {}
 }

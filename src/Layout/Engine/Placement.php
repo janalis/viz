@@ -15,11 +15,13 @@ final readonly class Placement
      * @param array<array-key, GraphNode>                     $endpoints  every node and cluster by id
      * @param array<array-key, Direction>                     $directions each cluster's direction, the top level's under ''
      * @param array<int, list<array{float, float}>>           $routes     waypoints by edge index, for edges that span ranks
+     * @param array<int, array{float, float}>                 $labels     where each edge's label centres, by edge index, where the engine placed it
      */
     public function __construct(
         public GraphLayout $graph,
         public array $endpoints,
         public array $directions = [],
         public array $routes = [],
+        public array $labels = [],
     ) {}
 }

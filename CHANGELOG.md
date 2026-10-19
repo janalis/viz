@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces.
 
+- A native dot layout engine (`Layout\Dot\DotEngine`), written from Gansner et al.'s paper without Graphviz's source: network-simplex ranking with clusters and rank sets, virtual nodes, median and transposition ordering, network-simplex coordinates. The neutral layout input gains edge weight, constraint and label size, and rank sets. [docs/graphviz-compatibility.md](docs/graphviz-compatibility.md) tracks how closely it follows dot.
 - DOT is read natively, with no `dot` installed: a lexer and parser for the whole language (`GraphViz\Language`) and a resolved model (`GraphViz\Model`) that follows dot's rules for defaults, subgraphs, strict graphs and clusters, checked against dot itself on random graphs. `GraphViz\DotReader` uses it; `GraphViz\Source\DotGraphReader` still reads `dot -Tjson0`.
 - A shared state model (`Model\State`): states nested in composite states and concurrent regions, pseudostates, transitions and notes. Mermaid state diagrams read into it and are written from it; PlantUML writes it; DOT draws it as a graph.
 - A shared class model (`Model\Classes`): classifiers of each kind with parsed members, relations marked at both ends with their labels, packages and notes. Mermaid class diagrams read into it and are written from it; PlantUML writes it; DOT draws each classifier as a record.
