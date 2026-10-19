@@ -1,0 +1,225 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Janalis\Viz\PlantUML\Language;
+
+use Janalis\Viz\PlantUML\Style\StyleSheet;
+use Janalis\Viz\Source\Unsupported;
+
+/** Reads the commands every PlantUML diagram shares out of a block's lines; see {@see PlantUmlDocument}. */
+final class PlantUmlDocumentReader
+{
+    /** Shared commands the native renderer leaves to PlantUML. */
+    private const string LEFT = '/^(?:sprite\b|mainframe\b|newpage\b|rotate$|page\s|minwidth\b|skinparamlocked\b|assume\s+transparent|<style>\s*@import|\$\w+\s*=)/i';
+
+    private int $at = 0;
+    private StyleSheet $styles;
+    /** @var array<string, string> */
+    private array $params = [];
+    /** @var array<string, PlantUmlCaption> */
+    private array $captions = [];
+    private float $scale = 1.0;
+    /** @var list<string> */
+    private array $kept = [];
+
+    /** @param list<string> $lines */
+    public function __construct(
+        private readonly array $lines,
+    ) {
+        $this->styles = StyleSheet::skin();
+    }
+
+    /** @param array<string, string> $pragmas */
+    public function read(array $pragmas): PlantUmlDocument
+    {
+        $count = \count($this->lines);
+        while ($this->at < $count) {
+            $line = $this->lines[$this->at++];
+            $trimmed = \trim($line);
+            if (1 === \preg_match(self::LEFT, $trimmed)) {
+                throw new Unsupported('The native PlantUML renderer leaves '.\explode(separator: ' ', string: $trimmed, limit: 2)[0].' to PlantUML');
+            }
+            if (!$this->style($trimmed) && !$this->skin($trimmed) && !$this->caption($trimmed) && !$this->scaled($trimmed)) {
+                $this->kept[] = $line;
+            }
+        }
+
+        return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas);
+    }
+
+    /** `<style>` sheets, on one line or up to `</style>`. */
+    private function style(string $line): bool
+    {
+        $match = [];
+        if (1 === \preg_match('/^<style>(.*)<\/style>$/i', $line, $match)) {
+            $this->styles = $this->styles->with($match[1]);
+
+            return true;
+        }
+        if (1 !== \preg_match('/^<style>$/i', $line)) {
+            return false;
+        }
+        $this->styles = $this->styles->with(\implode("\n", $this->until('/^<\/?style>$/i')));
+
+        return true;
+    }
+
+    /** `skin`, `skinparam name value`, and `skinparam [name] {` blocks whose names prefix the ones inside. */
+    private function skin(string $line): bool
+    {
+        $match = [];
+        if (1 === \preg_match('/^skin[\s\x{a0}]+([\w.]+)$/iu', $line, $match)) {
+            if (!\in_array(\strtolower($match[1]), ['rose', 'plantuml'], strict: true)) {
+                throw new Unsupported('The native PlantUML renderer does not have the '.$match[1].' skin');
+            }
+            $this->styles = StyleSheet::skin($match[1]);
+
+            return true;
+        }
+        if (1 === \preg_match('/^skinparam[\s\x{a0}]+([\w.]*(?:<<[^<>]*>>)?[\w.]*)[\s\x{a0}]+([^{}]*)$/iu', $line, $match)) {
+            $this->param($match[1], \trim($match[2]));
+
+            return true;
+        }
+        if (1 !== \preg_match('/^skinparam[\s\x{a0}]*(?:[\s\x{a0}]+([\w.]*(?:<<.*>>)?[\w.]*))?[\s\x{a0}]*\{$/iu', $line, $match)) {
+            return false;
+        }
+        $context = [$match[1] ?? ''];
+        foreach ($this->braced() as $inner) {
+            $part = [];
+            if ('' === $inner || 1 !== \preg_match('/^([\w.]*(?:<<.*>>)?[\w.]*)[\s\x{a0}]+(?:(\{)|(.*))$|^\}?$/u', $inner, $part)) {
+                continue;
+            }
+            if ('}' === $inner || '' === ($part[0] ?? '')) {
+                \array_pop($context);
+                continue;
+            }
+            if ('{' === ($part[2] ?? '')) {
+                $context[] = $part[1];
+                continue;
+            }
+            $this->param(\implode('', $context).$part[1], \trim($part[3] ?? ''));
+        }
+
+        return true;
+    }
+
+    private function param(string $name, string $value): void
+    {
+        $this->params[\strtolower($name)] = $value;
+        $this->styles = $this->styles->withSkinParam($name, $value);
+    }
+
+    /** `title`, `caption`, `header`, `footer` and `legend`, on one line or up to their end. */
+    private function caption(string $line): bool
+    {
+        $match = [];
+        if (1 === \preg_match('/^(?:(left|right|center)[\s\x{a0}]*)?(header|footer)$/iu', $line, $match)) {
+            $kind = \strtolower($match[2]);
+            $this->captions[$kind] = new PlantUmlCaption($this->until('/^end[\s\x{a0}]?'.$kind.'$/iu'), '' === $match[1] ? null : \strtolower($match[1]));
+
+            return true;
+        }
+        if (1 === \preg_match('/^(title|caption)$/i', $line, $match)) {
+            $kind = \strtolower($match[1]);
+            $this->captions[$kind] = new PlantUmlCaption($this->until('/^end[\s\x{a0}]?'.$kind.'$/iu'));
+
+            return true;
+        }
+        if (1 === \preg_match('/^legend(?:[\s\x{a0}]+(top|bottom))?(?:[\s\x{a0}]+(left|right|center))?$/iu', $line, $match)) {
+            $this->captions['legend'] = new PlantUmlCaption(
+                $this->until('/^end[\s\x{a0}]?legend$/iu'),
+                '' === ($match[2] ?? '') ? null : \strtolower($match[2]),
+                '' === $match[1] ? null : \strtolower($match[1]),
+            );
+
+            return true;
+        }
+        if (1 === \preg_match('/^(?:(left|right|center)[\s\x{a0}]*)?(header|footer)(?=[\s\x{a0}:])(.*)$/iu', $line, $match)) {
+            $text = PlantUmlDocument::text($match[3]);
+            if (null !== $text) {
+                $this->captions[\strtolower($match[2])] = new PlantUmlCaption([$text], '' === $match[1] ? null : \strtolower($match[1]));
+
+                return true;
+            }
+        }
+        if (1 !== \preg_match('/^(title|caption|legend)(?=[\s\x{a0}:])(.*)$/iu', $line, $match)) {
+            return false;
+        }
+        $text = PlantUmlDocument::text($match[2]);
+        if (null === $text) {
+            return false;
+        }
+        $this->captions[\strtolower($match[1])] = new PlantUmlCaption([$text]);
+
+        return true;
+    }
+
+    /** `scale 1.5` or `scale 2/3`; scales to a size are left to PlantUML. */
+    private function scaled(string $line): bool
+    {
+        $match = [];
+        if (1 === \preg_match('/^scale[\s\x{a0}]+([0-9.]+)(?:[\s\x{a0}]*\/[\s\x{a0}]*([0-9.]+))?$/iu', $line, $match)) {
+            $scale = \is_numeric($match[1]) ? (float) $match[1] : 0.0;
+            $written = $match[2] ?? '1';
+            $divisor = \is_numeric($written) ? (float) $written : 0.0;
+            if ($scale <= 0 || $divisor <= 0) {
+                throw new Unsupported('The PlantUML scale '.$match[0].' is not a number');
+            }
+            $this->scale = $scale / $divisor;
+
+            return true;
+        }
+        if (1 === \preg_match('/^scale\b/i', $line)) {
+            throw new Unsupported('The native PlantUML renderer leaves scaling to a size to PlantUML');
+        }
+
+        return false;
+    }
+
+    /**
+     * The lines, trimmed, up to one that ends a block, which is read and left out.
+     *
+     * @return list<string>
+     * @throws Unsupported when the block does not end
+     */
+    private function until(string $end): array
+    {
+        $lines = [];
+        $count = \count($this->lines);
+        while ($this->at < $count) {
+            $line = \trim($this->lines[$this->at++]);
+            if (1 === \preg_match($end, $line)) {
+                return $lines;
+            }
+            $lines[] = $line;
+        }
+
+        throw new Unsupported('The PlantUML source leaves a block open');
+    }
+
+    /**
+     * The lines of a braced block, trimmed, up to the brace that closes it: braces opened
+     * inside close first.
+     *
+     * @return list<string>
+     * @throws Unsupported when the block does not end
+     */
+    private function braced(): array
+    {
+        $lines = [];
+        $depth = 0;
+        $count = \count($this->lines);
+        while ($this->at < $count) {
+            $line = \trim($this->lines[$this->at++]);
+            if ('}' === $line && 0 === $depth) {
+                return $lines;
+            }
+            $depth += (int) \str_ends_with($line, '{') - (int) ('}' === $line);
+            $lines[] = $line;
+        }
+
+        throw new Unsupported('The PlantUML source leaves a block open');
+    }
+}
