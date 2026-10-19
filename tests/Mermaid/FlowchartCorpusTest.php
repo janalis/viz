@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\FlowchartLayout;
 use Janalis\Viz\Mermaid\FlowchartParser;
 use Janalis\Viz\Mermaid\MermaidCardRoutes;
@@ -17,6 +15,8 @@ use Janalis\Viz\Mermaid\MermaidLexer;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\RankedGraphLayout;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\TestCase;
 
 final class FlowchartCorpusTest extends TestCase
 {

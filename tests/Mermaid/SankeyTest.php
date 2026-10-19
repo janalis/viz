@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\MermaidColor;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
@@ -19,6 +16,9 @@ use Janalis\Viz\Mermaid\SankeyFlow;
 use Janalis\Viz\Mermaid\SankeyLayout;
 use Janalis\Viz\Mermaid\SankeyLexer;
 use Janalis\Viz\Mermaid\SankeyParser;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class SankeyTest extends TestCase
 {

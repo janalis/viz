@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidScene;
+use PHPUnit\Framework\TestCase;
 
 /** Pinned `xyChart` options: orientation, visibility switches and bar value labels. */
 final class XyOptionsTest extends TestCase

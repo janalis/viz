@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\GraphViz;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\GraphViz\DotColor;
+use PHPUnit\Framework\TestCase;
 
 final class DotColorTest extends TestCase
 {

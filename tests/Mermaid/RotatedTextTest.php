@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidDrawing;
@@ -12,6 +11,7 @@ use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSvg;
+use PHPUnit\Framework\TestCase;
 
 /** Pinned rotated captions: quadrant and xy side titles read upward, git commit ids slant. */
 final class RotatedTextTest extends TestCase

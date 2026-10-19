@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidText;
 use Janalis\Viz\Mermaid\MermaidUtf16;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
 
 final class MermaidUtf16Test extends TestCase

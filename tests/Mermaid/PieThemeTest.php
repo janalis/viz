@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\NativeMermaidDiagram;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class PieThemeTest extends TestCase
 {

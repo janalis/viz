@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Diagram\ArrowHead;
+use Janalis\Viz\Diagram\Cluster;
 use Janalis\Viz\Diagram\Edge;
 use Janalis\Viz\Diagram\Graph;
+use Janalis\Viz\Diagram\LineStyle;
 use Janalis\Viz\Diagram\Node;
 use Janalis\Viz\Mermaid\MermaidWriter;
 use Janalis\Viz\Tests\Support\Sample;
@@ -70,5 +73,33 @@ final class MermaidWriterTest extends TestCase
             $this->assertContains($label, $labels);
         }
         $this->assertSame(8, $scene->graph->edgeCount());
+    }
+
+    public function testEveryLinkShapeIsWritten(): void
+    {
+        $graph = new Graph([new Node('a'), new Node('b')], [
+            new Edge('a', 'b', tail: ArrowHead::Arrow),
+            new Edge('a', 'b', head: ArrowHead::None, tail: ArrowHead::Cross),
+            new Edge('a', 'b', head: ArrowHead::Circle, style: LineStyle::Dotted),
+        ]);
+
+        $this->assertStringContainsString("    a <--> b\n    a x--- b\n    a -.-o b\n", MermaidWriter::write($graph));
+    }
+
+    public function testKeywordsAreRenamedWhateverTheirCase(): void
+    {
+        $this->assertStringContainsString('n0["End"]', MermaidWriter::write(new Graph([new Node('End')])));
+    }
+
+    public function testNestedClusterMembersThatAreNoNodesStillGetAnIdentifier(): void
+    {
+        $graph = new Graph(clusters: [new Cluster('o', 'O', [], [new Cluster('i', 'I', ['a b'])])]);
+
+        $this->assertStringContainsString("        subgraph c1 [\"I\"]\n            n0\n", MermaidWriter::write($graph));
+    }
+
+    public function testATitleKeepsItsUnicodeAndSlashesReadable(): void
+    {
+        $this->assertStringStartsWith("---\ntitle: \"Data/flow — é\"\n---\n", MermaidWriter::write(new Graph(title: 'Data/flow — é')));
     }
 }

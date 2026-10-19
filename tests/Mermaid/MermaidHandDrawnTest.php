@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidRough;
 use Janalis\Viz\Mermaid\MermaidSketch;
+use PHPUnit\Framework\TestCase;
 
 /** The pinned `look: handDrawn`: roughjs strokes and hachure in pictures, classic cells. */
 final class MermaidHandDrawnTest extends TestCase

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\Theme\Khroma;
 use Janalis\Viz\Mermaid\Theme\MermaidAppearance;
 use Janalis\Viz\Mermaid\Theme\MermaidDirective;
 use Janalis\Viz\Mermaid\Theme\MermaidMerge;
 use Janalis\Viz\Mermaid\Theme\MermaidThemes;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class MermaidAppearanceTest extends TestCase
 {

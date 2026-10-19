@@ -90,4 +90,15 @@ final class ConverterTest extends TestCase
         $this->assertSame(\array_map($shape, $converter->read($dot, SourceFormat::Dot)->edges), \array_map($shape, $converter->read($mermaid, SourceFormat::Mermaid)->edges));
         $this->assertSame('web client', $converter->read($mermaid, SourceFormat::Mermaid)->node('n1')?->text());
     }
+
+    public function testAnUnusableConfigurationIsNamedInTheRefusal(): void
+    {
+        try {
+            new Converter()->read("---\nconfig:\n  flowchart:\n    nodeSpacing: wide\n---\nflowchart LR\n a-->b", SourceFormat::Mermaid);
+            $this->fail('Expected a refusal');
+        } catch (UnsupportedConversion $refusal) {
+            $this->assertMatchesRegularExpression('/^Only Mermaid flowcharts convert: .+/', $refusal->getMessage());
+            $this->assertSame($refusal->getPrevious()?->getMessage(), \substr($refusal->getMessage(), offset: \strlen('Only Mermaid flowcharts convert: ')));
+        }
+    }
 }

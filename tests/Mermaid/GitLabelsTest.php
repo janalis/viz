@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidScene;
+use PHPUnit\Framework\TestCase;
 
 /** Pinned git commit labels, tag flags, rotation and rerouted arrows. */
 final class GitLabelsTest extends TestCase

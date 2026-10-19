@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidSvg;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class MermaidOpacityTest extends TestCase
 {

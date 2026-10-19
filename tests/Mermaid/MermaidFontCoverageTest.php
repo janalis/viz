@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Mermaid\MermaidFallbackFonts;
 use Janalis\Viz\Mermaid\MermaidFont;
 use Janalis\Viz\Mermaid\MermaidFontCoverage;
+use PHPUnit\Framework\TestCase;
 
 /** Font coverage from `cmap` tables, on the bundled faces and on minimal synthetic fonts. */
 final class MermaidFontCoverageTest extends TestCase

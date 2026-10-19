@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidLexer;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
@@ -13,6 +11,8 @@ use Janalis\Viz\Mermaid\SequenceConfiguration;
 use Janalis\Viz\Mermaid\SequenceDiagram;
 use Janalis\Viz\Mermaid\SequenceLayout;
 use Janalis\Viz\Mermaid\SequenceParser;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class SequenceGroupsTest extends TestCase
 {

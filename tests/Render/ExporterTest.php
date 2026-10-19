@@ -7,8 +7,8 @@ namespace Janalis\Viz\Tests\Render;
 use Janalis\Viz\Render\Exporter;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Render\Image;
-use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Render\Renderer;
+use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Render\RenderOptions;
 use PHPUnit\Framework\Attributes\After;
 use PHPUnit\Framework\Attributes\Before;
@@ -61,7 +61,7 @@ final class ExporterTest extends TestCase
     public function testAFailedRenderLeavesTheEarlierExportIntact(): void
     {
         $path = $this->directory.'/diagram.svg';
-        \file_put_contents($path, 'earlier');
+        \file_put_contents($path, data: 'earlier');
 
         try {
             new Exporter(self::renderer(fails: true))->export('graph', $path);
@@ -75,14 +75,13 @@ final class ExporterTest extends TestCase
     public function testAnUnwritablePathIsAFailure(): void
     {
         $blocker = $this->directory.'/file';
-        \file_put_contents($blocker, '');
+        \file_put_contents($blocker, data: '');
 
         $this->expectException(RenderFailure::class);
 
         new Exporter(self::renderer())->export('graph', $blocker.'/diagram.svg');
     }
 
-    // @mago-expect lint:no-boolean-flag-parameter -- A test double's one switch.
     private static function renderer(bool $fails = false): Renderer
     {
         return new readonly class($fails) implements Renderer {

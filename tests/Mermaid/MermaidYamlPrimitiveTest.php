@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Mermaid\MermaidYamlPrimitive;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Mermaid\MermaidYamlPrimitive;
 use Symfony\Component\Yaml\Yaml;
 
 final class MermaidYamlPrimitiveTest extends TestCase

@@ -70,7 +70,6 @@ final class MermaidWriter
             \array_map($members, $cluster->clusters);
         };
         \array_map($members, $graph->clusters);
-        $all = \array_values(\array_unique($all));
         $ids = [];
         foreach ($all as $id) {
             if (1 !== \preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $id) || \in_array(\strtolower($id), self::RESERVED, strict: true)) {
@@ -79,7 +78,7 @@ final class MermaidWriter
             $ids[$id] = $id;
         }
         // Generated identifiers come second, so they never take one an author chose.
-        $taken = \array_flip($ids);
+        $taken = $ids;
         $next = 0;
         foreach ($all as $id) {
             if (\array_key_exists($id, $ids)) {

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidGraph;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\MindmapLexer;
 use Janalis\Viz\Mermaid\MindmapParser;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class MindmapTest extends TestCase
 {

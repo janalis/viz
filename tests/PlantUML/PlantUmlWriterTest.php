@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\PlantUML;
 
+use Janalis\Viz\Diagram\Cluster;
 use Janalis\Viz\Diagram\Direction;
+use Janalis\Viz\Diagram\Edge;
 use Janalis\Viz\Diagram\Graph;
 use Janalis\Viz\Diagram\Node;
 use Janalis\Viz\PlantUML\PlantUmlWriter;
@@ -56,5 +58,30 @@ final class PlantUmlWriterTest extends TestCase
     public function testAFillWithoutAStrokeOmitsTheLine(): void
     {
         $this->assertStringContainsString('rectangle "a" as n0 #pink'."\n", PlantUmlWriter::write(new Graph([new Node('a', fill: 'pink')])));
+    }
+
+    public function testDeepClustersIndentByDepthAndSkipMembersThatAreNoNodes(): void
+    {
+        $graph = new Graph(
+            [new Node('a'), new Node('b')],
+            [new Edge('ghost', 'a')],
+            [new Cluster('x', 'X', [], [new Cluster('y', 'Y', [], [new Cluster('z', 'Z', ['missing', 'a', 'b'])])])],
+        );
+
+        $this->assertSame(<<<'PUML'
+            @startuml
+            rectangle "X" as c0 {
+              rectangle "Y" as c1 {
+                rectangle "Z" as c2 {
+                  rectangle "a" as n0
+                  rectangle "b" as n1
+                }
+              }
+            }
+            rectangle "ghost" as n2
+            n2 --> n0
+            @enduml
+
+            PUML, PlantUmlWriter::write($graph));
     }
 }

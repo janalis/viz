@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Mermaid\MermaidPipeline;
 use Janalis\Viz\Mermaid\MermaidRenderer;
+use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Render\RenderOptions;
@@ -74,5 +75,26 @@ final class MermaidRendererTest extends TestCase
 
         $this->assertGreaterThan(1, $steps);
         $this->assertSame(Work::run($pipeline->export("flowchart LR\n a-->b", Format::Svg)), $work->getReturn());
+    }
+
+    public function testAnUndrawableBitmapIsARenderFailure(): void
+    {
+        try {
+            new MermaidRenderer()->render("flowchart LR\n a-->b", Format::Png, new RenderOptions(maxPixels: 0));
+            $this->fail('Expected a failure');
+        } catch (RenderFailure $failure) {
+            $this->assertSame('Invalid Mermaid raster dimensions', $failure->getMessage());
+            $this->assertInstanceOf(\InvalidArgumentException::class, $failure->getPrevious());
+        }
+    }
+
+    public function testAFrontMatterTitleSitsOneUnitAboveTheDiagramUnlessConfigured(): void
+    {
+        $scene = static fn (string $config): MermaidScene => Work::run(new MermaidPipeline()->scene("---\ntitle: Heading\n".$config."---\nflowchart LR\n a-->b"));
+        $height = static fn (MermaidScene $scene): float => $scene->graph->height;
+
+        $default = $scene('');
+        $this->assertSame($height($default), $height($scene("config:\n  flowchart:\n    curve: basis\n")), 'a flowchart section without the margin keeps the default');
+        $this->assertEqualsWithDelta(1.0, $height($default) - $height($scene("config:\n  flowchart:\n    titleTopMargin: 0\n")), delta: 1.0e-9);
     }
 }

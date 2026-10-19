@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\RailroadDiagram;
@@ -15,6 +12,9 @@ use Janalis\Viz\Mermaid\RailroadLayout;
 use Janalis\Viz\Mermaid\RailroadLexer;
 use Janalis\Viz\Mermaid\RailroadMeasure;
 use Janalis\Viz\Mermaid\RailroadParser;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class RailroadGrammarTest extends TestCase
 {

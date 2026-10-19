@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\BlockLayout;
@@ -18,6 +16,8 @@ use Janalis\Viz\Mermaid\StateLayout;
 use Janalis\Viz\Mermaid\StateLexer;
 use Janalis\Viz\Mermaid\StateParser;
 use Janalis\Viz\Text\DisplayWidth;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class MermaidLoopSpaceTest extends TestCase
 {

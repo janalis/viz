@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\AgentflowDiagram;
 use Janalis\Viz\Mermaid\AgentflowLayout;
 use Janalis\Viz\Mermaid\AgentflowLexer;
@@ -15,6 +13,8 @@ use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class AgentflowTest extends TestCase
 {

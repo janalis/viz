@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphFont;
@@ -17,6 +15,8 @@ use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\MermaidTitle;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class MermaidFrontMatterTest extends TestCase
 {

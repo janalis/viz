@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
@@ -15,6 +13,8 @@ use Janalis\Viz\Mermaid\ErMarkers;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidPolyline;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 /** Pinned class cards: member display and typography, notes, and markers on curved edges. */
 final class ClassCardsTest extends TestCase

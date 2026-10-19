@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
@@ -16,6 +14,8 @@ use Janalis\Viz\Mermaid\QuadrantDiagram;
 use Janalis\Viz\Mermaid\QuadrantLayout;
 use Janalis\Viz\Mermaid\QuadrantLexer;
 use Janalis\Viz\Mermaid\QuadrantParser;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class QuadrantTest extends TestCase
 {

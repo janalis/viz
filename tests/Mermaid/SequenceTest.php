@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
@@ -19,6 +17,8 @@ use Janalis\Viz\Mermaid\SequenceArrowheads;
 use Janalis\Viz\Mermaid\SequenceDiagram;
 use Janalis\Viz\Mermaid\SequenceLayout;
 use Janalis\Viz\Mermaid\SequenceParser;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class SequenceTest extends TestCase
 {

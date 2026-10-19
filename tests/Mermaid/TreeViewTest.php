@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidScene;
@@ -15,6 +13,8 @@ use Janalis\Viz\Mermaid\TreeViewLayout;
 use Janalis\Viz\Mermaid\TreeViewLexer;
 use Janalis\Viz\Mermaid\TreeViewParser;
 use Janalis\Viz\Text\DisplayWidth;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class TreeViewTest extends TestCase
 {

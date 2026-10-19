@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
@@ -12,6 +11,7 @@ use Janalis\Viz\Mermaid\FlowchartShapes;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use PHPUnit\Framework\TestCase;
 
 /** Pinned tree view icons, the implicit root and directory faces, through the native pipeline. */
 final class TreeViewIconsTest extends TestCase

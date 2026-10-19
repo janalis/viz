@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\FlowchartParser;
 use Janalis\Viz\Mermaid\MermaidLexer;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\RankedGraphLayout;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class FlowchartCutCornersTest extends TestCase
 {

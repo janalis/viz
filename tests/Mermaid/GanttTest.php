@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\GanttAxis;
@@ -18,6 +16,8 @@ use Janalis\Viz\Mermaid\GanttSchedule;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class GanttTest extends TestCase
 {
@@ -347,7 +347,10 @@ final class GanttTest extends TestCase
         $this->assertSame('20', \array_last($ticks)->label);
         $this->assertSame([], \array_diff(\array_column($ticks, 'label'), ['18', '19', '20']));
         $explicit = self::scene("gantt\ndateFormat D\naxisFormat %m\nA:18, 2d");
-        $this->assertSame('10', \array_first(\array_filter($explicit->graph->nodes, static fn (GraphNode $node): bool => \str_starts_with($node->name, 'tick:')))->label, 'an authored axis format wins');
+        $this->assertSame('10', \array_first(\array_filter($explicit->graph->nodes, static fn (GraphNode $node): bool => \str_starts_with(
+            $node->name,
+            'tick:',
+        )))->label, 'an authored axis format wins');
     }
 
     /** @return iterable<string, array{string, float, list<float>}> */

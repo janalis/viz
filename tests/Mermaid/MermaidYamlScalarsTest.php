@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Mermaid\MermaidYamlScalars;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Mermaid\MermaidYamlScalars;
 
 final class MermaidYamlScalarsTest extends TestCase
 {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\GraphViz;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\GraphViz\DotDiagnostics;
+use PHPUnit\Framework\TestCase;
 
 /** dot's reports on a source, read as the editor's diagnostics. */
 final class DotDiagnosticsTest extends TestCase

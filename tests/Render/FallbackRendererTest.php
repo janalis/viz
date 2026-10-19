@@ -7,8 +7,8 @@ namespace Janalis\Viz\Tests\Render;
 use Janalis\Viz\Render\FallbackRenderer;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Render\Image;
-use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Render\Renderer;
+use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Render\RenderOptions;
 use PHPUnit\Framework\TestCase;
 
@@ -69,7 +69,6 @@ final class FallbackRendererTest extends TestCase
      * @param list<Format>  $formats
      * @param list<string>  $calls
      */
-    // @mago-expect lint:no-boolean-flag-parameter -- A test double's one switch.
     private static function renderer(string $name, array $formats, array &$calls, bool $fails = false): Renderer
     {
         return new class($name, $formats, $calls, $fails) implements Renderer {

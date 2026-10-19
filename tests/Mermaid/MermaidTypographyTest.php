@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\ErCard;
@@ -18,6 +15,9 @@ use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSvg;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class MermaidTypographyTest extends TestCase
 {
@@ -103,7 +103,9 @@ final class MermaidTypographyTest extends TestCase
         $this->assertSame(['font-weight' => false], $css->parse('font-weight:500', $statement));
         $this->assertSame(['font-weight' => true], $css->parse('font-weight:600', $statement));
         $this->assertSame(['stroke' => 'none'], $css->parse('border:NONE', $statement));
-        $scene = NativeFixtureScene::render("graph LR\nA\nB\nC\nclassDef em font-style:italic,font-weight:bold\nclass A,B,C em\nstyle A font-style:normal,font-weight:400\nstyle B font-weight:normal\nstyle C font-weight:700,border:none");
+        $scene = NativeFixtureScene::render(
+            "graph LR\nA\nB\nC\nclassDef em font-style:italic,font-weight:bold\nclass A,B,C em\nstyle A font-style:normal,font-weight:400\nstyle B font-weight:normal\nstyle C font-weight:700,border:none",
+        );
         $nodes = \array_column($scene->graph->nodes, null, 'name');
         $this->assertSame([GraphFont::Regular, GraphFont::Italic, GraphFont::BoldItalic], [$nodes['A']->font, $nodes['B']->font, $nodes['C']->font]);
         $this->assertSame('none', $nodes['C']->color);

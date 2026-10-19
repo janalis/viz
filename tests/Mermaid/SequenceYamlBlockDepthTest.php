@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\SequenceConfiguration;
 use Janalis\Viz\Mermaid\SequenceYamlBlockKeys;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class SequenceYamlBlockDepthTest extends TestCase
 {

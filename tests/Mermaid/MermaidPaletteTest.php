@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
@@ -19,6 +18,7 @@ use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStyleSource;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\Theme\MermaidDirective;
+use PHPUnit\Framework\TestCase;
 
 /** The palette's token grammar and the theme paths no census family reaches. */
 final class MermaidPaletteTest extends TestCase

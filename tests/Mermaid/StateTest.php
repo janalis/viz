@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidStatement;
@@ -17,6 +14,9 @@ use Janalis\Viz\Mermaid\StateDiagram;
 use Janalis\Viz\Mermaid\StateLayout;
 use Janalis\Viz\Mermaid\StateLexer;
 use Janalis\Viz\Mermaid\StateParser;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class StateTest extends TestCase
 {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidDrawing;
@@ -12,6 +11,7 @@ use Janalis\Viz\Mermaid\MermaidFallbackFonts;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidScene;
+use PHPUnit\Framework\TestCase;
 
 /** Markdown labels size their elements by the wrapped text and draw their styled runs. */
 final class MermaidMarkdownLabelsTest extends TestCase

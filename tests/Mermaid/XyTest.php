@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
@@ -17,6 +15,8 @@ use Janalis\Viz\Mermaid\XyLexer;
 use Janalis\Viz\Mermaid\XyParser;
 use Janalis\Viz\Mermaid\XyScale;
 use Janalis\Viz\Mermaid\XyValues;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class XyTest extends TestCase
 {

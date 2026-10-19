@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Mermaid\Theme\ThemeProgram;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Mermaid\Theme\ThemeProgram;
 
 final class ThemeProgramTest extends TestCase
 {

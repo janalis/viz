@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\KanbanCards;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidScene;
+use PHPUnit\Framework\TestCase;
 
 /** Pinned kanban cards: left-aligned title, ticket and assignee row, priority bar. */
 final class KanbanCardsTest extends TestCase

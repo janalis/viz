@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\FlowchartParser;
 use Janalis\Viz\Mermaid\MermaidLexer;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\RankedGraphLayout;
+use PHPUnit\Framework\TestCase;
 
 final class FlowchartClusterStylesTest extends TestCase
 {

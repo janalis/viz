@@ -20,7 +20,7 @@ final class FakeTool
         $this->directory = \sys_get_temp_dir().'/viz-tool-'.\bin2hex(\random_bytes(8));
         \mkdir($this->directory);
         \file_put_contents($this->path(), "#!/bin/sh\nprintf '%s\\n' \"\$@\" > \"".$this->directory."/argv\"\n".$body."\n");
-        \chmod($this->path(), 0o755);
+        \chmod($this->path(), permissions: 0o755);
     }
 
     public function path(): string

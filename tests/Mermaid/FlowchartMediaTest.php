@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\FlowchartShapes;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
@@ -13,6 +11,8 @@ use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidSketch;
 use Janalis\Viz\Mermaid\MermaidText;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\TestCase;
 
 /** Flowchart icon and image nodes: the pinned unknown-icon tile and embedded `data:` pictures. */
 final class FlowchartMediaTest extends TestCase

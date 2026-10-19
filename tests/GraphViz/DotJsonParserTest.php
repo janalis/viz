@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\GraphViz;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\GraphViz\DotJsonParser;
-use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\GraphViz\GraphParseException;
+use Janalis\Viz\Layout\GraphEdge;
+use PHPUnit\Framework\TestCase;
 
 final class DotJsonParserTest extends TestCase
 {

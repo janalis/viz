@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidScene;
+use PHPUnit\Framework\TestCase;
 
 /** The two-sided mind map: branches either side of the root, subtrees stacked without overlap. */
 final class MindmapLayoutTest extends TestCase

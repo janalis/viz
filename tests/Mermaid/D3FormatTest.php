@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Mermaid\D3Format;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Mermaid\D3Format;
 
 /** d3-format against the copy bundled in the pinned build (fixtures/mermaid/options/d3-format-reference.json). */
 final class D3FormatTest extends TestCase

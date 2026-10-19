@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidPalette;
 use Janalis\Viz\Mermaid\MermaidScene;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 /** Pinned family options that change the native picture, one family at a time. */
 final class MermaidFamilyOptionsTest extends TestCase

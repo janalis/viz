@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
@@ -20,6 +17,9 @@ use Janalis\Viz\Mermaid\WardleyLayout;
 use Janalis\Viz\Mermaid\WardleyLexer;
 use Janalis\Viz\Mermaid\WardleyParser;
 use Janalis\Viz\Mermaid\WardleySymbols;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class WardleyTest extends TestCase
 {
@@ -254,8 +254,18 @@ final class WardleyTest extends TestCase
         $this->assertSame([150.0, 80.0], [$diagram->width, $diagram->height]);
         $this->assertCount(7, $diagram->annotations);
         $this->assertSame(['note', 'annotations', 'annotations', 'annotation', 'annotation', 'accelerator', 'deaccelerator'], \array_column($diagram->annotations, 'kind'));
-        $this->assertSame(['2. Second', 0.4, 0.6, 6], [$diagram->annotations[3]['label'], $diagram->annotations[3]['visibility'], $diagram->annotations[3]['evolution'], $diagram->annotations[3]['origin']]);
-        $this->assertSame(['Faster', 0.3, 0.3, 8], [$diagram->annotations[5]['label'], $diagram->annotations[5]['visibility'], $diagram->annotations[5]['evolution'], $diagram->annotations[5]['origin']]);
+        $this->assertSame(['2. Second', 0.4, 0.6, 6], [
+            $diagram->annotations[3]['label'],
+            $diagram->annotations[3]['visibility'],
+            $diagram->annotations[3]['evolution'],
+            $diagram->annotations[3]['origin'],
+        ]);
+        $this->assertSame(['Faster', 0.3, 0.3, 8], [
+            $diagram->annotations[5]['label'],
+            $diagram->annotations[5]['visibility'],
+            $diagram->annotations[5]['evolution'],
+            $diagram->annotations[5]['origin'],
+        ]);
         $work = new WardleyLayout()->layout($diagram);
         \iterator_to_array($work);
         $scene = $work->getReturn();
@@ -269,7 +279,10 @@ final class WardleyTest extends TestCase
             $scene->shapes[$named['@deaccelerator:6']->id],
         ]);
         $this->assertSame(['2', '1', 'Critical point'], [$named['@annotation:3']->label, $named['@annotation:4']->label, $named['@note:0']->label]);
-        $this->assertSame(['component: Point [0.5, 0.5]', 'note: Critical point', 'annotation: 2. Second', 'annotation: 1. First', 'accelerator: Faster', 'deaccelerator: Slower'], \array_column($scene->legend, 'text'));
+        $this->assertSame(
+            ['component: Point [0.5, 0.5]', 'note: Critical point', 'annotation: 2. Second', 'annotation: 1. First', 'accelerator: Faster', 'deaccelerator: Slower'],
+            \array_column($scene->legend, 'text'),
+        );
         foreach (['@accelerator:5', '@deaccelerator:6'] as $name) {
             $arrow = $named[$name];
             $direction = \str_starts_with($name, '@deaccelerator:') ? -1 : 1;

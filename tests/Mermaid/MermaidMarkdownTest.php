@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Mermaid\MermaidMarkdown;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 /** Markdown string labels against the pinned HTML label path (fixtures/mermaid/labels/markdown-reference.json). */
 final class MermaidMarkdownTest extends TestCase

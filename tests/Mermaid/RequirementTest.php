@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
@@ -14,6 +12,8 @@ use Janalis\Viz\Mermaid\RequirementDiagram;
 use Janalis\Viz\Mermaid\RequirementLayout;
 use Janalis\Viz\Mermaid\RequirementLexer;
 use Janalis\Viz\Mermaid\RequirementParser;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class RequirementTest extends TestCase
 {

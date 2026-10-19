@@ -53,8 +53,9 @@ final class DisplayWidth
     {
         $prefix = '';
         $used = 0;
-        foreach (self::graphemes(self::clean($text)) as $grapheme) {
-            $used += self::grapheme($grapheme);
+        // The text's own graphemes, so the prefix is a byte prefix of $text: a tab stays a tab.
+        foreach (self::graphemes($text) as $grapheme) {
+            $used += self::of($grapheme);
             if ($used > $width) {
                 break;
             }
@@ -72,7 +73,6 @@ final class DisplayWidth
      */
     public static function wrap(string $text, int $width): array
     {
-        $width = \max(1, $width);
         $lines = [];
         $line = '';
         foreach (\explode(' ', $text) as $word) {

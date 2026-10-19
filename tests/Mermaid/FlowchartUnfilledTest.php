@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidCss;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
+use PHPUnit\Framework\TestCase;
 
 final class FlowchartUnfilledTest extends TestCase
 {

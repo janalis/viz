@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
 use Janalis\Viz\Mermaid\MermaidLexer;
@@ -16,6 +13,9 @@ use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\MermaidText;
 use Janalis\Viz\Mermaid\SequenceLayout;
 use Janalis\Viz\Mermaid\SequenceParser;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class SequenceActorMarginTest extends TestCase
 {

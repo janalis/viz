@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidScene;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\TestCase;
 
 /** Pinned participant glyphs and box-less message text in native sequence pictures. */
 final class SequenceGlyphsTest extends TestCase

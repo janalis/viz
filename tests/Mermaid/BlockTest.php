@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\BlockArrows;
 use Janalis\Viz\Mermaid\BlockDiagram;
 use Janalis\Viz\Mermaid\BlockLayout;
@@ -17,6 +14,9 @@ use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class BlockTest extends TestCase
 {

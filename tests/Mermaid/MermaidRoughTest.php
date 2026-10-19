@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidRough;
 use Janalis\Viz\Mermaid\MermaidRoughRandom;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 /** The roughjs port against the generator the pinned build bundles (rough-oracle.mjs). */
 final class MermaidRoughTest extends TestCase

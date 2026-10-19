@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
@@ -17,6 +14,9 @@ use Janalis\Viz\Mermaid\VennLexer;
 use Janalis\Viz\Mermaid\VennParser;
 use Janalis\Viz\Mermaid\VennRegion;
 use Janalis\Viz\Mermaid\VennSymbols;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class VennGeometryTest extends TestCase
 {

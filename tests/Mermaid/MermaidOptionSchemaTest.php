@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\ArchitectureConfiguration;
 use Janalis\Viz\Mermaid\FlowchartConfiguration;
 use Janalis\Viz\Mermaid\GitConfiguration;
@@ -14,6 +12,8 @@ use Janalis\Viz\Mermaid\MermaidOptions;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\PieConfiguration;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 /** Every pinned option is accepted with its own kind; a wrong kind is a located error, an unknown key ignored, as pinned. */
 final class MermaidOptionSchemaTest extends TestCase

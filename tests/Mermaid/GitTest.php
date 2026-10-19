@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\GitDiagram;
 use Janalis\Viz\Mermaid\GitLayout;
 use Janalis\Viz\Mermaid\GitLexer;
@@ -19,6 +16,9 @@ use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class GitTest extends TestCase
 {
@@ -241,11 +241,14 @@ final class GitTest extends TestCase
         $this->assertSame(['aq'], $diagram->commits['literal;id']['tags']);
         $this->assertSame(5, $diagram->commits['literal;id']['origin']);
         $this->assertSame("line\ntwo", $diagram->commits['1-native']['message']);
-        $this->assertSame([
-            ['text' => 'title Release history', 'origin' => 2],
-            ['text' => 'accTitle: History', 'origin' => 3],
-            ['text' => 'accDescr {Version history}', 'origin' => 4],
-        ], $diagram->metadata);
+        $this->assertSame(
+            [
+                ['text' => 'title Release history', 'origin' => 2],
+                ['text' => 'accTitle: History', 'origin' => 3],
+                ['text' => 'accDescr {Version history}', 'origin' => 4],
+            ],
+            $diagram->metadata,
+        );
         $work = new GitLayout()->layout($diagram);
         \iterator_to_array($work);
         $scene = $work->getReturn();

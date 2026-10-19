@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Mermaid\IshikawaDiagram;
 use Janalis\Viz\Mermaid\IshikawaLayout;
 use Janalis\Viz\Mermaid\IshikawaLexer;
@@ -14,7 +11,10 @@ use Janalis\Viz\Mermaid\IshikawaParser;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
+use Janalis\Viz\Render\Format;
 use Janalis\Viz\Text\DisplayWidth;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class IshikawaTest extends TestCase
 {

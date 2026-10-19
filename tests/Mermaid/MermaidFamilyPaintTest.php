@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidColor;
 use Janalis\Viz\Mermaid\MermaidPalette;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Native theme roles against the paint the pinned build computes for the same documents in

@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Mermaid\ErDiagram;
 use Janalis\Viz\Mermaid\ErLayout;
@@ -17,7 +14,10 @@ use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
+use Janalis\Viz\Render\Format;
 use Janalis\Viz\Text\DisplayWidth;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class ErTest extends TestCase
 {

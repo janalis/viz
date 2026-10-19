@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\Theme\JsNumber;
 use Janalis\Viz\Mermaid\Theme\Khroma;
 use Janalis\Viz\Mermaid\Theme\KhromaChannels;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class KhromaTest extends TestCase
 {

@@ -46,26 +46,43 @@ final class MermaidReaderTest extends TestCase
         foreach ($graph->nodes as $node) {
             $shapes[$node->id] = $node->shape;
         }
-        $this->assertSame([
-            'a' => Shape::Box, 'b' => Shape::Rounded, 'c' => Shape::Stadium, 'd' => Shape::Circle, 'e' => Shape::Diamond,
-            'f' => Shape::Hexagon, 'g' => Shape::Parallelogram, 'h' => Shape::Cylinder, 'i' => Shape::Box, 'j' => Shape::Circle,
-            'k' => Shape::Note, 'l' => Shape::Box, 'm' => Shape::Parallelogram, 'n' => Shape::Ellipse,
-        ], $shapes);
+        $this->assertSame(
+            [
+                'a' => Shape::Box,
+                'b' => Shape::Rounded,
+                'c' => Shape::Stadium,
+                'd' => Shape::Circle,
+                'e' => Shape::Diamond,
+                'f' => Shape::Hexagon,
+                'g' => Shape::Parallelogram,
+                'h' => Shape::Cylinder,
+                'i' => Shape::Box,
+                'j' => Shape::Circle,
+                'k' => Shape::Note,
+                'l' => Shape::Box,
+                'm' => Shape::Parallelogram,
+                'n' => Shape::Ellipse,
+            ],
+            $shapes,
+        );
         $this->assertEquals(new Node('a', 'Box', Shape::Box, '#ff99ff', '#333333'), $graph->nodes[0]);
         $this->assertNull($graph->node('l')?->label);
-        $this->assertEquals([
-            new Edge('a', 'b'),
-            new Edge('b', 'c', head: ArrowHead::None),
-            new Edge('c', 'd', style: LineStyle::Dotted),
-            new Edge('d', 'e', style: LineStyle::Bold),
-            new Edge('e', 'f', head: ArrowHead::Circle),
-            new Edge('f', 'g', head: ArrowHead::Cross),
-            new Edge('g', 'h', tail: ArrowHead::Arrow),
-            new Edge('h', 'i', 'lbl'),
-            new Edge('i', 'j', head: ArrowHead::Circle, tail: ArrowHead::Circle),
-            new Edge('k', 'l', head: ArrowHead::None),
-            new Edge('m', 'n', head: ArrowHead::Cross, tail: ArrowHead::Cross),
-        ], $graph->edges);
+        $this->assertEquals(
+            [
+                new Edge('a', 'b'),
+                new Edge('b', 'c', head: ArrowHead::None),
+                new Edge('c', 'd', style: LineStyle::Dotted),
+                new Edge('d', 'e', style: LineStyle::Bold),
+                new Edge('e', 'f', head: ArrowHead::Circle),
+                new Edge('f', 'g', head: ArrowHead::Cross),
+                new Edge('g', 'h', tail: ArrowHead::Arrow),
+                new Edge('h', 'i', 'lbl'),
+                new Edge('i', 'j', head: ArrowHead::Circle, tail: ArrowHead::Circle),
+                new Edge('k', 'l', head: ArrowHead::None),
+                new Edge('m', 'n', head: ArrowHead::Cross, tail: ArrowHead::Cross),
+            ],
+            $graph->edges,
+        );
     }
 
     public function testSubgraphsNestAndOwnTheirInnermostNodes(): void
@@ -100,7 +117,10 @@ final class MermaidReaderTest extends TestCase
         $this->assertSame($sample->title, $graph->title);
         $this->assertSame($sample->direction, $graph->direction);
         $this->assertSame(\count($sample->edges), \count($graph->edges));
-        $this->assertSame(\array_map(static fn (Edge $edge): array => [$edge->label, $edge->head, $edge->tail], $sample->edges), \array_map(static fn (Edge $edge): array => [$edge->label, $edge->head, $edge->tail], $graph->edges));
+        $this->assertSame(
+            \array_map(static fn (Edge $edge): array => [$edge->label, $edge->head, $edge->tail], $sample->edges),
+            \array_map(static fn (Edge $edge): array => [$edge->label, $edge->head, $edge->tail], $graph->edges),
+        );
         $this->assertSame(['API "v2"', '#ffcc00', '#333333'], [$graph->node('api')?->label, $graph->node('api')?->fill, $graph->node('api')?->stroke]);
     }
 

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\TimelineDiagram;
 use Janalis\Viz\Mermaid\TimelineLayout;
 use Janalis\Viz\Mermaid\TimelineLexer;
 use Janalis\Viz\Mermaid\TimelineParser;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class TimelineTest extends TestCase
 {

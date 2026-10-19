@@ -69,7 +69,10 @@ final class DotReader
                 $children[$child] = $index;
             }
         }
-        $roots = \array_values(\array_filter(\array_keys(\array_slice($objects, offset: 0, length: $count, preserve_keys: true)), static fn (int $index): bool => !\array_key_exists($index, $children)));
+        $roots = \array_values(\array_filter(
+            \array_keys(\array_slice($objects, offset: 0, length: $count, preserve_keys: true)),
+            static fn (int $index): bool => !\array_key_exists($index, $children),
+        ));
 
         return new Graph(
             $nodes,

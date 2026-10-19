@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
@@ -18,6 +15,9 @@ use Janalis\Viz\Mermaid\RadarGrid;
 use Janalis\Viz\Mermaid\RadarLayout;
 use Janalis\Viz\Mermaid\RadarLexer;
 use Janalis\Viz\Mermaid\RadarParser;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class RadarTest extends TestCase
 {

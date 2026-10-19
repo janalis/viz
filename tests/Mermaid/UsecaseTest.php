@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Render\Format;
 use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
 use Janalis\Viz\Mermaid\MermaidDrawing;
@@ -21,6 +18,9 @@ use Janalis\Viz\Mermaid\UsecaseJson;
 use Janalis\Viz\Mermaid\UsecaseLayout;
 use Janalis\Viz\Mermaid\UsecaseLexer;
 use Janalis\Viz\Mermaid\UsecaseParser;
+use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class UsecaseTest extends TestCase
 {

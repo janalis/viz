@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\GraphViz;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\GraphViz\DotSource;
+use PHPUnit\Framework\TestCase;
 
 final class DotSourceTest extends TestCase
 {

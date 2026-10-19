@@ -46,18 +46,24 @@ final class DotReaderTest extends TestCase
 
         $this->assertSame(Direction::LeftRight, $graph->direction);
         $this->assertSame('Title', $graph->title);
-        $this->assertEquals([
-            new Node('x', null, Shape::Diamond, 'red', 'blue'),
-            new Node('y', "first\nsecond\nthird\nfourth y", Shape::Rounded),
-            new Node('z', null, Shape::Note),
-            new Node('w', null, Shape::Circle),
-        ], $graph->nodes);
-        $this->assertEquals([
-            new Edge('x', 'y', 'l', ArrowHead::Circle, ArrowHead::Cross, LineStyle::Dashed),
-            new Edge('z', 'x', head: ArrowHead::None, tail: ArrowHead::None, style: LineStyle::Dotted),
-            new Edge('z', 'w', head: ArrowHead::None, style: LineStyle::Bold),
-            new Edge('w', 'z'),
-        ], $graph->edges);
+        $this->assertEquals(
+            [
+                new Node('x', null, Shape::Diamond, 'red', 'blue'),
+                new Node('y', "first\nsecond\nthird\nfourth y", Shape::Rounded),
+                new Node('z', null, Shape::Note),
+                new Node('w', null, Shape::Circle),
+            ],
+            $graph->nodes,
+        );
+        $this->assertEquals(
+            [
+                new Edge('x', 'y', 'l', ArrowHead::Circle, ArrowHead::Cross, LineStyle::Dashed),
+                new Edge('z', 'x', head: ArrowHead::None, tail: ArrowHead::None, style: LineStyle::Dotted),
+                new Edge('z', 'w', head: ArrowHead::None, style: LineStyle::Bold),
+                new Edge('w', 'z'),
+            ],
+            $graph->edges,
+        );
         $this->assertCount(1, $graph->clusters);
         $this->assertSame(['cluster_a', 'A', ['x']], [$graph->clusters[0]->id, $graph->clusters[0]->label, $graph->clusters[0]->nodes]);
         $this->assertSame(['cluster_b', 'B', ['y']], [$graph->clusters[0]->clusters[0]->id, $graph->clusters[0]->clusters[0]->label, $graph->clusters[0]->clusters[0]->nodes]);
@@ -121,12 +127,68 @@ final class DotReaderTest extends TestCase
         }
         $this->assertSame(['api', 'missing'], $graph->clusters[0]->nodes);
         $this->assertSame(['db'], $graph->clusters[0]->clusters[0]->nodes);
-        $this->assertSame(\array_map(static fn (Edge $edge): array => [$edge->from, $edge->to, $edge->label, $edge->style], $sample->edges), \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to, $edge->label, $edge->style], $graph->edges));
+        $this->assertSame(
+            \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to, $edge->label, $edge->style], $sample->edges),
+            \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to, $edge->label, $edge->style], $graph->edges),
+        );
     }
 
     /** @param array<string, mixed> $data */
     private static function json(array $data): string
     {
         return \json_encode($data, \JSON_THROW_ON_ERROR);
+    }
+
+    public function testSiblingClustersAfterAPlainSubgraphAreAllRead(): void
+    {
+        $graph = DotReader::read(self::json([
+            '_subgraph_cnt' => 4,
+            'objects' => [
+                ['name' => 'plain'],
+                ['name' => 'cluster_one', 'label' => 'One', 'nodes' => [5, 4, 'junk', 4.5]],
+                ['name' => 'cluster_two', 'label' => 'Two', 'nodes' => [6]],
+                ['name' => 'cluster_inner', 'nodes' => [5]],
+                ['name' => 'a'],
+                ['name' => 'b'],
+                ['name' => 'cluster_node'],
+            ],
+        ]));
+
+        // The inner cluster is nobody's child here, so all three are top level; `cluster_node` is a node.
+        $this->assertSame(
+            [['cluster_one', ['b', 'a']], ['cluster_two', ['cluster_node']], ['cluster_inner', ['b']]],
+            \array_map(static fn ($cluster): array => [$cluster->id, $cluster->nodes], $graph->clusters),
+        );
+        $this->assertSame(['a', 'b', 'cluster_node'], \array_map(static fn (Node $node): string => $node->id, $graph->nodes));
+    }
+
+    public function testANestedMemberIsListedOnlyByItsInnermostClusterWhateverItsPosition(): void
+    {
+        $graph = DotReader::read(self::json([
+            '_subgraph_cnt' => 2,
+            'objects' => [['name' => 'cluster_outer', 'subgraphs' => [1], 'nodes' => [3, 2]], ['name' => 'cluster_inner', 'nodes' => [3]], ['name' => 'a'], ['name' => 'b']],
+        ]));
+
+        $this->assertSame(['a'], $graph->clusters[0]->nodes);
+        $this->assertSame(['b'], $graph->clusters[0]->clusters[0]->nodes);
+    }
+
+    public function testAnEdgeWithoutEndpointsNeverFallsBackToTheFirstNode(): void
+    {
+        foreach ([['head' => 0], ['tail' => 0]] as $edge) {
+            try {
+                DotReader::read(self::json(['objects' => [['name' => 'a']], 'edges' => [$edge]]));
+                $this->fail('Expected a refusal');
+            } catch (GraphParseException $refusal) {
+                $this->assertSame('edge references a missing node', $refusal->getMessage());
+            }
+        }
+    }
+
+    public function testTheJsonErrorIsNamed(): void
+    {
+        $this->expectExceptionObject(new GraphParseException('dot produced invalid JSON: Syntax error'));
+
+        DotReader::read('{');
     }
 }

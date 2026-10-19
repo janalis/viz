@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
 use Janalis\Viz\Mermaid\MermaidFrontMatter;
 use Janalis\Viz\Mermaid\MermaidInitialization;
@@ -14,6 +13,7 @@ use Janalis\Viz\Mermaid\SequenceDiagram;
 use Janalis\Viz\Mermaid\SequenceLayout;
 use Janalis\Viz\Mermaid\SequenceParser;
 use Janalis\Viz\Mermaid\SequenceVisibility;
+use PHPUnit\Framework\TestCase;
 
 final class SequenceVisibilityTest extends TestCase
 {

@@ -44,9 +44,9 @@ final class MmdcRendererTest extends TestCase
         $this->assertSame("flowchart LR\n a-->b", $image->bytes);
         $this->assertSame(Format::Pdf, $image->format);
         $argv = $this->tool->argv();
-        $this->assertSame(['--quiet', '--input', '-', '--outputFormat', 'pdf', '--output'], \array_slice($argv, 0, 6));
+        $this->assertSame(['--quiet', '--input', '-', '--outputFormat', 'pdf', '--output'], \array_slice($argv, offset: 0, length: 6));
         $this->assertStringEndsWith('/diagram.pdf', $argv[6]);
-        $this->assertSame(['--scale', '3'], \array_slice($argv, 7));
+        $this->assertSame(['--scale', '3'], \array_slice($argv, offset: 7));
         $this->assertDirectoryDoesNotExist(\dirname($argv[6]));
         $this->assertTrue(new MmdcRenderer()->supports(Format::Png));
     }
@@ -82,5 +82,19 @@ final class MmdcRendererTest extends TestCase
         $this->expectExceptionObject(new RenderFailure('mmdc not found: install @mermaid-js/mermaid-cli, or configure the path to mmdc'));
 
         new MmdcRenderer(new Tool('viz-no-such-mmdc'))->render('x', Format::Svg);
+    }
+
+    public function testEachRenderGetsAFreshPrivateDirectory(): void
+    {
+        $this->tool = new FakeTool('perl -e \'printf "%o", (stat shift)[2] & 0777\' "$(dirname "$7")" > "$7"');
+        $renderer = new MmdcRenderer(new Tool('mmdc', $this->tool->path()));
+
+        $this->assertSame('700', $renderer->render('x', Format::Svg)->bytes, 'only the owner can read the diagram');
+        $first = $this->tool->argv()[6];
+        $renderer->render('x', Format::Svg);
+        $second = $this->tool->argv()[6];
+
+        $this->assertMatchesRegularExpression('#^'.\preg_quote(\sys_get_temp_dir(), delimiter: '#').'/viz-mermaid-[0-9a-f]{32}/diagram\.svg$#', $first);
+        $this->assertNotSame($first, $second);
     }
 }

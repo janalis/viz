@@ -18,6 +18,7 @@ final class DisplayWidthTest extends TestCase
         yield 'wide' => ['日本', 4];
         yield 'accented' => ['café', 4];
         yield 'combining mark' => ["e\u{0301}", 1];
+        yield 'combining mark beside plain text' => ["e\u{0301}xy", 3];
         yield 'zero-width joiner family' => ["👨\u{200D}👩\u{200D}👧", 2];
         yield 'skin tone' => ["👍\u{1F3FD}", 2];
         yield 'hangul jamo' => ["\u{1100}\u{1161}\u{11A8}", 2];
@@ -39,6 +40,8 @@ final class DisplayWidthTest extends TestCase
         $this->assertSame('', DisplayWidth::prefix('日本', width: 1));
         $this->assertSame("e\u{0301}x", DisplayWidth::prefix("e\u{0301}xy", width: 2));
         $this->assertSame('abc', DisplayWidth::prefix('abc', width: 10));
+        $this->assertSame("a\t", DisplayWidth::prefix("a\tb", width: 4), 'a tab is kept as itself, three columns wide');
+        $this->assertSame('a', DisplayWidth::prefix("a\tb", width: 3));
     }
 
     public function testWrappingBreaksBetweenWordsAndCutsAWordWiderThanTheLine(): void
@@ -49,5 +52,13 @@ final class DisplayWidthTest extends TestCase
         $this->assertSame([''], DisplayWidth::wrap('', width: 5));
         $this->assertSame(['a', 'b'], DisplayWidth::wrap('a b', width: 0));
         $this->assertSame(['x', '日'], DisplayWidth::wrap('x 日', width: 1));
+        $this->assertSame(["\tindented", 't', 'e', 'x', 't'], DisplayWidth::wrap("\tindented text", width: 1), 'a glyph wider than the line ends the cutting');
+        $this->assertSame(["\tin", 'dente', 'd', 'text'], DisplayWidth::wrap("\tindented text", width: 5));
+    }
+
+    public function testAnAmbiguousGlyphInAClusterIsNarrow(): void
+    {
+        $this->assertSame(1, DisplayWidth::of("\u{2460}\u{0301}"));
+        $this->assertSame(2, DisplayWidth::of("\u{2460}\u{0301}x"));
     }
 }

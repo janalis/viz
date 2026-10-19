@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidNodeStyles;
 use Janalis\Viz\Mermaid\MermaidStatement;
+use PHPUnit\Framework\TestCase;
 
 final class MermaidNodeStylesTest extends TestCase
 {

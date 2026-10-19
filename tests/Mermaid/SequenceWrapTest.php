@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
 use Janalis\Viz\Mermaid\MermaidFrontMatter;
@@ -17,6 +15,8 @@ use Janalis\Viz\Mermaid\SequenceLayout;
 use Janalis\Viz\Mermaid\SequenceParser;
 use Janalis\Viz\Mermaid\SequenceText;
 use Janalis\Viz\Text\DisplayWidth;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class SequenceWrapTest extends TestCase
 {

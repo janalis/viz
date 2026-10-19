@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use Janalis\Viz\Mermaid\FlowchartLayout;
 use Janalis\Viz\Mermaid\FlowchartParser;
 use Janalis\Viz\Mermaid\MermaidLexer;
 use Janalis\Viz\Mermaid\MermaidOrigins;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class MermaidOriginsTest extends TestCase
 {
