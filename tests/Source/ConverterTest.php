@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\Source;
 
 use Janalis\Viz\Diagram\Edge;
 use Janalis\Viz\Diagram\LineStyle;
+use Janalis\Viz\Diagram\Node;
 use Janalis\Viz\GraphViz\DotRenderer;
 use Janalis\Viz\Process\Tool;
 use Janalis\Viz\Render\RenderFailure;
@@ -88,7 +89,8 @@ final class ConverterTest extends TestCase
         // Mermaid renames the identifiers it cannot read and draws a dashed line dotted; the rest survives.
         $shape = static fn (Edge $edge): array => [$edge->label, $edge->head, $edge->tail, LineStyle::Dashed === $edge->style ? LineStyle::Dotted : $edge->style];
         $this->assertSame(\array_map($shape, $converter->read($dot, SourceFormat::Dot)->edges), \array_map($shape, $converter->read($mermaid, SourceFormat::Mermaid)->edges));
-        $this->assertSame('web client', $converter->read($mermaid, SourceFormat::Mermaid)->node('n1')?->text());
+        $renamed = \array_find($converter->read($mermaid, SourceFormat::Mermaid)->nodes, static fn (Node $node): bool => 'web client' === $node->text());
+        $this->assertMatchesRegularExpression('/^n\d+$/', (string) $renamed?->id, 'the label survives the rename');
     }
 
     public function testAnUnusableConfigurationIsNamedInTheRefusal(): void

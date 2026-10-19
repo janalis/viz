@@ -127,10 +127,14 @@ final class DotReaderTest extends TestCase
         }
         $this->assertSame(['api', 'missing'], $graph->clusters[0]->nodes);
         $this->assertSame(['db'], $graph->clusters[0]->clusters[0]->nodes);
-        $this->assertSame(
-            \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to, $edge->label, $edge->style], $sample->edges),
-            \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to, $edge->label, $edge->style], $graph->edges),
-        );
+        // Graphviz versions list edges in different orders: newer ones as declared, older ones by subgraph.
+        $edges = static function (array $edges): array {
+            $rows = \array_map(static fn (Edge $edge): string => \implode('|', [$edge->from, $edge->to, $edge->label, $edge->style->value]), $edges);
+            \sort($rows);
+
+            return $rows;
+        };
+        $this->assertSame($edges($sample->edges), $edges($graph->edges));
     }
 
     /** @param array<string, mixed> $data */
