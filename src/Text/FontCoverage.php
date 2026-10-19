@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Text;
 
 /**
  * Which characters a TrueType or OpenType font draws, read from its `cmap` table: format 12
@@ -10,7 +10,7 @@ namespace Janalis\Viz\Mermaid;
  * (`.ttc`) answers for its first face. Only the table directory and the one subtable are read,
  * so large system fonts stay cheap to ask.
  */
-final class MermaidFontCoverage
+final class FontCoverage
 {
     /** @var array<int, bool> */
     private array $answers = [];

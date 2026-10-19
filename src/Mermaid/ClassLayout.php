@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /** Class compartments preserve attribute/method order and source-linked member legends. */
 final readonly class ClassLayout
@@ -85,7 +86,7 @@ final readonly class ClassLayout
         $styled = [];
         foreach ($routed->nodes as $node) {
             // An authored font style sets the whole card in that face, as the pinned CSS does.
-            $styled += \array_key_exists($node->name, $runs) && GraphFont::Regular === $node->font ? ['node:'.$node->id => $runs[$node->name]] : [];
+            $styled += \array_key_exists($node->name, $runs) && FontFace::Regular === $node->font ? ['node:'.$node->id => $runs[$node->name]] : [];
         }
         foreach ($routed->edges as $index => $edge) {
             // Note links follow the relationships and draw dotted, without UML ends.
@@ -114,7 +115,7 @@ final readonly class ClassLayout
      * lines are returned for their underlines, with the padded width.
      *
      * @param list<array{string, string}> $members display text and classifier, in label order
-     * @return array{list<list<array{string, GraphFont}>>, list<int>, int}
+     * @return array{list<list<array{string, FontFace}>>, list<int>, int}
      */
     private static function runs(string $label, int $annotations, array $members): array
     {
@@ -133,18 +134,18 @@ final readonly class ClassLayout
         $member = 0;
         foreach ($lines as $index => $line) {
             if ($index < $header) {
-                $runs[] = [[$line, $index < $annotations ? GraphFont::Regular : GraphFont::Bold]];
+                $runs[] = [[$line, $index < $annotations ? FontFace::Regular : FontFace::Bold]];
                 continue;
             }
             if ('' === $line && !\array_key_exists($member, $faces)) {
-                $runs[] = [['', GraphFont::Regular]];
+                $runs[] = [['', FontFace::Regular]];
                 continue;
             }
             [$text, $classifier] = '' === $line ? ['', ''] : $faces[$member++];
             $underlined = '$' === $classifier ? [...$underlined, $index] : $underlined;
             $runs[] = '' === $line
-                ? [['', GraphFont::Regular]]
-                : [[$text, '*' === $classifier ? GraphFont::Italic : GraphFont::Regular], [\str_repeat(' ', \max(0, $width - DisplayWidth::of($text))), GraphFont::Regular]];
+                ? [['', FontFace::Regular]]
+                : [[$text, '*' === $classifier ? FontFace::Italic : FontFace::Regular], [\str_repeat(' ', \max(0, $width - DisplayWidth::of($text))), FontFace::Regular]];
         }
 
         return [$runs, $underlined, $width];
@@ -153,7 +154,7 @@ final readonly class ClassLayout
     /** A member as the card wraps it. */
     private static function wrapped(string $text): string
     {
-        $wrap = MermaidWrap::text($text, width: 48);
+        $wrap = Wrap::text($text, width: 48);
         \iterator_to_array($wrap);
 
         return $wrap->getReturn();

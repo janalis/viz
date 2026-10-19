@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Pdf;
 
-use Janalis\Viz\Mermaid\MermaidFont;
 use Janalis\Viz\Pdf\PdfDocument;
 use Janalis\Viz\Pdf\PdfFont;
 use Janalis\Viz\Pdf\TrueTypeFont;
+use Janalis\Viz\Text\Font;
 use PHPUnit\Framework\TestCase;
 
 /** A whole TrueType face as a Type0 font whose glyphs keep their widths and their text. */
@@ -45,7 +45,7 @@ final class PdfFontTest extends TestCase
 
     public function testFixedPitchUprightFacesSetOnlyThoseFlags(): void
     {
-        $font = new PdfFont(TrueTypeFont::file(MermaidFont::FILE) ?? throw new \LogicException('The bundled face is missing'));
+        $font = new PdfFont(TrueTypeFont::file(Font::FILE) ?? throw new \LogicException('The bundled face is missing'));
         $document = new PdfDocument(compress: false);
         $font->write($document);
         $pdf = $document->bytes(1, producer: 'p');

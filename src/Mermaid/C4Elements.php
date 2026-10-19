@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\FontFace;
 
 /** Measured cards and source identities are independent of recursive grid placement. */
 final readonly class C4Elements
@@ -17,7 +17,7 @@ final readonly class C4Elements
      * @param array<int, int> $origins
      * @param list<array{text: string, origin: int}> $legend
      * @param array<string, string> $edgeLabels
-     * @param array<string, list<list<array{string, GraphFont}>>> $runs the cards' styled lines
+     * @param array<string, list<list<array{string, FontFace}>>> $runs the cards' styled lines
      */
     public function __construct(
         public array $nodes,

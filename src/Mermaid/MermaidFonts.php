@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
+use Janalis\Viz\Text\FontFace;
 
 /**
  * Pinned `<prefix>FontSize` and `<prefix>FontWeight` options as native text: a scale of the
@@ -16,7 +16,7 @@ final class MermaidFonts
      * The scale and face a family's font options set: `bold`, `bolder` or a weight from 600
      * draws bold, and a size that is no positive length keeps the default.
      *
-     * @return array{float, GraphFont}
+     * @return array{float, FontFace}
      */
     public static function configured(MermaidOptions $options, string $family, string $prefix, float $default): array
     {
@@ -25,7 +25,7 @@ final class MermaidFonts
         $weight = $options->value($family, $prefix.'FontWeight');
         $bold = \in_array($weight, ['bold', 'bolder'], strict: true) || (\is_numeric($weight) && (float) $weight >= 600);
 
-        return [$pixels > 0 ? $pixels / $default : 1.0, $bold ? GraphFont::Bold : GraphFont::Regular];
+        return [$pixels > 0 ? $pixels / $default : 1.0, $bold ? FontFace::Bold : FontFace::Regular];
     }
 
     /** A CSS size, a number or `N` / `Npx`, in pixels; null for anything else. */

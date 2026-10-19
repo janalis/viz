@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidFallbackFonts;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidScene;
+use Janalis\Viz\Text\FallbackFonts;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
 
 /** Markdown labels size their elements by the wrapped text and draw their styled runs. */
@@ -23,27 +23,27 @@ final class MermaidMarkdownLabelsTest extends TestCase
         $this->assertSame('Bold and it', $node->label);
         $this->assertSame(
             [[
-                ['Bold',  GraphFont::Bold],
-                [' and ', GraphFont::Regular],
-                ['it',    GraphFont::Italic],
+                ['Bold',  FontFace::Bold],
+                [' and ', FontFace::Regular],
+                ['it',    FontFace::Italic],
             ]],
             $scene->runs['node:'.$node->id],
         );
-        $this->assertSame([[['edge', GraphFont::Italic]]], $scene->runs['edge:0']);
-        $this->assertSame([[['Team', GraphFont::Bold]]], $scene->runs['cluster:0']);
+        $this->assertSame([[['edge', FontFace::Italic]]], $scene->runs['edge:0']);
+        $this->assertSame([[['Team', FontFace::Bold]]], $scene->runs['cluster:0']);
         $this->assertArrayNotHasKey('node:'.self::named($scene, 'B')->id, $scene->runs);
         $marks = self::marks($scene);
         $bold = self::mark($marks, 'Bold');
         $italic = self::mark($marks, 'it');
         $and = self::mark($marks, 'and');
-        $this->assertSame(GraphFont::Bold, $bold->font);
-        $this->assertSame(GraphFont::Italic, $italic->font);
-        $this->assertSame(GraphFont::Regular, $and->font);
+        $this->assertSame(FontFace::Bold, $bold->font);
+        $this->assertSame(FontFace::Italic, $italic->font);
+        $this->assertSame(FontFace::Regular, $and->font);
         // Runs sit side by side, one advance per character, centered on the node together.
         $this->assertEqualsWithDelta($bold->points[0][0] + 2 + 1 + 1.5, $and->points[0][0], 1e-9);
         $this->assertEqualsWithDelta($node->x, ($bold->points[0][0] - 2 + $italic->points[0][0] + 1) / 2, 1e-9);
-        $this->assertSame(GraphFont::Italic, self::mark($marks, 'edge')->font);
-        $this->assertSame(GraphFont::Bold, self::mark($marks, 'Team')->font);
+        $this->assertSame(FontFace::Italic, self::mark($marks, 'edge')->font);
+        $this->assertSame(FontFace::Bold, self::mark($marks, 'Team')->font);
     }
 
     public function testAutoWrapFollowsTheFamilyWidthUnlessDisabled(): void
@@ -67,7 +67,7 @@ final class MermaidMarkdownLabelsTest extends TestCase
             $this->markTestSkipped('GD with FreeType is required');
         }
         $drawing = new MermaidDrawing(40, 10, [new MermaidMark('text', [[20.0, 5.0]], 'A & 漢 😎')]);
-        $work = new MermaidPng(fallbacks: new MermaidFallbackFonts(['/nonexistent/font.ttf']))->render($drawing);
+        $work = new MermaidPng(fallbacks: new FallbackFonts(['/nonexistent/font.ttf']))->render($drawing);
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $image);

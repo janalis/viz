@@ -7,6 +7,7 @@ namespace Janalis\Viz\Mermaid;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 use Random\Randomizer;
 
 /** Nested groups are opaque during parent placement, then expand without overlapping their siblings. */
@@ -37,7 +38,7 @@ final readonly class ArchitecturePlacement
                     continue;
                 }
                 $label = MermaidText::decode($item['title'] ?? $item['id']);
-                $wrap = MermaidWrap::text($label, width: 40);
+                $wrap = Wrap::text($label, width: 40);
                 yield from $wrap;
                 $label = $wrap->getReturn();
                 [$baseWidth, $baseHeight] = MermaidText::box($label);

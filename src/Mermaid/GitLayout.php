@@ -8,6 +8,7 @@ use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\Wrap;
 
 /** Chronology follows one axis, stable branch order the other; glyphs retain commit identities. */
 final readonly class GitLayout
@@ -86,7 +87,7 @@ final readonly class GitLayout
     private function caption(string $id, bool $custom, string $type): \Generator
     {
         $shown = $this->configuration->labels() && 'CHERRY_PICK' !== $type && ('MERGE' !== $type || $custom);
-        $wrap = MermaidWrap::text($shown ? MermaidText::decode($id) : '', width: 20);
+        $wrap = Wrap::text($shown ? MermaidText::decode($id) : '', width: 20);
         yield from $wrap;
 
         return $wrap->getReturn();
@@ -237,7 +238,7 @@ final readonly class GitLayout
             foreach ($commit['tags'] as $tag) {
                 $text .= "\n[tag: ".$tag.']';
             }
-            $wrap = MermaidWrap::text(MermaidText::decode($text), width: 20);
+            $wrap = Wrap::text(MermaidText::decode($text), width: 20);
             yield from $wrap;
             $labels[$id] = $wrap->getReturn();
             $laneHeight = \max($laneHeight, 2 * (6.0 + (2 * (1 + \substr_count($labels[$id], needle: "\n")))));
@@ -245,7 +246,7 @@ final readonly class GitLayout
 
         $branchLabels = [];
         foreach ($source->branches as $name => $branch) {
-            $wrap = MermaidWrap::text(MermaidText::decode((string) $name), width: 18);
+            $wrap = Wrap::text(MermaidText::decode((string) $name), width: 18);
             yield from $wrap;
             $branchLabels[$name] = $wrap->getReturn();
             $laneHeight = \max($laneHeight, 8.0 + (2 * \substr_count($branchLabels[$name], needle: "\n")));

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Pdf;
 
-use Janalis\Viz\Layout\GraphFont;
-use Janalis\Viz\Mermaid\MermaidFont;
 use Janalis\Viz\Pdf\TrueTypeFont;
+use Janalis\Viz\Text\Font;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
 
 /** TrueType metrics and character maps, read from the bundled faces and from synthetic fonts. */
@@ -27,7 +27,7 @@ final class TrueTypeFontTest extends TestCase
 
     public function testTheBundledFacesReadTheirMetrics(): void
     {
-        $regular = TrueTypeFont::file(MermaidFont::FILE);
+        $regular = TrueTypeFont::file(Font::FILE);
         $this->assertNotNull($regular);
         $this->assertSame('IBMPlexMono-Regular', $regular->name);
         $this->assertSame(1000, $regular->unitsPerEm);
@@ -38,7 +38,7 @@ final class TrueTypeFontTest extends TestCase
         $this->assertSame(0.0, $regular->italicAngle);
         $this->assertTrue($regular->fixedPitch);
         $this->assertSame(400, $regular->weight);
-        $this->assertSame((string) \file_get_contents(MermaidFont::FILE), $regular->bytes);
+        $this->assertSame((string) \file_get_contents(Font::FILE), $regular->bytes);
         $this->assertSame(30, $regular->glyph(0x41));
         $this->assertSame(31, $regular->glyph(0x42));
         $this->assertSame(600, $regular->advance($regular->glyph(0x41)));
@@ -47,7 +47,7 @@ final class TrueTypeFontTest extends TestCase
         $this->assertSame(0, $regular->glyph(0x6F22));
         $this->assertSame(0, $regular->glyph(0x1_F60E));
 
-        $italic = TrueTypeFont::file(MermaidFont::file(GraphFont::BoldItalic));
+        $italic = TrueTypeFont::file(Font::file(FontFace::BoldItalic));
         $this->assertNotNull($italic);
         $this->assertSame('IBMPlexMono-BoldItalic', $italic->name);
         $this->assertSame(-9.0, $italic->italicAngle);

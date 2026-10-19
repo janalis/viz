@@ -7,6 +7,7 @@ namespace Janalis\Viz\Mermaid;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** A Cartesian unit square: x grows right, y grows up; decorations never become selectable points. */
 final readonly class QuadrantLayout
@@ -121,7 +122,7 @@ final readonly class QuadrantLayout
         $legend = [];
         $side = 100.0;
         foreach ($source->labels as $name => $item) {
-            $wrap = MermaidWrap::text($item['label'], width: 40);
+            $wrap = Wrap::text($item['label'], width: 40);
             yield from $wrap;
             $label = $wrap->getReturn();
             $scale = $this->scale($name);
@@ -147,7 +148,7 @@ final readonly class QuadrantLayout
             // An invalid point fill inherits the pinned root `fill: textColor`.
             $fill = \is_string($style['color'] ?? null) ? $style['color'] : '@quadrantPointFill|textColor';
             $color = \is_string($style['stroke-color'] ?? null) ? $style['stroke-color'] : $fill;
-            $wrap = MermaidWrap::text($point['label'], width: 40);
+            $wrap = Wrap::text($point['label'], width: 40);
             yield from $wrap;
             $label = $wrap->getReturn();
             [, $height] = MermaidText::box($label, $this->scale('point'));

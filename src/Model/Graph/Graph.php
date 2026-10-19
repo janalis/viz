@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Diagram;
+namespace Janalis\Viz\Model\Graph;
+
+use Janalis\Viz\Model\Direction;
 
 /**
  * A diagram before layout, in the terms Mermaid flowcharts, Graphviz and PlantUML

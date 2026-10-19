@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Mermaid\ErDiagram;
 use Janalis\Viz\Mermaid\ErLayout;
 use Janalis\Viz\Mermaid\ErLexer;
@@ -16,6 +15,7 @@ use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -249,7 +249,7 @@ final class ErTest extends TestCase
         $this->assertSame($top + 11, $marks[5]->points[0][1]);
         $this->assertSame([$node->x - ($node->w / 2), $node->x + ($node->w / 2)], [$marks[4]->points[0][0], $marks[4]->points[1][0]]);
         $this->assertSame(
-            [['int   ', GraphFont::Regular], ['   id  ', GraphFont::Regular], ['   PK', GraphFont::Regular], ['   '.\str_repeat(' ', times: 70), GraphFont::Regular]],
+            [['int   ', FontFace::Regular], ['   id  ', FontFace::Regular], ['   PK', FontFace::Regular], ['   '.\str_repeat(' ', times: 70), FontFace::Regular]],
             $scene->runs['node:'.$node->id][3],
         );
         $this->assertSame('rect', $scene->shapes[1]);

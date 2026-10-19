@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Layout;
+namespace Janalis\Viz\Text;
 
 /** Bundled monospaced faces share advances, preserving geometry when CSS changes typography. */
-enum GraphFont: string
+enum FontFace: string
 {
     case Regular = 'Regular';
     case Bold = 'Bold';

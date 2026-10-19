@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /**
  * Pinned `journeyRenderer`, ten pixels a unit: the actor legend at the left, each section's
@@ -85,7 +86,7 @@ final readonly class JourneyLayout
                 dashed: false,
                 background: true,
                 textColor: '@titleColor',
-                font: GraphFont::Bold,
+                font: FontFace::Bold,
                 fontScale: $scale,
             );
         }
@@ -130,7 +131,7 @@ final readonly class JourneyLayout
                 $count = \count(\array_filter(\array_slice($source->tasks, $index), static fn (array $later): bool => $later['section'] === $task['section']));
                 $width = (self::WIDTH * $count) + (5 * ($count - 1));
                 $section = $source->sections[$task['section']];
-                $wrap = MermaidWrap::text($section['label'], width: (int) \max(1, ($width - 2) / $scale));
+                $wrap = Wrap::text($section['label'], width: (int) \max(1, ($width - 2) / $scale));
                 yield from $wrap;
                 $id = \count($nodes);
                 $nodes[$id] = new GraphNode(
@@ -151,7 +152,7 @@ final readonly class JourneyLayout
                 $origins[$id] = $section['origin'];
             }
             $current = $task['section'];
-            $wrap = MermaidWrap::text($task['label'], width: (int) \max(1, (self::WIDTH - 2) / $scale));
+            $wrap = Wrap::text($task['label'], width: (int) \max(1, (self::WIDTH - 2) / $scale));
             yield from $wrap;
             $label = $wrap->getReturn();
             $height = \max(self::BOX, (2 * (\substr_count($label, needle: "\n") + 1) * $scale) + 2);

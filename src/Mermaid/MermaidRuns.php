@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
 
 /** A styled label line as text marks: each run placed after the previous one, every bundled face sharing one advance. */
 final class MermaidRuns
@@ -13,7 +13,7 @@ final class MermaidRuns
     /**
      * One line centered on `$x`.
      *
-     * @param list<array{string, GraphFont}> $runs
+     * @param list<array{string, FontFace}> $runs
      * @return list<MermaidMark>
      */
     public static function centered(array $runs, float $x, float $y, string $color, float $fontScale): array
@@ -28,7 +28,7 @@ final class MermaidRuns
     /**
      * One line starting at `$left`.
      *
-     * @param list<array{string, GraphFont}> $runs
+     * @param list<array{string, FontFace}> $runs
      * @return list<MermaidMark>
      */
     public static function from(array $runs, float $left, float $y, string $color, float $fontScale): array
@@ -47,7 +47,7 @@ final class MermaidRuns
         return $marks;
     }
 
-    /** @param list<array{string, GraphFont}> $runs */
+    /** @param list<array{string, FontFace}> $runs */
     private static function width(array $runs): int
     {
         return \array_sum(\array_map(static fn (array $run): int => DisplayWidth::of($run[0]), $runs));

@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /**
  * Source-ordered outline rows with elbow connectors and full semantic labels. As pinned, every
@@ -40,7 +41,7 @@ final readonly class TreeViewLayout
         yield from $metadata;
         $top = $metadata->getReturn();
         $rootId = \count($source->nodes) + \count($decorations);
-        $root = new GraphNode($rootId, 'tree-view-root', '/', 6.0, $top + 2, 4.0, 4.0, null, null, dashed: false, background: true, textColor: '@treeView.labelColor|=#000000', font: GraphFont::Bold);
+        $root = new GraphNode($rootId, 'tree-view-root', '/', 6.0, $top + 2, 4.0, 4.0, null, null, dashed: false, background: true, textColor: '@treeView.labelColor|=#000000', font: FontFace::Bold);
         $top += 4;
         $runs = [];
         // Pinned `rowIndent` pixels per level, eight units at its default of ten; `lineThickness` pixels.
@@ -53,7 +54,7 @@ final readonly class TreeViewLayout
             $summary = $label.('' === $description ? '' : ' — '.$description);
             // Pinned directories draw their name without the slash; a description follows it.
             $name = \str_ends_with($label, '/') ? \substr($label, offset: 0, length: -1) : $label;
-            $wrap = MermaidWrap::text($name.('' === $description ? '' : '  '.$description), width: 100);
+            $wrap = Wrap::text($name.('' === $description ? '' : '  '.$description), width: 100);
             yield from $wrap;
             $draw = $wrap->getReturn();
             $columns = \max(1, ...\array_map(DisplayWidth::of(...), \explode("\n", $draw)));
@@ -61,7 +62,7 @@ final readonly class TreeViewLayout
             $h = (float) (2 * (\substr_count($draw, needle: "\n") + 2));
             $left = 4.0 + (($item['depth'] + 1) * $indent);
             $highlight = 'highlight' === $item['class'];
-            $runs['node:'.$id] = self::runs($draw, \mb_strlen(\str_replace("\n", replace: '', subject: $name)), \str_ends_with($label, '/') ? GraphFont::Bold : GraphFont::Regular);
+            $runs['node:'.$id] = self::runs($draw, \mb_strlen(\str_replace("\n", replace: '', subject: $name)), \str_ends_with($label, '/') ? FontFace::Bold : FontFace::Regular);
             $nodes[$id] = new GraphNode(
                 $id,
                 'tree-view-'.$id,
@@ -116,15 +117,15 @@ final readonly class TreeViewLayout
     /**
      * A wrapped row's runs: the name in its face, the description after it in italics.
      *
-     * @return list<list<array{string, GraphFont}>>
+     * @return list<list<array{string, FontFace}>>
      */
-    private static function runs(string $draw, int $name, GraphFont $face): array
+    private static function runs(string $draw, int $name, FontFace $face): array
     {
         $lines = [];
         $consumed = 0;
         foreach (\explode("\n", $draw) as $line) {
             $split = \max(0, \min(\mb_strlen($line), $name - $consumed));
-            $runs = [[\mb_substr($line, start: 0, length: $split), $face], [\mb_substr($line, $split), GraphFont::Italic]];
+            $runs = [[\mb_substr($line, start: 0, length: $split), $face], [\mb_substr($line, $split), FontFace::Italic]];
             $lines[] = \array_values(\array_filter($runs, static fn (array $run): bool => '' !== $run[0]));
             $consumed += \mb_strlen($line);
         }
@@ -141,7 +142,7 @@ final readonly class TreeViewLayout
     private static function metadata(TreeViewDiagram $source, array &$nodes, array &$shapes, array &$legend, array &$origins, float &$width, float $top): \Generator
     {
         foreach ($source->metadata as $name => $item) {
-            $wrap = MermaidWrap::text($item['label'], width: 60);
+            $wrap = Wrap::text($item['label'], width: 60);
             yield from $wrap;
             $draw = $wrap->getReturn();
             [$w, $h] = MermaidText::box($draw);

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /**
  * Native ranked cards retain every authored field and relationship in their legend. Pictures
@@ -85,17 +86,17 @@ final class RequirementLayout
      * each authored field left-aligned by padding to the widest.
      *
      * @param array<string, string> $fields
-     * @return \Generator<int, null, mixed, array{string, list<list<array{string, GraphFont}>>, int}>
+     * @return \Generator<int, null, mixed, array{string, list<list<array{string, FontFace}>>, int}>
      */
     private static function card(string $id, string $type, array $fields): \Generator
     {
-        $header = MermaidWrap::text('<<'.(self::TYPES[$type] ?? $type).'>>', width: 48);
+        $header = Wrap::text('<<'.(self::TYPES[$type] ?? $type).'>>', width: 48);
         yield from $header;
-        $name = MermaidWrap::text($id, width: 48);
+        $name = Wrap::text($id, width: 48);
         yield from $name;
         $lines = [
-            ...\array_map(static fn (string $line): array => [[$line, GraphFont::Regular]], \explode("\n", $header->getReturn())),
-            ...\array_map(static fn (string $line): array => [[$line, GraphFont::Bold]], \explode("\n", $name->getReturn())),
+            ...\array_map(static fn (string $line): array => [[$line, FontFace::Regular]], \explode("\n", $header->getReturn())),
+            ...\array_map(static fn (string $line): array => [[$line, FontFace::Bold]], \explode("\n", $name->getReturn())),
         ];
         $count = \count($lines);
         $body = [];
@@ -105,13 +106,13 @@ final class RequirementLayout
                 continue;
             }
             $value = \in_array($key, ['risk', 'verifymethod'], strict: true) ? \ucfirst(\strtolower($value)) : $value;
-            $wrap = MermaidWrap::text($title.': '.$value, width: 48);
+            $wrap = Wrap::text($title.': '.$value, width: 48);
             yield from $wrap;
             \array_push($body, ...\explode("\n", $wrap->getReturn()));
         }
         $width = \max([0, ...\array_map(DisplayWidth::of(...), $body)]);
         foreach ($body as $line) {
-            $lines[] = [[$line, GraphFont::Regular], [\str_repeat(' ', \max(0, $width - DisplayWidth::of($line))), GraphFont::Regular]];
+            $lines[] = [[$line, FontFace::Regular], [\str_repeat(' ', \max(0, $width - DisplayWidth::of($line))), FontFace::Regular]];
         }
         $text = \implode("\n", [$header->getReturn(), $name->getReturn(), ...$body]);
 

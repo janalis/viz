@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Diagram;
+namespace Janalis\Viz\Model\Graph;
+
+use Janalis\Viz\Model\LineStyle;
 
 /** A connection from one node to another, by their identifiers. */
 final readonly class Edge

@@ -7,6 +7,7 @@ namespace Janalis\Viz\Mermaid;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Chronological cards occupy role lanes; returning to a lane always reserves readable space. */
 final class EventModelingLayout
@@ -24,7 +25,7 @@ final class EventModelingLayout
         $headers = [];
         $left = 8.0;
         foreach ($state->lanes as $lane => $label) {
-            $wrap = MermaidWrap::text($label, width: 24);
+            $wrap = Wrap::text($label, width: 24);
             yield from $wrap;
             $label = $wrap->getReturn();
             [$width, $height] = MermaidText::box($label);

@@ -6,6 +6,7 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** State cards use readable compartments while pseudostates retain their UML geometry. */
 final class StateLayout
@@ -32,7 +33,7 @@ final class StateLayout
         foreach ($graph->nodes as $id => $node) {
             $kind = $source->kinds[$id];
             if ('note' === $kind) {
-                $wrap = MermaidWrap::text($node['label'], width: 48);
+                $wrap = Wrap::text($node['label'], width: 48);
                 yield from $wrap;
                 $graph->nodes[$id]['label'] = $wrap->getReturn();
             }

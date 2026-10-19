@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\Theme\JsObject;
 use Janalis\Viz\Mermaid\Theme\Khroma;
 use Janalis\Viz\Mermaid\Theme\ThemeProgram;
+use Janalis\Viz\Text\FontFace;
 
 /** Equal-width columns with aligned headers, independently stacked cards and inert metadata. */
 final readonly class KanbanLayout
@@ -106,7 +106,7 @@ final readonly class KanbanLayout
         return MermaidColor::css($color ?? '#f2f4f8') ?? '#f2f4f8';
     }
 
-    /** @return \Generator<int, null, mixed, array{list<array{plain: string, draw: string, runs: list<list<array{string, GraphFont}>>, height: float}>, float}> */
+    /** @return \Generator<int, null, mixed, array{list<array{plain: string, draw: string, runs: list<list<array{string, FontFace}>>, height: float}>, float}> */
     private function measure(KanbanDiagram $source): \Generator
     {
         $labels = [];

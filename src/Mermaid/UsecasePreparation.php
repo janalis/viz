@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Text\Wrap;
+
 /** Request-local graph projection leaves the parsed declaration model unchanged. */
 final class UsecasePreparation
 {
@@ -91,7 +93,7 @@ final class UsecasePreparation
         }
         foreach ($this->source->notes as $index => $note) {
             $id = '@usecase-note:'.$index;
-            $wrap = MermaidWrap::text($note['label'], width: 48);
+            $wrap = Wrap::text($note['label'], width: 48);
             yield from $wrap;
             $this->graph->node($id, $note['markdown'] ? $this->markdown('node:'.$id, $note['raw']) : $wrap->getReturn(), $note['statement'], groups: []);
             $this->graph->edge($id, $note['target'], '', '.-', $note['statement']);
@@ -108,7 +110,7 @@ final class UsecasePreparation
         $label = null === $element->stereotype ? $element->label : '«'.$element->stereotype."»\n".$element->label;
         $shape = $element->shape;
         if (null === $element->json) {
-            $wrap = MermaidWrap::text($label, width: 48);
+            $wrap = Wrap::text($label, width: 48);
             yield from $wrap;
             // Pinned backtick labels are Markdown; a stereotype keeps its plain line above them.
             $label = $element->markdown ? $this->markdown('node:'.$id, (null === $element->stereotype ? '' : '«'.$element->stereotype."»\n").$element->raw) : $wrap->getReturn();

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /** Global temporal ranks and hierarchical cross-axis tracks keep lane ownership independent of edges. */
 final class SwimlanePlacement
@@ -141,7 +142,7 @@ final class SwimlanePlacement
                 $edges[] = ['from' => $start[$group['parent']], 'to' => $start[$name], 'length' => 0];
                 $edges[] = ['from' => $end[$name], 'to' => $end[$group['parent']], 'length' => 0];
             }
-            $wrap = MermaidWrap::text($group['label'], width: 24);
+            $wrap = Wrap::text($group['label'], width: 24);
             yield from $wrap;
             $label = $wrap->getReturn();
             [$width, $height] = $this->source->styles->measureCluster($name, $label);
@@ -335,7 +336,7 @@ final class SwimlanePlacement
                 color: MermaidColorSlots::stroke(null, $slot),
                 labelPos: null,
                 fillColor: MermaidColorSlots::fill(null, $slot),
-                font: GraphFont::Bold,
+                font: FontFace::Bold,
             ),
         );
 

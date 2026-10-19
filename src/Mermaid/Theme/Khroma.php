@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid\Theme;
 
-use Janalis\Viz\Mermaid\CssColorNames;
+use Janalis\Viz\Color\CssColorNames;
 
 /**
  * The khroma 2.1.0 functions Mermaid's themes call (MIT; resources/licenses/khroma.txt).

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Diagram;
+namespace Janalis\Viz\Model;
 
 /** Which way ranks advance: the first node at the start of the flow, edges pointing along it. */
 enum Direction: string

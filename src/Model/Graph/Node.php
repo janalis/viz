@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Diagram;
+namespace Janalis\Viz\Model\Graph;
 
 /** A node: an identifier edges refer to, the text shown, and how it is outlined. */
 final readonly class Node

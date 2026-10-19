@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Diagram;
+namespace Janalis\Viz\Model;
 
 /** How an edge's line is drawn. */
 enum LineStyle: string

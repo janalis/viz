@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\PlantUML;
 
-use Janalis\Viz\Diagram\Cluster;
-use Janalis\Viz\Diagram\Direction;
-use Janalis\Viz\Diagram\Edge;
-use Janalis\Viz\Diagram\Graph;
-use Janalis\Viz\Diagram\Node;
+use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\Cluster;
+use Janalis\Viz\Model\Graph\Edge;
+use Janalis\Viz\Model\Graph\Graph;
+use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\PlantUML\PlantUmlWriter;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;

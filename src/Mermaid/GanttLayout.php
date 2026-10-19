@@ -6,9 +6,10 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /** Proportional task bars share a time axis; vertical markers never allocate a task row. */
 final class GanttLayout
@@ -223,13 +224,13 @@ final class GanttLayout
         foreach ($sections as $sectionIndex => [$section, $tasks]) {
             $sectionTop = $top;
             if ('' !== $section) {
-                $header = $this->text('section:'.$section, $section, 23.0, $top + 2, GraphFont::Bold);
+                $header = $this->text('section:'.$section, $section, 23.0, $top + 2, FontFace::Bold);
                 $this->elements[$header->id] = $source->sections[$section]['origin'];
                 $top += 6;
             }
             $placed = [];
             foreach ($this->rows($tasks) as $index => $row) {
-                $wrap = MermaidWrap::text($tasks[$index]['label'], width: 36);
+                $wrap = Wrap::text($tasks[$index]['label'], width: 36);
                 yield from $wrap;
                 $placed[$row][$index] = $wrap->getReturn();
             }
@@ -311,7 +312,7 @@ final class GanttLayout
         ];
     }
 
-    private function text(string $name, string $label, float $x, float $y, GraphFont $font = GraphFont::Regular): GraphNode
+    private function text(string $name, string $label, float $x, float $y, FontFace $font = FontFace::Regular): GraphNode
     {
         // Pinned `fontSize` sets task text and `sectionFontSize` section titles, both from 11 pixels.
         $scale = match (true) {

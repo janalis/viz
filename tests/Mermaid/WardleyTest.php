@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
@@ -18,6 +17,7 @@ use Janalis\Viz\Mermaid\WardleyLexer;
 use Janalis\Viz\Mermaid\WardleyParser;
 use Janalis\Viz\Mermaid\WardleySymbols;
 use Janalis\Viz\Render\Format;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -206,7 +206,7 @@ final class WardleyTest extends TestCase
         $user = \array_find($scene->graph->nodes, static fn ($node): bool => 'User %% literal' === $node->name);
         $this->assertLessThan($cloud->x, $service->x);
         $this->assertLessThan($cloud->y, $service->y);
-        $this->assertSame(GraphFont::Bold, $user->font);
+        $this->assertSame(FontFace::Bold, $user->font);
         $marketMarks = WardleySymbols::marks($cloud, $scene->shapes[$cloud->id]);
         $this->assertCount(3, \array_filter($marketMarks, static fn (MermaidMark $mark): bool => 'polygon' === $mark->kind));
         $this->assertCount(1, \array_filter($marketMarks, static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind));

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Diagram\ArrowHead;
-use Janalis\Viz\Diagram\Direction;
-use Janalis\Viz\Diagram\Edge;
-use Janalis\Viz\Diagram\LineStyle;
-use Janalis\Viz\Diagram\Node;
-use Janalis\Viz\Diagram\Shape;
 use Janalis\Viz\Mermaid\MermaidReader;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\MermaidWriter;
+use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\ArrowHead;
+use Janalis\Viz\Model\Graph\Edge;
+use Janalis\Viz\Model\Graph\Node;
+use Janalis\Viz\Model\Graph\Shape;
+use Janalis\Viz\Model\LineStyle;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;
 

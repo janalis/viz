@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Diagram;
+namespace Janalis\Viz\Model\Graph;
 
 /** The node outlines all three languages can draw, each by its own name. */
 enum Shape: string

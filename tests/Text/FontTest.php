@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Tests\Mermaid;
+namespace Janalis\Viz\Tests\Text;
 
 use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidFont;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidPng;
+use Janalis\Viz\Text\Font;
 use PHPUnit\Framework\Attributes\After;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
-final class MermaidFontTest extends TestCase
+final class FontTest extends TestCase
 {
     private ?string $directory = null;
 
@@ -34,14 +34,14 @@ final class MermaidFontTest extends TestCase
         $files->remove($this->directory);
         $files->mkdir($this->directory);
         $archive = new \PharData($this->directory.'/font.tar');
-        $archive->addFile(MermaidFont::FILE, 'font.ttf');
+        $archive->addFile(Font::FILE, 'font.ttf');
 
         return 'phar://'.$this->directory.'/font.tar/font.ttf';
     }
 
     public function testMissingPackagedFontIsReportedBeforeCallingFreeType(): void
     {
-        $font = new MermaidFont('phar:///nonexistent/font.tar/font.ttf');
+        $font = new Font('phar:///nonexistent/font.tar/font.ttf');
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageIsOrContains('Cannot read');
         $font->path();
@@ -50,12 +50,12 @@ final class MermaidFontTest extends TestCase
     public function testPharFontIsMaterializedAndRemovedWithoutTouchingItsSource(): void
     {
         $source = $this->archive();
-        $font = new MermaidFont($source);
+        $font = new Font($source);
         $path = $font->path();
         $this->assertStringStartsNotWith('phar://', $path);
         $this->assertFileExists($path);
         $this->assertSame($path, $font->path(), 'one lease reuses one extraction');
-        $this->assertFileEquals(MermaidFont::FILE, $path);
+        $this->assertFileEquals(Font::FILE, $path);
         $this->assertSame(0o600, \fileperms($path) & 0o777);
         $font->close();
         $this->assertFileDoesNotExist($path);
@@ -65,10 +65,10 @@ final class MermaidFontTest extends TestCase
         $this->assertFileExists($again, 'a closed lease extracts afresh');
         $font->close();
         $this->assertFileDoesNotExist($again);
-        $local = new MermaidFont();
-        $this->assertSame(MermaidFont::FILE, $local->path());
+        $local = new Font();
+        $this->assertSame(Font::FILE, $local->path());
         $local->close();
-        $this->assertFileExists(MermaidFont::FILE, 'closing a local font never removes the bundled file');
+        $this->assertFileExists(Font::FILE, 'closing a local font never removes the bundled file');
 
         $work = new MermaidPng(font: $source)->render(new MermaidDrawing(20, 10, [new MermaidMark('text', [[10.0, 5.0]], 'Packaged')]));
         \iterator_to_array($work);
@@ -84,7 +84,7 @@ final class MermaidFontTest extends TestCase
                 throw new IOException('disk full');
             }
         };
-        $font = new MermaidFont($this->archive(), $files);
+        $font = new Font($this->archive(), $files);
         try {
             $font->path();
             $this->fail('A failed extraction was accepted');

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\FlowchartShapes;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
 
 /** Pinned tree view icons, the implicit root and directory faces, through the native pipeline. */
@@ -100,28 +100,28 @@ final class TreeViewIconsTest extends TestCase
         $scene = NativeFixtureScene::render("treeView-beta\nsrc/\n  index.js ## entry point\nREADME.md");
         $root = \array_find($scene->graph->nodes, static fn (GraphNode $node): bool => 'tree-view-root' === $node->name);
         $this->assertInstanceOf(GraphNode::class, $root);
-        $this->assertSame(['/', GraphFont::Bold, true], [$root->label, $root->font, $root->background]);
+        $this->assertSame(['/', FontFace::Bold, true], [$root->label, $root->font, $root->background]);
         $this->assertNull($scene->selectable($root->id), 'the root is no source statement');
         $tops = \array_values(\array_filter($scene->graph->edges, static fn (GraphEdge $edge): bool => $root->id === $edge->tail));
         $this->assertCount(2, $tops);
         $this->assertSame(8.0, $scene->graph->nodes[0]->x - ($scene->graph->nodes[0]->w / 2) - ($root->x - ($root->w / 2)), 'top-level rows indent one level under the root');
-        $this->assertSame([['src', GraphFont::Bold]], $scene->runs['node:0'][0]);
+        $this->assertSame([['src', FontFace::Bold]], $scene->runs['node:0'][0]);
         $this->assertSame('src/', $scene->graph->nodes[0]->label, 'search and the legend keep the slash');
         $this->assertSame(
             [
-                ['index.js',      GraphFont::Regular],
-                ['  entry point', GraphFont::Italic],
+                ['index.js',      FontFace::Regular],
+                ['  entry point', FontFace::Italic],
             ],
             $scene->runs['node:1'][0],
         );
-        $this->assertSame([['README.md', GraphFont::Regular]], $scene->runs['node:2'][0]);
+        $this->assertSame([['README.md', FontFace::Regular]], $scene->runs['node:2'][0]);
         $wrapped = NativeFixtureScene::render("treeView-beta\n\"two\nlines/\" ## and a note");
         $this->assertSame(
             [
-                [['two', GraphFont::Bold]],
+                [['two', FontFace::Bold]],
                 [
-                    ['lines',        GraphFont::Bold],
-                    ['  and a note', GraphFont::Italic],
+                    ['lines',        FontFace::Bold],
+                    ['  and a note', FontFace::Italic],
                 ],
             ],
             $wrapped->runs['node:0'],

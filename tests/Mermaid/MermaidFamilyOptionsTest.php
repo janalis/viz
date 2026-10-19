@@ -6,10 +6,10 @@ namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidPalette;
 use Janalis\Viz\Mermaid\MermaidScene;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -95,19 +95,19 @@ final class MermaidFamilyOptionsTest extends TestCase
         $body = "sequenceDiagram\nparticipant A\nparticipant B\nA->>B: hi\nNote over A,B: wide<br>note\n";
         $find = static fn (MermaidScene $scene, string $label): GraphNode => \array_first(\array_filter($scene->graph->nodes, static fn (GraphNode $node): bool => $label === $node->label));
         $plain = self::scene([], $body);
-        $this->assertSame([1.0, GraphFont::Regular, 1.0], [$find($plain, label: 'hi')->fontScale, $find($plain, label: 'hi')->font, $find($plain, label: "wide\nnote")->fontScale]);
+        $this->assertSame([1.0, FontFace::Regular, 1.0], [$find($plain, label: 'hi')->fontScale, $find($plain, label: 'hi')->font, $find($plain, label: "wide\nnote")->fontScale]);
         $this->assertArrayNotHasKey('node:'.$find($plain, label: "wide\nnote")->id, $plain->runs, 'centered notes need no runs');
         $styled = self::scene(['sequence' => ['messageFontSize' => 24, 'messageFontWeight' => 'bold', 'noteFontSize' => '21px', 'actorFontWeight' => 700, 'noteAlign' => 'left']], $body);
         $message = $find($styled, label: 'hi');
         $note = $find($styled, label: "wide\nnote");
-        $this->assertSame([1.5, GraphFont::Bold, 1.5, GraphFont::Regular], [$message->fontScale, $message->font, $note->fontScale, $note->font]);
+        $this->assertSame([1.5, FontFace::Bold, 1.5, FontFace::Regular], [$message->fontScale, $message->font, $note->fontScale, $note->font]);
         $this->assertSame(7.0, $message->h, 'the scaled text sizes its box');
-        $this->assertSame(GraphFont::Bold, $find($styled, label: 'A')->font, 'actors take their weight');
+        $this->assertSame(FontFace::Bold, $find($styled, label: 'A')->font, 'actors take their weight');
         $columns = (int) \round(($note->w - 4) / 1.5);
-        $this->assertSame([['wide', GraphFont::Regular], [\str_repeat(' ', $columns - 4), GraphFont::Regular]], $styled->runs['node:'.$note->id][0], 'left-aligned lines pad on the right');
+        $this->assertSame([['wide', FontFace::Regular], [\str_repeat(' ', $columns - 4), FontFace::Regular]], $styled->runs['node:'.$note->id][0], 'left-aligned lines pad on the right');
         $right = self::scene(['sequence' => ['noteAlign' => 'right']], $body);
         $note = $find($right, label: "wide\nnote");
-        $this->assertSame([[\str_repeat(' ', (int) \round($note->w - 4) - 4), GraphFont::Regular], ['note', GraphFont::Regular]], $right->runs['node:'.$note->id][1]);
+        $this->assertSame([[\str_repeat(' ', (int) \round($note->w - 4) - 4), FontFace::Regular], ['note', FontFace::Regular]], $right->runs['node:'.$note->id][1]);
     }
 
     /** @return iterable<string, array{string, string, string, float}> */

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\ClassMarkers;
 use Janalis\Viz\Mermaid\ClassMembers;
@@ -13,6 +12,7 @@ use Janalis\Viz\Mermaid\ErMarkers;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidPolyline;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -43,27 +43,27 @@ final class ClassCardsTest extends TestCase
         $scene = NativeFixtureScene::render("classDiagram\nclass Animal{\n<<interface>>\n+int age\n+isMammal()\$\n+mate()*\n}");
         $animal = \array_find($scene->graph->nodes, static fn (GraphNode $node): bool => 'Animal' === $node->name);
         $runs = $scene->runs['node:'.$animal->id];
-        $this->assertSame([['«interface»', GraphFont::Regular]], $runs[0]);
-        $this->assertSame([['Animal', GraphFont::Bold]], $runs[1]);
+        $this->assertSame([['«interface»', FontFace::Regular]], $runs[0]);
+        $this->assertSame([['Animal', FontFace::Bold]], $runs[1]);
         $this->assertSame(
             [
-                ['+int age', GraphFont::Regular],
-                ['   ',      GraphFont::Regular],
+                ['+int age', FontFace::Regular],
+                ['   ',      FontFace::Regular],
             ],
             $runs[3],
             'members pad to the widest, +isMammal()',
         );
         $this->assertSame(
             [
-                ['+mate()', GraphFont::Italic],
-                ['    ',    GraphFont::Regular],
+                ['+mate()', FontFace::Italic],
+                ['    ',    FontFace::Regular],
             ],
             $runs[6],
         );
         $this->assertSame(
             [
-                ['+isMammal()', GraphFont::Regular],
-                ['',            GraphFont::Regular],
+                ['+isMammal()', FontFace::Regular],
+                ['',            FontFace::Regular],
             ],
             $runs[5],
         );
@@ -87,7 +87,7 @@ final class ClassCardsTest extends TestCase
         $this->assertStringEndsWith(' ', $lines[\count($lines) - 2]);
         $two = NativeFixtureScene::render("classDiagram\nclass B{\n<<interface>>\n<<service>>\n}");
         $this->assertSame(
-            [['«interface»', GraphFont::Regular]],
+            [['«interface»', FontFace::Regular]],
             $two->runs['node:'.\array_find($two->graph->nodes, static fn (GraphNode $node): bool => 'B' === $node->name)->id][0],
             'only the first annotation shows, as pinned',
         );

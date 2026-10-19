@@ -7,6 +7,7 @@ namespace Janalis\Viz\Mermaid;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Bars paint behind lines; every datum keeps its own semantic node and authored series origin. */
 final readonly class XyLayout
@@ -134,7 +135,7 @@ final readonly class XyLayout
             if (\array_key_exists($label, $text)) {
                 continue;
             }
-            $work = MermaidWrap::text($label, width: 32);
+            $work = Wrap::text($label, width: 32);
             yield from $work;
             $wrapped = $work->getReturn();
             [$width, $extent] = MermaidText::box($wrapped);

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\C4Arguments;
 use Janalis\Viz\Mermaid\C4Diagram;
@@ -17,6 +16,7 @@ use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Render\Format;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -125,7 +125,7 @@ final class C4Test extends TestCase
         $this->assertGreaterThan($frames['first']->y1, $frames['second']->y0);
         $this->assertGreaterThan($frames['first']->x0, $frames['nested']->x0);
         $this->assertLessThan($frames['first']->x1, $frames['nested']->x1);
-        $this->assertSame(GraphFont::Bold, $frames['first']->font);
+        $this->assertSame(FontFace::Bold, $frames['first']->font);
         $this->assertTrue($frames['first']->dashed);
         $this->assertSame(5, $scene->elements[$byName['first']->id]);
         $this->assertSame('text', $scene->shapes[$byName['first']->id]);
@@ -337,22 +337,22 @@ final class C4Test extends TestCase
             "---\nconfig:\n  c4:\n    personFontSize: 21\n    systemFontWeight: 700\n    container_dbFontWeight: bolder\n    messageFontSize: '18px'\n    boundaryFontSize: 28\n---\nC4Context\nEnterprise_Boundary(b0, \"Bank\") {\nPerson(a, \"Customer\", \"A bank customer\")\nSystem(b, \"Banking\", \"Core\", \$shape=\"hexagon\")\nContainerDb(d, \"Store\", \"SQL\")\nSystem_Ext(e, \"Mail\")\n}\nRel(a, b, \"uses\")",
         );
         $nodes = \array_column($scene->graph->nodes, null, 'name');
-        $this->assertSame([1.5, GraphFont::Regular], [$nodes['a']->fontScale, $nodes['a']->font], 'a size scales from the pinned 14 pixels');
-        $this->assertSame([1.0, GraphFont::Bold], [$nodes['b']->fontScale, $nodes['b']->font]);
-        $this->assertSame([GraphFont::Bold, GraphFont::Regular], [$nodes['d']->font, $nodes['e']->font], 'each type reads its own weight');
+        $this->assertSame([1.5, FontFace::Regular], [$nodes['a']->fontScale, $nodes['a']->font], 'a size scales from the pinned 14 pixels');
+        $this->assertSame([1.0, FontFace::Bold], [$nodes['b']->fontScale, $nodes['b']->font]);
+        $this->assertSame([FontFace::Bold, FontFace::Regular], [$nodes['d']->font, $nodes['e']->font], 'each type reads its own weight');
         $this->assertSame('hexagon', $scene->shapes[$nodes['b']->id], 'any registered flowchart shape');
-        $this->assertSame([['', GraphFont::Regular]], $scene->runs['node:'.$nodes['a']->id][0], 'a person keeps room for its head');
+        $this->assertSame([['', FontFace::Regular]], $scene->runs['node:'.$nodes['a']->id][0], 'a person keeps room for its head');
         $this->assertSame(
-            [[['Customer', GraphFont::Bold]], [['[Person]', GraphFont::Regular]]],
+            [[['Customer', FontFace::Bold]], [['[Person]', FontFace::Regular]]],
             \array_slice($scene->runs['node:'.$nodes['a']->id], offset: 2, length: 2),
             'the name is bold, as pinned',
         );
-        $this->assertSame([[['Banking', GraphFont::Bold]], [['[Software System]', GraphFont::Bold]]], \array_slice($scene->runs['node:'.$nodes['b']->id], offset: 0, length: 2));
+        $this->assertSame([[['Banking', FontFace::Bold]], [['[Software System]', FontFace::Bold]]], \array_slice($scene->runs['node:'.$nodes['b']->id], offset: 0, length: 2));
         $edge = \array_find($scene->graph->edges, static fn ($edge): bool => null !== $edge->label);
         $this->assertSame(1.5, $edge->fontScale, 'messages scale from the pinned 12 pixels, `px` or not');
         $this->assertSame([2.0, 2.0], [$scene->graph->clusters[0]->fontScale, $nodes['b0']->fontScale]);
         $plain = \array_column(NativeFixtureScene::render("C4Context\nPerson(a, \"A\")\nRel(a, a, \"x\")")->graph->nodes, null, 'name');
-        $this->assertSame([1.0, GraphFont::Regular], [$plain['a']->fontScale, $plain['a']->font]);
+        $this->assertSame([1.0, FontFace::Regular], [$plain['a']->fontScale, $plain['a']->font]);
         $zero = \array_column(NativeFixtureScene::render("---\nconfig:\n  c4:\n    personFontSize: 0\n---\nC4Context\nPerson(a, \"A\")")->graph->nodes, null, 'name');
         $this->assertSame(1.0, $zero['a']->fontScale, 'a zero size keeps the default rather than vanishing');
         // Pinned sprites reserve 48 pixels above the text, and draw nothing in them.
@@ -360,7 +360,7 @@ final class C4Test extends TestCase
         $sprite = NativeFixtureScene::render("C4Context\nSystem(s, \"S\", \$sprite=\"users\")");
         $node = \array_column($sprite->graph->nodes, null, 'name')['s'];
         $this->assertSame([$plainSystem->h + 4, "\n\nS\n[Software System]"], [$node->h, $node->drawLabel]);
-        $this->assertSame([['', GraphFont::Regular]], $sprite->runs['node:'.$node->id][1]);
+        $this->assertSame([['', FontFace::Regular]], $sprite->runs['node:'.$node->id][1]);
         $person = \array_column(NativeFixtureScene::render("C4Context\nPerson(p, \"P\", \$sprite=\"users\")")->graph->nodes, null, 'name')['p'];
         $this->assertSame("\n\n\n\nP\n[Person]", $person->drawLabel, 'a person keeps its head room too');
     }

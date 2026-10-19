@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Text;
 
 /**
  * Host fonts for characters the bundled face lacks, tried in order: broad Unicode faces first,
  * then CJK and symbol faces on macOS, Linux and Windows. Color emoji fonts are absent, since GD
  * draws outlines only. A character no candidate covers keeps the bundled face.
  */
-final class MermaidFallbackFonts
+final class FallbackFonts
 {
     public const array HOST = [
         '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
@@ -28,7 +28,7 @@ final class MermaidFallbackFonts
         'C:\Windows\Fonts\seguisym.ttf',
     ];
 
-    /** @var array<string, MermaidFontCoverage> */
+    /** @var array<string, FontCoverage> */
     private array $coverages = [];
 
     /** @param list<string> $candidates */
@@ -42,8 +42,8 @@ final class MermaidFallbackFonts
         return \array_find($this->candidates, fn (string $path): bool => \is_readable($path) && $this->coverage($path)->covers($codepoint));
     }
 
-    public function coverage(string $path): MermaidFontCoverage
+    public function coverage(string $path): FontCoverage
     {
-        return $this->coverages[$path] ??= new MermaidFontCoverage($path);
+        return $this->coverages[$path] ??= new FontCoverage($path);
     }
 }

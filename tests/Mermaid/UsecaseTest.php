@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
@@ -19,6 +18,7 @@ use Janalis\Viz\Mermaid\UsecaseLayout;
 use Janalis\Viz\Mermaid\UsecaseLexer;
 use Janalis\Viz\Mermaid\UsecaseParser;
 use Janalis\Viz\Render\Format;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -327,25 +327,25 @@ final class UsecaseTest extends TestCase
         $scene = NativeFixtureScene::render((string) \file_get_contents(__DIR__.'/../fixtures/mermaid/usecase/04-labels-and-notes.mmd'));
         $nodes = \array_column($scene->graph->nodes, null, 'name');
         $this->assertSame(
-            [[['Formatted label', GraphFont::Bold]], [['with a physical line break', GraphFont::Regular]]],
+            [[['Formatted label', FontFace::Bold]], [['with a physical line break', FontFace::Regular]]],
             $scene->runs['node:'.$nodes['Formatted']->id],
             'the physical break drops its indentation',
         );
         $this->assertSame("Formatted label\nwith a physical line break", $nodes['Formatted']->label);
-        $this->assertSame([[['Reviewer', GraphFont::Italic]]], $scene->runs['node:'.$nodes['Reviewer']->id]);
+        $this->assertSame([[['Reviewer', FontFace::Italic]]], $scene->runs['node:'.$nodes['Reviewer']->id]);
         $this->assertArrayNotHasKey('node:'.$nodes['Literal']->id, $scene->runs, 'a plain string keeps its markers');
         $this->assertSame(
             [
-                ['Requires an ',   GraphFont::Regular],
-                ['active session', GraphFont::Bold],
+                ['Requires an ',   FontFace::Regular],
+                ['active session', FontFace::Bold],
             ],
             $scene->runs['node:'.$nodes['@usecase-note:0']->id][0],
         );
         $edge = \array_find_key($scene->graph->edges, static fn ($edge): bool => 'opens review form' === $edge->label);
         $this->assertSame(
             [[
-                ['opens ',      GraphFont::Regular],
-                ['review form', GraphFont::Bold],
+                ['opens ',      FontFace::Regular],
+                ['review form', FontFace::Bold],
             ]],
             $scene->runs['edge:'.$edge],
         );
@@ -353,15 +353,15 @@ final class UsecaseTest extends TestCase
         \iterator_to_array($drawing);
         $reviewer = \array_values(\array_filter($drawing->getReturn()->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind && 'Reviewer' === $mark->text));
         $this->assertCount(1, $reviewer, 'an actor draws its caption once, under its glyph');
-        $this->assertSame(GraphFont::Italic, $reviewer[0]->font);
+        $this->assertSame(FontFace::Italic, $reviewer[0]->font);
         $stereotyped = NativeFixtureScene::render("usecase-beta\n  Quote(\"`**Prepare** quote`\") <<Core>>\n");
         $quote = \array_column($stereotyped->graph->nodes, null, 'name')['Quote'];
         $this->assertSame(
             [
-                [['«Core»', GraphFont::Regular]],
+                [['«Core»', FontFace::Regular]],
                 [
-                    ['Prepare', GraphFont::Bold],
-                    [' quote',  GraphFont::Regular],
+                    ['Prepare', FontFace::Bold],
+                    [' quote',  FontFace::Regular],
                 ],
             ],
             $stereotyped->runs['node:'.$quote->id],

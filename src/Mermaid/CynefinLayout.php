@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /**
  * Expanding quadrants meet in one field around a central confusion ellipse, as pinned, with
@@ -66,7 +67,7 @@ final readonly class CynefinLayout
                 null,
                 dashed: false,
                 textColor: '@cynefin.labelColor',
-                font: GraphFont::Bold,
+                font: FontFace::Bold,
             );
             $shapes[$id] = 'text';
             $headers[$domain] = $nodes[$id];
@@ -114,7 +115,7 @@ final readonly class CynefinLayout
             $items[$domain] = [];
             $heights[$domain] = 24.0;
             foreach ($source->domains[$domain]['items'] ?? [] as $item) {
-                $wrap = MermaidWrap::text($item['label'], width: 32);
+                $wrap = Wrap::text($item['label'], width: 32);
                 yield from $wrap;
                 $draw = $wrap->getReturn();
                 [, $h] = MermaidText::box($draw);
@@ -199,7 +200,7 @@ final readonly class CynefinLayout
             $shapes[$id] = $confusion ? 'ellipse' : 'rect';
             $origins[$id] = $origin;
             if ($descriptions) {
-                $caption = self::caption($nodes, $shapes, $origins, self::DESCRIPTIONS[$domain], $position['x'], $position['content'] + 6, $origin, GraphFont::Italic);
+                $caption = self::caption($nodes, $shapes, $origins, self::DESCRIPTIONS[$domain], $position['x'], $position['content'] + 6, $origin, FontFace::Italic);
                 yield from $caption;
             }
             $top = $position['content'] + 20;
@@ -236,9 +237,9 @@ final readonly class CynefinLayout
      * @param array<int, int> $origins
      * @return \Generator<int, null, mixed, GraphNode>
      */
-    private static function caption(array &$nodes, array &$shapes, array &$origins, string $text, float $x, float $top, int $origin, GraphFont $font = GraphFont::Regular): \Generator
+    private static function caption(array &$nodes, array &$shapes, array &$origins, string $text, float $x, float $top, int $origin, FontFace $font = FontFace::Regular): \Generator
     {
-        $wrap = MermaidWrap::text($text, width: 60);
+        $wrap = Wrap::text($text, width: 60);
         yield from $wrap;
         $draw = $wrap->getReturn();
         [$w, $h] = MermaidText::box($draw);

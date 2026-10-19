@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\GraphViz;
+namespace Janalis\Viz\Color;
 
 /**
  * Normalizes Graphviz color attribute values to `#rrggbb` for direct SGR
@@ -10,7 +10,7 @@ namespace Janalis\Viz\GraphViz;
  * default applies — a wrong guess would recolor someone's graph, a null never
  * does.
  */
-final class DotColor
+final class ColorValue
 {
     /** The X11 names dot documents actually use; anything absent falls back to the theme. */
     private const array NAMES = [

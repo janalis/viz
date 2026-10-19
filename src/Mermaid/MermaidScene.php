@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
+use Janalis\Viz\Text\FontFace;
 
 /** Shared native scene: existing box/line/text graph primitives plus source origins. */
 final readonly class MermaidScene
@@ -17,7 +17,7 @@ final readonly class MermaidScene
      * @param list<array{text: string, origin: int}> $legend labels and relationships readable even in a narrow pane
      * @param array<int, int> $elements selectable node id => source line; decorations are absent
      * @param array<int, string> $shapes graphical node outlines keyed by layout id
-     * @param array<string, list<list<array{string, GraphFont}>>> $runs styled label lines by `node:ID`, `edge:INDEX` or `cluster:INDEX`
+     * @param array<string, list<list<array{string, FontFace}>>> $runs styled label lines by `node:ID`, `edge:INDEX` or `cluster:INDEX`
      */
     public function __construct(
         public GraphLayout $graph,
@@ -51,7 +51,7 @@ final readonly class MermaidScene
         );
     }
 
-    /** @param array<string, list<list<array{string, GraphFont}>>> $runs */
+    /** @param array<string, list<list<array{string, FontFace}>>> $runs */
     public function styled(array $runs): self
     {
         return new self($this->graph, $this->origins, $this->legend, $this->elements, $this->shapes, $this->background, $this->titleColor, $this->titleScale, $this->palette, $runs);

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\GraphViz\DotColor;
+use Janalis\Viz\Color\ColorValue;
+use Janalis\Viz\Text\FallbackFonts;
+use Janalis\Viz\Text\Font;
 
 /** Native raster backend; yields between marks and caps allocation before creating GD images. */
 final readonly class MermaidPng
@@ -20,8 +22,8 @@ final readonly class MermaidPng
     public function __construct(
         private int $maxPixels = self::MAX_PIXELS,
         ?bool $gdAvailable = null,
-        private string $font = MermaidFont::FILE,
-        private MermaidFallbackFonts $fallbacks = new MermaidFallbackFonts(),
+        private string $font = Font::FILE,
+        private FallbackFonts $fallbacks = new FallbackFonts(),
     ) {
         $this->available = $gdAvailable ?? \function_exists('imagettftext');
     }
@@ -44,7 +46,7 @@ final readonly class MermaidPng
             \imagefill($canvas, x: 0, y: 0, color: self::color($drawing->background ?? '#ffffff'));
             foreach ($drawing->marks as $mark) {
                 $face = $mark->font->value;
-                $fonts[$face] ??= new MermaidFont(MermaidFont::file($mark->font, $this->font));
+                $fonts[$face] ??= new Font(Font::file($mark->font, $this->font));
                 $path = $fonts[$face]->path();
                 $this->mark($canvas, $mark, $scale, $path);
                 yield null;
@@ -230,7 +232,7 @@ final readonly class MermaidPng
 
     private static function color(string $value, float $opacity = 1.0): int
     {
-        $rgb = (int) \hexdec(\substr(DotColor::normalize($value) ?? '#333333', offset: 1));
+        $rgb = (int) \hexdec(\substr(ColorValue::normalize($value) ?? '#333333', offset: 1));
         $embedded = 1 === \preg_match('/^#[0-9a-f]{8}$/i', $value) ? \hexdec(\substr($value, offset: -2)) / 255 : 1.0;
         $alpha = (int) \round(127 * (1 - ($opacity * $embedded)));
 

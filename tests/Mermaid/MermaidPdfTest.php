@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidFallbackFonts;
-use Janalis\Viz\Mermaid\MermaidFont;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidPdf;
 use Janalis\Viz\Tests\Pdf\PdfCanvasTest;
 use Janalis\Viz\Tests\Pdf\PdfImageTest;
 use Janalis\Viz\Tests\Pdf\TrueTypeFontTest;
+use Janalis\Viz\Text\FallbackFonts;
+use Janalis\Viz\Text\Font;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\ExecutableFinder;
@@ -48,8 +48,8 @@ final class MermaidPdfTest extends TestCase
     public function testTheCrossReferenceTableIsExactAndTheOutputDeterministic(): void
     {
         $drawing = new MermaidDrawing(40.0, 20.0, [new MermaidMark('text', [[10.0, 5.0]], 'Hi'), new MermaidMark('polygon', [[1.0, 1.0], [2.0, 1.0], [2.0, 2.0]], fillOpacity: 0.5)]);
-        $pdf = self::render($drawing, new MermaidPdf(fallbacks: new MermaidFallbackFonts([])));
-        $this->assertSame($pdf, self::render($drawing, new MermaidPdf(fallbacks: new MermaidFallbackFonts([]))));
+        $pdf = self::render($drawing, new MermaidPdf(fallbacks: new FallbackFonts([])));
+        $this->assertSame($pdf, self::render($drawing, new MermaidPdf(fallbacks: new FallbackFonts([]))));
         $this->assertStringStartsWith('%PDF-1.4', $pdf);
         [$start, $xref] = [[], []];
         $this->assertSame(1, \preg_match('/startxref\n(\d+)\n%%EOF\n$/', $pdf, $start));
@@ -213,14 +213,14 @@ final class MermaidPdfTest extends TestCase
         $pdf = self::render(new MermaidDrawing(40.0, 20.0, [
             new MermaidMark('text', [[1.0, 1.0]], 'AB'),
             new MermaidMark('text', [[1.0, 3.0]], 'é'),
-            new MermaidMark('text', [[1.0, 5.0]], 'A', font: GraphFont::BoldItalic),
+            new MermaidMark('text', [[1.0, 5.0]], 'A', font: FontFace::BoldItalic),
         ]));
         $this->assertSame(2, \substr_count($pdf, needle: '/Subtype /Type0'));
         $this->assertSame(2, \substr_count($pdf, needle: '/FontFile2'));
         $this->assertStringContainsString('/BaseFont /IBMPlexMono-Regular /Encoding /Identity-H', $pdf);
         $this->assertStringContainsString('/BaseFont /IBMPlexMono-BoldItalic /Encoding /Identity-H', $pdf);
         $this->assertStringContainsString('/Flags 97 ', $pdf, 'the italic face says so');
-        $this->assertStringContainsString('/Length1 '.\strlen((string) \file_get_contents(MermaidFont::FILE)).' ', $pdf);
+        $this->assertStringContainsString('/Length1 '.\strlen((string) \file_get_contents(Font::FILE)).' ', $pdf);
         $map = [];
         $this->assertSame(1, \preg_match('/\/ToUnicode (\d+) 0 R/', $pdf, $map));
         $this->assertStringContainsString("<001E> <0041>\n<001F> <0042>\n<00E9> <00E9>\n", PdfCanvasTest::stream($pdf, (int) $map[1]));
@@ -235,7 +235,7 @@ final class MermaidPdfTest extends TestCase
             [[10.0, 5.0]],
             'A漢B',
             stroke: '#000000',
-        )]), new MermaidPdf(fallbacks: new MermaidFallbackFonts([$fallback]), compress: false));
+        )]), new MermaidPdf(fallbacks: new FallbackFonts([$fallback]), compress: false));
         // 0.6 + 0.5 + 0.6 ems at 1.6 units: 2.72 wide, so the runs start at 8.64, 9.6 and 10.4.
         $this->assertSame(
             self::TRANSFORM
@@ -258,7 +258,7 @@ final class MermaidPdfTest extends TestCase
             [[10.0, 5.0]],
             'A漢B',
             angle: 90.0,
-        )]), new MermaidPdf(fallbacks: new MermaidFallbackFonts([$fallback]), compress: false));
+        )]), new MermaidPdf(fallbacks: new FallbackFonts([$fallback]), compress: false));
         $content = self::content($pdf);
         $this->assertStringContainsString('BT /F1 1 Tf 0 1.6 1.6 0 10 3.64 Tm <001E> Tj ET', $content);
         $this->assertStringContainsString('BT /F2 1 Tf 0 1.6 1.6 0 10 4.6 Tm <0001> Tj ET', $content);
@@ -268,7 +268,7 @@ final class MermaidPdfTest extends TestCase
     public function testFallbacksThatCannotBeEmbeddedLeaveTheMissingGlyph(): void
     {
         $collection = $this->file(TrueTypeFontTest::sfnt(TrueTypeFontTest::tables([[0x6F22, 0x6F22, 1]]), version: 'OTTO'));
-        $pdf = self::render(new MermaidDrawing(40.0, 20.0, [new MermaidMark('text', [[10.0, 5.0]], 'A漢')]), new MermaidPdf(fallbacks: new MermaidFallbackFonts([$collection]), compress: false));
+        $pdf = self::render(new MermaidDrawing(40.0, 20.0, [new MermaidMark('text', [[10.0, 5.0]], 'A漢')]), new MermaidPdf(fallbacks: new FallbackFonts([$collection]), compress: false));
         $this->assertStringContainsString('1.6 0 0 -1.6 9.04 5 Tm <001E0000> Tj ET', self::content($pdf));
         $this->assertSame(1, \substr_count($pdf, needle: '/Subtype /Type0'));
         $this->assertStringContainsString('Tm <0000> Tj', self::marks(new MermaidMark('text', [[1.0, 1.0]], '😎')));
@@ -336,12 +336,12 @@ final class MermaidPdfTest extends TestCase
                 [
                     new MermaidMark('polygon', [[1.0, 1.0], [39.0, 1.0], [39.0, 19.0], [1.0, 19.0]], dashed: true, fillOpacity: 0.5, gradient: ['#ff0000', '#0000ff']),
                     new MermaidMark('text', [[20.0, 8.0]], 'Hello é→'),
-                    new MermaidMark('text', [[20.0, 14.0]], 'World', font: GraphFont::Bold),
+                    new MermaidMark('text', [[20.0, 14.0]], 'World', font: FontFace::Bold),
                     self::image(PdfImageTest::jpeg()),
                 ],
                 '#ffffff',
             ),
-            new MermaidPdf(fallbacks: new MermaidFallbackFonts([])),
+            new MermaidPdf(fallbacks: new FallbackFonts([])),
         ));
         $text = new Process([$pdftotext, '-enc', 'UTF-8', $path, '-']);
         $text->mustRun();
@@ -368,7 +368,7 @@ final class MermaidPdfTest extends TestCase
 
     private static function render(MermaidDrawing $drawing, ?MermaidPdf $renderer = null): string
     {
-        $work = ($renderer ?? new MermaidPdf(fallbacks: new MermaidFallbackFonts([]), compress: false))->render($drawing);
+        $work = ($renderer ?? new MermaidPdf(fallbacks: new FallbackFonts([]), compress: false))->render($drawing);
         \iterator_to_array($work);
 
         return $work->getReturn();

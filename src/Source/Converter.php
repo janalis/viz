@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Source;
 
-use Janalis\Viz\Diagram\Graph;
 use Janalis\Viz\GraphViz\DotReader;
 use Janalis\Viz\GraphViz\DotRenderer;
 use Janalis\Viz\GraphViz\DotWriter;
@@ -12,6 +11,7 @@ use Janalis\Viz\GraphViz\GraphParseException;
 use Janalis\Viz\Mermaid\MermaidReader;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\MermaidWriter;
+use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\PlantUML\PlantUmlWriter;
 use Janalis\Viz\Render\RenderFailure;
 

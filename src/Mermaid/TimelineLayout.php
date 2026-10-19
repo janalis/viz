@@ -7,6 +7,7 @@ namespace Janalis\Viz\Mermaid;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Periods follow the timeline axis; their event chains follow its perpendicular. */
 final readonly class TimelineLayout
@@ -145,7 +146,7 @@ final readonly class TimelineLayout
     /** @return \Generator<int, null, mixed, GraphNode> */
     private function node(int $id, string $name, string $text, float $x, float $y): \Generator
     {
-        $work = MermaidWrap::text($text, width: 36);
+        $work = Wrap::text($text, width: 36);
         yield from $work;
         $label = $work->getReturn();
         [, $height] = MermaidText::box($label);

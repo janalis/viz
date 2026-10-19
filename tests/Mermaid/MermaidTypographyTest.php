@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\ErCard;
 use Janalis\Viz\Mermaid\MermaidCss;
 use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidFont;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSvg;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Render\Format;
+use Janalis\Viz\Text\Font;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -24,12 +24,12 @@ final class MermaidTypographyTest extends TestCase
     public function testFacesCascadeResetAndProduceDistinctRasterGlyphs(): void
     {
         $hashes = [];
-        foreach (GraphFont::cases() as $face) {
+        foreach (FontFace::cases() as $face) {
             $style = ['font-weight' => 'bold' === $face->weight(), 'font-style' => 'italic' === $face->style()];
-            $this->assertSame($face, GraphFont::Regular->overlay($style));
+            $this->assertSame($face, FontFace::Regular->overlay($style));
             $this->assertSame($face, $face->overlay([]));
-            $this->assertSame(GraphFont::Regular, $face->overlay(['font-weight' => false, 'font-style' => false]));
-            $this->assertFileExists(MermaidFont::file($face));
+            $this->assertSame(FontFace::Regular, $face->overlay(['font-weight' => false, 'font-style' => false]));
+            $this->assertFileExists(Font::file($face));
             $drawing = new MermaidDrawing(60, 12, [new MermaidMark('text', [[30.0, 7.0]], 'Hamburgefontsiv', font: $face)]);
             $png = new MermaidPng()->render($drawing);
             \iterator_to_array($png);
@@ -38,7 +38,7 @@ final class MermaidTypographyTest extends TestCase
             $svg = MermaidSvg::render($drawing);
             \iterator_to_array($svg);
             $this->assertStringContainsString('font-style:'.$face->style().';font-weight:'.$face->weight(), $svg->getReturn());
-            if (GraphFont::Regular === $face) {
+            if (FontFace::Regular === $face) {
                 continue;
             }
             $this->assertStringContainsString('font-style="'.$face->style().'" font-weight="'.$face->weight().'"', $svg->getReturn());
@@ -107,7 +107,7 @@ final class MermaidTypographyTest extends TestCase
             "graph LR\nA\nB\nC\nclassDef em font-style:italic,font-weight:bold\nclass A,B,C em\nstyle A font-style:normal,font-weight:400\nstyle B font-weight:normal\nstyle C font-weight:700,border:none",
         );
         $nodes = \array_column($scene->graph->nodes, null, 'name');
-        $this->assertSame([GraphFont::Regular, GraphFont::Italic, GraphFont::BoldItalic], [$nodes['A']->font, $nodes['B']->font, $nodes['C']->font]);
+        $this->assertSame([FontFace::Regular, FontFace::Italic, FontFace::BoldItalic], [$nodes['A']->font, $nodes['B']->font, $nodes['C']->font]);
         $this->assertSame('none', $nodes['C']->color);
         $this->assertNull($nodes['A']->color);
     }

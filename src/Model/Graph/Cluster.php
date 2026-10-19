@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Diagram;
+namespace Janalis\Viz\Model\Graph;
 
 /** A labelled group of nodes, which may hold groups of its own. */
 final readonly class Cluster

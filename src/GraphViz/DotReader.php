@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\GraphViz;
 
-use Janalis\Viz\Diagram\ArrowHead;
-use Janalis\Viz\Diagram\Cluster;
-use Janalis\Viz\Diagram\Direction;
-use Janalis\Viz\Diagram\Edge;
-use Janalis\Viz\Diagram\Graph;
-use Janalis\Viz\Diagram\LineStyle;
-use Janalis\Viz\Diagram\Node;
-use Janalis\Viz\Diagram\Shape;
+use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\ArrowHead;
+use Janalis\Viz\Model\Graph\Cluster;
+use Janalis\Viz\Model\Graph\Edge;
+use Janalis\Viz\Model\Graph\Graph;
+use Janalis\Viz\Model\Graph\Node;
+use Janalis\Viz\Model\Graph\Shape;
+use Janalis\Viz\Model\LineStyle;
 
 /**
  * `dot -Tjson0` read into the shared {@see Graph}. dot has already resolved the

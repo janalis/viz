@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /** Nested role cards and frames share the same scene as their styled source-linked relationships. */
 final readonly class C4Layout
@@ -85,7 +86,7 @@ final readonly class C4Layout
             yield null;
         }
         foreach ($source->groups as $alias => $record) {
-            $wrap = MermaidWrap::text(C4Styles::groupLabel($record['attributes']), width: 40);
+            $wrap = Wrap::text(C4Styles::groupLabel($record['attributes']), width: 40);
             yield from $wrap;
             $label = $wrap->getReturn();
             [$scale] = MermaidFonts::configured($this->options, 'c4', 'boundary', default: 14.0);
@@ -104,7 +105,7 @@ final readonly class C4Layout
                 fillColor: null,
                 dashed: false,
                 drawLabel: '',
-                font: GraphFont::Bold,
+                font: FontFace::Bold,
                 fontScale: $scale,
             );
             $origins[$id] = $record['origin'];
@@ -123,7 +124,7 @@ final readonly class C4Layout
                     $text .= "\n".('techn' === $field ? '['.$value.']' : $value);
                 }
             }
-            $wrap = MermaidWrap::text(MermaidText::decode($text), width: 32);
+            $wrap = Wrap::text(MermaidText::decode($text), width: 32);
             yield from $wrap;
             $edgeLabels[$key] = $wrap->getReturn();
             $legend[] = ['text' => ($attrs['from'] ?? '').' → '.($attrs['to'] ?? '').' : '.$edgeLabels[$key], 'origin' => $record['origin']];
@@ -137,15 +138,15 @@ final readonly class C4Layout
      * the role and description at `<type>FontWeight`.
      *
      * @param array{macro: string, attributes: array<string, string>, parent: ?string, origin: int, statement: MermaidStatement} $record
-     * @return \Generator<int, null, mixed, array{GraphNode, string, list<list<array{string, GraphFont}>>}>
+     * @return \Generator<int, null, mixed, array{GraphNode, string, list<list<array{string, FontFace}>>}>
      */
     private function card(int $id, string $alias, array $record): \Generator
     {
         [$name, $rest] = C4Styles::parts($record['macro'], $record['attributes']);
-        $wrap = MermaidWrap::text($name, width: 40);
+        $wrap = Wrap::text($name, width: 40);
         yield from $wrap;
         $title = \explode("\n", $wrap->getReturn());
-        $wrap = MermaidWrap::text($rest, width: 40);
+        $wrap = Wrap::text($rest, width: 40);
         yield from $wrap;
         $body = \explode("\n", $wrap->getReturn());
         $label = \implode("\n", [...$title, ...$body]);
@@ -174,7 +175,7 @@ final readonly class C4Layout
         );
         $runs = [
             ...\array_fill(0, $lead, [['', $face]]),
-            ...\array_map(static fn (string $line): array => [[$line, GraphFont::Bold]], $title),
+            ...\array_map(static fn (string $line): array => [[$line, FontFace::Bold]], $title),
             ...\array_map(static fn (string $line): array => [[$line, $face]], $body),
         ];
 

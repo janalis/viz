@@ -7,6 +7,7 @@ namespace Janalis\Viz\Mermaid;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Alternating cause pairs extend left from the effect, with source-linked labels at each bone. */
 final class IshikawaLayout
@@ -18,7 +19,7 @@ final class IshikawaLayout
         $sizes = [];
         $heights = [];
         foreach ($source->nodes as $id => $item) {
-            $wrap = MermaidWrap::text($item['label'], width: 24);
+            $wrap = Wrap::text($item['label'], width: 24);
             yield from $wrap;
             $labels[$id] = $wrap->getReturn();
             $sizes[$id] = MermaidText::box($labels[$id]);

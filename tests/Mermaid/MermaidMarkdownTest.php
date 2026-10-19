@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Mermaid\MermaidMarkdown;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -21,8 +21,8 @@ final class MermaidMarkdownTest extends TestCase
         $markdown = $wrap ? $markdown->wrap(120.0) : $markdown;
         $actual = \array_map(static fn (array $runs): array => self::trimmed(\array_map(static fn (array $run): array => [
             $run[0],
-            \in_array($run[1], [GraphFont::Bold, GraphFont::BoldItalic], strict: true),
-            \in_array($run[1], [GraphFont::Italic, GraphFont::BoldItalic], strict: true),
+            \in_array($run[1], [FontFace::Bold, FontFace::BoldItalic], strict: true),
+            \in_array($run[1], [FontFace::Italic, FontFace::BoldItalic], strict: true),
         ], $runs)), $markdown->lines);
         $this->assertSame($expected, $actual);
     }
@@ -56,23 +56,23 @@ final class MermaidMarkdownTest extends TestCase
         $this->assertSame('snake_case_name and *', MermaidMarkdown::parse('snake_case_name and *')->plain());
         $this->assertSame(
             [
-                ['a ', GraphFont::Regular],
-                ['b',  GraphFont::Italic],
+                ['a ', FontFace::Regular],
+                ['b',  FontFace::Italic],
             ],
             MermaidMarkdown::parse('a _b_')->lines[0],
         );
         // CommonMark: a single closer takes one of two openers, and delimiters inside a pair stay text.
         $this->assertSame(
             [
-                ['*',   GraphFont::Regular],
-                ['foo', GraphFont::Italic],
+                ['*',   FontFace::Regular],
+                ['foo', FontFace::Italic],
             ],
             MermaidMarkdown::parse('**foo*')->lines[0],
         );
         $this->assertSame(
             [
-                ['foo _bar', GraphFont::Italic],
-                [' baz_',    GraphFont::Regular],
+                ['foo _bar', FontFace::Italic],
+                [' baz_',    FontFace::Regular],
             ],
             MermaidMarkdown::parse('*foo _bar* baz_')->lines[0],
         );

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphLayout;
+use Janalis\Viz\Text\Wrap;
 
 /** Ranked entity cards keep attribute order and explicit endpoint cardinalities. */
 final class ErLayout
@@ -23,7 +24,7 @@ final class ErLayout
             $runs[(string) $id] = $card['runs'];
         }
         foreach ($graph->edges as $index => $edge) {
-            $wrap = MermaidWrap::text($edge['label'], width: 32);
+            $wrap = Wrap::text($edge['label'], width: 32);
             yield from $wrap;
             $graph->edges[$index]['label'] = $wrap->getReturn();
             if (\in_array($graph->direction, ['TB', 'BT'], strict: true)) {

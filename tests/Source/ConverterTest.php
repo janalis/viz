@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Source;
 
-use Janalis\Viz\Diagram\Edge;
-use Janalis\Viz\Diagram\LineStyle;
-use Janalis\Viz\Diagram\Node;
 use Janalis\Viz\GraphViz\DotRenderer;
+use Janalis\Viz\Model\Graph\Edge;
+use Janalis\Viz\Model\Graph\Node;
+use Janalis\Viz\Model\LineStyle;
 use Janalis\Viz\Process\Tool;
 use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Source\Converter;

@@ -6,6 +6,7 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Labels remain readable in cells; native pictures use ordered sectors and a separate legend. */
 final class PieCanvas
@@ -37,7 +38,7 @@ final class PieCanvas
         $legendHeight = 0.0;
         $width = 56.0;
         foreach ($items as $item) {
-            $work = MermaidWrap::text($item['display'], width: 60);
+            $work = Wrap::text($item['display'], width: 60);
             yield from $work;
             $item['display'] = $work->getReturn();
             $scale = $this->number(null === $item['ratio'] ? 'pieTitleTextSize' : 'pieLegendTextSize') / 16;

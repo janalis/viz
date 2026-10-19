@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
 
 /**
  * Pinned `kanbanItem` cards: the title left-aligned at the top, the ticket at the bottom left
@@ -25,7 +25,7 @@ final class KanbanCards
     }
 
     /**
-     * @param ?list<list<array{string, GraphFont}>> $runs the title's styled lines, as pinned Markdown draws them
+     * @param ?list<list<array{string, FontFace}>> $runs the title's styled lines, as pinned Markdown draws them
      * @return list<MermaidMark>
      */
     public static function marks(GraphNode $node, string $shape, ?array $runs = null): array

@@ -6,10 +6,10 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
 
 /** The same ordered drawing operations feed SVG export and GD rasterization. */
 final readonly class MermaidDrawing
@@ -51,7 +51,7 @@ final readonly class MermaidDrawing
     /**
      * @param array<int, string> $shapes
      * @param array{float, float, string}|null $shadow pixel offsets and color beneath filled outlines
-     * @param array<string, list<list<array{string, GraphFont}>>> $runs styled Markdown labels by element
+     * @param array<string, list<list<array{string, FontFace}>>> $runs styled Markdown labels by element
      * @param ?MermaidSketch $sketch the hand-drawn look, which roughens outlines, frames and edges
      * @return \Generator<int, null, mixed, self>
      */
@@ -126,7 +126,7 @@ final readonly class MermaidDrawing
 
     /**
      * @param array{float, float} $position
-     * @param ?list<list<array{string, GraphFont}>> $runs
+     * @param ?list<list<array{string, FontFace}>> $runs
      * @return list<MermaidMark>
      */
     private static function caption(GraphEdge $edge, array $position, string $background, ?array $runs): array
@@ -153,10 +153,10 @@ final readonly class MermaidDrawing
     /**
      * A label's lines as runs: the Markdown runs when the label has them, else each line in one face.
      *
-     * @param ?list<list<array{string, GraphFont}>> $runs
-     * @return list<list<array{string, GraphFont}>>
+     * @param ?list<list<array{string, FontFace}>> $runs
+     * @return list<list<array{string, FontFace}>>
      */
-    private static function lines(string $text, GraphFont $font, ?array $runs): array
+    private static function lines(string $text, FontFace $font, ?array $runs): array
     {
         return $runs ?? \array_map(static fn (string $line): array => [[$line, $font]], \explode("\n", $text));
     }
@@ -165,7 +165,7 @@ final readonly class MermaidDrawing
      * One centered line; a styled line places each run after the previous one, every bundled
      * face sharing the same advance.
      *
-     * @param list<array{string, GraphFont}> $runs
+     * @param list<array{string, FontFace}> $runs
      * @return list<MermaidMark>
      */
     private static function text(array $runs, float $x, float $y, string $color, float $fontScale): array
@@ -175,7 +175,7 @@ final readonly class MermaidDrawing
 
     /**
      * @param array{float, float, string}|null $shadow
-     * @param ?list<list<array{string, GraphFont}>> $runs
+     * @param ?list<list<array{string, FontFace}>> $runs
      * @return list<MermaidMark>
      */
     private static function node(GraphNode $node, string $shape, ?array $shadow, ?array $runs, ?MermaidSketch $sketch): array

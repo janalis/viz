@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\GraphViz;
 
-use Janalis\Viz\Diagram\ArrowHead;
-use Janalis\Viz\Diagram\Direction;
-use Janalis\Viz\Diagram\Edge;
-use Janalis\Viz\Diagram\LineStyle;
-use Janalis\Viz\Diagram\Node;
-use Janalis\Viz\Diagram\Shape;
 use Janalis\Viz\GraphViz\DotReader;
 use Janalis\Viz\GraphViz\DotRenderer;
 use Janalis\Viz\GraphViz\DotWriter;
 use Janalis\Viz\GraphViz\GraphParseException;
+use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\ArrowHead;
+use Janalis\Viz\Model\Graph\Edge;
+use Janalis\Viz\Model\Graph\Node;
+use Janalis\Viz\Model\Graph\Shape;
+use Janalis\Viz\Model\LineStyle;
 use Janalis\Viz\Process\Tool;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;

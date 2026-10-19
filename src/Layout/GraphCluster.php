@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Layout;
 
+use Janalis\Viz\Text\FontFace;
+
 /** One drawable cluster frame: its bounding box (y-down, y0 < y1), label and color. */
 final readonly class GraphCluster
 {
@@ -21,7 +23,7 @@ final readonly class GraphCluster
         public ?string $textColor = null,
         public float $strokeWidth = 0.12,
         public bool $dashed = false,
-        public GraphFont $font = GraphFont::Regular,
+        public FontFace $font = FontFace::Regular,
         public float $fontScale = 1.0,
         /** @var ?list<float> authored dash and gap lengths in units; null draws the default dash */
         public ?array $dashes = null,

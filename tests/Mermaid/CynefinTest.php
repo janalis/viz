@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\CynefinBoundaries;
 use Janalis\Viz\Mermaid\CynefinDiagram;
@@ -18,6 +17,7 @@ use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -167,7 +167,7 @@ final class CynefinTest extends TestCase
             [$regions['region-complex']->y + ($regions['region-complex']->h / 2), $regions['region-chaotic']->y - ($regions['region-chaotic']->h / 2)],
             'the quadrants meet at the fold',
         );
-        $this->assertSame(['none', GraphFont::Bold, GraphFont::Italic], [
+        $this->assertSame(['none', FontFace::Bold, FontFace::Italic], [
             $regions['region-complex']->color,
             $regions['complex']->font,
             \array_first(\array_filter($scene->graph->nodes, static fn (GraphNode $node): bool => \str_starts_with($node->name, 'caption-')))->font,

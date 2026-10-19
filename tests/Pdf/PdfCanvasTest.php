@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Pdf;
 
-use Janalis\Viz\Mermaid\MermaidFont;
 use Janalis\Viz\Pdf\PdfCanvas;
 use Janalis\Viz\Pdf\PdfDocument;
 use Janalis\Viz\Pdf\PdfFont;
 use Janalis\Viz\Pdf\PdfImage;
 use Janalis\Viz\Pdf\TrueTypeFont;
+use Janalis\Viz\Text\Font;
 use PHPUnit\Framework\TestCase;
 
 /** Content-stream operators and the page resources they name. */
@@ -100,7 +100,7 @@ final class PdfCanvasTest extends TestCase
     public function testTextNamesEachFontOnceAndWritesItWithThePage(): void
     {
         [$document, $canvas] = self::canvas();
-        $regular = new PdfFont(TrueTypeFont::file(MermaidFont::FILE) ?? throw new \LogicException('The bundled face is missing'));
+        $regular = new PdfFont(TrueTypeFont::file(Font::FILE) ?? throw new \LogicException('The bundled face is missing'));
         $synthetic = new PdfFont(TrueTypeFont::parse(TrueTypeFontTest::font([[0x41, 0x41, 1]])) ?? throw new \LogicException('The synthetic face is missing'));
         $canvas->text($regular, [0x41], [1.6, 0.0, 0.0, -1.6, 2.0, 3.0]);
         $canvas->text($synthetic, [0x41, 0x41], [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]);

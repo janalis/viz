@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\GraphViz\DotColor;
+use Janalis\Viz\Color\ColorValue;
 
 /** Only the four upstream point properties are accepted; numeric extents are bounded. */
 final class QuadrantStyles
@@ -26,7 +26,7 @@ final class QuadrantStyles
                 if (1 !== \preg_match('/^#(?:[a-f\d]{3}|[a-f\d]{6})$/i', $value)) {
                     throw $statement->error('Quadrant color requires a three or six digit hex color');
                 }
-                $style[$key] = DotColor::normalize($value) ?? '#333333';
+                $style[$key] = ColorValue::normalize($value) ?? '#333333';
                 continue;
             }
             $pattern = 'radius' === $key ? '/^\d+$/' : '/^\d+px$/';

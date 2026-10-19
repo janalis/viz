@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Tests\Diagram;
+namespace Janalis\Viz\Tests\Model\Graph;
 
-use Janalis\Viz\Diagram\Cluster;
-use Janalis\Viz\Diagram\Graph;
-use Janalis\Viz\Diagram\Node;
+use Janalis\Viz\Model\Graph\Cluster;
+use Janalis\Viz\Model\Graph\Graph;
+use Janalis\Viz\Model\Graph\Node;
 use PHPUnit\Framework\TestCase;
 
 final class GraphTest extends TestCase

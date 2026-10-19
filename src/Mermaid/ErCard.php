@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /** Blank label rows reserve room for dividers, including after wrapped headers and attributes. */
 final class ErCard
@@ -20,13 +21,13 @@ final class ErCard
      */
     public static function label(string $name, array $attributes): \Generator
     {
-        $wrap = MermaidWrap::text($name, width: 48);
+        $wrap = Wrap::text($name, width: 48);
         yield from $wrap;
         $label = $wrap->getReturn();
         $dividers = [];
         foreach ($attributes as $attribute) {
             $dividers[] = \substr_count($label, needle: "\n") + 1;
-            $wrap = MermaidWrap::text($attribute['text'], width: 48);
+            $wrap = Wrap::text($attribute['text'], width: 48);
             yield from $wrap;
             $label .= "\n\n".$wrap->getReturn();
         }
@@ -40,11 +41,11 @@ final class ErCard
      * fills is left out. The shape carries `;c=WIDTH=OFFSET,…` for the column rules.
      *
      * @param list<array{text: string, origin: int, cells: list<string>}> $attributes
-     * @return \Generator<int, null, mixed, array{label: string, shape: string, runs: list<list<array{string, GraphFont}>>}>
+     * @return \Generator<int, null, mixed, array{label: string, shape: string, runs: list<list<array{string, FontFace}>>}>
      */
     public static function table(string $name, array $attributes): \Generator
     {
-        $wrap = MermaidWrap::text($name, width: 48);
+        $wrap = Wrap::text($name, width: 48);
         yield from $wrap;
         $header = \explode("\n", $wrap->getReturn());
         $widths = [];
@@ -52,7 +53,7 @@ final class ErCard
             $widths[$column] = \max([0, ...\array_map(static fn (array $attribute): int => DisplayWidth::of($attribute['cells'][$column] ?? ''), $attributes)]);
         }
         $columns = \array_keys(\array_filter($widths));
-        $runs = \array_map(static fn (string $line): array => [[$line, GraphFont::Regular]], $header);
+        $runs = \array_map(static fn (string $line): array => [[$line, FontFace::Regular]], $header);
         $lines = $header;
         $dividers = [];
         foreach ($attributes as $attribute) {
@@ -63,10 +64,10 @@ final class ErCard
                 $cell = $attribute['cells'][$column] ?? '';
                 // Every row spans the whole table, so centering it aligns the columns.
                 $padded = ($index > 0 ? self::GAP : '').$cell.\str_repeat(' ', \max(0, $widths[$column] - DisplayWidth::of($cell)));
-                $row[] = [$padded, GraphFont::Regular];
+                $row[] = [$padded, FontFace::Regular];
                 $text .= $padded;
             }
-            $runs[] = [['', GraphFont::Regular]];
+            $runs[] = [['', FontFace::Regular]];
             $runs[] = $row;
             $lines[] = '';
             // Rows keep their padding, so the cells, which center each line, align the columns too.

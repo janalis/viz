@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Color\CssColorNames;
 use Janalis\Viz\Mermaid\Theme\Khroma;
 
 /** CSS and C4 color slots share CSS names and bounded native color validation. */

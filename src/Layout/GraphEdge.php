@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Layout;
 
+use Janalis\Viz\Text\FontFace;
+
 /**
  * One laid-out edge: the B-spline pre-flattened to a polyline (points, y-down)
  * plus the precomputed bounding box the renderer culls against without walking
@@ -34,7 +36,7 @@ final readonly class GraphEdge
         public float $strokeWidth = 0.12,
         public ?string $textColor = null,
         public bool $decoration = false,
-        public GraphFont $font = GraphFont::Regular,
+        public FontFace $font = FontFace::Regular,
         public float $fontScale = 1.0,
         /** @var ?array{string, string} a ribbon's left-to-right gradient, drawn instead of its color */
         public ?array $gradient = null,

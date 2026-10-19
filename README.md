@@ -4,7 +4,7 @@ Mermaid, Graphviz and PlantUML for PHP 8.5: render them to SVG, PNG or PDF, and 
 
 - **Mermaid** is drawn natively, in PHP, with no Node and no browser: 30+ diagram families, themes and the hand-drawn look, pinned to Mermaid 12.1 (see [the compatibility notes](docs/mermaid-compatibility.md)). mermaid-cli (`mmdc`) is the fallback.
 - **Graphviz** runs through `dot`. **PlantUML** runs through `plantuml` or its `.jar`.
-- **One shared model** (`Janalis\Viz\Diagram\Graph`): nodes, edges, nested clusters, a direction and a title. Each language can be written from it, and Mermaid flowcharts and DOT can be read into it.
+- **One shared model** (`Janalis\Viz\Model\Graph\Graph`): nodes, edges, nested clusters, a direction and a title. Each language can be written from it, and Mermaid flowcharts and DOT can be read into it.
 
 ```bash
 composer require janalis/viz
@@ -57,7 +57,8 @@ $dot = $viz->convert($mermaidFlowchart, SourceFormat::Mermaid, SourceFormat::Dot
 Or build the model yourself and write it in any language:
 
 ```php
-use Janalis\Viz\Diagram\{Graph, Node, Edge, Cluster, Shape, Direction};
+use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\{Graph, Node, Edge, Cluster, Shape};
 use Janalis\Viz\Source\Converter;
 
 $graph = new Graph(

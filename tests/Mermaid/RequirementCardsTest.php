@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
 
 /** Pinned `requirementBox` cards and SysML relationship markers. */
@@ -22,13 +22,13 @@ final class RequirementCardsTest extends TestCase
         $req = $node(name: 'req');
         $this->assertSame("<<Functional Requirement>>\nreq\nID: 1\nText: the text.\nRisk: High\nVerification: Test", $req->label);
         $runs = $scene->runs['node:'.$req->id];
-        $this->assertSame([['<<Functional Requirement>>', GraphFont::Regular]], $runs[0]);
-        $this->assertSame([['req', GraphFont::Bold]], $runs[1]);
-        $this->assertSame([['ID: 1', GraphFont::Regular], [\str_repeat(' ', times: 13), GraphFont::Regular]], $runs[2], 'fields pad to the widest, so they read left-aligned');
+        $this->assertSame([['<<Functional Requirement>>', FontFace::Regular]], $runs[0]);
+        $this->assertSame([['req', FontFace::Bold]], $runs[1]);
+        $this->assertSame([['ID: 1', FontFace::Regular], [\str_repeat(' ', times: 13), FontFace::Regular]], $runs[2], 'fields pad to the widest, so they read left-aligned');
         $this->assertSame(
             [
-                ['Verification: Test', GraphFont::Regular],
-                ['',                   GraphFont::Regular],
+                ['Verification: Test', FontFace::Regular],
+                ['',                   FontFace::Regular],
             ],
             $runs[5],
         );

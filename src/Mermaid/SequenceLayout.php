@@ -6,10 +6,10 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
 
 /** Participant columns with chronological message rows and explicit source origins. */
 final readonly class SequenceLayout
@@ -93,7 +93,7 @@ final readonly class SequenceLayout
      * Pinned `noteAlign`: each line of a note at its left or right edge, padded across the
      * note's text width so that centering the line keeps it there.
      *
-     * @return list<list<array{string, GraphFont}>>
+     * @return list<list<array{string, FontFace}>>
      */
     private static function aligned(GraphNode $node, string $align): array
     {

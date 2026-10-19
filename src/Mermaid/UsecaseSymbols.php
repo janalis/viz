@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\FontFace;
 
 /** UML actor variants and business slashes use the pinned glyph geometry in native units. */
 final class UsecaseSymbols
 {
     /**
-     * @param ?list<list<array{string, GraphFont}>> $runs the caption's styled lines
+     * @param ?list<list<array{string, FontFace}>> $runs the caption's styled lines
      * @return list<MermaidMark>
      */
     public static function actor(GraphNode $node, string $shape, ?array $runs = null): array

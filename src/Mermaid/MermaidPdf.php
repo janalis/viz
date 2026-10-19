@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\GraphViz\DotColor;
+use Janalis\Viz\Color\ColorValue;
 use Janalis\Viz\Pdf\PdfCanvas;
 use Janalis\Viz\Pdf\PdfDocument;
 use Janalis\Viz\Pdf\PdfFont;
 use Janalis\Viz\Pdf\PdfFonts;
 use Janalis\Viz\Pdf\PdfImage;
+use Janalis\Viz\Text\FallbackFonts;
+use Janalis\Viz\Text\Font;
 
 /**
  * Native vector backend: one page the drawing's size, marks in drawing units under a single
@@ -25,8 +27,8 @@ final readonly class MermaidPdf
     public function __construct(
         private int $maxPixels = MermaidPng::MAX_PIXELS,
         ?bool $gdAvailable = null,
-        private string $font = MermaidFont::FILE,
-        private MermaidFallbackFonts $fallbacks = new MermaidFallbackFonts(),
+        private string $font = Font::FILE,
+        private FallbackFonts $fallbacks = new FallbackFonts(),
         private ?bool $compress = null,
     ) {
         $this->gd = $gdAvailable ?? \function_exists('imagecreatefromstring');
@@ -153,7 +155,7 @@ final readonly class MermaidPdf
      */
     private function runs(PdfFonts $fonts, string $text, MermaidMark $mark): array
     {
-        $bundled = $fonts->get(MermaidFont::file($mark->font, $this->font)) ?? throw new \InvalidArgumentException('Cannot read the bundled Mermaid font');
+        $bundled = $fonts->get(Font::file($mark->font, $this->font)) ?? throw new \InvalidArgumentException('Cannot read the bundled Mermaid font');
         /** @var list<array{PdfFont, list<int>}> $runs */
         $runs = [];
         foreach (\mb_str_split($text) as $character) {
@@ -221,7 +223,7 @@ final readonly class MermaidPdf
      */
     private static function color(string $value): array
     {
-        $rgb = (int) \hexdec(\substr(DotColor::normalize($value) ?? '#333333', offset: 1));
+        $rgb = (int) \hexdec(\substr(ColorValue::normalize($value) ?? '#333333', offset: 1));
         $alpha = 1 === \preg_match('/^#[0-9a-f]{8}$/i', $value) ? \hexdec(\substr($value, offset: -2)) / 255 : 1.0;
 
         return [[(($rgb >> 16) & 0xFF) / 255, (($rgb >> 8) & 0xFF) / 255, ($rgb & 0xFF) / 255], (float) $alpha];

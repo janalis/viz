@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
+use Janalis\Viz\Text\FontFace;
 
 /** One backend-independent drawing operation in the scene's logical coordinates. */
 final readonly class MermaidMark
@@ -18,7 +18,7 @@ final readonly class MermaidMark
         public string $fill = '#ffffff',
         public bool $dashed = false,
         public float $strokeWidth = 0.12,
-        public GraphFont $font = GraphFont::Regular,
+        public FontFace $font = FontFace::Regular,
         public float $fontScale = 1.0,
         public float $fillOpacity = 1.0,
         public float $opacity = 1.0,

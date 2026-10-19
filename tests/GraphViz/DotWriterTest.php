@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\GraphViz;
 
-use Janalis\Viz\Diagram\Graph;
-use Janalis\Viz\Diagram\Node;
 use Janalis\Viz\GraphViz\DotWriter;
+use Janalis\Viz\Model\Graph\Graph;
+use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;
 

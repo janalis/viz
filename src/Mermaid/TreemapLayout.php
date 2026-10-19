@@ -6,6 +6,7 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Section headers and leaves are semantic; full section backgrounds cannot occlude their children. */
 final readonly class TreemapLayout
@@ -53,7 +54,7 @@ final readonly class TreemapLayout
         $top = 2.0;
         $titles = [];
         foreach ($source->metadata as $name => $item) {
-            $wrap = MermaidWrap::text($item['label'], width: 60);
+            $wrap = Wrap::text($item['label'], width: 60);
             yield from $wrap;
             $draw = $wrap->getReturn();
             [, $height] = MermaidText::box($draw);
@@ -179,7 +180,7 @@ final readonly class TreemapLayout
         if ($columns < 1 || $maximum < 1) {
             return '';
         }
-        $wrap = MermaidWrap::text($text, $columns);
+        $wrap = Wrap::text($text, $columns);
         yield from $wrap;
         $all = \explode("\n", $wrap->getReturn());
         $lines = \array_slice($all, offset: 0, length: $maximum);

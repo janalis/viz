@@ -6,6 +6,7 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Proportional fields in configurable bit rows; continued fragments keep their authored source line. */
 final readonly class PacketLayout
@@ -24,7 +25,7 @@ final readonly class PacketLayout
         $top = 2.0;
         $span = $this->bitWidth() * $source->bitsPerRow;
         foreach ($source->metadata as $kind => $item) {
-            $work = MermaidWrap::text($item['label'], width: \min(60, \max(2, (int) \floor($span / 2) - 4)));
+            $work = Wrap::text($item['label'], width: \min(60, \max(2, (int) \floor($span / 2) - 4)));
             yield from $work;
             $label = $work->getReturn();
             [, $height] = MermaidText::box($label);
@@ -114,7 +115,7 @@ final readonly class PacketLayout
                 if (!\array_key_exists($key, $cache)) {
                     $short = \mb_substr($field['label'], start: 0, length: 256);
                     $short .= \mb_strlen($field['label']) > 256 ? '…' : '';
-                    $wrap = MermaidWrap::text($short, $width);
+                    $wrap = Wrap::text($short, $width);
                     yield from $wrap;
                     $cache[$key] = $wrap->getReturn();
                 }

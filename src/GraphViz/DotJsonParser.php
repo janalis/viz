@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\GraphViz;
 
+use Janalis\Viz\Color\ColorValue;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
@@ -94,7 +95,7 @@ final class DotJsonParser
             $ury - $y1, // the flip swaps which bb corner is the top
             $x1 - $llx,
             $ury - $y0,
-            DotColor::normalize(self::attr($object, 'color')),
+            ColorValue::normalize(self::attr($object, 'color')),
             self::optionalPoint($object['lp'] ?? null, $llx, $ury),
         );
     }
@@ -121,8 +122,8 @@ final class DotJsonParser
             $ury - $y,
             $w * 72.0,
             $h * 72.0,
-            DotColor::normalize(self::attr($object, 'color')),
-            DotColor::normalize(self::attr($object, 'fillcolor')),
+            ColorValue::normalize(self::attr($object, 'color')),
+            ColorValue::normalize(self::attr($object, 'fillcolor')),
             \str_contains($style, 'dash') || \str_contains($style, 'dot'),
         );
     }
@@ -155,7 +156,7 @@ final class DotJsonParser
             $minY,
             $maxX,
             $maxY,
-            DotColor::normalize(self::attr($edge, 'color')),
+            ColorValue::normalize(self::attr($edge, 'color')),
             self::label($edge['label'] ?? ''),
             self::optionalPoint($edge['lp'] ?? null, $llx, $ury),
             \str_contains($style, 'dash') || \str_contains($style, 'dot'),

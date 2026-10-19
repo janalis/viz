@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
+use Janalis\Viz\Text\Font;
+use Janalis\Viz\Text\FontFace;
 
 /** Inert, self-contained SVG: diagram text is text, never markup or executable content. */
 final class MermaidSvg
@@ -18,14 +19,14 @@ final class MermaidSvg
         if (null !== $drawing->background) {
             $svg .= '<rect width="100%" height="100%" fill="'.self::escape($drawing->background).'"/>';
         }
-        $faces = [GraphFont::Regular->value => GraphFont::Regular];
+        $faces = [FontFace::Regular->value => FontFace::Regular];
         foreach ($drawing->marks as $mark) {
             $faces[$mark->font->value] = $mark->font;
             yield null;
         }
         $svg .= '<style>';
         foreach ($faces as $face) {
-            $font = (string) \file_get_contents(MermaidFont::file($face));
+            $font = (string) \file_get_contents(Font::file($face));
             $svg .= '@font-face{font-family:VizMermaid;font-style:'.$face->style().';font-weight:'.$face->weight().';src:url(data:font/ttf;base64,'.\base64_encode($font).')}';
             yield null;
         }
@@ -76,7 +77,7 @@ final class MermaidSvg
     {
         [$x, $y] = $mark->points[0];
 
-        $style = GraphFont::Regular === $mark->font ? '' : ' font-style="'.$mark->font->style().'" font-weight="'.$mark->font->weight().'"';
+        $style = FontFace::Regular === $mark->font ? '' : ' font-style="'.$mark->font->style().'" font-weight="'.$mark->font->weight().'"';
 
         $style .= 1.0 === $mark->fontScale ? '' : ' style="font-size:'.(1.6 * $mark->fontScale).'px"';
         $style .= 0.0 === $mark->angle ? '' : ' transform="rotate('.$mark->angle.' '.$x.' '.$y.')"';

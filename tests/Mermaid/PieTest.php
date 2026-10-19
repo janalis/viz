@@ -7,10 +7,10 @@ namespace Janalis\Viz\Tests\Mermaid;
 use Janalis\Viz\Mermaid\MermaidLexer;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
-use Janalis\Viz\Mermaid\MermaidWrap;
 use Janalis\Viz\Mermaid\PieDiagram;
 use Janalis\Viz\Mermaid\PieLayout;
 use Janalis\Viz\Mermaid\PieParser;
+use Janalis\Viz\Text\Wrap;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -77,10 +77,10 @@ final class PieTest extends TestCase
         $work = new PieLayout()->layout($diagram);
         \iterator_to_array($work);
         $this->assertStringContainsString('B\\t\\r\\b\\f\\v\\0q', \implode("\n", \array_column($work->getReturn()->legend, 'text')));
-        $work = MermaidWrap::text("e\u{0301}漢字\nend", width: 3);
+        $work = Wrap::text("e\u{0301}漢字\nend", width: 3);
         \iterator_to_array($work);
         $this->assertSame("e\u{0301}漢\n字\nend", $work->getReturn());
-        $work = MermaidWrap::text('', width: 3);
+        $work = Wrap::text('', width: 3);
         \iterator_to_array($work);
         $this->assertSame('', $work->getReturn());
     }

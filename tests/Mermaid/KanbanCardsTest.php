@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\KanbanCards;
 use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidScene;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
 
 /** Pinned kanban cards: left-aligned title, ticket and assignee row, priority bar. */
@@ -83,10 +83,10 @@ final class KanbanCardsTest extends TestCase
         $texts = \array_values(\array_filter(KanbanCards::marks($bold, $scene->shapes[$bold->id], $scene->runs['node:'.$bold->id]), static fn (MermaidMark $mark): bool => 'text' === $mark->kind));
         $this->assertSame(
             [
-                ['Bold', GraphFont::Bold],
-                ['and',  GraphFont::Regular],
-                ['it',   GraphFont::Italic],
-                ['text', GraphFont::Regular],
+                ['Bold', FontFace::Bold],
+                ['and',  FontFace::Regular],
+                ['it',   FontFace::Italic],
+                ['text', FontFace::Regular],
             ],
             \array_map(static fn (MermaidMark $mark): array => [$mark->text, $mark->font], $texts),
         );
@@ -95,8 +95,8 @@ final class KanbanCardsTest extends TestCase
         $plain = self::card($scene, 'Plain stars');
         $this->assertSame(
             [
-                ['Plain ', GraphFont::Regular],
-                ['stars',  GraphFont::Bold],
+                ['Plain ', FontFace::Regular],
+                ['stars',  FontFace::Bold],
             ],
             $scene->runs['node:'.$plain->id][0],
         );

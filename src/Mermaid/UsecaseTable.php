@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\Wrap;
 
 /** Fixed-width cells keep wrapped keys and values aligned in cells, SVG and PNG. */
 final class UsecaseTable
@@ -21,7 +22,7 @@ final class UsecaseTable
             $valueWidth = \min(40, \max($valueWidth, DisplayWidth::of($row['value'])));
         }
         $total = $keyWidth + $valueWidth + 3;
-        $wrap = MermaidWrap::text($title, $total);
+        $wrap = Wrap::text($title, $total);
         yield from $wrap;
         $titleLines = \explode("\n", $wrap->getReturn());
         $label = \implode("\n", $titleLines);
@@ -29,9 +30,9 @@ final class UsecaseTable
         $dividers = [];
         foreach ($rows as $row) {
             $dividers[] = \substr_count($label, needle: "\n") + 1;
-            $key = MermaidWrap::text($row['key'], $keyWidth);
+            $key = Wrap::text($row['key'], $keyWidth);
             yield from $key;
-            $value = MermaidWrap::text($row['value'], $valueWidth);
+            $value = Wrap::text($row['value'], $valueWidth);
             yield from $value;
             $keys = \explode("\n", $key->getReturn());
             $values = \explode("\n", $value->getReturn());

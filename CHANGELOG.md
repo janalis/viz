@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 — unreleased
+
+Breaking: shared code moves out of the Mermaid and Graphviz namespaces.
+
+- `Diagram\{Graph, Node, Edge, Cluster, Shape, ArrowHead}` become `Model\Graph\*`; `Diagram\Direction` and `Diagram\LineStyle` become `Model\Direction` and `Model\LineStyle`.
+- `Layout\GraphFont` becomes `Text\FontFace`; `Mermaid\MermaidFont`, `MermaidFontCoverage`, `MermaidFallbackFonts` and `MermaidWrap` become `Text\Font`, `FontCoverage`, `FallbackFonts` and `Wrap`.
+- `GraphViz\DotColor` becomes `Color\ColorValue`; `Mermaid\CssColorNames` becomes `Color\CssColorNames`.
+
 ## 0.1.1 — 2026-10-19
 
 - Remove a stray file from the package root.

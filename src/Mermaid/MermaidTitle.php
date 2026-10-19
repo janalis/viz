@@ -6,6 +6,7 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Front matter captions remain outside selection while all existing geometry moves together. */
 final class MermaidTitle
@@ -13,7 +14,7 @@ final class MermaidTitle
     /** @return \Generator<int, null, mixed, MermaidScene> */
     public static function apply(MermaidScene $scene, MermaidStatement $title, float $topMargin = 1.0): \Generator
     {
-        $wrap = MermaidWrap::text($title->text, width: 116);
+        $wrap = Wrap::text($title->text, width: 116);
         yield from $wrap;
         $label = $wrap->getReturn();
         [$width, $height] = MermaidText::box($label);

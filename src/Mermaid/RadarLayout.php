@@ -7,6 +7,7 @@ namespace Janalis\Viz\Mermaid;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\Theme\JsObject;
+use Janalis\Viz\Text\Wrap;
 
 /** Curves share a radial scale; only data markers are selectable, never captions or grid decorations. */
 final readonly class RadarLayout
@@ -144,7 +145,7 @@ final readonly class RadarLayout
     {
         foreach ($source->axes as $index => $axis) {
             $short = \mb_strimwidth($axis['label'], start: 0, width: 256, trim_marker: '…');
-            $wrap = MermaidWrap::text($short, width: 24);
+            $wrap = Wrap::text($short, width: 24);
             yield from $wrap;
             $draw = $wrap->getReturn();
             [$w, $h] = MermaidText::box($draw);
@@ -169,7 +170,7 @@ final readonly class RadarLayout
      */
     private static function caption(array &$nodes, array &$shapes, array &$origins, string $text, float $x, float $y, int $origin): \Generator
     {
-        $wrap = MermaidWrap::text($text, width: 60);
+        $wrap = Wrap::text($text, width: 60);
         yield from $wrap;
         $draw = $wrap->getReturn();
         [$w, $h] = MermaidText::box($draw);

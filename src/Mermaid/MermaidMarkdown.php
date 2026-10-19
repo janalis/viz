@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
+use Janalis\Viz\Text\FontFace;
 
 /**
  * A Markdown string label (`"`…`"`) as the pinned HTML label path draws it: `**strong**` and
@@ -17,7 +17,7 @@ final readonly class MermaidMarkdown
     /** Pinned labels wrap at `wrappingWidth` pixels; a 16px label averages 7.5 pixels a character. */
     private const float CHARACTER = 7.5;
 
-    /** @param list<list<array{string, GraphFont}>> $lines styled runs per line */
+    /** @param list<list<array{string, FontFace}>> $lines styled runs per line */
     private function __construct(
         public array $lines,
     ) {}
@@ -79,7 +79,7 @@ final readonly class MermaidMarkdown
      * Greedy line ranges over a line's characters: each range ends after the last word that
      * fits, and the spaces that break a line are dropped.
      *
-     * @param list<array{string, GraphFont}> $characters
+     * @param list<array{string, FontFace}> $characters
      * @return list<array{int, int}>
      */
     private static function breaks(array $characters, int $limit): array
@@ -87,7 +87,7 @@ final readonly class MermaidMarkdown
         /** @var list<array{int, int}> $words */
         $words = [];
         $start = -1;
-        foreach ([...$characters, [' ', GraphFont::Regular]] as $index => [$character]) {
+        foreach ([...$characters, [' ', FontFace::Regular]] as $index => [$character]) {
             if (' ' !== $character) {
                 $start = $start < 0 ? $index : $start;
                 continue;
@@ -117,12 +117,12 @@ final readonly class MermaidMarkdown
     /**
      * Adjacent runs of one face joined.
      *
-     * @param list<array{string, GraphFont}> $runs
-     * @return list<array{string, GraphFont}>
+     * @param list<array{string, FontFace}> $runs
+     * @return list<array{string, FontFace}>
      */
     private static function merged(array $runs): array
     {
-        /** @var list<array{string, GraphFont}> $merged */
+        /** @var list<array{string, FontFace}> $merged */
         $merged = [];
         foreach ($runs as [$text, $font]) {
             $previous = \array_pop($merged);
@@ -142,7 +142,7 @@ final readonly class MermaidMarkdown
     /**
      * One line's emphasis: CommonMark's delimiter-run algorithm over `*` and `_`.
      *
-     * @return list<array{string, GraphFont}>
+     * @return list<array{string, FontFace}>
      */
     private static function inline(string $line): array
     {
@@ -253,13 +253,13 @@ final readonly class MermaidMarkdown
     }
 
     /** @param array{bool, bool} $style bold, italic */
-    private static function font(array $style): GraphFont
+    private static function font(array $style): FontFace
     {
         return match ($style) {
-            [true, true] => GraphFont::BoldItalic,
-            [true, false] => GraphFont::Bold,
-            [false, true] => GraphFont::Italic,
-            default => GraphFont::Regular,
+            [true, true] => FontFace::BoldItalic,
+            [true, false] => FontFace::Bold,
+            [false, true] => FontFace::Italic,
+            default => FontFace::Regular,
         };
     }
 }

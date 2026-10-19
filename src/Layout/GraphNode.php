@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Layout;
 
+use Janalis\Viz\Text\FontFace;
+
 /**
  * One laid-out node. Coordinates are points, y-down (the parser flips
  * Graphviz's y-up origin once); (x, y) is the CENTER, (w, h) the extent.
@@ -25,7 +27,7 @@ final readonly class GraphNode
         public float $strokeWidth = 0.12,
         public ?string $drawLabel = null,
         public ?string $textColor = null,
-        public GraphFont $font = GraphFont::Regular,
+        public FontFace $font = FontFace::Regular,
         public float $fontScale = 1.0,
         public float $opacity = 1.0,
         /** @var ?list<float> authored dash and gap lengths in units; null draws the default dash */
@@ -42,7 +44,7 @@ final readonly class GraphNode
         return clone($this, ['color' => $color, 'fillColor' => $fillColor, 'textColor' => $textColor]);
     }
 
-    public function faced(GraphFont $font): self
+    public function faced(FontFace $font): self
     {
         return clone($this, ['font' => $font]);
     }

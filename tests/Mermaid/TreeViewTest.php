@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
@@ -13,6 +12,7 @@ use Janalis\Viz\Mermaid\TreeViewLayout;
 use Janalis\Viz\Mermaid\TreeViewLexer;
 use Janalis\Viz\Mermaid\TreeViewParser;
 use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -102,8 +102,8 @@ final class TreeViewTest extends TestCase
         $this->assertSame('App.tsx  entry', $scene->graph->nodes[0]->drawLabel);
         $this->assertSame(
             [[
-                ['App.tsx', GraphFont::Regular],
-                ['  entry', GraphFont::Italic],
+                ['App.tsx', FontFace::Regular],
+                ['  entry', FontFace::Italic],
             ]],
             $scene->runs['node:0'],
             'descriptions follow in italics',

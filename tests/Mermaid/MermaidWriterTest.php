@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Diagram\ArrowHead;
-use Janalis\Viz\Diagram\Cluster;
-use Janalis\Viz\Diagram\Edge;
-use Janalis\Viz\Diagram\Graph;
-use Janalis\Viz\Diagram\LineStyle;
-use Janalis\Viz\Diagram\Node;
 use Janalis\Viz\Mermaid\MermaidWriter;
+use Janalis\Viz\Model\Graph\ArrowHead;
+use Janalis\Viz\Model\Graph\Cluster;
+use Janalis\Viz\Model\Graph\Edge;
+use Janalis\Viz\Model\Graph\Graph;
+use Janalis\Viz\Model\Graph\Node;
+use Janalis\Viz\Model\LineStyle;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;
 
@@ -61,7 +61,7 @@ final class MermaidWriterTest extends TestCase
 
     public function testAnUnlabelledClusterKeepsABlankTitle(): void
     {
-        $this->assertStringContainsString('subgraph c0 [" "]', MermaidWriter::write(new Graph([new Node('a')], clusters: [new \Janalis\Viz\Diagram\Cluster('x', '', ['a'])])));
+        $this->assertStringContainsString('subgraph c0 [" "]', MermaidWriter::write(new Graph([new Node('a')], clusters: [new \Janalis\Viz\Model\Graph\Cluster('x', '', ['a'])])));
     }
 
     public function testTheWrittenSourceIsReadBackByTheNativeRenderer(): void

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
+use Janalis\Viz\Text\FontFace;
 
 /** Declaration-order grids honor separate element and boundary row limits at every level. */
 final readonly class C4Placement
@@ -90,7 +90,7 @@ final readonly class C4Placement
                     fillColor: $fill,
                     textColor: $text,
                     dashed: !\in_array($record['macro'], ['Deployment_Node', 'Node', 'Node_L', 'Node_R'], strict: true),
-                    font: GraphFont::Bold,
+                    font: FontFace::Bold,
                     fontScale: $header->fontScale,
                 ),
             );

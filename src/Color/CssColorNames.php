@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Color;
 
 /** The CSS color keywords, shared by authored styles and the theme's khroma port. */
 final class CssColorNames

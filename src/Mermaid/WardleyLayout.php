@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /** Projected value chains keep visibility vertical and evolution horizontal. */
 final class WardleyLayout
@@ -86,7 +87,7 @@ final class WardleyLayout
                 default => '@!wardley.componentFill|=#ffffff',
             };
             if ('anchor' === $point['kind']) {
-                $text = $canvas->text((string) $name, $point['label'], $x, $y, $point['origin'], GraphFont::Bold);
+                $text = $canvas->text((string) $name, $point['label'], $x, $y, $point['origin'], FontFace::Bold);
                 yield from $text;
                 $id = $text->getReturn();
                 $canvas->elements[$id] = $point['origin'];
@@ -188,7 +189,7 @@ final class WardleyLayout
             if ('backward' === $link['flow']) {
                 [$start, $end] = [$end, $start];
             }
-            $wrap = MermaidWrap::text(MermaidText::decode($link['label']), width: 32);
+            $wrap = Wrap::text(MermaidText::decode($link['label']), width: 32);
             yield from $wrap;
             $label = '' === $link['label'] ? null : $wrap->getReturn();
             $canvas->line($tail->id, $head->id, [$start, $end], dashed: $link['dashed'], decoration: false, label: $label, tip: 'none' === $link['flow'] ? null : $end);

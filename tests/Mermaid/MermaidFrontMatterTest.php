@@ -6,7 +6,6 @@ namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\MermaidFrontMatter;
@@ -15,6 +14,7 @@ use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\MermaidTitle;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -77,10 +77,10 @@ final class MermaidFrontMatterTest extends TestCase
             strokeWidth: 0.3,
             drawLabel: 'Draw',
             textColor: '#112233',
-            font: GraphFont::BoldItalic,
+            font: FontFace::BoldItalic,
         );
         $edge = new GraphEdge(7, 7, [[1.0, 2.0], [3.0, 4.0]], [3.0, 4.0], 1, 2, 3, 4, '#445566', 'Loop', [2.0, 3.0], dashed: true, ribbon: [[1.0, 2.0], [3.0, 4.0], [1.0, 4.0]], decoration: true);
-        $cluster = new GraphCluster('team', 'Team', 0, 0, 10, 10, '#654321', [5.0, 1.0], font: GraphFont::Italic);
+        $cluster = new GraphCluster('team', 'Team', 0, 0, 10, 10, '#654321', [5.0, 1.0], font: FontFace::Italic);
         $scene = new MermaidScene(
             new GraphLayout(
                 10,

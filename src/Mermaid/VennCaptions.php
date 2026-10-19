@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\Wrap;
 
 /** Text clearance scales circle geometry while preserving area ratios and readable glyph sizes. */
 final readonly class VennCaptions
@@ -63,7 +64,7 @@ final readonly class VennCaptions
             $width = 4.0;
             $height = 0.0;
             foreach ($group['entries'] as $entry) {
-                $wrap = MermaidWrap::text(MermaidText::decode($entry['label']), width: 24);
+                $wrap = Wrap::text(MermaidText::decode($entry['label']), width: 24);
                 yield from $wrap;
                 $label = $wrap->getReturn();
                 [$itemWidth, $itemHeight] = MermaidText::box($label);

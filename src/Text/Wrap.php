@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
-
-use Janalis\Viz\Text\DisplayWidth;
+namespace Janalis\Viz\Text;
 
 /** Linear grapheme wrapping, yielding before a long label can monopolize the event loop. */
-final class MermaidWrap
+final class Wrap
 {
     /** @return \Generator<int, null, mixed, string> */
     public static function text(string $text, int $width): \Generator

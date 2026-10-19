@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Text;
 
-use Janalis\Viz\Layout\GraphFont;
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
 /** FreeType needs a real file, even when the application and its font live inside a PHAR. */
-final class MermaidFont
+final class Font
 {
     public const string FILE = __DIR__.'/../../resources/fonts/IBMPlexMono-Regular.ttf';
 
@@ -25,7 +24,7 @@ final class MermaidFont
         return \str_starts_with($this->source, 'phar://') ? $this->temporary ?? $this->extract() : $this->source;
     }
 
-    public static function file(GraphFont $face, string $source = self::FILE): string
+    public static function file(FontFace $face, string $source = self::FILE): string
     {
         return \str_replace('-Regular.ttf', '-'.$face->value.'.ttf', $source);
     }

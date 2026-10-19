@@ -6,9 +6,10 @@ namespace Janalis\Viz\Mermaid;
 
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
-use Janalis\Viz\Layout\GraphFont;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Text\FontFace;
+use Janalis\Viz\Text\Wrap;
 
 /** Request-local scene assembly keeps projected coordinates separate from text extents. */
 final class WardleyCanvas
@@ -52,9 +53,9 @@ final class WardleyCanvas
     }
 
     /** @return \Generator<int, null, mixed, int> */
-    public function text(string $name, string $label, float $x, float $y, int $origin, GraphFont $font = GraphFont::Regular): \Generator
+    public function text(string $name, string $label, float $x, float $y, int $origin, FontFace $font = FontFace::Regular): \Generator
     {
-        $wrap = MermaidWrap::text(MermaidText::decode($label), width: 36);
+        $wrap = Wrap::text(MermaidText::decode($label), width: 36);
         yield from $wrap;
         $text = $wrap->getReturn();
         [$width, $height] = MermaidText::box($text);

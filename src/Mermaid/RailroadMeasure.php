@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Text\Wrap;
+
 /** Baseline-aware expression boxes reserve separate tracks for branches and loops. */
 final readonly class RailroadMeasure
 {
@@ -27,7 +29,7 @@ final readonly class RailroadMeasure
             $children[] = $work->getReturn();
         }
         if ([] === $children) {
-            $wrap = MermaidWrap::text(MermaidText::decode($expression->label), width: 30);
+            $wrap = Wrap::text(MermaidText::decode($expression->label), width: 30);
             yield from $wrap;
             $label = $wrap->getReturn();
             [$width, $height] = MermaidText::box($label);

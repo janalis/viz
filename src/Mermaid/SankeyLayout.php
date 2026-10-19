@@ -8,6 +8,7 @@ use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\Theme\JsNumber;
 use Janalis\Viz\Mermaid\Theme\JsObject;
+use Janalis\Viz\Text\Wrap;
 
 /** Deterministic justified layers, label padding and ribbons sharing one global value-to-height scale. */
 final readonly class SankeyLayout
@@ -152,7 +153,7 @@ final readonly class SankeyLayout
         foreach ($source->nodes as $id => $item) {
             $value = \round(\max($values[$id]) * 100) / 100;
             $text = MermaidText::decode($item['label']).($shown ? "\n".$this->options->text('sankey', 'prefix').JsNumber::format($value).$this->options->text('sankey', 'suffix') : '');
-            $wrap = MermaidWrap::text($text, width: 26);
+            $wrap = Wrap::text($text, width: 26);
             yield from $wrap;
             $draw = $wrap->getReturn();
             [, $height] = MermaidText::box($draw);
