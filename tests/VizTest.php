@@ -45,7 +45,7 @@ final class VizTest extends TestCase
     public function testDotAndPlantUmlRunTheirConfiguredToolsInTheWorkingDirectory(): void
     {
         $this->tool = new FakeTool('pwd; cat');
-        $viz = new Viz(dot: $this->tool->path(), plantuml: $this->tool->path(), workingDirectory: $this->tool->directory);
+        $viz = new Viz(dot: $this->tool->path(), plantuml: $this->tool->path(), workingDirectory: $this->tool->directory, engine: Engine::Cli);
 
         $directory = (string) \realpath($this->tool->directory);
         $this->assertSame($directory."\ndigraph{}", $viz->render('digraph{}', SourceFormat::Dot, Format::Svg)->bytes);
@@ -97,6 +97,15 @@ final class VizTest extends TestCase
     {
         $this->expectExceptionObject(new RenderFailure('No renderer can produce Svg'));
 
-        new Viz(engine: Engine::Native)->render('digraph {}', SourceFormat::Dot, Format::Svg);
+        new Viz(engine: Engine::Native)->render('@startuml', SourceFormat::PlantUml, Format::Svg);
+    }
+
+    public function testDotDrawsNativelyAndFallsBackToDotForWhatItLeaves(): void
+    {
+        $this->assertStringContainsString('<svg', new Viz(engine: Engine::Native)->render('digraph { a -> b }', SourceFormat::Dot, Format::Svg)->bytes);
+
+        $this->tool = new FakeTool('cat');
+        $viz = new Viz(dot: $this->tool->path(), workingDirectory: $this->tool->directory);
+        $this->assertSame('digraph { layout=neato; a }', $viz->render('digraph { layout=neato; a }', SourceFormat::Dot, Format::Svg)->bytes);
     }
 }

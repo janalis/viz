@@ -11,6 +11,7 @@ use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Render\RenderOptions;
 use Janalis\Viz\Render\Work;
 use Janalis\Viz\Source\ParseError;
+use Janalis\Viz\Source\Unsupported;
 
 /** A language drawn in PHP, with no external tool: SVG always, PNG with GD and FreeType, PDF always. */
 final readonly class NativeRenderer implements Renderer
@@ -30,7 +31,7 @@ final readonly class NativeRenderer implements Renderer
     {
         try {
             return new Image(Work::run($this->image($source, $format, $options->dpi ?? PngBackend::BASE_DPI, $options->maxPixels)), $format);
-        } catch (ParseError|\InvalidArgumentException $exception) {
+        } catch (ParseError|Unsupported|\InvalidArgumentException $exception) {
             throw new RenderFailure($exception->getMessage(), previous: $exception);
         }
     }
@@ -40,6 +41,7 @@ final readonly class NativeRenderer implements Renderer
      *
      * @return \Generator<int, null, mixed, string>
      * @throws ParseError when the source does not parse
+     * @throws Unsupported when the source uses something the native side does not draw
      * @throws \InvalidArgumentException when the source cannot be drawn in $format
      */
     public function image(string $source, Format $format, int $dpi = PngBackend::BASE_DPI, int $maxPixels = PngBackend::MAX_PIXELS): \Generator

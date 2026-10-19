@@ -30,6 +30,14 @@ final class DotEngineTest extends TestCase
         $this->assertSame(['' => Direction::TopBottom], $placement->directions);
     }
 
+    public function testALoopWidensItsNodesRightSide(): void
+    {
+        // Between b and c, the node separation and the loop's reach.
+        $placement = self::place(['a', 'b', 'c'], [['a', 'b'], ['a', 'c'], ['b', 'b']]);
+
+        $this->assertSame(36.0, $placement->endpoints['c']->x - $placement->endpoints['b']->x - 54.0);
+    }
+
     public function testAClusterKeepsItsMarginAndTheGraphKeepsOneAroundIt(): void
     {
         $placement = self::place(['e', 'b'], [], [new LayoutCluster('x', 'X', labelHeight: 16.5)], ['e' => 'x']);

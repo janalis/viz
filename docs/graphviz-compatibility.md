@@ -35,7 +35,21 @@ Where the papers leave a choice open, the behaviour was set by comparing the nat
 | Ordering | `DotOrdering`, `DotCrossings`, `DotComponents` | Each connected component is ordered on its own, starting from an initial order found breadth-first. Weighted-median sweeps leave nodes with no neighbours where they are. Transposition follows each sweep, with dot's schedule of passes. Clusters stay contiguous, and in one order on every rank. |
 | Coordinates | `DotVertical`, `DotHorizontal` | Network simplex on the auxiliary graph, with weights of 1, 2 or 8 for edges between real and virtual nodes. Nodes keep the node separation. Clusters keep an 8-point margin around what they hold, from each other and from the graph's edge. A cluster's label band is the label's height plus 8 points. |
 
-A graph laid out left to right is laid out top-down with every size turned, then turned back.
+A graph laid out left to right is laid out top-down with every size turned, then turned back. A loop widens its node's right side by its reach and its label.
+
+## Drawing
+
+`GraphViz\DotPipeline` parses, checks, lays out and draws DOT with no `dot` installed; `Viz` uses it first and falls back to `dot` on whatever it refuses.
+
+| Drawn natively | How |
+| --- | --- |
+| Labels | `\N`, `\G`, `\E`, `\T`, `\H` expanded; `\n`, `\l`, `\r` end centred, left and right lines. Sized in the bundled monospace font, so nodes are wider than `dot`'s. `fontname` picks bold and italic only. |
+| Node shapes | The polygon table: `box`, `ellipse`, `circle`, `point`, `egg`, the triangles, trapezia, houses, `parallelogram`, the regular polygons, `star`, `cds`, `polygon` with `sides`, `skew`, `distortion` and `orientation`, `note`, `tab`, `folder`, `box3d`, `component`, `cylinder`, `underline`, the M shapes, and `plaintext`/`plain`/`none`. `peripheries`, `margin`, `regular` and `fixedsize`. |
+| Styles | `filled`, `rounded`, `dashed`, `dotted`, `bold`, `invis`; `color`, `fillcolor`, `fontcolor`, `pencolor`, `bgcolor`, `penwidth`. |
+| Edges | Curves smoothed through the route, clipped at both outlines. Arrowheads from the documented grammar (`o`, `l`, `r`, up to four shapes) with `dir`, `arrowsize`, `arrowhead` and `arrowtail`. Flat edges are straight; loops sit on a node's right. |
+| Clusters and graph | Cluster boxes with `labeljust` and `labelloc`; the graph label below; `size`, with `!` to fill. |
+
+The native drawing refuses, and `dot` draws: other `layout` engines, HTML labels, `record` and `Mrecord`, `image` and `shapefile`, `splines=ortho`, `concentrate`, `samehead` and `sametail`, colour lists and `striped`, `wedged` or `radial` styles, `rotate` and `landscape`, `pos` and `pin`, and `ratio=compress`. Edges are smoothed polylines, not `dot`'s splines, and ports are ignored.
 
 ## Parity
 

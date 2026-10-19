@@ -6,6 +6,7 @@ namespace Janalis\Viz;
 
 use Janalis\Viz\Draw\NativeRenderer;
 use Janalis\Viz\GraphViz\DotCommand;
+use Janalis\Viz\GraphViz\DotPipeline;
 use Janalis\Viz\Mermaid\MermaidCommand;
 use Janalis\Viz\Mermaid\MermaidPipeline;
 use Janalis\Viz\PlantUML\PlantUmlCommand;
@@ -78,7 +79,8 @@ final readonly class Viz
     {
         return match ($format) {
             SourceFormat::Mermaid => new NativeRenderer(new MermaidPipeline()),
-            SourceFormat::Dot, SourceFormat::PlantUml => null,
+            SourceFormat::Dot => new NativeRenderer(new DotPipeline()),
+            SourceFormat::PlantUml => null,
         };
     }
 

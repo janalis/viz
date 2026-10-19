@@ -1,0 +1,231 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Janalis\Viz\GraphViz\Drawing;
+
+/**
+ * A node's outline, in points around its centre, for the shapes of dot's documented table:
+ * the outline itself, closed and filled; any extra outlines drawn around it (peripheries);
+ * and decoration lines drawn on top, such as a note's fold.
+ */
+final readonly class DotShape
+{
+    /** Shapes drawn without an outline. */
+    public const array BARE = ['plaintext', 'plain', 'none'];
+
+    /**
+     * How much larger than its label each shape must be to hold it.
+     *
+     * @var array<string, float>
+     */
+    private const array GROWTH = [
+        'ellipse' => \M_SQRT2,
+        'oval' => \M_SQRT2,
+        'circle' => \M_SQRT2,
+        'doublecircle' => \M_SQRT2,
+        'Mcircle' => \M_SQRT2,
+        'egg' => \M_SQRT2,
+        'diamond' => 2.0,
+        'Mdiamond' => 2.0,
+        'triangle' => 2.0,
+        'invtriangle' => 2.0,
+        'star' => 2.0,
+        'pentagon' => 1.25,
+        'hexagon' => 1.2,
+        'septagon' => 1.15,
+        'octagon' => 1.1,
+        'doubleoctagon' => 1.1,
+        'tripleoctagon' => 1.1,
+        'house' => 1.3,
+        'invhouse' => 1.3,
+        'trapezium' => 1.4,
+        'invtrapezium' => 1.4,
+        'parallelogram' => 1.4,
+    ];
+
+    /**
+     * @param list<array{float, float}> $outline
+     * @param list<list<array{float, float}>> $peripheries outlines around it, innermost first
+     * @param list<list<array{float, float}>> $decorations open lines drawn over it
+     */
+    public function __construct(
+        public array $outline,
+        public array $peripheries = [],
+        public array $decorations = [],
+    ) {}
+
+    /** How much larger than its label a shape must be. */
+    public static function growth(string $shape): float
+    {
+        return self::GROWTH[$shape] ?? 1.0;
+    }
+
+    /** Whether a shape is round, so a regular one is as wide as it is tall. */
+    public static function round(string $shape): bool
+    {
+        return \in_array($shape, ['circle', 'doublecircle', 'Mcircle', 'point'], strict: true);
+    }
+
+    public static function of(string $shape, float $width, float $height, int $peripheries = 1, int $sides = 4, float $skew = 0.0, float $distortion = 0.0, float $orientation = 0.0): self
+    {
+        [$w, $h] = [$width / 2, $height / 2];
+        $outline = match ($shape) {
+            'ellipse', 'oval', 'circle', 'doublecircle', 'Mcircle', 'point', 'egg' => self::ellipse($w, $h),
+            'diamond', 'Mdiamond' => [[0.0, -$h], [$w, 0.0], [0.0, $h], [-$w, 0.0]],
+            'triangle' => [[0.0, -$h], [$w, $h], [-$w, $h]],
+            'invtriangle' => [[-$w, -$h], [$w, -$h], [0.0, $h]],
+            'trapezium' => [[-$w * 0.6, -$h], [$w * 0.6, -$h], [$w, $h], [-$w, $h]],
+            'invtrapezium' => [[-$w, -$h], [$w, -$h], [$w * 0.6, $h], [-$w * 0.6, $h]],
+            'parallelogram' => [[-$w * 0.6, -$h], [$w, -$h], [$w * 0.6, $h], [-$w, $h]],
+            'house' => [[0.0, -$h], [$w, -$h / 3], [$w, $h], [-$w, $h], [-$w, -$h / 3]],
+            'invhouse' => [[-$w, -$h], [$w, -$h], [$w, $h / 3], [0.0, $h], [-$w, $h / 3]],
+            'pentagon' => self::regular(5, $w, $h, 0.0),
+            'hexagon' => self::regular(6, $w, $h, 0.0),
+            'septagon' => self::regular(7, $w, $h, 0.0),
+            'octagon', 'doubleoctagon', 'tripleoctagon' => self::regular(8, $w, $h, 22.5),
+            'star' => self::star($w, $h),
+            'cds' => [[-$w, -$h], [$w * 0.7, -$h], [$w, 0.0], [$w * 0.7, $h], [-$w, $h]],
+            'polygon' => self::polygon($sides, $w, $h, $skew, $distortion, $orientation),
+            default => [[-$w, -$h], [$w, -$h], [$w, $h], [-$w, $h]],
+        };
+        $count = \max($peripheries, match ($shape) {
+            'doublecircle', 'doubleoctagon' => 2,
+            'tripleoctagon' => 3,
+            default => 1,
+        });
+        $rings = [];
+        for ($ring = 1; $ring < $count; ++$ring) {
+            $grow = 4.0 * $ring;
+            $rings[] = \array_map(static fn (array $point): array => self::outward($point, $w, $h, $grow), $outline);
+        }
+
+        return new self($outline, $rings, self::decorations($shape, $w, $h));
+    }
+
+    /** Whether a point, around the centre, falls inside the outermost outline. */
+    public function contains(float $x, float $y): bool
+    {
+        $polygon = [] === $this->peripheries ? $this->outline : $this->peripheries[\count($this->peripheries) - 1];
+        $inside = false;
+        $count = \count($polygon);
+        for ($index = 0, $previous = $count - 1; $index < $count; $previous = $index++) {
+            [$x1, $y1] = $polygon[$index];
+            [$x2, $y2] = $polygon[$previous];
+            if ($y1 > $y !== $y2 > $y && $x < (((($x2 - $x1) * ($y - $y1)) / ($y2 - $y1)) + $x1)) {
+                $inside = !$inside;
+            }
+        }
+
+        return $inside;
+    }
+
+    /** @return list<array{float, float}> */
+    private static function ellipse(float $w, float $h): array
+    {
+        $points = [];
+        for ($step = 0; $step < 48; ++$step) {
+            $angle = (2 * \M_PI * $step) / 48;
+            $points[] = [$w * \cos($angle), $h * \sin($angle)];
+        }
+
+        return $points;
+    }
+
+    /** @return list<array{float, float}> a regular polygon inscribed in the ellipse, its first vertex at $start degrees from the top */
+    private static function regular(int $sides, float $w, float $h, float $start): array
+    {
+        $points = [];
+        for ($side = 0; $side < $sides; ++$side) {
+            $angle = \deg2rad($start + ((360 / $sides) * $side)) - (\M_PI / 2);
+            $points[] = [$w * \cos($angle), $h * \sin($angle)];
+        }
+
+        return $points;
+    }
+
+    /** @return list<array{float, float}> */
+    private static function star(float $w, float $h): array
+    {
+        $points = [];
+        for ($vertex = 0; $vertex < 10; ++$vertex) {
+            $angle = ((\M_PI / 5) * $vertex) - (\M_PI / 2);
+            $radius = 0 === ($vertex % 2) ? 1.0 : 0.4;
+            $points[] = [$w * $radius * \cos($angle), $h * $radius * \sin($angle)];
+        }
+
+        return $points;
+    }
+
+    /** @return list<array{float, float}> a polygon by sides, skewed, distorted and turned as DOT's attributes ask */
+    private static function polygon(int $sides, float $w, float $h, float $skew, float $distortion, float $orientation): array
+    {
+        $sides = \max(3, \min(100, $sides));
+        $points = [];
+        foreach (self::regular($sides, $w, $h, (180 / $sides) + $orientation) as [$x, $y]) {
+            // Skew shifts the top right and the bottom left; distortion widens the top and narrows the bottom.
+            $ratio = $h > 0 ? -$y / $h : 0.0;
+            $points[] = [($x * (1 + ($distortion * $ratio))) + ($skew * $w * $ratio), $y];
+        }
+
+        return $points;
+    }
+
+    /**
+     * A point pushed outward from the centre by a distance, for a periphery.
+     *
+     * @param array{float, float} $point
+     * @return array{float, float}
+     */
+    private static function outward(array $point, float $w, float $h, float $grow): array
+    {
+        [$x, $y] = $point;
+
+        return [$w > 0 ? ($x * ($w + $grow)) / $w : $x, $h > 0 ? ($y * ($h + $grow)) / $h : $y];
+    }
+
+    /** @return list<list<array{float, float}>> */
+    private static function decorations(string $shape, float $w, float $h): array
+    {
+        $fold = \min(10.0, $w / 3, $h / 3);
+
+        return match ($shape) {
+            'note' => [[[$w - $fold, -$h], [$w - $fold, -$h + $fold], [$w, -$h + $fold]]],
+            'tab' => [[[-$w, -$h + $fold], [-$w + (3 * $fold), -$h + $fold], [-$w + (3 * $fold), -$h]]],
+            'folder' => [[[-$w, -$h + $fold], [$w * 0.2, -$h + $fold]]],
+            'box3d' => [[[-$w + $fold, -$h], [-$w + $fold, -$h - $fold], [$w + $fold, -$h - $fold], [$w + $fold, $h - $fold], [$w, $h]], [[$w, -$h], [$w + $fold, -$h - $fold]]],
+            'component' => [
+                [[-$w - 4, -$h / 2], [-$w + 4, -$h / 2], [-$w + 4, (-$h / 2) + 6], [-$w - 4, (-$h / 2) + 6], [-$w - 4, -$h / 2]],
+                [[-$w - 4, ($h / 2) - 6], [-$w + 4, ($h / 2) - 6], [-$w + 4, $h / 2], [-$w - 4, $h / 2], [-$w - 4, ($h / 2) - 6]],
+            ],
+            'cylinder' => [\array_map(static fn (int $step): array => [$w * \cos((\M_PI * $step) / 16), -$h + ($fold * \sin((\M_PI * $step) / 16))], \range(start: 0, end: 16))],
+            'underline' => [[[-$w, $h], [$w, $h]]],
+            default => self::marked($shape, $w, $h, $fold),
+        };
+    }
+
+    /**
+     * The marks of the M shapes, which UML diagrams use for a start or an end.
+     *
+     * @return list<list<array{float, float}>>
+     */
+    private static function marked(string $shape, float $w, float $h, float $fold): array
+    {
+        if ($w <= 0 || $h <= 0) {
+            return [];
+        }
+
+        return match ($shape) {
+            'Msquare' => [[[-$w, -$h + $fold], [-$w + $fold, -$h]], [[$w - $fold, -$h], [$w, -$h + $fold]], [[$w, $h - $fold], [$w - $fold, $h]], [[-$w + $fold, $h], [-$w, $h - $fold]]],
+            // Each tip cut off where the diamond is as wide as the cut is deep.
+            'Mdiamond' => [
+                [[(-$fold * $w) / $h, -$h + $fold], [($fold * $w) / $h, -$h + $fold]],
+                [[(-$fold * $w) / $h, $h - $fold], [($fold * $w) / $h, $h - $fold]],
+                [[-$w + $fold, (-$fold * $h) / $w], [-$w + $fold, ($fold * $h) / $w]],
+                [[$w - $fold, (-$fold * $h) / $w], [$w - $fold, ($fold * $h) / $w]],
+            ],
+            'Mcircle' => [[[-$w * 0.7, -$h * 0.7], [$w * 0.7, -$h * 0.7]], [[-$w * 0.7, $h * 0.7], [$w * 0.7, $h * 0.7]]],
+            default => [],
+        };
+    }
+}

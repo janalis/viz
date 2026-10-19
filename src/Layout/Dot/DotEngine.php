@@ -27,6 +27,10 @@ final readonly class DotEngine implements LayoutEngine
     /** The most virtual nodes a layout may need: past it, the graph is too large to lay out here. */
     public const int MAX_VIRTUAL = 20_000;
 
+    /**
+     * @return \Generator<int, null, mixed, Placement>
+     * @throws Unsupported when the layout needs more virtual nodes than {@see self::MAX_VIRTUAL}
+     */
     #[\Override]
     public function place(LayoutGraph $graph): \Generator
     {

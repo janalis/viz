@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\GraphViz;
 
+use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
+use Janalis\Viz\GraphViz\Model\DotNode;
 use Janalis\Viz\GraphViz\Model\DotSubgraph;
 use Janalis\Viz\Layout\Engine\LayoutCluster;
 use Janalis\Viz\Layout\Engine\LayoutEdge;
@@ -31,22 +33,28 @@ final class DotLayoutInput
     public const float MAX_INCHES = 1000.0;
 
     /**
-     * @param ?\Closure(string, string): array{float, float} $measure a node's size from its name and label, in points; null takes width and height alone
-     * @param ?\Closure(string): array{float, float} $labels an edge label's size, in points
+     * @param ?\Closure(DotNode): array{float, float} $measure the size a node's label needs, in points; null takes width and height alone
+     * @param ?\Closure(DotEdge): array{float, float} $labels an edge label's size, in points
+     * @param ?\Closure(DotSubgraph): array{float, float} $titles a cluster label's size, in points
      */
-    public static function from(DotGraph $graph, ?\Closure $measure = null, ?\Closure $labels = null): LayoutGraph
+    public static function from(DotGraph $graph, ?\Closure $measure = null, ?\Closure $labels = null, ?\Closure $titles = null): LayoutGraph
     {
         $nodes = [];
         $clusterOf = [];
         $clusters = [];
         $claimed = [];
-        self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf);
+        self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf, $titles);
         $order = 0;
         foreach ($graph->nodes as $name => $node) {
             $width = self::inches($node->attribute('width'), 0.75);
             $height = self::inches($node->attribute('height'), 0.5);
-            if (null !== $measure && 'true' !== \strtolower($node->attribute('fixedsize'))) {
-                [$labelWidth, $labelHeight] = $measure($name, $node->attribute('label', '\N'));
+            // A point takes no label: it is a dot as wide as the smaller of its sizes, 0.05in by default.
+            if ('point' === $node->attribute('shape')) {
+                $width = \min(self::inches($node->attribute('width'), 0.05), self::inches($node->attribute('height'), 0.05));
+                $height = $width;
+            }
+            if (null !== $measure && 'true' !== \strtolower($node->attribute('fixedsize')) && 'point' !== $node->attribute('shape')) {
+                [$labelWidth, $labelHeight] = $measure($node);
                 $width = \max($width, $labelWidth);
                 $height = \max($height, $labelHeight);
             }
@@ -54,8 +62,7 @@ final class DotLayoutInput
         }
         $edges = [];
         foreach ($graph->edges as $index => $edge) {
-            $label = $edge->attribute('label');
-            [$labelWidth, $labelHeight] = '' !== $label && null !== $labels ? $labels($label) : [0.0, 0.0];
+            [$labelWidth, $labelHeight] = '' !== $edge->attribute('label') && null !== $labels ? $labels($edge) : [0.0, 0.0];
             $edges[] = new LayoutEdge(
                 $index,
                 $edge->tail,
@@ -98,12 +105,13 @@ final class DotLayoutInput
      * @param array<string, true> $claimed the nodes earlier clusters at this level hold
      * @param list<LayoutCluster> $clusters
      * @param array<string, string> $clusterOf
+     * @param ?\Closure(DotSubgraph): array{float, float} $titles
      */
-    private static function clusters(DotGraph $graph, array $subgraphs, ?string $parent, ?array $allowed, array &$claimed, array &$clusters, array &$clusterOf): void
+    private static function clusters(DotGraph $graph, array $subgraphs, ?string $parent, ?array $allowed, array &$claimed, array &$clusters, array &$clusterOf, ?\Closure $titles): void
     {
         foreach ($subgraphs as $subgraph) {
             if (!$subgraph->cluster()) {
-                self::clusters($graph, $subgraph->subgraphs, $parent, $allowed, $claimed, $clusters, $clusterOf);
+                self::clusters($graph, $subgraph->subgraphs, $parent, $allowed, $claimed, $clusters, $clusterOf, $titles);
                 continue;
             }
             // dot warns of a cluster name used twice and draws both: each gets an id of its own.
@@ -121,9 +129,10 @@ final class DotLayoutInput
                 $clusterOf[$node] = $id;
             }
             $claimed += $members;
-            $clusters[] = new LayoutCluster($id, $subgraph->attribute('label'), $parent, order: \count($clusters));
+            [$titleWidth, $titleHeight] = null === $titles || '' === $subgraph->attribute('label') ? [0.0, 0.0] : $titles($subgraph);
+            $clusters[] = new LayoutCluster($id, $subgraph->attribute('label'), $parent, minWidth: $titleWidth, labelHeight: $titleHeight, order: \count($clusters));
             $inner = [];
-            self::clusters($graph, $subgraph->subgraphs, $id, $members, $inner, $clusters, $clusterOf);
+            self::clusters($graph, $subgraph->subgraphs, $id, $members, $inner, $clusters, $clusterOf, $titles);
         }
     }
 

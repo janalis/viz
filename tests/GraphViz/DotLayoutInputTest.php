@@ -29,14 +29,28 @@ final class DotLayoutInputTest extends TestCase
     public function testMeasuresGrowNodesAndGiveLabelsTheirSize(): void
     {
         $input = DotLayoutInput::from(
-            Work::run(new DotParser()->parse('digraph { a [label="long"]; b [fixedsize=true]; a -> b [label=x] }')),
-            static fn (string $name, string $label): array => [100.0, 10.0],
-            static fn (string $label): array => [20.0, 12.0],
+            Work::run(new DotParser()->parse('digraph { a [label="long"]; b [fixedsize=true]; a -> b [label=x]; subgraph cluster_t { label=T; c } subgraph cluster_u { d } }')),
+            static fn (\Janalis\Viz\GraphViz\Model\DotNode $node): array => [100.0, 10.0],
+            static fn (\Janalis\Viz\GraphViz\Model\DotEdge $edge): array => [20.0, 12.0],
+            static fn (\Janalis\Viz\GraphViz\Model\DotSubgraph $cluster): array => [30.0, 14.0],
         );
 
         $this->assertSame([100.0, 36.0], [$input->nodes[0]->width, $input->nodes[0]->height]);
         $this->assertSame([54.0, 36.0], [$input->nodes[1]->width, $input->nodes[1]->height], 'a fixed size keeps its own');
         $this->assertSame([20.0, 12.0], [$input->edges[0]->labelWidth, $input->edges[0]->labelHeight]);
+        $this->assertSame([30.0, 14.0], [$input->clusters[0]->minWidth, $input->clusters[0]->labelHeight]);
+        $this->assertSame([0.0, 0.0], [$input->clusters[1]->minWidth, $input->clusters[1]->labelHeight], 'a cluster without a label has none to measure');
+    }
+
+    public function testAPointIsASmallRoundDotWithoutALabel(): void
+    {
+        $input = DotLayoutInput::from(
+            Work::run(new DotParser()->parse('digraph { node [shape=point]; a; b [width=1, height=0.5]; }')),
+            static fn (\Janalis\Viz\GraphViz\Model\DotNode $node): array => [100.0, 100.0],
+        );
+
+        $this->assertEqualsWithDelta([3.6, 3.6], [$input->nodes[0]->width, $input->nodes[0]->height], 1e-9);
+        $this->assertSame([36.0, 36.0], [$input->nodes[1]->width, $input->nodes[1]->height]);
     }
 
     public function testClustersClaimNodesOnceAndRankSetsTieTheirs(): void

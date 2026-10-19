@@ -17,6 +17,8 @@ final class DotLayers
     public const int REAL = 0;
     public const int VIRTUAL = 1;
     public const int LABEL = 2;
+    /** How far a loop reaches out to its node's right, before its label. */
+    public const float LOOP = 18.0;
 
     /** @var list<int> each node's rank */
     public array $rank = [];
@@ -62,7 +64,9 @@ final class DotLayers
         $chains = [];
         foreach ($edges as $index => [$tail, $head, $weight, $labelWidth, $labelHeight]) {
             if ($tail === $head) {
+                // Loops are drawn to a node's right, one beside the other: the node is as wide as they reach.
                 $this->loops[] = [$tail, $index];
+                $this->right[$tail] += \max(self::LOOP, $this->height[$tail] / 2) + $labelWidth;
                 continue;
             }
             if ($ranks[$tail] === $ranks[$head]) {
