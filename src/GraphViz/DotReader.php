@@ -4,33 +4,27 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\GraphViz;
 
-use Janalis\Viz\GraphViz\Source\DotGraphReader;
+use Janalis\Viz\GraphViz\Language\DotParser;
+use Janalis\Viz\GraphViz\Language\DotSyntaxError;
+use Janalis\Viz\GraphViz\Source\DotModelReader;
 use Janalis\Viz\Model\Diagram;
 use Janalis\Viz\Model\Family;
-use Janalis\Viz\Render\RenderFailure;
+use Janalis\Viz\Render\Work;
 use Janalis\Viz\Source\Reader;
 
-/** DOT read into the shared graph through `dot -Tjson0`, which resolves the whole language. */
+/** DOT read natively into the shared graph, with the language's own rules for defaults, subgraphs and strict graphs. */
 final readonly class DotReader implements Reader
 {
-    public function __construct(
-        private DotTool $dot = new DotTool(),
-    ) {}
-
     #[\Override]
     public function families(): array
     {
         return [Family::Graph];
     }
 
-    /** @throws RenderFailure when dot is missing, fails or answers with something other than its JSON */
+    /** @throws DotSyntaxError when the source is not DOT */
     #[\Override]
     public function read(string $source): Diagram
     {
-        try {
-            return DotGraphReader::read($this->dot->json($source));
-        } catch (GraphParseException $exception) {
-            throw new RenderFailure($exception->getMessage(), previous: $exception);
-        }
+        return DotModelReader::read(Work::run(new DotParser()->parse($source)));
     }
 }

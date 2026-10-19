@@ -23,7 +23,7 @@ use Janalis\Viz\Model\LineStyle;
  */
 final class DotGraphReader
 {
-    private const array SHAPES = [
+    public const array SHAPES = [
         'circle' => Shape::Circle,
         'doublecircle' => Shape::Circle,
         'point' => Shape::Circle,
@@ -133,7 +133,7 @@ final class DotGraphReader
         );
     }
 
-    private static function arrow(string $name): ArrowHead
+    public static function arrow(string $name): ArrowHead
     {
         return match (true) {
             'none' === $name => ArrowHead::None,

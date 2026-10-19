@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces.
 
+- DOT is read natively, with no `dot` installed: a lexer and parser for the whole language (`GraphViz\Language`) and a resolved model (`GraphViz\Model`) that follows dot's rules for defaults, subgraphs, strict graphs and clusters, checked against dot itself on random graphs. `GraphViz\DotReader` uses it; `GraphViz\Source\DotGraphReader` still reads `dot -Tjson0`.
 - A shared state model (`Model\State`): states nested in composite states and concurrent regions, pseudostates, transitions and notes. Mermaid state diagrams read into it and are written from it; PlantUML writes it; DOT draws it as a graph.
 - A shared class model (`Model\Classes`): classifiers of each kind with parsed members, relations marked at both ends with their labels, packages and notes. Mermaid class diagrams read into it and are written from it; PlantUML writes it; DOT draws each classifier as a record.
 - A shared entity-relationship model (`Model\Entity`): entities with typed, keyed attributes, relationships with a cardinality at each end, and groups. Mermaid ER diagrams read into it and are written from it; PlantUML writes it in information-engineering notation; DOT draws it as a graph.

@@ -67,11 +67,9 @@ final class VizTest extends TestCase
         }
     }
 
-    public function testConversionUsesTheConfiguredDot(): void
+    public function testConversionReadsDotWithoutDot(): void
     {
-        $this->tool = new FakeTool("echo '{\"objects\":[{\"name\":\"a\"}]}'");
-
-        $this->assertSame("flowchart TB\n    a[\"a\"]\n", new Viz(dot: $this->tool->path())->convert('digraph { a }', SourceFormat::Dot, SourceFormat::Mermaid));
+        $this->assertSame("flowchart TB\n    a[\"a\"]\n", new Viz(dot: '/nonexistent/dot')->convert('digraph { a }', SourceFormat::Dot, SourceFormat::Mermaid));
     }
 
     public function testAMissingToolIsAFailure(): void

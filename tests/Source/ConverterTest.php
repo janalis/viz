@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Source;
 
-use Janalis\Viz\GraphViz\DotReader;
-use Janalis\Viz\GraphViz\DotTool;
 use Janalis\Viz\GraphViz\DotWriter;
 use Janalis\Viz\Mermaid\MermaidWriter;
 use Janalis\Viz\Model\Diagram;
@@ -15,7 +13,6 @@ use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\Model\LineStyle;
 use Janalis\Viz\Process\Tool;
-use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Source\Converter;
 use Janalis\Viz\Source\Languages;
 use Janalis\Viz\Source\Route;
@@ -38,7 +35,7 @@ final class ConverterTest extends TestCase
 
     public function testAFlowchartIsWrittenInEachLanguage(): void
     {
-        $converter = self::converter(new DotTool(new Tool('viz-no-dot')));
+        $converter = new Converter();
         $source = "flowchart LR\n  a[Start] --> b{Ok?}";
 
         $this->assertSame("flowchart LR\n    a[\"Start\"]\n    b{\"Ok?\"}\n    a --> b\n", $converter->convert($source, SourceFormat::Mermaid, SourceFormat::Mermaid));
@@ -46,24 +43,21 @@ final class ConverterTest extends TestCase
         $this->assertStringContainsString('n0 --> n1', $converter->convert($source, SourceFormat::Mermaid, SourceFormat::PlantUml));
     }
 
-    public function testDotIsReadThroughDotsOwnJson(): void
+    public function testDotIsReadNativelyWithNoToolInstalled(): void
     {
-        $this->tool = new FakeTool("echo '{\"rankdir\":\"LR\",\"objects\":[{\"name\":\"a\"},{\"name\":\"b\"}],\"edges\":[{\"tail\":0,\"head\":1}]}'");
-
-        $mermaid = self::converter(new DotTool(new Tool('dot', $this->tool->path())))->convert('digraph { a -> b }', SourceFormat::Dot, SourceFormat::Mermaid);
+        $mermaid = new Converter()->convert('digraph { rankdir=LR; a -> b }', SourceFormat::Dot, SourceFormat::Mermaid);
 
         $this->assertSame("flowchart LR\n    a[\"a\"]\n    b[\"b\"]\n    a --> b\n", $mermaid);
-        $this->assertSame(['-Tjson0'], $this->tool->argv());
     }
 
-    public function testUnreadableDotJsonIsARenderFailure(): void
+    public function testADotSyntaxErrorIsARefusalCarryingItsLocation(): void
     {
-        $this->tool = new FakeTool('echo nope');
-
-        $this->expectException(RenderFailure::class);
-        $this->expectExceptionMessage('dot produced invalid JSON');
-
-        self::converter(new DotTool(new Tool('dot', $this->tool->path())))->read('x', SourceFormat::Dot);
+        try {
+            new Converter()->read("digraph {\n a -- b }", SourceFormat::Dot);
+            $this->fail('Expected a refusal');
+        } catch (UnsupportedConversion $refusal) {
+            $this->assertSame('The DOT source cannot be read: Line 2, column 4: An undirected edge -- in a digraph', $refusal->getMessage());
+        }
     }
 
     public function testPlantUmlIsWrittenButNotRead(): void
@@ -161,11 +155,6 @@ final class ConverterTest extends TestCase
         $document = (string) \file_get_contents(__DIR__.'/../../docs/conversion.md');
 
         $this->assertStringContainsString(\implode("\n", $rows)."\n", $document, 'docs/conversion.md lists every route Converter::route() takes');
-    }
-
-    private static function converter(DotTool $dot): Converter
-    {
-        return new Converter(new Languages(dot: new DotReader($dot)));
     }
 
     private static function graph(Diagram $diagram): Graph
