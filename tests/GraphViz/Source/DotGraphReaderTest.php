@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Tests\GraphViz;
+namespace Janalis\Viz\Tests\GraphViz\Source;
 
-use Janalis\Viz\GraphViz\DotReader;
 use Janalis\Viz\GraphViz\DotRenderer;
-use Janalis\Viz\GraphViz\DotWriter;
 use Janalis\Viz\GraphViz\GraphParseException;
+use Janalis\Viz\GraphViz\Source\DotGraphReader;
+use Janalis\Viz\GraphViz\Source\DotGraphWriter;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\Model\Graph\ArrowHead;
 use Janalis\Viz\Model\Graph\Edge;
@@ -18,11 +18,11 @@ use Janalis\Viz\Process\Tool;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;
 
-final class DotReaderTest extends TestCase
+final class DotGraphReaderTest extends TestCase
 {
     public function testDotsResolvedGraphMapsOntoTheSharedModel(): void
     {
-        $graph = DotReader::read(self::json([
+        $graph = DotGraphReader::read(self::json([
             'rankdir' => 'lr',
             'label' => 'Title',
             '_subgraph_cnt' => 3,
@@ -71,7 +71,7 @@ final class DotReaderTest extends TestCase
 
     public function testAnUndirectedGraphHasNoArrowsByDefault(): void
     {
-        $graph = DotReader::read(self::json(['directed' => false, 'objects' => [['name' => 'a'], ['name' => 'b']], 'edges' => [['tail' => 0, 'head' => 1]]]));
+        $graph = DotGraphReader::read(self::json(['directed' => false, 'objects' => [['name' => 'a'], ['name' => 'b']], 'edges' => [['tail' => 0, 'head' => 1]]]));
 
         $this->assertEquals([new Edge('a', 'b', head: ArrowHead::None)], $graph->edges);
         $this->assertSame(Direction::TopBottom, $graph->direction);
@@ -79,7 +79,7 @@ final class DotReaderTest extends TestCase
 
     public function testATopLevelPlainSubgraphLendsItsClustersUpward(): void
     {
-        $graph = DotReader::read(self::json([
+        $graph = DotGraphReader::read(self::json([
             '_subgraph_cnt' => 2,
             'objects' => [['name' => 'rank', 'subgraphs' => [1], 'nodes' => [2]], ['name' => 'clusterX', 'nodes' => [2]], ['name' => 'n']],
         ]));
@@ -91,7 +91,7 @@ final class DotReaderTest extends TestCase
     {
         $this->expectExceptionObject(new GraphParseException('edge references a missing node'));
 
-        DotReader::read(self::json(['objects' => [['name' => 'a']], 'edges' => [['tail' => 0, 'head' => 9]]]));
+        DotGraphReader::read(self::json(['objects' => [['name' => 'a']], 'edges' => [['tail' => 0, 'head' => 9]]]));
     }
 
     public function testInvalidJsonIsRefused(): void
@@ -99,14 +99,14 @@ final class DotReaderTest extends TestCase
         $this->expectException(GraphParseException::class);
         $this->expectExceptionMessage('dot produced invalid JSON');
 
-        DotReader::read('{');
+        DotGraphReader::read('{');
     }
 
     public function testANonObjectDocumentIsRefused(): void
     {
         $this->expectExceptionObject(new GraphParseException('dot produced a non-object JSON document'));
 
-        DotReader::read('42');
+        DotGraphReader::read('42');
     }
 
     public function testWhatTheWriterWritesDotReadsBack(): void
@@ -116,7 +116,7 @@ final class DotReaderTest extends TestCase
         }
         $sample = Sample::graph();
 
-        $graph = DotReader::read(new DotRenderer()->json(DotWriter::write($sample)));
+        $graph = DotGraphReader::read(new DotRenderer()->json(DotGraphWriter::write($sample)));
 
         $this->assertSame($sample->direction, $graph->direction);
         $this->assertSame($sample->title, $graph->title);
@@ -145,7 +145,7 @@ final class DotReaderTest extends TestCase
 
     public function testSiblingClustersAfterAPlainSubgraphAreAllRead(): void
     {
-        $graph = DotReader::read(self::json([
+        $graph = DotGraphReader::read(self::json([
             '_subgraph_cnt' => 4,
             'objects' => [
                 ['name' => 'plain'],
@@ -168,7 +168,7 @@ final class DotReaderTest extends TestCase
 
     public function testANestedMemberIsListedOnlyByItsInnermostClusterWhateverItsPosition(): void
     {
-        $graph = DotReader::read(self::json([
+        $graph = DotGraphReader::read(self::json([
             '_subgraph_cnt' => 2,
             'objects' => [['name' => 'cluster_outer', 'subgraphs' => [1], 'nodes' => [3, 2]], ['name' => 'cluster_inner', 'nodes' => [3]], ['name' => 'a'], ['name' => 'b']],
         ]));
@@ -181,7 +181,7 @@ final class DotReaderTest extends TestCase
     {
         foreach ([['head' => 0], ['tail' => 0]] as $edge) {
             try {
-                DotReader::read(self::json(['objects' => [['name' => 'a']], 'edges' => [$edge]]));
+                DotGraphReader::read(self::json(['objects' => [['name' => 'a']], 'edges' => [$edge]]));
                 $this->fail('Expected a refusal');
             } catch (GraphParseException $refusal) {
                 $this->assertSame('edge references a missing node', $refusal->getMessage());
@@ -193,6 +193,6 @@ final class DotReaderTest extends TestCase
     {
         $this->expectExceptionObject(new GraphParseException('dot produced invalid JSON: Syntax error'));
 
-        DotReader::read('{');
+        DotGraphReader::read('{');
     }
 }

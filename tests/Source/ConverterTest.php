@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Source;
 
+use Janalis\Viz\GraphViz\DotReader;
 use Janalis\Viz\GraphViz\DotRenderer;
+use Janalis\Viz\Mermaid\MermaidWriter;
+use Janalis\Viz\Model\Diagram;
+use Janalis\Viz\Model\Family;
 use Janalis\Viz\Model\Graph\Edge;
+use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\Model\LineStyle;
 use Janalis\Viz\Process\Tool;
 use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Source\Converter;
+use Janalis\Viz\Source\Languages;
+use Janalis\Viz\Source\Route;
 use Janalis\Viz\Source\SourceFormat;
 use Janalis\Viz\Source\UnsupportedConversion;
 use Janalis\Viz\Tests\Support\FakeTool;
@@ -30,7 +37,7 @@ final class ConverterTest extends TestCase
 
     public function testAFlowchartIsWrittenInEachLanguage(): void
     {
-        $converter = new Converter(new DotRenderer(new Tool('viz-no-dot')));
+        $converter = self::converter(new DotRenderer(new Tool('viz-no-dot')));
         $source = "flowchart LR\n  a[Start] --> b{Ok?}";
 
         $this->assertSame("flowchart LR\n    a[\"Start\"]\n    b{\"Ok?\"}\n    a --> b\n", $converter->convert($source, SourceFormat::Mermaid, SourceFormat::Mermaid));
@@ -42,7 +49,7 @@ final class ConverterTest extends TestCase
     {
         $this->tool = new FakeTool("echo '{\"rankdir\":\"LR\",\"objects\":[{\"name\":\"a\"},{\"name\":\"b\"}],\"edges\":[{\"tail\":0,\"head\":1}]}'");
 
-        $mermaid = new Converter(new DotRenderer(new Tool('dot', $this->tool->path())))->convert('digraph { a -> b }', SourceFormat::Dot, SourceFormat::Mermaid);
+        $mermaid = self::converter(new DotRenderer(new Tool('dot', $this->tool->path())))->convert('digraph { a -> b }', SourceFormat::Dot, SourceFormat::Mermaid);
 
         $this->assertSame("flowchart LR\n    a[\"a\"]\n    b[\"b\"]\n    a --> b\n", $mermaid);
         $this->assertSame(['-Tjson0'], $this->tool->argv());
@@ -55,7 +62,7 @@ final class ConverterTest extends TestCase
         $this->expectException(RenderFailure::class);
         $this->expectExceptionMessage('dot produced invalid JSON');
 
-        new Converter(new DotRenderer(new Tool('dot', $this->tool->path())))->read('x', SourceFormat::Dot);
+        self::converter(new DotRenderer(new Tool('dot', $this->tool->path())))->read('x', SourceFormat::Dot);
     }
 
     public function testPlantUmlIsWrittenButNotRead(): void
@@ -71,8 +78,7 @@ final class ConverterTest extends TestCase
             new Converter()->read("sequenceDiagram\n  A->>B: hi", SourceFormat::Mermaid);
             $this->fail('Expected a refusal');
         } catch (UnsupportedConversion $refusal) {
-            $this->assertStringStartsWith('Only Mermaid flowcharts convert: ', $refusal->getMessage());
-            $this->assertNotNull($refusal->getPrevious());
+            $this->assertSame('A Mermaid sequence diagram cannot be read yet', $refusal->getMessage());
         }
     }
 
@@ -82,14 +88,14 @@ final class ConverterTest extends TestCase
             $this->markTestSkipped('graphviz is not installed');
         }
         $converter = new Converter();
-        $dot = Converter::write(Sample::graph(), SourceFormat::Dot);
+        $dot = $converter->write(Sample::graph(), SourceFormat::Dot);
 
         $mermaid = $converter->convert($dot, SourceFormat::Dot, SourceFormat::Mermaid);
 
         // Mermaid renames the identifiers it cannot read and draws a dashed line dotted; the rest survives.
         $shape = static fn (Edge $edge): array => [$edge->label, $edge->head, $edge->tail, LineStyle::Dashed === $edge->style ? LineStyle::Dotted : $edge->style];
-        $this->assertSame(\array_map($shape, $converter->read($dot, SourceFormat::Dot)->edges), \array_map($shape, $converter->read($mermaid, SourceFormat::Mermaid)->edges));
-        $renamed = \array_find($converter->read($mermaid, SourceFormat::Mermaid)->nodes, static fn (Node $node): bool => 'web client' === $node->text());
+        $this->assertSame(\array_map($shape, self::graph($converter->read($dot, SourceFormat::Dot))->edges), \array_map($shape, self::graph($converter->read($mermaid, SourceFormat::Mermaid))->edges));
+        $renamed = \array_find(self::graph($converter->read($mermaid, SourceFormat::Mermaid))->nodes, static fn (Node $node): bool => 'web client' === $node->text());
         $this->assertMatchesRegularExpression('/^n\d+$/', (string) $renamed?->id, 'the label survives the rename');
     }
 
@@ -99,8 +105,98 @@ final class ConverterTest extends TestCase
             new Converter()->read("---\nconfig:\n  flowchart:\n    nodeSpacing: wide\n---\nflowchart LR\n a-->b", SourceFormat::Mermaid);
             $this->fail('Expected a refusal');
         } catch (UnsupportedConversion $refusal) {
-            $this->assertMatchesRegularExpression('/^Only Mermaid flowcharts convert: .+/', $refusal->getMessage());
-            $this->assertSame($refusal->getPrevious()?->getMessage(), \substr($refusal->getMessage(), offset: \strlen('Only Mermaid flowcharts convert: ')));
+            $this->assertMatchesRegularExpression('/^The Mermaid source cannot be read: .+/', $refusal->getMessage());
+            $this->assertSame($refusal->getPrevious()?->getMessage(), \substr($refusal->getMessage(), offset: \strlen('The Mermaid source cannot be read: ')));
         }
+    }
+
+    public function testASyntaxErrorIsARefusalCarryingItsLocation(): void
+    {
+        try {
+            new Converter()->read("flowchart LR\n a-->", SourceFormat::Mermaid);
+            $this->fail('Expected a refusal');
+        } catch (UnsupportedConversion $refusal) {
+            $this->assertStringStartsWith('The Mermaid source cannot be read: Line 2', $refusal->getMessage());
+        }
+    }
+
+    public function testAFamilyGoesDirectlyWhereTheLanguageHasItAndAsAGraphOtherwise(): void
+    {
+        $writer = new MermaidWriter();
+
+        $this->assertSame(Route::Direct, Converter::route(Family::Graph, $writer));
+        $this->assertSame(Route::ViaGraph, Converter::route(Family::State, $writer));
+        $this->assertSame(Route::Unsupported, Converter::route(Family::Sequence, $writer));
+    }
+
+    public function testADiagramWithoutAGraphFormIsRefused(): void
+    {
+        $diagram = self::diagram(Family::Activity, null);
+
+        $this->expectExceptionObject(new UnsupportedConversion('A activity diagram has no DOT form'));
+
+        new Converter()->write($diagram, SourceFormat::Dot);
+    }
+
+    public function testAFamilyWithoutADirectFormIsWrittenThroughItsGraph(): void
+    {
+        $diagram = self::diagram(Family::State, new Graph());
+
+        $this->assertSame("flowchart TB\n", new Converter()->write($diagram, SourceFormat::Mermaid));
+    }
+
+    public function testASequenceIsNeverLoweredToAGraph(): void
+    {
+        $this->expectExceptionObject(new UnsupportedConversion('A sequence diagram has no PlantUML form'));
+
+        new Converter()->write(self::diagram(Family::Sequence, new Graph()), SourceFormat::PlantUml);
+    }
+
+    public function testTheRouteMatrixIsTheOneDocumented(): void
+    {
+        $languages = new Languages();
+        $rows = ['| Family | '.\implode(' | ', \array_map(static fn (SourceFormat $format): string => $format->label(), SourceFormat::cases())).' |'];
+        $rows[] = '| --- |'.\str_repeat(' --- |', \count(SourceFormat::cases()));
+        foreach (Family::cases() as $family) {
+            $routes = \array_map(static fn (SourceFormat $format): string => Converter::route($family, $languages->writer($format))->value, SourceFormat::cases());
+            $rows[] = '| '.$family->value.' | '.\implode(' | ', $routes).' |';
+        }
+        $document = (string) \file_get_contents(__DIR__.'/../../docs/conversion.md');
+
+        $this->assertStringContainsString(\implode("\n", $rows)."\n", $document, 'docs/conversion.md lists every route Converter::route() takes');
+    }
+
+    private static function converter(DotRenderer $dot): Converter
+    {
+        return new Converter(new Languages(dot: new DotReader($dot)));
+    }
+
+    private static function graph(Diagram $diagram): Graph
+    {
+        self::assertInstanceOf(Graph::class, $diagram);
+
+        return $diagram;
+    }
+
+    private static function diagram(Family $family, ?Graph $graph): Diagram
+    {
+        return new readonly class($family, $graph) implements Diagram {
+            public function __construct(
+                private Family $family,
+                private ?Graph $graph,
+            ) {}
+
+            #[\Override]
+            public function family(): Family
+            {
+                return $this->family;
+            }
+
+            #[\Override]
+            public function graph(): ?Graph
+            {
+                return $this->graph;
+            }
+        };
     }
 }

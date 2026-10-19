@@ -11,6 +11,16 @@ enum SourceFormat: string
     case Dot = 'dot';
     case PlantUml = 'plantuml';
 
+    /** The language's name as its own documentation writes it. */
+    public function label(): string
+    {
+        return match ($this) {
+            self::Mermaid => 'Mermaid',
+            self::Dot => 'DOT',
+            self::PlantUml => 'PlantUML',
+        };
+    }
+
     /** @return non-empty-list<string> */
     public function extensions(): array
     {

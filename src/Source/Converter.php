@@ -4,70 +4,63 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Source;
 
-use Janalis\Viz\GraphViz\DotReader;
-use Janalis\Viz\GraphViz\DotRenderer;
-use Janalis\Viz\GraphViz\DotWriter;
-use Janalis\Viz\GraphViz\GraphParseException;
-use Janalis\Viz\Mermaid\MermaidReader;
-use Janalis\Viz\Mermaid\MermaidSyntaxError;
-use Janalis\Viz\Mermaid\MermaidWriter;
-use Janalis\Viz\Model\Graph\Graph;
-use Janalis\Viz\PlantUML\PlantUmlWriter;
+use Janalis\Viz\Model\Diagram;
+use Janalis\Viz\Model\Family;
 use Janalis\Viz\Render\RenderFailure;
 
 /**
- * Moves a diagram between the three languages through the shared {@see Graph}.
- * A Mermaid flowchart is read natively; DOT is read through `dot -Tjson0`, which
- * resolves its whole grammar; PlantUML has no reader yet.
+ * Moves a diagram between the three languages through the shared models. A diagram
+ * goes across in its own family when the target language has that family, and as
+ * a plain graph of nodes and edges otherwise; a family with no graph form, such as
+ * a sequence, reaches only the languages that have it.
  */
 final readonly class Converter
 {
     public function __construct(
-        private DotRenderer $dot = new DotRenderer(),
+        private Languages $languages = new Languages(),
     ) {}
 
     /** @throws UnsupportedConversion|RenderFailure */
     public function convert(string $source, SourceFormat $from, SourceFormat $to): string
     {
-        return self::write($this->read($source, $from), $to);
+        return $this->write($this->read($source, $from), $to);
     }
 
     /** @throws UnsupportedConversion|RenderFailure */
-    public function read(string $source, SourceFormat $format): Graph
-    {
-        return match ($format) {
-            SourceFormat::Mermaid => self::mermaid($source),
-            SourceFormat::Dot => $this->dot($source),
-            SourceFormat::PlantUml => throw new UnsupportedConversion('PlantUML cannot be read yet: only written'),
-        };
-    }
-
-    public static function write(Graph $graph, SourceFormat $format): string
-    {
-        return match ($format) {
-            SourceFormat::Mermaid => MermaidWriter::write($graph),
-            SourceFormat::Dot => DotWriter::write($graph),
-            SourceFormat::PlantUml => PlantUmlWriter::write($graph),
-        };
-    }
-
-    /** @throws RenderFailure when dot is missing or fails */
-    private function dot(string $source): Graph
+    public function read(string $source, SourceFormat $format): Diagram
     {
         try {
-            return DotReader::read($this->dot->json($source));
-        } catch (GraphParseException $exception) {
-            throw new RenderFailure($exception->getMessage(), previous: $exception);
+            return $this->languages->reader($format)->read($source);
+        } catch (ParseError|\InvalidArgumentException $exception) {
+            throw new UnsupportedConversion('The '.$format->label().' source cannot be read: '.$exception->getMessage(), previous: $exception);
         }
     }
 
-    /** @throws UnsupportedConversion when the source is not a flowchart */
-    private static function mermaid(string $source): Graph
+    /** @throws UnsupportedConversion when the diagram has no form in the language */
+    public function write(Diagram $diagram, SourceFormat $format): string
     {
-        try {
-            return MermaidReader::read($source);
-        } catch (MermaidSyntaxError|\InvalidArgumentException $exception) {
-            throw new UnsupportedConversion('Only Mermaid flowcharts convert: '.$exception->getMessage(), previous: $exception);
-        }
+        $writer = $this->languages->writer($format);
+        $graph = $diagram->graph();
+
+        return match (self::route($diagram->family(), $writer)) {
+            Route::Direct => $writer->write($diagram),
+            Route::ViaGraph => null === $graph ? throw self::refusal($diagram->family(), $format) : $writer->write($graph),
+            Route::Unsupported => throw self::refusal($diagram->family(), $format),
+        };
+    }
+
+    /** How a diagram of $family reaches the language $writer writes. */
+    public static function route(Family $family, Writer $writer): Route
+    {
+        return match (true) {
+            \in_array($family, $writer->families(), strict: true) => Route::Direct,
+            Family::Sequence !== $family && \in_array(Family::Graph, $writer->families(), strict: true) => Route::ViaGraph,
+            default => Route::Unsupported,
+        };
+    }
+
+    private static function refusal(Family $family, SourceFormat $format): UnsupportedConversion
+    {
+        return new UnsupportedConversion('A '.$family->value.' diagram has no '.$format->label().' form');
     }
 }

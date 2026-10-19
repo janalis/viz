@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Tests\Mermaid;
+namespace Janalis\Viz\Tests\Mermaid\Source;
 
-use Janalis\Viz\Mermaid\MermaidReader;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
-use Janalis\Viz\Mermaid\MermaidWriter;
+use Janalis\Viz\Mermaid\Source\MermaidGraphReader;
+use Janalis\Viz\Mermaid\Source\MermaidGraphWriter;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\Model\Graph\ArrowHead;
 use Janalis\Viz\Model\Graph\Edge;
@@ -16,11 +16,11 @@ use Janalis\Viz\Model\LineStyle;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;
 
-final class MermaidReaderTest extends TestCase
+final class MermaidGraphReaderTest extends TestCase
 {
     public function testAFlowchartReadsIntoTheSharedModel(): void
     {
-        $graph = MermaidReader::read(<<<'MMD'
+        $graph = MermaidGraphReader::read(<<<'MMD'
             ---
             title: Shapes
             ---
@@ -87,7 +87,7 @@ final class MermaidReaderTest extends TestCase
 
     public function testSubgraphsNestAndOwnTheirInnermostNodes(): void
     {
-        $graph = MermaidReader::read("flowchart TD\n  subgraph S1 [Outer]\n    k\n    subgraph S2\n      l\n    end\n  end\n  subgraph S3\n  end\n  k --> l --> z");
+        $graph = MermaidGraphReader::read("flowchart TD\n  subgraph S1 [Outer]\n    k\n    subgraph S2\n      l\n    end\n  end\n  subgraph S3\n  end\n  k --> l --> z");
 
         $this->assertSame(Direction::TopBottom, $graph->direction);
         $this->assertSame('', $graph->title);
@@ -102,7 +102,7 @@ final class MermaidReaderTest extends TestCase
 
     public function testNumericIdentifiersStayStrings(): void
     {
-        $graph = MermaidReader::read("flowchart LR\n  subgraph 7\n    1 --> 2\n  end");
+        $graph = MermaidGraphReader::read("flowchart LR\n  subgraph 7\n    1 --> 2\n  end");
 
         $this->assertSame(['1', '2'], \array_map(static fn (Node $node): string => $node->id, $graph->nodes));
         $this->assertSame(['1', '2'], $graph->clusters[0]->nodes);
@@ -112,7 +112,7 @@ final class MermaidReaderTest extends TestCase
     public function testWhatTheWriterWritesReadsBackTheSame(): void
     {
         $sample = Sample::graph();
-        $graph = MermaidReader::read(MermaidWriter::write($sample));
+        $graph = MermaidGraphReader::read(MermaidGraphWriter::write($sample));
 
         $this->assertSame($sample->title, $graph->title);
         $this->assertSame($sample->direction, $graph->direction);
@@ -128,6 +128,6 @@ final class MermaidReaderTest extends TestCase
     {
         $this->expectException(MermaidSyntaxError::class);
 
-        MermaidReader::read("sequenceDiagram\n  A->>B: hi");
+        MermaidGraphReader::read("sequenceDiagram\n  A->>B: hi");
     }
 }

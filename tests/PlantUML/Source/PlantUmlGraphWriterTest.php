@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Tests\PlantUML;
+namespace Janalis\Viz\Tests\PlantUML\Source;
 
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\Model\Graph\Cluster;
 use Janalis\Viz\Model\Graph\Edge;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
-use Janalis\Viz\PlantUML\PlantUmlWriter;
+use Janalis\Viz\PlantUML\Source\PlantUmlGraphWriter;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;
 
-final class PlantUmlWriterTest extends TestCase
+final class PlantUmlGraphWriterTest extends TestCase
 {
     public function testEveryPartOfTheModelIsWritten(): void
     {
@@ -46,18 +46,18 @@ final class PlantUmlWriterTest extends TestCase
             n9 +-[dotted]- n8
             @enduml
 
-            PUML, PlantUmlWriter::write(Sample::graph()));
+            PUML, PlantUmlGraphWriter::write(Sample::graph()));
     }
 
     public function testOnlyHorizontalDirectionsTurnTheLayout(): void
     {
-        $this->assertSame("@startuml\nleft to right direction\n@enduml\n", PlantUmlWriter::write(new Graph(direction: Direction::RightLeft)));
-        $this->assertSame("@startuml\n@enduml\n", PlantUmlWriter::write(new Graph(direction: Direction::BottomTop)));
+        $this->assertSame("@startuml\nleft to right direction\n@enduml\n", PlantUmlGraphWriter::write(new Graph(direction: Direction::RightLeft)));
+        $this->assertSame("@startuml\n@enduml\n", PlantUmlGraphWriter::write(new Graph(direction: Direction::BottomTop)));
     }
 
     public function testAFillWithoutAStrokeOmitsTheLine(): void
     {
-        $this->assertStringContainsString('rectangle "a" as n0 #pink'."\n", PlantUmlWriter::write(new Graph([new Node('a', fill: 'pink')])));
+        $this->assertStringContainsString('rectangle "a" as n0 #pink'."\n", PlantUmlGraphWriter::write(new Graph([new Node('a', fill: 'pink')])));
     }
 
     public function testDeepClustersIndentByDepthAndSkipMembersThatAreNoNodes(): void
@@ -82,6 +82,6 @@ final class PlantUmlWriterTest extends TestCase
             n2 --> n0
             @enduml
 
-            PUML, PlantUmlWriter::write($graph));
+            PUML, PlantUmlGraphWriter::write($graph));
     }
 }

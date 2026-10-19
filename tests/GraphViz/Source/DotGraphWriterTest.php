@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Tests\GraphViz;
+namespace Janalis\Viz\Tests\GraphViz\Source;
 
-use Janalis\Viz\GraphViz\DotWriter;
+use Janalis\Viz\GraphViz\Source\DotGraphWriter;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\Tests\Support\Sample;
 use PHPUnit\Framework\TestCase;
 
-final class DotWriterTest extends TestCase
+final class DotGraphWriterTest extends TestCase
 {
     public function testEveryPartOfTheModelIsWritten(): void
     {
@@ -47,16 +47,16 @@ final class DotWriterTest extends TestCase
                 "box" -> "user" [style=dotted, arrowhead=none, arrowtail=tee, dir=both];
             }
 
-            DOT, DotWriter::write(Sample::graph(), 'system'));
+            DOT, DotGraphWriter::write(Sample::graph(), 'system'));
     }
 
     public function testAnEmptyGraphIsStillAGraph(): void
     {
-        $this->assertSame("digraph \"G\" {\n    rankdir=TB;\n    node [shape=box];\n}\n", DotWriter::write(new Graph()));
+        $this->assertSame("digraph \"G\" {\n    rankdir=TB;\n    node [shape=box];\n}\n", DotGraphWriter::write(new Graph()));
     }
 
     public function testBackslashesAndCarriageReturnsAreEscaped(): void
     {
-        $this->assertStringContainsString('"a\\\\b" [label="x\\ny"];', DotWriter::write(new Graph([new Node('a\\b', "x\r\ny")])));
+        $this->assertStringContainsString('"a\\\\b" [label="x\\ny"];', DotGraphWriter::write(new Graph([new Node('a\\b', "x\r\ny")])));
     }
 }

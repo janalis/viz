@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Model\Graph;
 
+use Janalis\Viz\Model\Diagram;
 use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Family;
 
 /**
  * A diagram before layout, in the terms Mermaid flowcharts, Graphviz and PlantUML
@@ -12,7 +14,7 @@ use Janalis\Viz\Model\Direction;
  * language's writer turns it into source; what a language cannot express is
  * dropped the way its writer documents.
  */
-final readonly class Graph
+final readonly class Graph implements Diagram
 {
     /**
      * @param list<Node>    $nodes
@@ -26,6 +28,18 @@ final readonly class Graph
         public Direction $direction = Direction::TopBottom,
         public string $title = '',
     ) {}
+
+    #[\Override]
+    public function family(): Family
+    {
+        return Family::Graph;
+    }
+
+    #[\Override]
+    public function graph(): self
+    {
+        return $this;
+    }
 
     /**
      * The nodes that sit in no cluster, in declaration order.

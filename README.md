@@ -4,7 +4,7 @@ Mermaid, Graphviz and PlantUML for PHP 8.5: render them to SVG, PNG or PDF, and 
 
 - **Mermaid** is drawn natively, in PHP, with no Node and no browser: 30+ diagram families, themes and the hand-drawn look, pinned to Mermaid 12.1 (see [the compatibility notes](docs/mermaid-compatibility.md)). mermaid-cli (`mmdc`) is the fallback.
 - **Graphviz** runs through `dot`. **PlantUML** runs through `plantuml` or its `.jar`.
-- **One shared model** (`Janalis\Viz\Model\Graph\Graph`): nodes, edges, nested clusters, a direction and a title. Each language can be written from it, and Mermaid flowcharts and DOT can be read into it.
+- **Shared models** (`Janalis\Viz\Model`): a graph of nodes, edges and nested clusters, plus a model for each family the languages share. Each language can be written from them, and read into them where it has a reader.
 
 ```bash
 composer require janalis/viz
@@ -67,20 +67,10 @@ $graph = new Graph(
     [new Cluster('backend', 'Back end', ['api', 'db'])],
     Direction::LeftRight,
 );
-echo Converter::write($graph, SourceFormat::PlantUml);
+echo new Converter()->write($graph, SourceFormat::PlantUml);
 ```
 
-| | read | write |
-| --- | --- | --- |
-| Mermaid | flowcharts, natively | flowchart |
-| DOT | through `dot -Tjson0`, which resolves the whole language | digraph |
-| PlantUML | not yet | deployment diagram |
-
-Each language lacks something the others have. Where it does, the writer degrades, and always the same way:
-
-- **DOT** has no stadium shape, which becomes a rounded box, and no cross arrowhead, which becomes a tee.
-- **Mermaid** has no plain ellipse, which becomes a circle. It draws dashed lines dotted. It renames any identifier it would misread, such as `end`, a space or punctuation, to `n0`, `n1` and so on, while keeping the label.
-- **PlantUML** lays out only top-down or left-to-right. It has no diamond or parallelogram, which become rectangles, and no cross arrowhead, which becomes `+`.
+Each language reads and writes the shared models through a `Source\Reader` and a `Source\Writer`. A diagram crosses in its own family where the target language has it, and as a plain graph otherwise. [docs/conversion.md](docs/conversion.md) lists the routes, what each language reads, and what each writer loses.
 
 ## Development
 

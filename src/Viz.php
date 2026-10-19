@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz;
 
 use Janalis\Viz\Draw\NativeRenderer;
+use Janalis\Viz\GraphViz\DotReader;
 use Janalis\Viz\GraphViz\DotRenderer;
 use Janalis\Viz\Mermaid\MermaidPipeline;
 use Janalis\Viz\Mermaid\MmdcRenderer;
@@ -19,6 +20,7 @@ use Janalis\Viz\Render\Renderer;
 use Janalis\Viz\Render\RenderFailure;
 use Janalis\Viz\Render\RenderOptions;
 use Janalis\Viz\Source\Converter;
+use Janalis\Viz\Source\Languages;
 use Janalis\Viz\Source\SourceFormat;
 use Janalis\Viz\Source\UnsupportedConversion;
 
@@ -68,7 +70,7 @@ final readonly class Viz
     /** @throws UnsupportedConversion|RenderFailure */
     public function convert(string $source, SourceFormat $from, SourceFormat $to): string
     {
-        return new Converter($this->dotRenderer())->convert($source, $from, $to);
+        return new Converter(new Languages(dot: new DotReader($this->dotRenderer())))->convert($source, $from, $to);
     }
 
     private function dotRenderer(): DotRenderer

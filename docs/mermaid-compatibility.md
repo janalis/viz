@@ -797,7 +797,7 @@ rendering stays reproducible and draws it as seed 1. A seed's low 32 bits count,
 `Math.imul` reads them.
 
 `rough-reference.json` holds the generator's output for seven polygons and three paths
-under four seeds, from the build's own roughjs chunk (`rough-oracle.mjs`); `MermaidRoughTest`
+under four seeds, from the build's own roughjs chunk (`rough-oracle.mjs`); `RoughTest`
 matches it within 1e-9. The roughness applies to the native layout's geometry: outlines
 follow native shapes, and an edge is sketched along the polyline its route draws. Upstream
 sketches the curve itself. Terminal cells keep the classic look, because a sketch does not
