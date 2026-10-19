@@ -76,8 +76,8 @@ final class DotLayoutInputTest extends TestCase
 
         $this->assertSame([DotLayoutInput::MAX_MINLEN, DotLayoutInput::MAX_WEIGHT], [$input->edges[0]->minLength, $input->edges[0]->weight]);
         $this->assertSame([1, 0], [$input->edges[1]->minLength, $input->edges[1]->weight], 'unreadable falls back to one, negative to zero');
-        $this->assertSame([54.0, 72000.0], [$input->nodes[0]->width, $input->nodes[0]->height]);
-        $this->assertSame([72000.0, 1.44], [$input->spacing->rankGap, $input->spacing->nodeGap]);
+        $this->assertSame([54.0, 72_000.0], [$input->nodes[0]->width, $input->nodes[0]->height]);
+        $this->assertSame([72_000.0, 1.44], [$input->spacing->rankGap, $input->spacing->nodeGap]);
     }
 
     private static function input(string $source): LayoutGraph
