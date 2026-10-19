@@ -195,4 +195,23 @@ final class DotGraphReaderTest extends TestCase
 
         DotGraphReader::read('{');
     }
+
+    public function testTheUmlArrowheadsKeepTheirShape(): void
+    {
+        $graph = DotGraphReader::read(self::json([
+            'objects' => [['_gvid' => 0, 'name' => 'a'], ['_gvid' => 1, 'name' => 'b']],
+            'edges' => [
+                ['tail' => 0, 'head' => 1, 'arrowhead' => 'empty'],
+                ['tail' => 0, 'head' => 1, 'arrowhead' => 'onormal'],
+                ['tail' => 0, 'head' => 1, 'arrowhead' => 'odiamond'],
+                ['tail' => 0, 'head' => 1, 'arrowhead' => 'diamond'],
+                ['tail' => 0, 'head' => 1, 'arrowhead' => 'ediamond'],
+            ],
+        ]));
+
+        $this->assertSame(
+            [ArrowHead::Triangle, ArrowHead::Triangle, ArrowHead::HollowDiamond, ArrowHead::Diamond, ArrowHead::Diamond],
+            \array_map(static fn (Edge $edge): ArrowHead => $edge->head, $graph->edges),
+        );
+    }
 }

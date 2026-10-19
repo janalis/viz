@@ -137,6 +137,9 @@ final class DotGraphReader
     {
         return match (true) {
             'none' === $name => ArrowHead::None,
+            \in_array($name, ['empty', 'onormal', 'oinv'], strict: true) => ArrowHead::Triangle,
+            'odiamond' === $name => ArrowHead::HollowDiamond,
+            \str_ends_with($name, 'diamond') => ArrowHead::Diamond,
             \str_ends_with($name, 'dot') => ArrowHead::Circle,
             \str_ends_with($name, 'tee') => ArrowHead::Cross,
             default => ArrowHead::Arrow,

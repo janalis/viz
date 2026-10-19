@@ -117,7 +117,7 @@ final class MermaidGraphWriter
     /** @param array<string, string> $ids */
     private static function node(Node $node, array $ids): string
     {
-        $label = self::quote($node->text());
+        $label = self::quote($node->lines());
 
         return (
             $ids[$node->id].match ($node->shape) {
@@ -138,14 +138,14 @@ final class MermaidGraphWriter
     private static function edge(Edge $edge, array $ids): string
     {
         $head = match ($edge->head) {
-            ArrowHead::Arrow => '>',
-            ArrowHead::Circle => 'o',
+            ArrowHead::Arrow, ArrowHead::Triangle => '>',
+            ArrowHead::Circle, ArrowHead::Diamond, ArrowHead::HollowDiamond => 'o',
             ArrowHead::Cross => 'x',
             ArrowHead::None => '',
         };
         $tail = match ($edge->tail) {
-            ArrowHead::Arrow => '<',
-            ArrowHead::Circle => 'o',
+            ArrowHead::Arrow, ArrowHead::Triangle => '<',
+            ArrowHead::Circle, ArrowHead::Diamond, ArrowHead::HollowDiamond => 'o',
             ArrowHead::Cross => 'x',
             ArrowHead::None => '',
         };

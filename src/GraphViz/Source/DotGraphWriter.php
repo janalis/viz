@@ -67,6 +67,9 @@ final class DotGraphWriter
 
     private static function node(Node $node): string
     {
+        if ([] !== $node->compartments) {
+            return self::record($node);
+        }
         $attributes = ['label='.self::quote($node->text())];
         $shape = match ($node->shape) {
             Shape::Box, Shape::Rounded, Shape::Stadium => null,
@@ -89,6 +92,26 @@ final class DotGraphWriter
             $attributes[] = 'style='.self::quote(\implode(',', $style));
         }
         if (null !== $node->fill) {
+            $attributes[] = 'fillcolor='.self::quote($node->fill);
+        }
+        if (null !== $node->stroke) {
+            $attributes[] = 'color='.self::quote($node->stroke);
+        }
+
+        return self::quote($node->id).' ['.\implode(', ', $attributes).'];';
+    }
+
+    /** A node with compartments, as a record whose fields stack the label over each compartment. */
+    private static function record(Node $node): string
+    {
+        $field = static fn (string $text): string => \str_replace(['\\', '{', '}', '|', '<', '>', '"'], ['\\\\', '\\{', '\\}', '\\|', '\\<', '\\>', '\\"'], $text);
+        $fields = [$field($node->text())];
+        foreach ($node->compartments as $compartment) {
+            $fields[] = \implode('', \array_map(static fn (string $line): string => $field($line).'\\l', $compartment));
+        }
+        $attributes = ['label="{'.\str_replace("\n", replace: '\\n', subject: \implode('|', $fields)).'}"', 'shape=record'];
+        if (null !== $node->fill) {
+            $attributes[] = 'style="filled"';
             $attributes[] = 'fillcolor='.self::quote($node->fill);
         }
         if (null !== $node->stroke) {
@@ -125,6 +148,9 @@ final class DotGraphWriter
             ArrowHead::Arrow => 'normal',
             ArrowHead::Circle => 'dot',
             ArrowHead::Cross => 'tee',
+            ArrowHead::Triangle => 'empty',
+            ArrowHead::Diamond => 'diamond',
+            ArrowHead::HollowDiamond => 'odiamond',
         };
     }
 

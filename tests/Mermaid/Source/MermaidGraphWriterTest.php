@@ -103,4 +103,18 @@ final class MermaidGraphWriterTest extends TestCase
     {
         $this->assertStringStartsWith("---\ntitle: \"Data/flow — é\"\n---\n", MermaidGraphWriter::write(new Graph(title: 'Data/flow — é')));
     }
+
+    public function testCompartmentsJoinTheLabelAndUmlHeadsTakeTheNearestLink(): void
+    {
+        $graph = new Graph(
+            [new Node('a', 'A', compartments: [['x'], ['go()']]), new Node('b')],
+            [new Edge('a', 'b', head: ArrowHead::Triangle, tail: ArrowHead::Diamond), new Edge('b', 'a', head: ArrowHead::HollowDiamond, tail: ArrowHead::Triangle)],
+        );
+
+        $mermaid = MermaidGraphWriter::write($graph);
+
+        $this->assertStringContainsString('a["A<br>—<br>x<br>—<br>go()"]', $mermaid);
+        $this->assertStringContainsString('a o--> b', $mermaid);
+        $this->assertStringContainsString('b <--o a', $mermaid);
+    }
 }

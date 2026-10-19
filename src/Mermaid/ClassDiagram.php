@@ -18,6 +18,8 @@ final class ClassDiagram
     public array $metadata = [];
     /** @var list<array{left: string, right: string}> */
     public array $markers = [];
+    /** @var list<array{left: string, right: string, label: string}> each relationship's end and middle labels, as written */
+    public array $labels = [];
     /** @var list<array{for: string, text: string, origin: int}> notes, attached to a class or free (`for` empty) */
     public array $notes = [];
     /** @var array<string, true> namespace groups a statement declares by name */

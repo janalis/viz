@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\GraphViz\Source;
 
 use Janalis\Viz\GraphViz\Source\DotGraphWriter;
+use Janalis\Viz\Model\Graph\ArrowHead;
+use Janalis\Viz\Model\Graph\Edge;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\Tests\Support\Sample;
@@ -58,5 +60,20 @@ final class DotGraphWriterTest extends TestCase
     public function testBackslashesAndCarriageReturnsAreEscaped(): void
     {
         $this->assertStringContainsString('"a\\\\b" [label="x\\ny"];', DotGraphWriter::write(new Graph([new Node('a\\b', "x\r\ny")])));
+    }
+
+    public function testCompartmentsMakeARecordAndUmlHeadsKeepTheirShape(): void
+    {
+        $graph = new Graph(
+            [new Node('A', 'A<T>', compartments: [['+x : {int}'], ['go() | stop']], fill: '#eeeeee', stroke: '#333333'), new Node('B', compartments: [[]])],
+            [new Edge('A', 'B', head: ArrowHead::Triangle, tail: ArrowHead::Diamond), new Edge('B', 'A', head: ArrowHead::HollowDiamond)],
+        );
+
+        $dot = DotGraphWriter::write($graph);
+
+        $this->assertStringContainsString('"A" [label="{A\\<T\\>|+x : \\{int\\}\\l|go() \\| stop\\l}", shape=record, style="filled", fillcolor="#eeeeee", color="#333333"];', $dot);
+        $this->assertStringContainsString('"B" [label="{B|}", shape=record];', $dot);
+        $this->assertStringContainsString('[arrowhead=empty, arrowtail=diamond, dir=both]', $dot);
+        $this->assertStringContainsString('[arrowhead=odiamond]', $dot);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\PlantUML\Source;
 
 use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\ArrowHead;
 use Janalis\Viz\Model\Graph\Cluster;
 use Janalis\Viz\Model\Graph\Edge;
 use Janalis\Viz\Model\Graph\Graph;
@@ -83,5 +84,19 @@ final class PlantUmlGraphWriterTest extends TestCase
             @enduml
 
             PUML, PlantUmlGraphWriter::write($graph));
+    }
+
+    public function testCompartmentsJoinTheLabelAndUmlHeadsKeepTheirShape(): void
+    {
+        $graph = new Graph(
+            [new Node('a', 'A', compartments: [['x']]), new Node('b')],
+            [new Edge('a', 'b', head: ArrowHead::Triangle, tail: ArrowHead::Diamond), new Edge('b', 'a', head: ArrowHead::Diamond, tail: ArrowHead::Triangle)],
+        );
+
+        $plantUml = PlantUmlGraphWriter::write($graph);
+
+        $this->assertStringContainsString('rectangle "A\\n----\\nx" as n0', $plantUml);
+        $this->assertStringContainsString('n0 *--|> n1', $plantUml);
+        $this->assertStringContainsString('n1 <|--* n0', $plantUml);
     }
 }

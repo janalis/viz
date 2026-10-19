@@ -107,7 +107,7 @@ final class PlantUmlGraphWriter
             $color = ' #'.\ltrim($node->fill ?? 'white', characters: '#').(null === $node->stroke ? '' : ';line:'.\ltrim($node->stroke, characters: '#'));
         }
 
-        return $element.' '.self::quote($node->text()).' as '.$alias.$color;
+        return $element.' '.self::quote($node->lines('----')).' as '.$alias.$color;
     }
 
     /** @param array<string, string> $aliases */
@@ -121,14 +121,18 @@ final class PlantUmlGraphWriter
         };
         $head = match ($edge->head) {
             ArrowHead::Arrow => '>',
-            ArrowHead::Circle => 'o',
+            ArrowHead::Circle, ArrowHead::HollowDiamond => 'o',
             ArrowHead::Cross => '+',
+            ArrowHead::Triangle => '|>',
+            ArrowHead::Diamond => '*',
             ArrowHead::None => '',
         };
         $tail = match ($edge->tail) {
             ArrowHead::Arrow => '<',
-            ArrowHead::Circle => 'o',
+            ArrowHead::Circle, ArrowHead::HollowDiamond => 'o',
             ArrowHead::Cross => '+',
+            ArrowHead::Triangle => '<|',
+            ArrowHead::Diamond => '*',
             ArrowHead::None => '',
         };
         $label = '' === $edge->label ? '' : ' : '.self::text($edge->label);

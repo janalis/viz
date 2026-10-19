@@ -5,6 +5,8 @@
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces.
 
 - A shared state model (`Model\State`): states nested in composite states and concurrent regions, pseudostates, transitions and notes. Mermaid state diagrams read into it and are written from it; PlantUML writes it; DOT draws it as a graph.
+- A shared class model (`Model\Classes`): classifiers of each kind with parsed members, relations marked at both ends with their labels, packages and notes. Mermaid class diagrams read into it and are written from it; PlantUML writes it; DOT draws each classifier as a record.
+- The shared graph gains compartments on a node (`Node::$compartments`) and the UML arrowheads `Triangle`, `Diamond` and `HollowDiamond`.
 - `Diagram\{Graph, Node, Edge, Cluster, Shape, ArrowHead}` become `Model\Graph\*`; `Diagram\Direction` and `Diagram\LineStyle` become `Model\Direction` and `Model\LineStyle`.
 - `Layout\GraphFont` becomes `Text\FontFace`; `Mermaid\MermaidFont`, `MermaidFontCoverage`, `MermaidFallbackFonts` and `MermaidWrap` become `Text\Font`, `FontCoverage`, `FallbackFonts` and `Wrap`.
 - Drawing is language-neutral: `Mermaid\MermaidDrawing` and `MermaidMark` become `Draw\Drawing` and `Draw\Mark`, whose `kind` is the `Draw\MarkKind` enum; `MermaidSvg`, `MermaidPng` and `MermaidPdf` become `Draw\SvgBackend`, `PngBackend` and `PdfBackend`; the rough look moves to `Draw\Sketch` and the curves to `Layout\Curve`. `MermaidDrawing::scene()` and `::graph()` become `Mermaid\MermaidPainter`.

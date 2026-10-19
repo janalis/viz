@@ -159,6 +159,7 @@ final class ClassParser
         $label = MermaidText::decode(\trim(($match[2] ?? '').' '.($match[8] ?? '').' '.($match[6] ?? '')));
         $this->diagram->graph->edge($from, $to, $label, '..' === $match[4] ? '-.-' : '--', $statement);
         $this->diagram->markers[] = ['left' => $match[3] ?? '', 'right' => $match[5] ?? ''];
+        $this->diagram->labels[] = ['left' => MermaidText::decode($match[2] ?? ''), 'right' => MermaidText::decode($match[6] ?? ''), 'label' => MermaidText::decode(\trim($match[8] ?? ''))];
 
         return true;
     }
