@@ -20,13 +20,13 @@ Every model belongs to a family (`Model\Family`). A diagram reaches a language b
 | state | direct | via graph | direct |
 | activity | via graph | via graph | via graph |
 | entity | direct | via graph | direct |
-| usecase | via graph | via graph | via graph |
+| usecase | direct | via graph | direct |
 
 ## Readers
 
 | Language | Families read |
 | --- | --- |
-| Mermaid | graph (flowcharts), sequence, state, class and entity, natively |
+| Mermaid | graph (flowcharts), sequence, state, class, entity and use case, natively |
 | DOT | graph, through `dot -Tjson0`, which resolves the whole language |
 | PlantUML | none yet |
 
@@ -36,8 +36,8 @@ Each language lacks something the others have. Where it does, the writer degrade
 
 ### Graph
 
-- **DOT** has no stadium shape, which becomes a rounded box, and no cross arrowhead, which becomes a tee.
-- **Mermaid** has no plain ellipse, which becomes a circle. It draws dashed lines dotted. It renames any identifier it would misread, such as `end`, a space or punctuation, to `n0`, `n1` and so on, while keeping the label.
+- **DOT** has no stadium shape, which becomes a rounded box, no actor, which becomes a plain label, and no cross arrowhead, which becomes a tee.
+- **Mermaid** has no plain ellipse or actor, which become circles. It draws dashed lines dotted. It renames any identifier it would misread, such as `end`, a space or punctuation, to `n0`, `n1` and so on, while keeping the label.
 - **PlantUML** writes a deployment diagram. It lays out only top-down or left-to-right. It has no diamond or parallelogram, which become rectangles, and no cross arrowhead, which becomes `+`.
 - A node's compartments become a DOT record, and lines under rules in the label for Mermaid and PlantUML. Mermaid flowcharts have no triangle or diamond arrowhead: a triangle becomes an arrow, and either diamond a circle; PlantUML has no hollow diamond on a deployment link, which becomes `o`.
 
@@ -60,6 +60,12 @@ A sequence is about time, which a graph cannot show, so it reaches only Mermaid 
 - **Mermaid** has no group fragment, which becomes an `opt`, and no divider or delay, which become a note over every participant. A two-way message always has filled heads. Its activation shortcuts read as separate activation steps; autonumbers are already in the labels it reads, half arrowheads read as filled ones, and a box keeps its color in its label. Links, menus and central-connection marks are not read.
 - **PlantUML** has no headless message, which gets a filled head, and no highlight band, which becomes a group. It refuses an activation right after a delay, so a delay is written after the activations that follow it.
 - Both rename a participant id they would misread to `p0`, `p1` and so on, keeping its name as the label.
+
+### Use case
+
+- **Mermaid** marks a plain association at one end only, keeping the head over the tail; triangles and diamonds become arrows and circles. It includes and extends only use cases and generalizes only like with like; any other such link becomes a labelled association. A note needs an element, so a floating one is dropped. It reads a rectangular use case as an ellipse, and an endpoint of another kind, such as a JSON table, as a use case; actor types and icons, styles, classes, edge ids and animation are not read.
+- **PlantUML** writes boundaries as rectangles and includes and extends as dashed stereotyped arrows. It lays out only top-down or left-to-right, and renames an id it would misread to `u0`, `u1` and so on.
+- **DOT** draws the graph: actors as plain labels, use cases as ellipses, boundaries as clusters.
 
 ### State
 

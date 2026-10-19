@@ -11,11 +11,13 @@ use Janalis\Viz\Model\Family;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Sequence\SequenceDiagram;
 use Janalis\Viz\Model\State\StateDiagram;
+use Janalis\Viz\Model\UseCase\UseCaseDiagram;
 use Janalis\Viz\PlantUML\Source\PlantUmlClassWriter;
 use Janalis\Viz\PlantUML\Source\PlantUmlEntityWriter;
 use Janalis\Viz\PlantUML\Source\PlantUmlGraphWriter;
 use Janalis\Viz\PlantUML\Source\PlantUmlSequenceWriter;
 use Janalis\Viz\PlantUML\Source\PlantUmlStateWriter;
+use Janalis\Viz\PlantUML\Source\PlantUmlUseCaseWriter;
 use Janalis\Viz\Source\UnsupportedConversion;
 use Janalis\Viz\Source\Writer;
 
@@ -25,7 +27,7 @@ final readonly class PlantUmlWriter implements Writer
     #[\Override]
     public function families(): array
     {
-        return [Family::Graph, Family::State, Family::Classes, Family::Entity, Family::Sequence];
+        return [Family::Graph, Family::State, Family::Classes, Family::Entity, Family::Sequence, Family::UseCase];
     }
 
     #[\Override]
@@ -36,6 +38,7 @@ final readonly class PlantUmlWriter implements Writer
             $diagram instanceof ClassDiagram => PlantUmlClassWriter::write($diagram),
             $diagram instanceof EntityDiagram => PlantUmlEntityWriter::write($diagram),
             $diagram instanceof SequenceDiagram => PlantUmlSequenceWriter::write($diagram),
+            $diagram instanceof UseCaseDiagram => PlantUmlUseCaseWriter::write($diagram),
             $diagram instanceof Graph => PlantUmlGraphWriter::write($diagram),
             default => throw new UnsupportedConversion('A '.$diagram->family()->value.' diagram has no PlantUML writer'),
         };

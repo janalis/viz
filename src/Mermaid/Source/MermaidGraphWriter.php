@@ -124,7 +124,7 @@ final class MermaidGraphWriter
                 Shape::Box => '['.$label.']',
                 Shape::Rounded => '('.$label.')',
                 Shape::Stadium => '(['.$label.'])',
-                Shape::Circle, Shape::Ellipse => '(('.$label.'))',
+                Shape::Circle, Shape::Ellipse, Shape::Actor => '(('.$label.'))',
                 Shape::Diamond => '{'.$label.'}',
                 Shape::Hexagon => '{{'.$label.'}}',
                 Shape::Parallelogram => '[/'.$label.'/]',

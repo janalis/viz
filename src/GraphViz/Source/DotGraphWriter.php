@@ -80,6 +80,7 @@ final class DotGraphWriter
             Shape::Parallelogram => 'parallelogram',
             Shape::Cylinder => 'cylinder',
             Shape::Note => 'note',
+            Shape::Actor => 'plaintext',
         };
         if (null !== $shape) {
             $attributes[] = 'shape='.$shape;

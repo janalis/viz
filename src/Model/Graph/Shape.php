@@ -17,4 +17,6 @@ enum Shape: string
     case Parallelogram = 'parallelogram';
     case Cylinder = 'cylinder';
     case Note = 'note';
+    /** A stick figure, as use cases draw who takes part. */
+    case Actor = 'actor';
 }

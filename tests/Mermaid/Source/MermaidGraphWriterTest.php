@@ -117,4 +117,9 @@ final class MermaidGraphWriterTest extends TestCase
         $this->assertStringContainsString('a o--> b', $mermaid);
         $this->assertStringContainsString('b <--o a', $mermaid);
     }
+
+    public function testAnActorIsACircle(): void
+    {
+        $this->assertStringContainsString('a(("a"))', MermaidGraphWriter::write(new Graph([new Node('a', shape: \Janalis\Viz\Model\Graph\Shape::Actor)])));
+    }
 }

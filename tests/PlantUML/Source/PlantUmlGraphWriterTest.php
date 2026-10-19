@@ -99,4 +99,9 @@ final class PlantUmlGraphWriterTest extends TestCase
         $this->assertStringContainsString('n0 *--|> n1', $plantUml);
         $this->assertStringContainsString('n1 <|--* n0', $plantUml);
     }
+
+    public function testAnActorIsAnActor(): void
+    {
+        $this->assertStringContainsString('actor "a" as n0', PlantUmlGraphWriter::write(new Graph([new Node('a', shape: \Janalis\Viz\Model\Graph\Shape::Actor)])));
+    }
 }

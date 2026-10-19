@@ -101,6 +101,7 @@ final class PlantUmlGraphWriter
             Shape::Hexagon => 'hexagon',
             Shape::Cylinder => 'database',
             Shape::Note => 'file',
+            Shape::Actor => 'actor',
         };
         $color = '';
         if (null !== $node->fill || null !== $node->stroke) {

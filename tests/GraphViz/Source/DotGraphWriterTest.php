@@ -76,4 +76,9 @@ final class DotGraphWriterTest extends TestCase
         $this->assertStringContainsString('[arrowhead=empty, arrowtail=diamond, dir=both]', $dot);
         $this->assertStringContainsString('[arrowhead=odiamond]', $dot);
     }
+
+    public function testAnActorIsAPlainLabel(): void
+    {
+        $this->assertStringContainsString('"a" [label="a", shape=plaintext];', DotGraphWriter::write(new Graph([new Node('a', shape: \Janalis\Viz\Model\Graph\Shape::Actor)])));
+    }
 }
