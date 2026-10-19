@@ -46,10 +46,14 @@ jobs:
         with:
           php-version: '8.5'
           coverage: none
+          # php.ini-production compiles assert() out; the invariants are meant to run.
+          ini-values: zend.assertions=1
           extensions: ${{ env.PHP_EXTENSIONS }}, ${{ matrix.extensions }}
       # dot is exercised for real where it is installed; plantuml and mmdc are
       # stood in for by scripted fakes, so no JVM or browser is needed here.
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq graphviz poppler-utils
+      # DejaVu is the host fallback the PNG and PDF backends reach for glyphs
+      # the bundled face lacks.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq graphviz poppler-utils fonts-dejavu-core
       - run: composer install --no-interaction --no-progress
       - run: make test
 
@@ -62,7 +66,8 @@ jobs:
         with:
           php-version: '8.5'
           coverage: pcov
+          ini-values: zend.assertions=1
           extensions: ${{ env.PHP_EXTENSIONS }}, intl
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq graphviz poppler-utils
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq graphviz poppler-utils fonts-dejavu-core
       - run: composer install --no-interaction --no-progress
       - run: make coverage
