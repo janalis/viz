@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 
 /**
@@ -31,7 +33,7 @@ final class TreeViewIcons
         return null === $icon || 'none' === $icon ? null : self::qualified($icon, $options->text('treeView', 'defaultIconPack'));
     }
 
-    /** @return list<MermaidMark> the glyph at the node's left, in the shape's base outline */
+    /** @return list<Mark> the glyph at the node's left, in the shape's base outline */
     public static function marks(GraphNode $node, string $shape): array
     {
         [$body, $color] = \explode('|', $shape, limit: 2) + ['', '#546e7a'];
@@ -42,7 +44,7 @@ final class TreeViewIcons
             ...MermaidOutline::marks($node, $base),
             ...match ($icon) {
                 // The Material folder, a tab over a body, and file, its corner folded.
-                'folder' => [new MermaidMark('polygon', self::material($x, $node->y, [
+                'folder' => [new Mark(MarkKind::Polygon, self::material($x, $node->y, [
                     [2.0, 6.0],
                     [4.0, 4.0],
                     [9.17, 4.0],
@@ -54,7 +56,13 @@ final class TreeViewIcons
                     [4.0, 20.0],
                     [2.0, 18.0],
                 ]), stroke: 'none', fill: $color, strokeWidth: 0.0)],
-                'file' => [new MermaidMark('polygon', self::material($x, $node->y, [[4.0, 2.0], [14.0, 2.0], [20.0, 8.0], [20.0, 22.0], [4.0, 22.0]]), stroke: 'none', fill: $color, strokeWidth: 0.0)],
+                'file' => [new Mark(MarkKind::Polygon, self::material($x, $node->y, [
+                    [4.0, 2.0],
+                    [14.0, 2.0],
+                    [20.0, 8.0],
+                    [20.0, 22.0],
+                    [4.0, 22.0],
+                ]), stroke: 'none', fill: $color, strokeWidth: 0.0)],
                 default => ArchitectureSymbols::tile('', $x, $node->y, self::SIZE),
             },
         ];

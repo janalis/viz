@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Draw;
 
 use Janalis\Viz\Color\ColorValue;
 use Janalis\Viz\Text\FallbackFonts;
 use Janalis\Viz\Text\Font;
 
 /** Native raster backend; yields between marks and caps allocation before creating GD images. */
-final readonly class MermaidPng
+final readonly class PngBackend
 {
     /** The default pixel budget: 16 MP, which a 4000 × 4000 picture already fills. */
     public const int MAX_PIXELS = 16_000_000;
@@ -29,13 +29,13 @@ final readonly class MermaidPng
     }
 
     /** @return \Generator<int, null, mixed, string> */
-    public function render(MermaidDrawing $drawing, int $dpi = self::BASE_DPI): \Generator
+    public function render(Drawing $drawing, int $dpi = self::BASE_DPI): \Generator
     {
         if (!$this->available) {
-            throw new \InvalidArgumentException('Native Mermaid PNG requires the PHP GD extension with FreeType support');
+            throw new \InvalidArgumentException('Native PNG requires the PHP GD extension with FreeType support');
         }
         if ($dpi < 1 || $this->maxPixels < 1 || $drawing->width < 1 || $drawing->height < 1 || !\is_finite($drawing->width) || !\is_finite($drawing->height)) {
-            throw new \InvalidArgumentException('Invalid Mermaid raster dimensions');
+            throw new \InvalidArgumentException('Invalid raster dimensions');
         }
         $scale = \min(10 * ($dpi / 96), \sqrt($this->maxPixels / ($drawing->width * $drawing->height)), \min(16_000, $this->maxPixels) / \max($drawing->width, $drawing->height));
         $width = \max(1, (int) \floor($drawing->width * $scale));
@@ -62,20 +62,20 @@ final readonly class MermaidPng
         }
     }
 
-    private function mark(\GdImage $canvas, MermaidMark $mark, float $scale, string $font): void
+    private function mark(\GdImage $canvas, Mark $mark, float $scale, string $font): void
     {
         match ($mark->kind) {
-            'image' => $this->image($canvas, $mark, $scale),
-            'text' => $this->text($canvas, $mark, $scale, self::color($mark->stroke, $mark->opacity), $font),
+            MarkKind::Image => $this->image($canvas, $mark, $scale),
+            MarkKind::Text => $this->text($canvas, $mark, $scale, self::color($mark->stroke, $mark->opacity), $font),
             default => self::outline($canvas, $mark, $scale),
         };
     }
 
-    private static function outline(\GdImage $canvas, MermaidMark $mark, float $scale): void
+    private static function outline(\GdImage $canvas, Mark $mark, float $scale): void
     {
         $color = self::color($mark->stroke, $mark->opacity);
         $points = \array_map(static fn (array $point): array => [(int) \round($point[0] * $scale), (int) \round($point[1] * $scale)], $mark->points);
-        if ('polygon' === $mark->kind && \count($points) >= 3) {
+        if (MarkKind::Polygon === $mark->kind && \count($points) >= 3) {
             if ('none' !== $mark->fill && null === $mark->gradient) {
                 // GD fills with scanlines: a previous thick stroke would blend each row repeatedly.
                 \imagesetthickness($canvas, thickness: 1);
@@ -118,7 +118,7 @@ final readonly class MermaidPng
     }
 
     /** An embedded picture, decoded within the raster's own pixel limit and stretched to its box. */
-    private function image(\GdImage $canvas, MermaidMark $mark, float $scale): void
+    private function image(\GdImage $canvas, Mark $mark, float $scale): void
     {
         $bytes = (string) \base64_decode(\explode(',', $mark->text, limit: 2)[1] ?? '', strict: true);
         $picture = $this->decode($bytes);
@@ -142,7 +142,7 @@ final readonly class MermaidPng
         );
     }
 
-    private function text(\GdImage $canvas, MermaidMark $mark, float $scale, int $color, string $font): void
+    private function text(\GdImage $canvas, Mark $mark, float $scale, int $color, string $font): void
     {
         if ('' === $mark->text) {
             return;
@@ -225,7 +225,7 @@ final readonly class MermaidPng
                 continue;
             }
             $share = ($x - $left) / \max(1.0e-9, $right - $left);
-            $color = self::color(MermaidColor::mixed($gradient[0], $gradient[1], $share), $opacity);
+            $color = self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $opacity);
             \imageline($canvas, $x, \min($ys), $x, \max($ys), $color);
         }
     }

@@ -4,31 +4,33 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
+use Janalis\Viz\Draw\SvgBackend;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
-use Janalis\Viz\Mermaid\MermaidSvg;
 use PHPUnit\Framework\TestCase;
 
 /** Pinned rotated captions: quadrant and xy side titles read upward, git commit ids slant. */
 final class RotatedTextTest extends TestCase
 {
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function marks(MermaidScene $scene): array
     {
-        $work = MermaidDrawing::scene($scene);
+        $work = MermaidPainter::scene($scene);
         \iterator_to_array($work);
 
         return $work->getReturn()->marks;
     }
 
-    private static function text(MermaidScene $scene, string $text): MermaidMark
+    private static function text(MermaidScene $scene, string $text): Mark
     {
-        $mark = \array_find(self::marks($scene), static fn (MermaidMark $mark): bool => 'text' === $mark->kind && $text === $mark->text);
-        self::assertInstanceOf(MermaidMark::class, $mark, $text);
+        $mark = \array_find(self::marks($scene), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && $text === $mark->text);
+        self::assertInstanceOf(Mark::class, $mark, $text);
 
         return $mark;
     }
@@ -65,14 +67,14 @@ final class RotatedTextTest extends TestCase
 
     public function testBackendsTurnTextAboutItsAnchor(): void
     {
-        $mark = new MermaidMark('text', [[10.0, 10.0]], 'WWWWWW', stroke: '#000000', angle: -90.0);
-        $svg = MermaidSvg::render(new MermaidDrawing(20.0, 20.0, [$mark]));
+        $mark = new Mark(MarkKind::Text, [[10.0, 10.0]], 'WWWWWW', stroke: '#000000', angle: -90.0);
+        $svg = SvgBackend::render(new Drawing(20.0, 20.0, [$mark]));
         \iterator_to_array($svg);
         $this->assertStringContainsString('transform="rotate(-90 10 10)"', $svg->getReturn());
-        $level = MermaidSvg::render(new MermaidDrawing(20.0, 20.0, [new MermaidMark('text', [[10.0, 10.0]], 'W')]));
+        $level = SvgBackend::render(new Drawing(20.0, 20.0, [new Mark(MarkKind::Text, [[10.0, 10.0]], 'W')]));
         \iterator_to_array($level);
         $this->assertStringNotContainsString('rotate(', $level->getReturn());
-        $png = new MermaidPng()->render(new MermaidDrawing(20.0, 20.0, [$mark]));
+        $png = new PngBackend()->render(new Drawing(20.0, 20.0, [$mark]));
         \iterator_to_array($png);
         $image = \imagecreatefromstring($png->getReturn());
         $this->assertInstanceOf(\GdImage::class, $image);

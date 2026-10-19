@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
 
@@ -48,7 +50,7 @@ final class ClassMembers
      * The underlines of a card's static members: `;u=<width>=<line>,…` after its divider rows,
      * the members padded to `width` columns about the card's center.
      *
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     public static function underlines(GraphNode $node, string $shape): array
     {
@@ -63,7 +65,7 @@ final class ClassMembers
         foreach (\explode(',', $match[2]) as $line) {
             $width = DisplayWidth::of(\rtrim($lines[(int) $line] ?? '', characters: ' '));
             $y = $top + 3.8 + (2 * (int) $line);
-            $marks[] = new MermaidMark('polyline', [[$left, $y], [$left + $width, $y]], stroke: $node->textColor ?? '#333333', strokeWidth: 0.08);
+            $marks[] = new Mark(MarkKind::Polyline, [[$left, $y], [$left + $width, $y]], stroke: $node->textColor ?? '#333333', strokeWidth: 0.08);
         }
 
         return $marks;

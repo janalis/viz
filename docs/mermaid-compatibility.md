@@ -1145,7 +1145,7 @@ tests also exercise the shared declaration scanner.
 
 `TimelineTest` checks these examples without a CLI, plus malformed syntax,
 source locations, resource limits, narrow rendering and cancellation.
-`MermaidOutlineTest`, `MermaidDrawingTest` and `MermaidInteractionTest` cover
+`MermaidOutlineTest`, `MermaidPainterTest` and `MermaidInteractionTest` cover
 classic outlines, SVG/PNG output, allocation limits, scheduling and native
 selection. Other native family tests remain in `tests/Mermaid/`.
 

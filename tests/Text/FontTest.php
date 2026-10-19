@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Text;
 
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
 use Janalis\Viz\Text\Font;
 use PHPUnit\Framework\Attributes\After;
 use PHPUnit\Framework\TestCase;
@@ -70,7 +71,7 @@ final class FontTest extends TestCase
         $local->close();
         $this->assertFileExists(Font::FILE, 'closing a local font never removes the bundled file');
 
-        $work = new MermaidPng(font: $source)->render(new MermaidDrawing(20, 10, [new MermaidMark('text', [[10.0, 5.0]], 'Packaged')]));
+        $work = new PngBackend(font: $source)->render(new Drawing(20, 10, [new Mark(MarkKind::Text, [[10.0, 5.0]], 'Packaged')]));
         \iterator_to_array($work);
         $this->assertStringStartsWith("\x89PNG", $work->getReturn());
     }
@@ -89,7 +90,7 @@ final class FontTest extends TestCase
             $font->path();
             $this->fail('A failed extraction was accepted');
         } catch (\InvalidArgumentException $error) {
-            $this->assertSame('Cannot prepare the bundled Mermaid font: disk full', $error->getMessage());
+            $this->assertSame('Cannot prepare the bundled font: disk full', $error->getMessage());
             $this->assertInstanceOf(IOException::class, $error->getPrevious());
         }
     }

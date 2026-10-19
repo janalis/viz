@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Text\FallbackFonts;
 use Janalis\Viz\Text\FontFace;
@@ -66,8 +68,8 @@ final class MermaidMarkdownLabelsTest extends TestCase
         if (!\function_exists('imagettftext')) {
             $this->markTestSkipped('GD with FreeType is required');
         }
-        $drawing = new MermaidDrawing(40, 10, [new MermaidMark('text', [[20.0, 5.0]], 'A & 漢 😎')]);
-        $work = new MermaidPng(fallbacks: new FallbackFonts(['/nonexistent/font.ttf']))->render($drawing);
+        $drawing = new Drawing(40, 10, [new Mark(MarkKind::Text, [[20.0, 5.0]], 'A & 漢 😎')]);
+        $work = new PngBackend(fallbacks: new FallbackFonts(['/nonexistent/font.ttf']))->render($drawing);
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $image);
@@ -81,20 +83,20 @@ final class MermaidMarkdownLabelsTest extends TestCase
         return $node;
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function marks(MermaidScene $scene): array
     {
-        $work = MermaidDrawing::scene($scene);
+        $work = MermaidPainter::scene($scene);
         \iterator_to_array($work);
 
         return $work->getReturn()->marks;
     }
 
-    /** @param list<MermaidMark> $marks */
-    private static function mark(array $marks, string $text): MermaidMark
+    /** @param list<Mark> $marks */
+    private static function mark(array $marks, string $text): Mark
     {
-        $mark = \array_find($marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind && $text === $mark->text);
-        self::assertInstanceOf(MermaidMark::class, $mark, 'No text mark '.$text);
+        $mark = \array_find($marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && $text === $mark->text);
+        self::assertInstanceOf(Mark::class, $mark, 'No text mark '.$text);
 
         return $mark;
     }

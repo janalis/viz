@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\FlowchartLayout;
 use Janalis\Viz\Mermaid\FlowchartParser;
 use Janalis\Viz\Mermaid\FlowchartShapeGeometry;
 use Janalis\Viz\Mermaid\FlowchartShapes;
-use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidLexer;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Render\Format;
@@ -107,10 +108,10 @@ final class FlowchartModernShapesTest extends TestCase
     {
         foreach (['folder', 'bucket', 'browser', 'console', 'person'] as $shape) {
             $scene = self::scene('flowchart; A@{shape:'.$shape.',label:"Text"}');
-            $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+            $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
             \iterator_to_array($drawing);
-            $text = \array_find($drawing->getReturn()->marks, static fn ($mark): bool => 'text' === $mark->kind && 'Text' === $mark->text);
-            $this->assertInstanceOf(MermaidMark::class, $text);
+            $text = \array_find($drawing->getReturn()->marks, static fn ($mark): bool => MarkKind::Text === $mark->kind && 'Text' === $mark->text);
+            $this->assertInstanceOf(Mark::class, $text);
             $this->assertGreaterThan($scene->graph->nodes[0]->y, $text->points[0][1]);
         }
     }
@@ -122,9 +123,9 @@ final class FlowchartModernShapesTest extends TestCase
             $node = $scene->graph->nodes[0];
             $outline = MermaidOutline::marks($node, 'lin-cyl');
             $ringBottom = \max(\array_column($outline[3]->points, 1));
-            $work = MermaidDrawing::graph($scene->graph, $scene->shapes);
+            $work = MermaidPainter::graph($scene->graph, $scene->shapes);
             \iterator_to_array($work);
-            $labels = \array_filter($work->getReturn()->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind);
+            $labels = \array_filter($work->getReturn()->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind);
             foreach ($labels as $text) {
                 $this->assertGreaterThan($ringBottom, $text->points[0][1] - 1.5);
             }
@@ -163,11 +164,11 @@ final class FlowchartModernShapesTest extends TestCase
         $source = 'flowchart; A@{shape:person,label:"'.\implode('<br/>', \array_fill(0, count: 12, value: 'Line')).'"}; style A font-size:24px';
         $scene = self::scene($source);
         $node = $scene->graph->nodes[0];
-        $work = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $work = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($work);
         $bodyTop = $node->y - ($node->h / 2) + FlowchartShapeGeometry::headBand($node);
         foreach ($work->getReturn()->marks as $mark) {
-            if ('text' !== $mark->kind) {
+            if (MarkKind::Text !== $mark->kind) {
                 continue;
             }
             $this->assertGreaterThan($bodyTop, $mark->points[0][1] - (1.5 * $mark->fontScale));
@@ -223,13 +224,13 @@ final class FlowchartModernShapesTest extends TestCase
         $node = new GraphNode(0, 'A', 'Text', 20, 20, 16, 12, null, null, dashed: false);
         $this->assertSame($offset, FlowchartShapes::labelOffset($shape, $node));
         $scene = self::scene('flowchart; A@{shape:'.$shape.',label:"Text"}');
-        $work = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $work = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($work);
-        $text = \array_find($work->getReturn()->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind);
+        $text = \array_find($work->getReturn()->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind);
         $plain = self::scene('flowchart; A@{shape:rect,label:"Text"}');
-        $plainWork = MermaidDrawing::graph($plain->graph, $plain->shapes);
+        $plainWork = MermaidPainter::graph($plain->graph, $plain->shapes);
         \iterator_to_array($plainWork);
-        $plainText = \array_find($plainWork->getReturn()->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind);
+        $plainText = \array_find($plainWork->getReturn()->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind);
         $node = $scene->graph->nodes[0];
         $this->assertEqualsWithDelta($plainText->points[0][0] - $plain->graph->nodes[0]->x + ($offset[0] * $node->w), $text->points[0][0] - $node->x, delta: 1.0e-9);
         $this->assertEqualsWithDelta($plainText->points[0][1] - $plain->graph->nodes[0]->y + ($offset[1] * $node->h), $text->points[0][1] - $node->y, delta: 1.0e-9);
@@ -250,7 +251,7 @@ final class FlowchartModernShapesTest extends TestCase
         $this->assertSame('datastore', MermaidOutline::canonical($scene->shapes[0]));
         $node = new GraphNode(0, 'A', 'Text', 20, 20, 16, 12, '#ff0000', null, dashed: false);
         $marks = MermaidOutline::marks($node, 'data-store');
-        $this->assertSame(['polyline', 'polyline'], \array_column($marks, 'kind'));
+        $this->assertSame(['polyline', 'polyline'], \array_column(\array_column($marks, 'kind'), 'value'));
         $this->assertSame([[[12.0, 14.0], [28.0, 14.0]], [[12.0, 26.0], [28.0, 26.0]]], \array_column($marks, 'points'));
         $this->assertSame(['#ff0000', '#ff0000'], \array_column($marks, 'stroke'));
     }

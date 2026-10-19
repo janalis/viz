@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Draw;
 
 use Janalis\Viz\Text\FontFace;
 
 /** One backend-independent drawing operation in the scene's logical coordinates. */
-final readonly class MermaidMark
+final readonly class Mark
 {
     /** @param list<array{float, float}> $points */
     public function __construct(
-        public string $kind,
+        public MarkKind $kind,
         public array $points,
         public string $text = '',
         public string $stroke = '#333333',

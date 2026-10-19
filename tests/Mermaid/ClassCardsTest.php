@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Layout\Curve\Polyline;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\ClassMarkers;
 use Janalis\Viz\Mermaid\ClassMembers;
 use Janalis\Viz\Mermaid\ErMarkers;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
-use Janalis\Viz\Mermaid\MermaidPolyline;
 use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -75,13 +76,13 @@ final class ClassCardsTest extends TestCase
         $statics = NativeFixtureScene::render("classDiagram\nclass A{\n+a()\$\n+b()\$\n+ab".\str_repeat('word ', times: 12)."()\$\n}");
         $node = \array_find($statics->graph->nodes, static fn (GraphNode $node): bool => 'A' === $node->name);
         $marks = MermaidOutline::marks($node, $statics->shapes[$node->id]);
-        $dividers = \array_filter($marks, static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind && \abs($mark->points[1][0] - $mark->points[0][0] - $node->w) < 1e-9);
+        $dividers = \array_filter($marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && \abs($mark->points[1][0] - $mark->points[0][0] - $node->w) < 1e-9);
         $this->assertCount(1, $dividers, 'one compartment, one divider: underlined rows never add any');
         $lines = \explode("\n", $node->label);
-        $underlines = \array_values(\array_filter($marks, static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind && 0.08 === $mark->strokeWidth));
+        $underlines = \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && 0.08 === $mark->strokeWidth));
         $this->assertSame(
             \array_map(static fn (string $line): int => \mb_strlen(\rtrim($line)), \array_slice($lines, offset: 2)),
-            \array_map(static fn (MermaidMark $mark): int => (int) \round($mark->points[1][0] - $mark->points[0][0]), $underlines),
+            \array_map(static fn (Mark $mark): int => (int) \round($mark->points[1][0] - $mark->points[0][0]), $underlines),
             'a wrapped line is underlined to its last word',
         );
         $this->assertStringEndsWith(' ', $lines[\count($lines) - 2]);
@@ -120,7 +121,7 @@ final class ClassCardsTest extends TestCase
         $curve = [[0.0, 0.0], [0.0, 0.5], [0.0, 1.0], [0.0, 1.5], [0.0, 2.0], [0.0, 6.0], [0.0, 12.0]];
         $bent = new GraphEdge(0, 1, [[0.0, 0.0], [0.5, 0.0], [0.5, 3.0], [0.5, 12.0]], null, 0.0, 0.0, 0.5, 12.0, '#000000', null, null, dashed: false);
         $aimed = ClassMarkers::forEdge($bent, '<|', '')[0];
-        [$toward] = MermaidPolyline::along($bent->points, 3.0);
+        [$toward] = Polyline::along($bent->points, 3.0);
         $length = \hypot($toward[0], $toward[1]);
         $this->assertEqualsWithDelta(
             [(2.4 * $toward[0]) / $length, (2.4 * $toward[1]) / $length],
@@ -139,9 +140,9 @@ final class ClassCardsTest extends TestCase
         $this->assertEqualsWithDelta(1.2, \max(\array_column(ClassMarkers::forEdge($short, '<|', '')[0]->points, 1)), 1e-9, 'a short edge halves its glyph');
         $bars = ErMarkers::forEdge($edge, '1', '1');
         $this->assertEqualsWithDelta([[0.8, 0.6], [-0.8, 0.6]], $bars[0]->points, 1e-9, 'ER bars keep their full width on a curve');
-        $this->assertSame(12.0, MermaidPolyline::length($curve));
-        $this->assertSame([[0.0, 4.0], [[0.0, 6.0], [0.0, 12.0]]], MermaidPolyline::along($curve, 4.0));
-        $this->assertSame([[0.0, 12.0], []], MermaidPolyline::along($curve, 20.0));
-        $this->assertSame([[0.0, 0.0], [[0.0, 0.5], [0.0, 1.0], [0.0, 1.5], [0.0, 2.0], [0.0, 6.0], [0.0, 12.0]]], MermaidPolyline::along($curve, 0.0));
+        $this->assertSame(12.0, Polyline::length($curve));
+        $this->assertSame([[0.0, 4.0], [[0.0, 6.0], [0.0, 12.0]]], Polyline::along($curve, 4.0));
+        $this->assertSame([[0.0, 12.0], []], Polyline::along($curve, 20.0));
+        $this->assertSame([[0.0, 0.0], [[0.0, 0.5], [0.0, 1.0], [0.0, 1.5], [0.0, 2.0], [0.0, 6.0], [0.0, 12.0]]], Polyline::along($curve, 0.0));
     }
 }

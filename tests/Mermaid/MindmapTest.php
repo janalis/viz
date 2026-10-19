@@ -89,7 +89,7 @@ final class MindmapTest extends TestCase
             $this->assertCount($points, MermaidOutline::points($node, $shape));
             $this->assertTrue(MermaidOutline::contains($node, $shape, x: 15, y: 10));
             $this->assertFalse(MermaidOutline::contains($node, $shape, x: 30, y: 10));
-            $this->assertSame('polygon', $marks[0]->kind);
+            $this->assertSame('polygon', $marks[0]->kind->value);
         }
         $plain = MermaidOutline::marks($node->painted('#112233', '#445566', null), 'mindmap-plain');
         $this->assertSame([MermaidOutline::points($node, 'rounded'), '#445566', 0.0], [$plain[0]->points, $plain[0]->fill, $plain[0]->strokeWidth], 'a rounded box in the section color');

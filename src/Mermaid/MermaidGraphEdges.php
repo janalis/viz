@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Layout\Curve\Curve;
+use Janalis\Viz\Layout\Curve\CurvePath;
+use Janalis\Viz\Layout\Curve\Curves;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 
@@ -30,7 +33,7 @@ final class MermaidGraphEdges
         string $arrow,
         string $fromShape,
         string $toShape,
-        ?MermaidCurve $curve = null,
+        ?Curve $curve = null,
         string $direction = 'TB',
         array $lanes = [],
         ?GraphNode $anchor = null,
@@ -48,7 +51,7 @@ final class MermaidGraphEdges
     }
 
     /** Pinned swimlanes route orthogonally through the rank gap; their basis default becomes rounded. */
-    public static function orthogonal(GraphNode $from, GraphNode $to, string $label, string $arrow, string $fromShape, string $toShape, MermaidCurve $curve, string $direction): GraphEdge
+    public static function orthogonal(GraphNode $from, GraphNode $to, string $label, string $arrow, string $fromShape, string $toShape, Curve $curve, string $direction): GraphEdge
     {
         $waypoint = $from->id === $to->id ? null : self::waypoint($from, $to, $direction);
         $bends = [];
@@ -56,11 +59,11 @@ final class MermaidGraphEdges
             $bends = \in_array($direction, ['LR', 'RL'], strict: true) ? [[$waypoint[0], $from->y], $waypoint] : [[$from->x, $waypoint[1]], $waypoint];
         }
 
-        return self::route($from, $to, $label, $arrow, $fromShape, $toShape, MermaidCurve::Basis === $curve ? MermaidCurve::Rounded : $curve, $bends);
+        return self::route($from, $to, $label, $arrow, $fromShape, $toShape, Curve::Basis === $curve ? Curve::Rounded : $curve, $bends);
     }
 
     /** @param list<array{float, float}> $bends */
-    private static function route(GraphNode $from, GraphNode $to, string $label, string $arrow, string $fromShape, string $toShape, ?MermaidCurve $curve, array $bends): GraphEdge
+    private static function route(GraphNode $from, GraphNode $to, string $label, string $arrow, string $fromShape, string $toShape, ?Curve $curve, array $bends): GraphEdge
     {
         $self = $from->id === $to->id;
         $points = $self ? self::loop($from, $fromShape, $toShape) : self::anchors($from, $to, $fromShape, $toShape, $bends);
@@ -168,14 +171,14 @@ final class MermaidGraphEdges
      * @return array{non-empty-list<array{float, float}>, array{float, float}}
      */
     // @mago-expect lint:no-boolean-flag-parameter -- Whether the route is a self-loop is the one fact that changes its sampled span.
-    private static function curved(array $points, MermaidCurve $curve, bool $self, array $labelPosition): array
+    private static function curved(array $points, Curve $curve, bool $self, array $labelPosition): array
     {
         // Preserve straight approaches to silhouettes; a global spline can
         // otherwise turn back through its own source or target card.
-        $routed = MermaidCurves::path($self ? \array_slice($points, offset: 1, length: -1) : $points, $curve);
+        $routed = Curves::path($self ? \array_slice($points, offset: 1, length: -1) : $points, $curve);
         $labelPosition = $routed->middle() ?? $labelPosition;
         if ($self) {
-            $joined = new MermaidCurvePath($points[0]);
+            $joined = new CurvePath($points[0]);
             foreach ($routed->points as $point) {
                 $joined->line($point);
             }

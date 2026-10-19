@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Layout\Curve;
 
 /** The pinned flowchart curve vocabulary, independent of browser layout engines. */
-enum MermaidCurve: string
+enum Curve: string
 {
     case Linear = 'linear';
     case Basis = 'basis';

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Draw;
 
 use Janalis\Viz\Text\Font;
 use Janalis\Viz\Text\FontFace;
 
 /** Inert, self-contained SVG: diagram text is text, never markup or executable content. */
-final class MermaidSvg
+final class SvgBackend
 {
     /** @return \Generator<int, null, mixed, string> */
-    public static function render(MermaidDrawing $drawing): \Generator
+    public static function render(Drawing $drawing): \Generator
     {
         $width = (string) $drawing->width;
         $height = (string) $drawing->height;
@@ -40,17 +40,17 @@ final class MermaidSvg
         return $svg.'</svg>';
     }
 
-    private static function mark(MermaidMark $mark, int $index): string
+    private static function mark(Mark $mark, int $index): string
     {
         return match ($mark->kind) {
-            'image' => self::image($mark),
-            'text' => self::text($mark),
+            MarkKind::Image => self::image($mark),
+            MarkKind::Text => self::text($mark),
             default => self::gradient($mark, 'gradient-'.$index).self::outline($mark, null === $mark->gradient ? $mark->fill : 'url(#gradient-'.$index.')'),
         };
     }
 
     /** A polygon's left-to-right gradient, spanning its own horizontal extent. */
-    private static function gradient(MermaidMark $mark, string $id): string
+    private static function gradient(Mark $mark, string $id): string
     {
         if (null === $mark->gradient) {
             return '';
@@ -66,14 +66,14 @@ final class MermaidSvg
     }
 
     /** The URI was rebuilt from validated image bytes, never copied from the document. */
-    private static function image(MermaidMark $mark): string
+    private static function image(Mark $mark): string
     {
         [[$left, $top], [$right, $bottom]] = $mark->points;
 
         return '<image x="'.$left.'" y="'.$top.'" width="'.($right - $left).'" height="'.($bottom - $top).'" preserveAspectRatio="none" href="'.self::escape($mark->text).'"/>';
     }
 
-    private static function text(MermaidMark $mark): string
+    private static function text(Mark $mark): string
     {
         [$x, $y] = $mark->points[0];
 
@@ -85,11 +85,11 @@ final class MermaidSvg
         return '<text x="'.$x.'" y="'.$y.'" fill="'.self::escape($mark->stroke).'"'.$style.'>'.self::escape($mark->text).'</text>';
     }
 
-    private static function outline(MermaidMark $mark, string $fill): string
+    private static function outline(Mark $mark, string $fill): string
     {
         $points = \implode(' ', \array_map(static fn (array $point): string => $point[0].','.$point[1], $mark->points));
-        $tag = 'polygon' === $mark->kind ? 'polygon' : 'polyline';
-        $fill = 'polygon' === $mark->kind ? $fill : 'none';
+        $tag = MarkKind::Polygon === $mark->kind ? 'polygon' : 'polyline';
+        $fill = MarkKind::Polygon === $mark->kind ? $fill : 'none';
 
         return (
             '<'

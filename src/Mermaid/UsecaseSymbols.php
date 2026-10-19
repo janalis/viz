@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Runs;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\FontFace;
 
@@ -12,7 +15,7 @@ final class UsecaseSymbols
 {
     /**
      * @param ?list<list<array{string, FontFace}>> $runs the caption's styled lines
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     public static function actor(GraphNode $node, string $shape, ?array $runs = null): array
     {
@@ -39,13 +42,13 @@ final class UsecaseSymbols
         $labelTop = $node->y - ($node->h / 2) + 8.2;
         $lines = $runs ?? \array_map(static fn (string $line): array => [[$line, $node->font]], \explode("\n", $node->label));
         foreach ($lines as $index => $line) {
-            \array_push($marks, ...MermaidRuns::centered($line, $node->x, $labelTop + ((1 + (2 * $index)) * $node->fontScale), $node->textColor ?? '#253858', $node->fontScale));
+            \array_push($marks, ...Runs::centered($line, $node->x, $labelTop + ((1 + (2 * $index)) * $node->fontScale), $node->textColor ?? '#253858', $node->fontScale));
         }
 
         return $marks;
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function normal(GraphNode $node, float $cy): array
     {
         return [
@@ -56,7 +59,7 @@ final class UsecaseSymbols
         ];
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function hollow(GraphNode $node, float $cy): array
     {
         $points = [[-2.2, -1.0], [2.2, -1.0], [2.2, 0.0], [0.6, 0.0], [2.2, 1.7], [1.3, 2.8], [0.0, 1.3], [-1.3, 2.8], [-2.2, 1.7], [-0.6, 0.0], [-2.2, 0.0]];
@@ -67,11 +70,11 @@ final class UsecaseSymbols
 
         return [
             self::head($node, $cy - 2.3, radius: 0.9, fill: 'none'),
-            new MermaidMark('polygon', $points, stroke: $node->color ?? '#253858', fill: 'none', dashed: $node->dashed, strokeWidth: $node->strokeWidth, dashes: $node->dashes),
+            new Mark(MarkKind::Polygon, $points, stroke: $node->color ?? '#253858', fill: 'none', dashed: $node->dashed, strokeWidth: $node->strokeWidth, dashes: $node->dashes),
         ];
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function awesome(GraphNode $node, float $cy): array
     {
         $curves = [
@@ -93,20 +96,20 @@ final class UsecaseSymbols
 
         return [
             self::head($node, $cy - 2.1, radius: 1.3),
-            new MermaidMark('polygon', $points, stroke: $node->color ?? '#253858', fill: $node->fillColor ?? '#d9eafa', dashed: $node->dashed, strokeWidth: $node->strokeWidth, dashes: $node->dashes),
+            new Mark(MarkKind::Polygon, $points, stroke: $node->color ?? '#253858', fill: $node->fillColor ?? '#d9eafa', dashed: $node->dashed, strokeWidth: $node->strokeWidth, dashes: $node->dashes),
         ];
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function icon(GraphNode $node, float $cy): array
     {
-        return [self::head($node, $cy - 0.4, radius: 2.4), new MermaidMark('text', [[$node->x, $cy - 0.2]], '?', stroke: $node->textColor ?? '#253858', fontScale: 2.0)];
+        return [self::head($node, $cy - 0.4, radius: 2.4), new Mark(MarkKind::Text, [[$node->x, $cy - 0.2]], '?', stroke: $node->textColor ?? '#253858', fontScale: 2.0)];
     }
 
-    private static function head(GraphNode $node, float $cy, float $radius, ?string $fill = null): MermaidMark
+    private static function head(GraphNode $node, float $cy, float $radius, ?string $fill = null): Mark
     {
-        return new MermaidMark(
-            'polygon',
+        return new Mark(
+            MarkKind::Polygon,
             MermaidOutline::ellipse($node->x - $radius, $cy - $radius, $node->x + $radius, $cy + $radius),
             stroke: $node->color ?? '#253858',
             fill: $fill ?? $node->fillColor ?? '#d9eafa',
@@ -117,12 +120,12 @@ final class UsecaseSymbols
     }
 
     /** @param list<array{float, float}> $points */
-    private static function line(GraphNode $node, array $points): MermaidMark
+    private static function line(GraphNode $node, array $points): Mark
     {
-        return new MermaidMark('polyline', $points, stroke: $node->color ?? '#253858', dashed: $node->dashed, strokeWidth: $node->strokeWidth, dashes: $node->dashes);
+        return new Mark(MarkKind::Polyline, $points, stroke: $node->color ?? '#253858', dashed: $node->dashed, strokeWidth: $node->strokeWidth, dashes: $node->dashes);
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function business(GraphNode $node): array
     {
         $marks = MermaidOutline::marks($node, 'ellipse');
@@ -137,7 +140,7 @@ final class UsecaseSymbols
         return $marks;
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function table(GraphNode $node, string $shape): array
     {
         $parts = \explode(':', $shape);
@@ -150,8 +153,8 @@ final class UsecaseSymbols
         $marks[] = self::line($node, [[$x, $top + 2 + (((2 * $first) + 1) * $node->fontScale)], [$x, $node->y + ($node->h / 2)]]);
         $lines = \explode("\n", $node->label);
         for ($index = 0; $index < $first; ++$index) {
-            $marks[] = new MermaidMark(
-                'text',
+            $marks[] = new Mark(
+                MarkKind::Text,
                 [[$node->x, $node->y + (((2 * $index) - (\count($lines) - 1) + 0.5) * $node->fontScale)]],
                 $lines[$index],
                 stroke: $node->textColor ?? '#253858',

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\StateDiagram;
@@ -171,12 +172,12 @@ final class StateTest extends TestCase
         $this->assertSame($divider->points[0][1], $divider->points[1][1]);
         $this->assertLessThan($divider->points[1][0], $divider->points[0][0]);
         $end = \array_find($scene->graph->nodes, static fn (GraphNode $node): bool => '@end:' === $node->name);
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         $dots = \array_filter(
             $drawing->getReturn()->marks,
-            static fn (MermaidMark $mark): bool => (
-                'polygon' === $mark->kind
+            static fn (Mark $mark): bool => (
+                MarkKind::Polygon === $mark->kind
                 && '#222222' === $mark->fill
                 && $mark->points[0][0] > ($end->x - ($end->w / 2))
                 && $mark->points[0][0] < ($end->x + ($end->w / 2))

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\C4Arguments;
 use Janalis\Viz\Mermaid\C4Diagram;
 use Janalis\Viz\Mermaid\C4Layout;
 use Janalis\Viz\Mermaid\C4Lexer;
 use Janalis\Viz\Mermaid\C4Parser;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
@@ -399,7 +399,7 @@ final class C4Test extends TestCase
         $this->assertEqualsWithDelta([$person->x + 1.7, $top + 2], $marks[1]->points[0], delta: 0.000_001);
         $this->assertEqualsWithDelta([$person->x, $top + 2 + 1.7], $marks[1]->points[8], delta: 0.000_001);
         foreach ($marks as $mark) {
-            $this->assertSame(['polygon', '#ff0000', '#800080', $person->strokeWidth], [$mark->kind, $mark->stroke, $mark->fill, $mark->strokeWidth]);
+            $this->assertSame(['polygon', '#ff0000', '#800080', $person->strokeWidth], [$mark->kind->value, $mark->stroke, $mark->fill, $mark->strokeWidth]);
         }
         $queue = $nodes['queue'];
         [$left, $right] = [$queue->x - ($queue->w / 2), $queue->x + ($queue->w / 2)];
@@ -412,8 +412,8 @@ final class C4Test extends TestCase
         $this->assertEqualsWithDelta([$left + 1, $bottom], $marks[1]->points[8], delta: 0.000_001);
         $this->assertEqualsWithDelta([$right, $queue->y], $marks[2]->points[0], delta: 0.000_001);
         $this->assertEqualsWithDelta([$right - 1, $bottom], $marks[2]->points[8], delta: 0.000_001);
-        $this->assertSame([$queue->fillColor, $queue->fillColor, $queue->fillColor], \array_map(static fn (MermaidMark $mark): string => $mark->fill, $marks));
-        $this->assertSame([$queue->color, $queue->color, $queue->color], \array_map(static fn (MermaidMark $mark): string => $mark->stroke, $marks));
+        $this->assertSame([$queue->fillColor, $queue->fillColor, $queue->fillColor], \array_map(static fn (Mark $mark): string => $mark->fill, $marks));
+        $this->assertSame([$queue->color, $queue->color, $queue->color], \array_map(static fn (Mark $mark): string => $mark->stroke, $marks));
         $svg = NativeFixtureExport::render($source, Format::Svg);
         $this->assertStringContainsString('#800080', $svg);
         $this->assertStringContainsString('Database', $svg);

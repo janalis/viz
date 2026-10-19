@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
 use Janalis\Viz\Mermaid\MermaidCss;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Render\Format;
@@ -35,8 +36,8 @@ final class MermaidDashStylesTest extends TestCase
 
     public function testRasterDashesFollowTheAuthoredLengths(): void
     {
-        $line = static fn (?array $dashes): MermaidMark => new MermaidMark('polyline', [[0.0, 1.0], [10.0, 1.0]], stroke: '#000000', dashed: true, strokeWidth: 0.1, dashes: $dashes);
-        $work = new MermaidPng()->render(new MermaidDrawing(10.0, 2.0, [$line([2.0, 1.0])]));
+        $line = static fn (?array $dashes): Mark => new Mark(MarkKind::Polyline, [[0.0, 1.0], [10.0, 1.0]], stroke: '#000000', dashed: true, strokeWidth: 0.1, dashes: $dashes);
+        $work = new PngBackend()->render(new Drawing(10.0, 2.0, [$line([2.0, 1.0])]));
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $image);
@@ -47,12 +48,12 @@ final class MermaidDashStylesTest extends TestCase
             \imagecolorat($image, x: 25, y: 10),
             \imagecolorat($image, x: 31, y: 10),
         ]);
-        $work = new MermaidPng()->render(new MermaidDrawing(10.0, 2.0, [$line([0.0, 0.0])]));
+        $work = new PngBackend()->render(new Drawing(10.0, 2.0, [$line([0.0, 0.0])]));
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $image);
         $this->assertSame([0x00_0000, 0xff_ffff], [\imagecolorat($image, x: 0, y: 10), \imagecolorat($image, x: 1, y: 10)], 'zero lengths still draw a pixel each');
-        $work = new MermaidPng()->render(new MermaidDrawing(10.0, 2.0, [$line([])]));
+        $work = new PngBackend()->render(new Drawing(10.0, 2.0, [$line([])]));
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $image);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Layout\Curve\Polyline;
 use Janalis\Viz\Layout\GraphEdge;
 
 /** UML glyphs share the scene's line/fill primitives and never enter its selection map. */
@@ -13,18 +14,18 @@ final class ClassMarkers
     public static function forEdge(GraphEdge $edge, string $left, string $right): array
     {
         $result = [];
-        $length = MermaidPolyline::length($edge->points);
+        $length = Polyline::length($edge->points);
         foreach ([[$left, $edge->points], [$right, \array_reverse($edge->points)]] as [$kind, $from]) {
             if ('' === $kind || $length < 1.0e-9) {
                 continue;
             }
             // Curved edges are many short segments: aim along the line, three units in.
             $at = $from[0];
-            [$toward] = MermaidPolyline::along($from, \min($length, 3.0));
+            [$toward] = Polyline::along($from, \min($length, 3.0));
             $dx = $toward[0] - $at[0];
             $dy = $toward[1] - $at[1];
             $length = \hypot($dx, $dy);
-            $scale = \min(1.0, MermaidPolyline::length($edge->points) / 8);
+            $scale = \min(1.0, Polyline::length($edge->points) / 8);
             $points = self::outline($kind);
             foreach ($points as $i => [$along, $across]) {
                 $points[$i] = [$at[0] + (($scale * (($along * $dx) - ($across * $dy))) / $length), $at[1] + (($scale * (($along * $dy) + ($across * $dx))) / $length)];
@@ -57,7 +58,7 @@ final class ClassMarkers
     public static function shaft(GraphEdge $edge, string $left, string $right): GraphEdge
     {
         $points = $edge->points;
-        $scale = \min(1.0, MermaidPolyline::length($points) / 8);
+        $scale = \min(1.0, Polyline::length($points) / 8);
         foreach ([$left, $right] as $end => $kind) {
             $depth = match ($kind) {
                 '<|', '|>' => 2.4,
@@ -69,7 +70,7 @@ final class ClassMarkers
                 continue;
             }
             $ordered = 0 === $end ? $points : \array_reverse($points);
-            [$cut, $rest] = MermaidPolyline::along($ordered, $depth * $scale);
+            [$cut, $rest] = Polyline::along($ordered, $depth * $scale);
             $trimmed = [$cut, ...$rest];
             $points = 0 === $end ? $trimmed : \array_reverse($trimmed);
         }

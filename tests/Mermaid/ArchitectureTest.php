@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Mermaid\ArchitectureConfiguration;
 use Janalis\Viz\Mermaid\ArchitectureDiagram;
 use Janalis\Viz\Mermaid\ArchitectureLayout;
 use Janalis\Viz\Mermaid\ArchitectureLexer;
 use Janalis\Viz\Mermaid\ArchitectureParser;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
@@ -260,15 +261,15 @@ final class ArchitectureTest extends TestCase
         $marks = [];
         foreach ($scene->graph->nodes as $node) {
             $marks[$node->name] = MermaidOutline::marks($node, $scene->shapes[$node->id]);
-            $this->assertCount(1, \array_filter($marks[$node->name], static fn (MermaidMark $mark): bool => 'text' === $mark->kind && $node->label === $mark->text));
+            $this->assertCount(1, \array_filter($marks[$node->name], static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && $node->label === $mark->text));
             // The label mask takes the node's background; the pinned icon box is always blue.
-            $this->assertCount(1, \array_filter($marks[$node->name], static fn (MermaidMark $mark): bool => 'polygon' === $mark->kind && $node->fillColor === $mark->fill));
+            $this->assertCount(1, \array_filter($marks[$node->name], static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && $node->fillColor === $mark->fill));
             $this->assertSame('#087ebf', $marks[$node->name][0]->fill);
         }
-        $this->assertCount(3, \array_filter($marks['srv'], static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind));
-        $this->assertCount(4, \array_filter($marks['net'], static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind));
+        $this->assertCount(3, \array_filter($marks['srv'], static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind));
+        $this->assertCount(4, \array_filter($marks['net'], static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind));
         $this->assertNotEquals($marks['db'][1]->points, $marks['disk'][1]->points);
-        $this->assertCount(1, \array_filter($marks['missing'], static fn (MermaidMark $mark): bool => '?' === $mark->text));
+        $this->assertCount(1, \array_filter($marks['missing'], static fn (Mark $mark): bool => '?' === $mark->text));
     }
 
     #[DataProvider('fixtures')]

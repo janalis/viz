@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Layout\Curve\Curve;
+use Janalis\Viz\Layout\Curve\Curves;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\FlowchartParser;
-use Janalis\Viz\Mermaid\MermaidCurve;
-use Janalis\Viz\Mermaid\MermaidCurves;
 use Janalis\Viz\Mermaid\MermaidLexer;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
@@ -25,7 +25,7 @@ final class FlowchartCurvesTest extends TestCase
     #[DataProvider('reference')]
     public function testSamplesMatchD3ShapeAndThePinnedRoundedCorners(string $curve, array $points, array $expected): void
     {
-        $sampled = MermaidCurves::path($points, MermaidCurve::from($curve))->points;
+        $sampled = Curves::path($points, Curve::from($curve))->points;
         $this->assertCount(\count($expected), $sampled);
         foreach ($expected as $index => [$x, $y]) {
             $this->assertEqualsWithDelta($x, $sampled[$index][0], delta: 1e-9);
@@ -190,7 +190,7 @@ final class FlowchartCurvesTest extends TestCase
         $this->assertEqualsWithDelta($horizontal ? $d->y : $d->x, $edge->points[5][1 - $axis], delta: 1e-9);
         // The lane sits one unit inside its two-unit reservation, after the rank's ordinary node gap.
         $this->assertEqualsWithDelta(($horizontal ? $b->y + ($b->h / 2) : $b->x + ($b->w / 2)) + 7, $edge->points[1][1 - $axis], delta: 1e-9);
-        foreach (MermaidCurves::path($edge->points, MermaidCurve::Linear)->points as $point) {
+        foreach (Curves::path($edge->points, Curve::Linear)->points as $point) {
             foreach ([$b, $c] as $node) {
                 $inside = \abs($point[0] - $node->x) < ($node->w / 2) && \abs($point[1] - $node->y) < ($node->h / 2);
                 $this->assertFalse($inside, 'The reserved lane crosses '.$node->name);
@@ -233,7 +233,7 @@ final class FlowchartCurvesTest extends TestCase
         $this->assertSame([$horizontal ? $b->y : $b->x, $horizontal ? $b->y : $b->x], [$points[2][$cross], $points[3][$cross]]);
         $this->assertSame($points[1][1 - $cross], $points[2][1 - $cross]);
         $rounded = NativeFixtureScene::render($body)->graph->edges[0]->points;
-        $this->assertSame(MermaidCurves::path([$points[0], $points[1], $points[2], $linear->graph->edges[0]->arrowTip ?? $points[3]], MermaidCurve::Rounded)->points[1], $rounded[1]);
+        $this->assertSame(Curves::path([$points[0], $points[1], $points[2], $linear->graph->edges[0]->arrowTip ?? $points[3]], Curve::Rounded)->points[1], $rounded[1]);
         $this->assertGreaterThan(4, \count($rounded));
         $this->assertSame($rounded, NativeFixtureScene::render($body."\nlinkStyle 0 interpolate rounded")->graph->edges[0]->points);
         $this->assertNotSame($rounded, NativeFixtureScene::render($body."\nlinkStyle 0 interpolate stepBefore")->graph->edges[0]->points);

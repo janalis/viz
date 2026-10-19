@@ -33,13 +33,13 @@ final class Font
     {
         $bytes = \is_file($this->source) ? (string) \file_get_contents($this->source) : '';
         if ('' === $bytes) {
-            throw new \InvalidArgumentException('Cannot read the bundled Mermaid font');
+            throw new \InvalidArgumentException('Cannot read the bundled font');
         }
         try {
             $this->temporary = $this->files->tempnam(\sys_get_temp_dir(), prefix: 'viz-mermaid-font-');
             $this->files->dumpFile($this->temporary, $bytes);
         } catch (IOExceptionInterface $exception) {
-            throw new \InvalidArgumentException('Cannot prepare the bundled Mermaid font: '.$exception->getMessage(), previous: $exception);
+            throw new \InvalidArgumentException('Cannot prepare the bundled font: '.$exception->getMessage(), previous: $exception);
         }
 
         return $this->temporary;

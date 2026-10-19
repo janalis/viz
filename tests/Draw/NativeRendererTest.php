@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Tests\Mermaid;
+namespace Janalis\Viz\Tests\Draw;
 
+use Janalis\Viz\Draw\NativeRenderer;
 use Janalis\Viz\Mermaid\MermaidPipeline;
-use Janalis\Viz\Mermaid\MermaidRenderer;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Render\RenderFailure;
@@ -13,11 +13,11 @@ use Janalis\Viz\Render\RenderOptions;
 use Janalis\Viz\Render\Work;
 use PHPUnit\Framework\TestCase;
 
-final class MermaidRendererTest extends TestCase
+final class NativeRendererTest extends TestCase
 {
     public function testEveryFormatIsDrawnNatively(): void
     {
-        $renderer = new MermaidRenderer();
+        $renderer = self::mermaid();
 
         $this->assertStringStartsWith('<svg', $renderer->render("flowchart LR\n a-->b", Format::Svg)->bytes);
         $this->assertStringStartsWith("\x89PNG", $renderer->render("flowchart LR\n a-->b", Format::Png)->bytes);
@@ -29,8 +29,8 @@ final class MermaidRendererTest extends TestCase
 
     public function testTheResolutionScalesTheBitmapFromTheBrowsersDpi(): void
     {
-        $natural = \getimagesizefromstring(new MermaidRenderer()->render("flowchart LR\n a-->b", Format::Png)->bytes);
-        $double = \getimagesizefromstring(new MermaidRenderer()->render("flowchart LR\n a-->b", Format::Png, new RenderOptions(dpi: 192))->bytes);
+        $natural = \getimagesizefromstring(self::mermaid()->render("flowchart LR\n a-->b", Format::Png)->bytes);
+        $double = \getimagesizefromstring(self::mermaid()->render("flowchart LR\n a-->b", Format::Png, new RenderOptions(dpi: 192))->bytes);
 
         $this->assertIsArray($natural);
         $this->assertIsArray($double);
@@ -39,7 +39,7 @@ final class MermaidRendererTest extends TestCase
 
     public function testThePixelBudgetCapsTheBitmap(): void
     {
-        $size = \getimagesizefromstring(new MermaidRenderer()->render("flowchart LR\n a-->b", Format::Png, new RenderOptions(maxPixels: 10_000))->bytes);
+        $size = \getimagesizefromstring(self::mermaid()->render("flowchart LR\n a-->b", Format::Png, new RenderOptions(maxPixels: 10_000))->bytes);
 
         $this->assertIsArray($size);
         $this->assertLessThanOrEqual(10_000, $size[0] * $size[1]);
@@ -48,7 +48,7 @@ final class MermaidRendererTest extends TestCase
     public function testASyntaxErrorIsARenderFailureWithItsLocation(): void
     {
         try {
-            new MermaidRenderer()->render("flowchart LR\n a-->", Format::Svg);
+            self::mermaid()->render("flowchart LR\n a-->", Format::Svg);
             $this->fail('Expected a failure');
         } catch (RenderFailure $failure) {
             $this->assertStringStartsWith('Line 2', $failure->getMessage());
@@ -60,7 +60,7 @@ final class MermaidRendererTest extends TestCase
     {
         $this->expectException(RenderFailure::class);
 
-        new MermaidRenderer()->render("---\nconfig:\n  theme: base\n  themeVariables:\n    primaryColor: notacolor\n---\nflowchart LR\n a-->b", Format::Svg);
+        self::mermaid()->render("---\nconfig:\n  theme: base\n  themeVariables:\n    primaryColor: notacolor\n---\nflowchart LR\n a-->b", Format::Svg);
     }
 
     public function testThePipelineStepsYieldAndRunToTheSameImage(): void
@@ -74,16 +74,17 @@ final class MermaidRendererTest extends TestCase
         }
 
         $this->assertGreaterThan(1, $steps);
-        $this->assertSame(Work::run($pipeline->export("flowchart LR\n a-->b", Format::Svg)), $work->getReturn());
+        $this->assertSame(Work::run(new NativeRenderer($pipeline)->image("flowchart LR\n a-->b", Format::Svg)), $work->getReturn());
+        $this->assertSame(self::mermaid()->render("flowchart LR\n a-->b", Format::Svg)->bytes, $work->getReturn());
     }
 
     public function testAnUndrawableBitmapIsARenderFailure(): void
     {
         try {
-            new MermaidRenderer()->render("flowchart LR\n a-->b", Format::Png, new RenderOptions(maxPixels: 0));
+            self::mermaid()->render("flowchart LR\n a-->b", Format::Png, new RenderOptions(maxPixels: 0));
             $this->fail('Expected a failure');
         } catch (RenderFailure $failure) {
-            $this->assertSame('Invalid Mermaid raster dimensions', $failure->getMessage());
+            $this->assertSame('Invalid raster dimensions', $failure->getMessage());
             $this->assertInstanceOf(\InvalidArgumentException::class, $failure->getPrevious());
         }
     }
@@ -96,5 +97,20 @@ final class MermaidRendererTest extends TestCase
         $default = $scene('');
         $this->assertSame($height($default), $height($scene("config:\n  flowchart:\n    curve: basis\n")), 'a flowchart section without the margin keeps the default');
         $this->assertEqualsWithDelta(1.0, $height($default) - $height($scene("config:\n  flowchart:\n    titleTopMargin: 0\n")), delta: 1.0e-9);
+    }
+
+    public function testTheWholeRenderYieldsBetweenSteps(): void
+    {
+        $steps = 0;
+        foreach (self::mermaid()->image("flowchart LR\n a-->b", Format::Svg) as $_) {
+            ++$steps;
+        }
+
+        $this->assertGreaterThan(1, $steps);
+    }
+
+    private static function mermaid(): NativeRenderer
+    {
+        return new NativeRenderer(new MermaidPipeline());
     }
 }

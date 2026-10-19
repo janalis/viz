@@ -6,6 +6,8 @@ Breaking: shared code moves out of the Mermaid and Graphviz namespaces.
 
 - `Diagram\{Graph, Node, Edge, Cluster, Shape, ArrowHead}` become `Model\Graph\*`; `Diagram\Direction` and `Diagram\LineStyle` become `Model\Direction` and `Model\LineStyle`.
 - `Layout\GraphFont` becomes `Text\FontFace`; `Mermaid\MermaidFont`, `MermaidFontCoverage`, `MermaidFallbackFonts` and `MermaidWrap` become `Text\Font`, `FontCoverage`, `FallbackFonts` and `Wrap`.
+- Drawing is language-neutral: `Mermaid\MermaidDrawing` and `MermaidMark` become `Draw\Drawing` and `Draw\Mark`, whose `kind` is the `Draw\MarkKind` enum; `MermaidSvg`, `MermaidPng` and `MermaidPdf` become `Draw\SvgBackend`, `PngBackend` and `PdfBackend`; the rough look moves to `Draw\Sketch` and the curves to `Layout\Curve`. `MermaidDrawing::scene()` and `::graph()` become `Mermaid\MermaidPainter`.
+- `Mermaid\MermaidRenderer` gives way to `Draw\NativeRenderer`, which draws any `Draw\Pipeline`; `MermaidPipeline::export()` becomes `NativeRenderer::image()`.
 - `GraphViz\DotColor` becomes `Color\ColorValue`; `Mermaid\CssColorNames` becomes `Color\CssColorNames`.
 
 ## 0.1.1 — 2026-10-19

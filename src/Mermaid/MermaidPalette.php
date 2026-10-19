@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Sketch\Sketch;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
@@ -151,9 +152,9 @@ final readonly class MermaidPalette
     }
 
     /** The hand-drawn look, for the families whose pinned renderers draw with roughjs. */
-    public function sketch(): ?MermaidSketch
+    public function sketch(): ?Sketch
     {
-        return 'handDrawn' === $this->appearance->look && $this->roles->rough ? new MermaidSketch($this->appearance->seed) : null;
+        return 'handDrawn' === $this->appearance->look && $this->roles->rough ? new Sketch($this->appearance->seed) : null;
     }
 
     /**

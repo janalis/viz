@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 
 /** Relative shape geometry survives front-matter titles, translation and viewport resizing. */
 final class VennSymbols
 {
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function marks(GraphNode $node, string $shape): array
     {
         /** @var array{string, numeric-string, numeric-string, string} $parts Generated shape payload: tag, alpha, alpha/visibility, optional polygon. */
@@ -18,8 +20,8 @@ final class VennSymbols
             $lines = '0' === $parts[2] ? [] : \explode("\n", $node->label);
             $marks = [];
             foreach ($lines as $index => $line) {
-                $marks[] = new MermaidMark(
-                    'text',
+                $marks[] = new Mark(
+                    MarkKind::Text,
                     [[$node->x, $node->y + (2 * $index) - (\count($lines) - 1) + 0.5]],
                     $line,
                     stroke: VennColor::alpha($node->textColor ?? '#263238', (float) $parts[1]),
@@ -36,8 +38,8 @@ final class VennSymbols
             $points = \array_map(static fn (array $point): array => [$node->x + $point[0], $node->y + $point[1]], $relative);
         }
 
-        return [new MermaidMark(
-            'polygon',
+        return [new Mark(
+            MarkKind::Polygon,
             $points,
             stroke: VennColor::alpha($node->color ?? 'none', (float) $parts[2]),
             fill: $node->fillColor ?? 'none',

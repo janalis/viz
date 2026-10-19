@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Runs;
+use Janalis\Viz\Draw\Sketch\Sketch;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
@@ -11,22 +16,14 @@ use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
 use Janalis\Viz\Text\FontFace;
 
-/** The same ordered drawing operations feed SVG export and GD rasterization. */
-final readonly class MermaidDrawing
+/** Paints a laid-out graph in Mermaid's shapes and looks, as one ordered display list. */
+final class MermaidPainter
 {
-    /** @param list<MermaidMark> $marks */
-    public function __construct(
-        public float $width,
-        public float $height,
-        public array $marks,
-        public ?string $background = null,
-    ) {}
-
     /**
      * A themed scene: unstyled elements take the family's theme roles, the neo look adds the
      * theme's drop shadow beneath filled nodes and frames, and the hand-drawn look sketches them.
      *
-     * @return \Generator<int, null, mixed, self>
+     * @return \Generator<int, null, mixed, Drawing>
      */
     public static function scene(MermaidScene $scene): \Generator
     {
@@ -52,8 +49,8 @@ final readonly class MermaidDrawing
      * @param array<int, string> $shapes
      * @param array{float, float, string}|null $shadow pixel offsets and color beneath filled outlines
      * @param array<string, list<list<array{string, FontFace}>>> $runs styled Markdown labels by element
-     * @param ?MermaidSketch $sketch the hand-drawn look, which roughens outlines, frames and edges
-     * @return \Generator<int, null, mixed, self>
+     * @param ?Sketch $sketch the hand-drawn look, which roughens outlines, frames and edges
+     * @return \Generator<int, null, mixed, Drawing>
      */
     // @mago-expect lint:no-boolean-flag-parameter -- Whether frames cast the node shadow is the one fact a family's neo styles change.
     public static function graph(
@@ -64,7 +61,7 @@ final readonly class MermaidDrawing
         ?array $shadow = null,
         bool $frameShadows = true,
         array $runs = [],
-        ?MermaidSketch $sketch = null,
+        ?Sketch $sketch = null,
     ): \Generator {
         $marks = [];
         foreach ($graph->clusters as $clusterIndex => $cluster) {
@@ -88,20 +85,20 @@ final readonly class MermaidDrawing
             yield null;
         }
         foreach ($graph->edges as $edge) {
-            $line = new MermaidMark('polyline', $edge->points, stroke: $edge->color ?? '#333333', dashed: $edge->dashed, strokeWidth: $edge->strokeWidth, dashes: $edge->dashes);
+            $line = new Mark(MarkKind::Polyline, $edge->points, stroke: $edge->color ?? '#333333', dashed: $edge->dashed, strokeWidth: $edge->strokeWidth, dashes: $edge->dashes);
             \array_push(
                 $marks,
                 ...null === $edge->ribbon
                     ? $sketch?->edge($line) ?? [$line]
-                    : [new MermaidMark('polygon', $edge->ribbon, fill: $edge->color ?? '#333333', strokeWidth: 0.0, gradient: $edge->gradient)],
+                    : [new Mark(MarkKind::Polygon, $edge->ribbon, fill: $edge->color ?? '#333333', strokeWidth: 0.0, gradient: $edge->gradient)],
             );
             if (null !== $edge->arrowTip && \count($edge->points) >= 2) {
                 $previous = $edge->points[\count($edge->points) - 2];
                 $angle = \atan2($edge->arrowTip[1] - $previous[1], $edge->arrowTip[0] - $previous[0]);
                 $baseX = $edge->arrowTip[0] - (0.9 * \cos($angle));
                 $baseY = $edge->arrowTip[1] - (0.9 * \sin($angle));
-                $marks[] = new MermaidMark(
-                    'polygon',
+                $marks[] = new Mark(
+                    MarkKind::Polygon,
                     [$edge->arrowTip, [$baseX - (0.4 * \sin($angle)), $baseY + (0.4 * \cos($angle))], [$baseX + (0.4 * \sin($angle)), $baseY - (0.4 * \cos($angle))]],
                     fill: $edge->color ?? '#333333',
                 );
@@ -121,13 +118,13 @@ final readonly class MermaidDrawing
             yield null;
         }
 
-        return new self(\max(1.0, $graph->width), \max(1.0, $graph->height), $marks, $background);
+        return new Drawing(\max(1.0, $graph->width), \max(1.0, $graph->height), $marks, $background);
     }
 
     /**
      * @param array{float, float} $position
      * @param ?list<list<array{string, FontFace}>> $runs
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     private static function caption(GraphEdge $edge, array $position, string $background, ?array $runs): array
     {
@@ -137,8 +134,8 @@ final readonly class MermaidDrawing
         $halfWidth = ((\max(\array_map(DisplayWidth::of(...), $lines)) * $fontScale) / 2) + 0.6;
         [$x, $y] = $position;
         $halfHeight = \count($lines) * $fontScale;
-        $marks = [new MermaidMark(
-            'polygon',
+        $marks = [new Mark(
+            MarkKind::Polygon,
             [[$x - $halfWidth, $y - $halfHeight], [$x + $halfWidth, $y - $halfHeight], [$x + $halfWidth, $y + $halfHeight], [$x - $halfWidth, $y + $halfHeight]],
             fill: $background,
             strokeWidth: 0.0,
@@ -166,19 +163,19 @@ final readonly class MermaidDrawing
      * face sharing the same advance.
      *
      * @param list<array{string, FontFace}> $runs
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     private static function text(array $runs, float $x, float $y, string $color, float $fontScale): array
     {
-        return MermaidRuns::centered($runs, $x, $y, $color, $fontScale);
+        return Runs::centered($runs, $x, $y, $color, $fontScale);
     }
 
     /**
      * @param array{float, float, string}|null $shadow
      * @param ?list<list<array{string, FontFace}>> $runs
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
-    private static function node(GraphNode $node, string $shape, ?array $shadow, ?array $runs, ?MermaidSketch $sketch): array
+    private static function node(GraphNode $node, string $shape, ?array $shadow, ?array $runs, ?Sketch $sketch): array
     {
         $marks = match (true) {
             \str_starts_with($shape, 'kanban-card:') => KanbanCards::marks($node, $shape, $runs),
@@ -188,7 +185,7 @@ final readonly class MermaidDrawing
         if (null !== $sketch) {
             $marks = \array_merge(...\array_map($sketch->shape(...), $marks));
         }
-        if (null !== $shadow && [] !== $marks && 'polygon' === $marks[0]->kind && 'none' !== $marks[0]->fill) {
+        if (null !== $shadow && [] !== $marks && MarkKind::Polygon === $marks[0]->kind && 'none' !== $marks[0]->fill) {
             \array_unshift($marks, self::shadow($marks[0], $shadow));
         }
         $canonical = MermaidOutline::canonical($shape);
@@ -238,19 +235,19 @@ final readonly class MermaidDrawing
     /**
      * Text marks turned rigidly about a point.
      *
-     * @param list<MermaidMark> $texts
-     * @return list<MermaidMark>
+     * @param list<Mark> $texts
+     * @return list<Mark>
      */
     private static function turned(array $texts, float $angle, float $x, float $y): array
     {
         $radians = \deg2rad($angle);
         [$cos, $sin] = [\cos($radians), \sin($radians)];
 
-        return \array_map(static function (MermaidMark $mark) use ($cos, $sin, $x, $y, $angle): MermaidMark {
+        return \array_map(static function (Mark $mark) use ($cos, $sin, $x, $y, $angle): Mark {
             [$px, $py] = $mark->points[0];
 
-            return new MermaidMark(
-                'text',
+            return new Mark(
+                MarkKind::Text,
                 [[$x + (($px - $x) * $cos) - (($py - $y) * $sin), $y + (($px - $x) * $sin) + (($py - $y) * $cos)]],
                 $mark->text,
                 $mark->stroke,
@@ -262,12 +259,12 @@ final readonly class MermaidDrawing
     }
 
     /** @param array{float, float, string} $shadow pixel offsets at ten pixels per scene unit */
-    private static function shadow(MermaidMark $outline, array $shadow): MermaidMark
+    private static function shadow(Mark $outline, array $shadow): Mark
     {
         [$dx, $dy, $color] = $shadow;
 
-        return new MermaidMark(
-            'polygon',
+        return new Mark(
+            MarkKind::Polygon,
             \array_map(static fn (array $point): array => [$point[0] + ($dx / 10), $point[1] + ($dy / 10)], $outline->points),
             stroke: $color,
             fill: $color,
@@ -275,10 +272,10 @@ final readonly class MermaidDrawing
         );
     }
 
-    private static function box(GraphCluster $cluster): MermaidMark
+    private static function box(GraphCluster $cluster): Mark
     {
-        return new MermaidMark(
-            'polygon',
+        return new Mark(
+            MarkKind::Polygon,
             [[$cluster->x0, $cluster->y0], [$cluster->x1, $cluster->y0], [$cluster->x1, $cluster->y1], [$cluster->x0, $cluster->y1]],
             stroke: $cluster->color ?? '#333333',
             fill: $cluster->fillColor ?? '#f5f5f5',

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Draw\Sketch;
 
 /**
  * roughjs 4.6.6 (MIT; resources/licenses/roughjs.txt), as the pinned hand-drawn look calls it:
@@ -11,7 +11,7 @@ namespace Janalis\Viz\Mermaid;
  *
  * Operations are lists of numbers: a move holds two, a cubic curve six.
  */
-final readonly class MermaidRough
+final readonly class Rough
 {
     /** Pinned `hachureGap: 1.5`, which roughjs rounds to whole pixels. */
     private const int GAP = 2;
@@ -34,7 +34,7 @@ final readonly class MermaidRough
      */
     public function polygon(array $points): array
     {
-        $random = new MermaidRoughRandom($this->seed);
+        $random = new RoughRandom($this->seed);
         $outline = $this->path([...$points, $points[0]], $random);
         $fill = [];
         foreach (self::hachure($points) as [[$x1, $y1], [$x2, $y2]]) {
@@ -52,7 +52,7 @@ final readonly class MermaidRough
      */
     public function line(array $points): array
     {
-        return $this->path($points, new MermaidRoughRandom($this->seed));
+        return $this->path($points, new RoughRandom($this->seed));
     }
 
     /**
@@ -101,7 +101,7 @@ final readonly class MermaidRough
      * @param list<array{float, float}> $points
      * @return list<list<float>>
      */
-    private function path(array $points, MermaidRoughRandom $random): array
+    private function path(array $points, RoughRandom $random): array
     {
         $count = \count($points);
         $operations = [];
@@ -117,7 +117,7 @@ final readonly class MermaidRough
      *
      * @return list<list<float>>
      */
-    private function doubled(float $x1, float $y1, float $x2, float $y2, MermaidRoughRandom $random): array
+    private function doubled(float $x1, float $y1, float $x2, float $y2, RoughRandom $random): array
     {
         return [...$this->stroke($x1, $y1, $x2, $y2, $random, overlay: false), ...$this->stroke($x1, $y1, $x2, $y2, $random, overlay: true)];
     }
@@ -129,7 +129,7 @@ final readonly class MermaidRough
      * @return list<list<float>>
      */
     // @mago-expect lint:no-boolean-flag-parameter -- The overlay pass is roughjs's own second argument; both passes share every other step.
-    private function stroke(float $x1, float $y1, float $x2, float $y2, MermaidRoughRandom $random, bool $overlay): array
+    private function stroke(float $x1, float $y1, float $x2, float $y2, RoughRandom $random, bool $overlay): array
     {
         $squared = ($x1 - $x2) ** 2 + ($y1 - $y2) ** 2;
         $length = \sqrt($squared);
@@ -159,7 +159,7 @@ final readonly class MermaidRough
     }
 
     /** roughjs `_offsetOpt`: a uniform offset in ±range, scaled by roughness. */
-    private function offset(float $range, MermaidRoughRandom $random, float $damping): float
+    private function offset(float $range, RoughRandom $random, float $damping): float
     {
         return $this->roughness * $damping * (($random->next() * ($range - -$range)) + -$range);
     }

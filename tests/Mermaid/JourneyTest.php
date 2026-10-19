@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\JourneyDiagram;
 use Janalis\Viz\Mermaid\JourneyFaces;
 use Janalis\Viz\Mermaid\JourneyLayout;
 use Janalis\Viz\Mermaid\JourneyLexer;
 use Janalis\Viz\Mermaid\JourneyParser;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -68,7 +68,7 @@ final class JourneyTest extends TestCase
     public function testFacesSmileFrownOrLevelAsPinned(): void
     {
         $node = new GraphNode(0, 'face', '', 10.0, 10.0, 3.0, 3.0, '#999999', '#ffffff', dashed: false);
-        $mouth = static fn (float $score): MermaidMark => \array_last(JourneyFaces::marks($node, JourneyFaces::shape($score)));
+        $mouth = static fn (float $score): Mark => \array_last(JourneyFaces::marks($node, JourneyFaces::shape($score)));
         $this->assertCount(4, JourneyFaces::marks($node, JourneyFaces::shape(5.0)), 'a face, two eyes and a mouth');
         // The smile's middle hangs below its ends; the frown's rises above them; 3 is level.
         $smile = $mouth(4.0)->points;

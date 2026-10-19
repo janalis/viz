@@ -4,21 +4,23 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
+use Janalis\Viz\Draw\SvgBackend;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
-use Janalis\Viz\Mermaid\MermaidSvg;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use PHPUnit\Framework\TestCase;
 
-final class MermaidDrawingTest extends TestCase
+final class MermaidPainterTest extends TestCase
 {
-    private static function drawing(): MermaidDrawing
+    private static function drawing(): Drawing
     {
-        $work = MermaidDrawing::graph(
+        $work = MermaidPainter::graph(
             new GraphLayout(
                 30,
                 20,
@@ -42,10 +44,10 @@ final class MermaidDrawingTest extends TestCase
     public function testRelationshipCaptionsMaskConnectorsAndSplitIntoBaselines(): void
     {
         $edge = new GraphEdge(0, 1, [[1.0, 10.0], [29.0, 10.0]], null, 1, 10, 29, 10, null, "owns\n日本", [15.0, 10.0], dashed: false);
-        $work = MermaidDrawing::graph(new GraphLayout(30, 20, [], [$edge], []));
+        $work = MermaidPainter::graph(new GraphLayout(30, 20, [], [$edge], []));
         \iterator_to_array($work);
         $marks = $work->getReturn()->marks;
-        $this->assertSame(['polyline', 'polygon', 'text', 'text'], \array_column($marks, 'kind'));
+        $this->assertSame(['polyline', 'polygon', 'text', 'text'], \array_column(\array_column($marks, 'kind'), 'value'));
         $this->assertSame('#ffffff', $marks[1]->fill);
         $this->assertSame(0.0, $marks[1]->strokeWidth);
         $this->assertSame([[12.4, 8.0], [17.6, 8.0], [17.6, 12.0], [12.4, 12.0]], $marks[1]->points);
@@ -57,18 +59,18 @@ final class MermaidDrawingTest extends TestCase
     public function testEmptyEdgeLabelsDoNotEraseConnectors(): void
     {
         $edge = new GraphEdge(0, 1, [[1.0, 10.0], [29.0, 10.0]], null, 1, 10, 29, 10, null, '', [15.0, 10.0], dashed: false);
-        $work = MermaidDrawing::graph(new GraphLayout(30, 20, [], [$edge], []));
+        $work = MermaidPainter::graph(new GraphLayout(30, 20, [], [$edge], []));
         \iterator_to_array($work);
-        $this->assertSame(['polyline'], \array_column($work->getReturn()->marks, 'kind'));
+        $this->assertSame(['polyline'], \array_column(\array_column($work->getReturn()->marks, 'kind'), 'value'));
     }
 
     public function testRasterStrokeNonePreservesFillsAndOmitsLines(): void
     {
-        $drawing = new MermaidDrawing(12, 12, [
-            new MermaidMark('polygon', [[2.0, 2.0], [10.0, 2.0], [10.0, 10.0], [2.0, 10.0]], stroke: 'none', fill: '#12ef34'),
-            new MermaidMark('polyline', [[0.0, 0.0], [12.0, 12.0]], stroke: 'none'),
+        $drawing = new Drawing(12, 12, [
+            new Mark(MarkKind::Polygon, [[2.0, 2.0], [10.0, 2.0], [10.0, 10.0], [2.0, 10.0]], stroke: 'none', fill: '#12ef34'),
+            new Mark(MarkKind::Polyline, [[0.0, 0.0], [12.0, 12.0]], stroke: 'none'),
         ]);
-        $work = new MermaidPng()->render($drawing);
+        $work = new PngBackend()->render($drawing);
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $image);
@@ -81,14 +83,14 @@ final class MermaidDrawingTest extends TestCase
         $drawing = self::drawing();
         $this->assertSame(30.0, $drawing->width);
         $this->assertSame(20.0, $drawing->height);
-        $this->assertSame('polygon', $drawing->marks[0]->kind);
+        $this->assertSame('polygon', $drawing->marks[0]->kind->value);
         $this->assertSame('#f5f5f5', $drawing->marks[0]->fill);
         $this->assertSame('Group', $drawing->marks[1]->text);
         $this->assertSame('#abcdef', $drawing->marks[2]->fill, 'background nodes paint before edges');
-        $this->assertSame('polyline', $drawing->marks[4]->kind);
+        $this->assertSame('polyline', $drawing->marks[4]->kind->value);
         $this->assertSame([[18.0, 10.0], [17.1, 10.4], [17.1, 9.6]], $drawing->marks[5]->points);
         $this->assertSame('edge', \array_last($drawing->marks)->text);
-        $work = MermaidSvg::render($drawing);
+        $work = SvgBackend::render($drawing);
         \iterator_to_array($work);
         $svg = $work->getReturn();
         $dom = new \DOMDocument();
@@ -103,7 +105,7 @@ final class MermaidDrawingTest extends TestCase
         $this->assertStringContainsString('SIL OPEN FONT LICENSE', $svg);
         $this->assertStringContainsString('stroke-dasharray=', $svg);
         $this->assertStringContainsString('fill="none"', $svg);
-        $work = MermaidDrawing::graph(new GraphLayout(0, 0, [], [], []));
+        $work = MermaidPainter::graph(new GraphLayout(0, 0, [], [], []));
         \iterator_to_array($work);
         $this->assertSame(1.0, $work->getReturn()->width);
         $this->assertSame(1.0, $work->getReturn()->height);
@@ -111,7 +113,7 @@ final class MermaidDrawingTest extends TestCase
 
     public function testRasterColorsGeometryTextAndResolutionCap(): void
     {
-        $work = new MermaidPng()->render(self::drawing());
+        $work = new PngBackend()->render(self::drawing());
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $image);
@@ -120,14 +122,14 @@ final class MermaidDrawingTest extends TestCase
         $this->assertSame(0xab_cdef, \imagecolorat($image, x: 20, y: 20));
         $this->assertSame(0xec_ecff, \imagecolorat($image, x: 200, y: 80));
         $this->assertSame(0xff_0000, \imagecolorat($image, x: 150, y: 100));
-        foreach ([new MermaidDrawing(20, 20, []), new MermaidDrawing(1.0e9, 1, [])] as $drawing) {
-            $work = new MermaidPng(maxPixels: 100)->render($drawing, dpi: 192);
+        foreach ([new Drawing(20, 20, []), new Drawing(1.0e9, 1, [])] as $drawing) {
+            $work = new PngBackend(maxPixels: 100)->render($drawing, dpi: 192);
             \iterator_to_array($work);
             $image = \imagecreatefromstring($work->getReturn());
             $this->assertInstanceOf(\GdImage::class, $image);
             $this->assertLessThanOrEqual(100, \imagesx($image) * \imagesy($image));
         }
-        $work = new MermaidPng()->render(new MermaidDrawing(1, 1, [new MermaidMark('polyline', [[0.0, 0.0]])]));
+        $work = new PngBackend()->render(new Drawing(1, 1, [new Mark(MarkKind::Polyline, [[0.0, 0.0]])]));
         \iterator_to_array($work);
         $this->assertStringStartsWith("\x89PNG", $work->getReturn());
     }
@@ -135,11 +137,11 @@ final class MermaidDrawingTest extends TestCase
     public function testMissingGdAndInvalidDimensionsAreReported(): void
     {
         foreach ([
-            [new MermaidPng(gdAvailable: false), new MermaidDrawing(1, 1, []), 96, 'GD extension'],
-            [new MermaidPng(), new MermaidDrawing(0, 1, []), 96, 'raster dimensions'],
-            [new MermaidPng(), new MermaidDrawing(1, \INF, []), 96, 'raster dimensions'],
-            [new MermaidPng(), new MermaidDrawing(1, 1, []), 0, 'raster dimensions'],
-            [new MermaidPng(maxPixels: 0), new MermaidDrawing(1, 1, []), 96, 'raster dimensions'],
+            [new PngBackend(gdAvailable: false), new Drawing(1, 1, []), 96, 'GD extension'],
+            [new PngBackend(), new Drawing(0, 1, []), 96, 'raster dimensions'],
+            [new PngBackend(), new Drawing(1, \INF, []), 96, 'raster dimensions'],
+            [new PngBackend(), new Drawing(1, 1, []), 0, 'raster dimensions'],
+            [new PngBackend(maxPixels: 0), new Drawing(1, 1, []), 96, 'raster dimensions'],
         ] as [$backend, $drawing, $dpi, $message]) {
             try {
                 \iterator_to_array($backend->render($drawing, $dpi));

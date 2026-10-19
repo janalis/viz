@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Draw\Sketch;
 
 /**
  * The roughjs `Random` generator: Park–Miller's multiplier over JavaScript `Math.imul`, so a
  * seed draws the same sequence the pinned browser does. Only the low 32 bits of the state
  * matter, so they are all it keeps.
  */
-final class MermaidRoughRandom
+final class RoughRandom
 {
     public function __construct(
         private int $state,

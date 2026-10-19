@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidRough;
-use Janalis\Viz\Mermaid\MermaidSketch;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Sketch\Rough;
+use Janalis\Viz\Draw\Sketch\Sketch;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use PHPUnit\Framework\TestCase;
 
 /** The pinned `look: handDrawn`: roughjs strokes and hachure in pictures, classic cells. */
@@ -20,20 +21,20 @@ final class MermaidHandDrawnTest extends TestCase
         $classic = self::marks(self::FLOWCHART);
         $sketched = self::marks(self::handDrawn(self::FLOWCHART, seed: 1));
         $this->assertEquals(self::texts($classic), self::texts($sketched), 'labels stay where they were');
-        $polygons = \array_filter($sketched, static fn (MermaidMark $mark): bool => 'polygon' === $mark->kind);
-        $tips = \array_filter($classic, static fn (MermaidMark $mark): bool => 'polygon' === $mark->kind && 3 === \count($mark->points));
-        $this->assertEquals(\array_values($tips), \array_values(\array_filter($polygons, static fn (MermaidMark $mark): bool => 3 === \count($mark->points))), 'arrow tips stay crisp');
-        $this->assertCount(\count($tips), \array_filter($polygons, static fn (MermaidMark $mark): bool => '#ffffff' !== $mark->fill), 'only tips and label boxes stay polygons');
+        $polygons = \array_filter($sketched, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind);
+        $tips = \array_filter($classic, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 3 === \count($mark->points));
+        $this->assertEquals(\array_values($tips), \array_values(\array_filter($polygons, static fn (Mark $mark): bool => 3 === \count($mark->points))), 'arrow tips stay crisp');
+        $this->assertCount(\count($tips), \array_filter($polygons, static fn (Mark $mark): bool => '#ffffff' !== $mark->fill), 'only tips and label boxes stay polygons');
         $widths = \array_count_values(\array_map(
-            static fn (MermaidMark $mark): string => (string) $mark->strokeWidth,
-            \array_filter($sketched, static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind),
+            static fn (Mark $mark): string => (string) $mark->strokeWidth,
+            \array_filter($sketched, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind),
         ));
         $this->assertArrayHasKey('0.13', $widths, 'outlines are 1.3px');
         $this->assertArrayHasKey('0.15', $widths, 'node hachure is 1.5px');
         $this->assertArrayHasKey('0.3', $widths, 'frame hachure is 3px');
-        $dashed = \array_filter($sketched, static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind && $mark->dashed);
-        $dotted = \array_find($classic, static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind && $mark->dashed);
-        $this->assertInstanceOf(MermaidMark::class, $dotted);
+        $dashed = \array_filter($sketched, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && $mark->dashed);
+        $dotted = \array_find($classic, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && $mark->dashed);
+        $this->assertInstanceOf(Mark::class, $dotted);
         $this->assertCount(2 * (\count($dotted->points) - 1), $dashed, 'each segment of the dotted edge is stroked twice');
         $this->assertGreaterThan(\count($classic) * 5, \count($sketched));
     }
@@ -63,37 +64,37 @@ final class MermaidHandDrawnTest extends TestCase
 
     public function testSketchFillsOnlyVisibleColorsAndStrokesOnlyDrawnOutlines(): void
     {
-        $sketch = new MermaidSketch(seed: 7);
+        $sketch = new Sketch(seed: 7);
         $square = [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0], [0.0, 4.0]];
-        $marks = $sketch->shape(new MermaidMark('polygon', $square, stroke: '#112233', fill: '#445566', dashed: true, strokeWidth: 0.4, fillOpacity: 0.5, opacity: 0.8));
-        $hachure = \array_filter($marks, static fn (MermaidMark $mark): bool => '#445566' === $mark->stroke);
-        $outline = \array_filter($marks, static fn (MermaidMark $mark): bool => '#112233' === $mark->stroke);
+        $marks = $sketch->shape(new Mark(MarkKind::Polygon, $square, stroke: '#112233', fill: '#445566', dashed: true, strokeWidth: 0.4, fillOpacity: 0.5, opacity: 0.8));
+        $hachure = \array_filter($marks, static fn (Mark $mark): bool => '#445566' === $mark->stroke);
+        $outline = \array_filter($marks, static fn (Mark $mark): bool => '#112233' === $mark->stroke);
         $this->assertCount(\count($marks), [...$hachure, ...$outline]);
         $this->assertGreaterThan(20, \count($hachure));
         $this->assertCount(8, $outline, 'four sides, each stroked twice, each stroke one polyline');
         foreach ($hachure as $mark) {
-            $this->assertSame([0.15, 0.4, false, 'polyline'], [$mark->strokeWidth, $mark->opacity, $mark->dashed, $mark->kind]);
+            $this->assertSame([0.15, 0.4, false, 'polyline'], [$mark->strokeWidth, $mark->opacity, $mark->dashed, $mark->kind->value]);
         }
         foreach ($outline as $mark) {
             $this->assertSame([0.13, 0.8, true], [$mark->strokeWidth, $mark->opacity, $mark->dashed]);
         }
-        $wide = $sketch->shape(new MermaidMark('polygon', $square, fill: '#445566'), hachure: 0.3);
+        $wide = $sketch->shape(new Mark(MarkKind::Polygon, $square, fill: '#445566'), hachure: 0.3);
         $this->assertSame(0.3, $wide[0]->strokeWidth);
         foreach (['none', 'transparent', '#44556600', '#FFFFFF00'] as $fill) {
-            $this->assertCount(8, $sketch->shape(new MermaidMark('polygon', $square, fill: $fill)), $fill);
+            $this->assertCount(8, $sketch->shape(new Mark(MarkKind::Polygon, $square, fill: $fill)), $fill);
         }
-        $this->assertCount(\count($hachure), $sketch->shape(new MermaidMark('polygon', $square, fill: '#445566', strokeWidth: 0.0)));
-        $this->assertCount(\count($hachure), $sketch->shape(new MermaidMark('polygon', $square, stroke: 'none', fill: '#445566')));
-        $this->assertCount(\count($hachure) + 8, $sketch->shape(new MermaidMark('polygon', $square, fill: '#445566ff')));
-        $this->assertCount(2, $sketch->shape(new MermaidMark('polygon', [[0.0, 0.0], [4.0, 0.0]], fill: '#445566')), 'two points draw one line, unfilled');
-        $this->assertCount(4, $sketch->shape(new MermaidMark('polyline', [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0]], fill: '#445566')), 'an open outline is never filled or closed');
-        $text = new MermaidMark('text', [[1.0, 1.0]], 'label');
-        $dot = new MermaidMark('polygon', [[1.0, 1.0]]);
+        $this->assertCount(\count($hachure), $sketch->shape(new Mark(MarkKind::Polygon, $square, fill: '#445566', strokeWidth: 0.0)));
+        $this->assertCount(\count($hachure), $sketch->shape(new Mark(MarkKind::Polygon, $square, stroke: 'none', fill: '#445566')));
+        $this->assertCount(\count($hachure) + 8, $sketch->shape(new Mark(MarkKind::Polygon, $square, fill: '#445566ff')));
+        $this->assertCount(2, $sketch->shape(new Mark(MarkKind::Polygon, [[0.0, 0.0], [4.0, 0.0]], fill: '#445566')), 'two points draw one line, unfilled');
+        $this->assertCount(4, $sketch->shape(new Mark(MarkKind::Polyline, [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0]], fill: '#445566')), 'an open outline is never filled or closed');
+        $text = new Mark(MarkKind::Text, [[1.0, 1.0]], 'label');
+        $dot = new Mark(MarkKind::Polygon, [[1.0, 1.0]]);
         $this->assertSame([[$text], [$dot]], [$sketch->shape($text), $sketch->shape($dot)]);
-        $edge = $sketch->edge(new MermaidMark('polyline', [[0.0, 0.0], [30.0, 0.0]], stroke: '#abcdef', dashed: true, strokeWidth: 0.2, opacity: 0.6));
+        $edge = $sketch->edge(new Mark(MarkKind::Polyline, [[0.0, 0.0], [30.0, 0.0]], stroke: '#abcdef', dashed: true, strokeWidth: 0.2, opacity: 0.6));
         $this->assertSame(
-            MermaidRough::polylines(new MermaidRough(seed: 7, roughness: 0.3)->line([[0.0, 0.0], [300.0, 0.0]]), scale: 10.0),
-            \array_map(static fn (MermaidMark $mark): array => $mark->points, $edge),
+            Rough::polylines(new Rough(seed: 7, roughness: 0.3)->line([[0.0, 0.0], [300.0, 0.0]]), scale: 10.0),
+            \array_map(static fn (Mark $mark): array => $mark->points, $edge),
             'edges are rough at 0.3',
         );
         foreach ($edge as $mark) {
@@ -106,21 +107,21 @@ final class MermaidHandDrawnTest extends TestCase
         return "---\nconfig:\n  look: handDrawn\n  handDrawnSeed: ".$seed."\n---\n".$source;
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function marks(string $source): array
     {
-        $work = MermaidDrawing::scene(NativeFixtureScene::render($source));
+        $work = MermaidPainter::scene(NativeFixtureScene::render($source));
         \iterator_to_array($work);
 
         return $work->getReturn()->marks;
     }
 
     /**
-     * @param list<MermaidMark> $marks
-     * @return list<MermaidMark>
+     * @param list<Mark> $marks
+     * @return list<Mark>
      */
     private static function texts(array $marks): array
     {
-        return \array_values(\array_filter($marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind));
+        return \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
     }
 }

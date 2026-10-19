@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Layout\Curve\Curve;
 use Janalis\Viz\Layout\GraphEdge;
 
 /** Declaration-indexed styles override defaults; repeated declarations replace prior properties. */
@@ -77,9 +78,9 @@ final class FlowchartEdgeStyles
     }
 
     /** Pinned order: the edge's own interpolation, then linkStyle default, then `flowchart.curve`. */
-    public function curve(int $index, ?string $configured): MermaidCurve
+    public function curve(int $index, ?string $configured): Curve
     {
-        return MermaidCurve::resolve($this->curves[$index] ?? $this->curves['default'] ?? $configured);
+        return Curve::resolve($this->curves[$index] ?? $this->curves['default'] ?? $configured);
     }
 
     /** @return array{float, float} */

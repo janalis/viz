@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
-use Janalis\Viz\Mermaid\MermaidSvg;
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
+use Janalis\Viz\Draw\SvgBackend;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class MermaidOpacityTest extends TestCase
 {
-    private static function square(string $color, float $opacity): MermaidMark
+    private static function square(string $color, float $opacity): Mark
     {
-        return new MermaidMark('polygon', [[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]], stroke: 'none', fill: $color, fillOpacity: $opacity);
+        return new Mark(MarkKind::Polygon, [[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]], stroke: 'none', fill: $color, fillOpacity: $opacity);
     }
 
     public static function opacity(): iterable
@@ -28,15 +29,15 @@ final class MermaidOpacityTest extends TestCase
     #[DataProvider('opacity')]
     public function testPngCompositesFillOpacityOnItsBackground(float $opacity, int $green): void
     {
-        $drawing = new MermaidDrawing(10.0, 10.0, [self::square('#ff0000', $opacity)]);
-        $work = new MermaidPng()->render($drawing);
+        $drawing = new Drawing(10.0, 10.0, [self::square('#ff0000', $opacity)]);
+        $work = new PngBackend()->render($drawing);
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $pixel = \imagecolorsforindex($image, \imagecolorat($image, x: 20, y: 20));
         $this->assertSame(255, $pixel['red']);
         $this->assertEqualsWithDelta($green, $pixel['green'], delta: 1);
         $this->assertEqualsWithDelta($green, $pixel['blue'], delta: 1);
-        $svg = MermaidSvg::render($drawing);
+        $svg = SvgBackend::render($drawing);
         \iterator_to_array($svg);
         if (1.0 === $opacity) {
             $this->assertStringNotContainsString('fill-opacity=', $svg->getReturn());
@@ -48,8 +49,8 @@ final class MermaidOpacityTest extends TestCase
 
     public function testOverlappingTranslucentFillsRemainVisible(): void
     {
-        $drawing = new MermaidDrawing(10.0, 10.0, [self::square('#ff0000', opacity: 0.5), self::square('#0000ff', opacity: 0.5)]);
-        $work = new MermaidPng()->render($drawing);
+        $drawing = new Drawing(10.0, 10.0, [self::square('#ff0000', opacity: 0.5), self::square('#0000ff', opacity: 0.5)]);
+        $work = new PngBackend()->render($drawing);
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $pixel = \imagecolorsforindex($image, \imagecolorat($image, x: 20, y: 20));

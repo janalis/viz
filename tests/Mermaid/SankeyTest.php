@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Mermaid\MermaidColor;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
+use Janalis\Viz\Color\ColorValue;
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
+use Janalis\Viz\Draw\SvgBackend;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
-use Janalis\Viz\Mermaid\MermaidSvg;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\SankeyDiagram;
 use Janalis\Viz\Mermaid\SankeyFlow;
@@ -103,10 +105,10 @@ final class SankeyTest extends TestCase
         $this->assertSame(2, $scene->origin(2));
         $this->assertNull($scene->selectable(3), 'label decorations cannot steal node selection');
         $this->assertContains('A → C: 2', \array_column($scene->legend, 'text'));
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         $marks = $drawing->getReturn()->marks;
-        $this->assertSame('polygon', $marks[0]->kind);
+        $this->assertSame('polygon', $marks[0]->kind->value);
         $this->assertSame($large->ribbon, $marks[0]->points);
         $this->assertSame('#4e79a780', $marks[0]->fill);
         $this->assertSame(0.0, $marks[0]->strokeWidth);
@@ -199,8 +201,8 @@ final class SankeyTest extends TestCase
         $this->assertStringContainsString('<stop offset="0" stop-color="#4e79a7" stop-opacity="0.502"/>', $result, 'pinned links default to a gradient, half opaque');
         $this->assertStringContainsString('fill="url(#gradient-', $result);
         $this->assertStringNotContainsString('<script>', $result);
-        $work = MermaidSvg::render(new MermaidDrawing(10.0, 2.0, [new MermaidMark(
-            'polygon',
+        $work = SvgBackend::render(new Drawing(10.0, 2.0, [new Mark(
+            MarkKind::Polygon,
             [[2.0, 0.0], [8.0, 0.0], [8.0, 2.0], [2.0, 2.0]],
             strokeWidth: 0.0,
             gradient: ['#000000', '#ffffff80'],
@@ -223,12 +225,12 @@ final class SankeyTest extends TestCase
         $this->assertInstanceOf(\GdImage::class, $image);
         // A flow band, blended between its ends' colors at the pinned 50% link opacity, over white.
         $this->assertSame(0xe2_c3a5, \imagecolorat($image, x: 500, y: 500));
-        $drawing = new MermaidDrawing(10.0, 2.0, [
-            new MermaidMark('polygon', [[0.0, 0.0], [10.0, 0.0], [10.0, 2.0], [0.0, 2.0]], strokeWidth: 0.0, gradient: ['#000000ff', '#ffffffff']),
+        $drawing = new Drawing(10.0, 2.0, [
+            new Mark(MarkKind::Polygon, [[0.0, 0.0], [10.0, 0.0], [10.0, 2.0], [0.0, 2.0]], strokeWidth: 0.0, gradient: ['#000000ff', '#ffffffff']),
             // A zero-width band crosses no edge it can interpolate, and draws nothing.
-            new MermaidMark('polygon', [[5.0, 0.0], [5.0, 1.0], [5.0, 2.0]], strokeWidth: 0.0, gradient: ['#ff0000ff', '#ff0000ff']),
+            new Mark(MarkKind::Polygon, [[5.0, 0.0], [5.0, 1.0], [5.0, 2.0]], strokeWidth: 0.0, gradient: ['#ff0000ff', '#ff0000ff']),
         ]);
-        $work = new MermaidPng()->render($drawing);
+        $work = new PngBackend()->render($drawing);
         \iterator_to_array($work);
         $ramp = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $ramp);
@@ -237,7 +239,7 @@ final class SankeyTest extends TestCase
             [\imagecolorat($ramp, x: 0, y: 10), \imagecolorat($ramp, x: 50, y: 10), \imagecolorat($ramp, x: 99, y: 10)],
             'the fill runs left to right',
         );
-        $work = new MermaidPng()->render(new MermaidDrawing(10.0, 2.0, [new MermaidMark('polygon', [[0.0, 0.0], [10.0, 0.0], [5.0, 2.0]], strokeWidth: 0.0, gradient: ['#000000ff', '#000000ff'])]));
+        $work = new PngBackend()->render(new Drawing(10.0, 2.0, [new Mark(MarkKind::Polygon, [[0.0, 0.0], [10.0, 0.0], [5.0, 2.0]], strokeWidth: 0.0, gradient: ['#000000ff', '#000000ff'])]));
         \iterator_to_array($work);
         $wedge = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $wedge);
@@ -247,9 +249,9 @@ final class SankeyTest extends TestCase
 
     public function testMixedColorsInterpolateEveryChannelIncludingAlpha(): void
     {
-        $this->assertSame('#000000ff', MermaidColor::mixed('#000000ff', '#ffffff00', share: 0.0));
-        $this->assertSame('#80808080', MermaidColor::mixed('#000000ff', '#ffffff00', share: 0.5));
-        $this->assertSame('#ffffff00', MermaidColor::mixed('#000000ff', '#ffffff00', share: 1.0));
-        $this->assertSame('#203850ff', MermaidColor::mixed('#102030ff', '#305070ff', share: 0.5));
+        $this->assertSame('#000000ff', ColorValue::mixed('#000000ff', '#ffffff00', share: 0.0));
+        $this->assertSame('#80808080', ColorValue::mixed('#000000ff', '#ffffff00', share: 0.5));
+        $this->assertSame('#ffffff00', ColorValue::mixed('#000000ff', '#ffffff00', share: 1.0));
+        $this->assertSame('#203850ff', ColorValue::mixed('#102030ff', '#305070ff', share: 0.5));
     }
 }

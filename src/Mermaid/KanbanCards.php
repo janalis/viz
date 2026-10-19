@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Runs;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
 use Janalis\Viz\Text\FontFace;
@@ -26,7 +29,7 @@ final class KanbanCards
 
     /**
      * @param ?list<list<array{string, FontFace}>> $runs the title's styled lines, as pinned Markdown draws them
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     public static function marks(GraphNode $node, string $shape, ?array $runs = null): array
     {
@@ -35,13 +38,13 @@ final class KanbanCards
         $right = $node->x + ($node->w / 2);
         $top = $node->y - ($node->h / 2);
         $color = $node->textColor ?? '#333333';
-        $marks = [new MermaidMark('polygon', MermaidOutline::points($node, 'rounded'), stroke: $node->color ?? '#333333', fill: $node->fillColor ?? '#ffffff', strokeWidth: $node->strokeWidth)];
+        $marks = [new Mark(MarkKind::Polygon, MermaidOutline::points($node, 'rounded'), stroke: $node->color ?? '#333333', fill: $node->fillColor ?? '#ffffff', strokeWidth: $node->strokeWidth)];
         if ('' !== $priority) {
-            $marks[] = new MermaidMark('polyline', [[$left + 0.2, $top + 0.25], [$left + 0.2, $node->y + ($node->h / 2) - 0.25]], stroke: $priority, strokeWidth: 0.4);
+            $marks[] = new Mark(MarkKind::Polyline, [[$left + 0.2, $top + 0.25], [$left + 0.2, $node->y + ($node->h / 2) - 0.25]], stroke: $priority, strokeWidth: 0.4);
         }
         $lines = $runs ?? \array_map(static fn (string $line): array => [[$line, $node->font]], \explode("\n", $node->drawLabel ?? $node->label));
         foreach ($lines as $index => $line) {
-            \array_push($marks, ...MermaidRuns::from($line, $left + 1, $top + 2.5 + (2 * $index), $color, $node->fontScale));
+            \array_push($marks, ...Runs::from($line, $left + 1, $top + 2.5 + (2 * $index), $color, $node->fontScale));
         }
         $row = $top + 2 + (2 * \count($lines));
         $ticket = (string) \base64_decode($ticket, strict: true);
@@ -50,7 +53,7 @@ final class KanbanCards
             $marks[] = self::text($ticket, $left + 1, $row, $color, $node);
         }
         if ('' !== $ticket && '1' === $linked) {
-            $marks[] = new MermaidMark('polyline', [[$left + 1, $row + 0.8], [$left + 1 + DisplayWidth::of($ticket), $row + 0.8]], stroke: $color, strokeWidth: 0.08);
+            $marks[] = new Mark(MarkKind::Polyline, [[$left + 1, $row + 0.8], [$left + 1 + DisplayWidth::of($ticket), $row + 0.8]], stroke: $color, strokeWidth: 0.08);
         }
         if ('' !== $assigned) {
             $marks[] = self::text($assigned, $right - 1 - DisplayWidth::of($assigned), $row, $color, $node);
@@ -60,10 +63,10 @@ final class KanbanCards
     }
 
     /** A line of text starting at `$x`, centered on the row at `$y`; a wrapped line's trailing space is no indent. */
-    private static function text(string $text, float $x, float $y, string $color, GraphNode $node): MermaidMark
+    private static function text(string $text, float $x, float $y, string $color, GraphNode $node): Mark
     {
         $text = \rtrim($text, characters: ' ');
 
-        return new MermaidMark('text', [[$x + (DisplayWidth::of($text) / 2), $y + 0.5]], $text, stroke: $color, font: $node->font, fontScale: $node->fontScale);
+        return new Mark(MarkKind::Text, [[$x + (DisplayWidth::of($text) / 2), $y + 0.5]], $text, stroke: $color, font: $node->font, fontScale: $node->fontScale);
     }
 }

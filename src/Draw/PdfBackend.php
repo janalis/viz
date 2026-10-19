@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Draw;
 
 use Janalis\Viz\Color\ColorValue;
 use Janalis\Viz\Pdf\PdfCanvas;
@@ -17,7 +17,7 @@ use Janalis\Viz\Text\Font;
  * Native vector backend: one page the drawing's size, marks in drawing units under a single
  * flipped transform, text as embedded glyphs a reader can still select and search.
  */
-final readonly class MermaidPdf
+final readonly class PdfBackend
 {
     /** Points per drawing unit: a unit is ten CSS pixels, a CSS pixel three quarters of a point. */
     public const float POINTS = 7.5;
@@ -25,7 +25,7 @@ final readonly class MermaidPdf
     private bool $gd;
 
     public function __construct(
-        private int $maxPixels = MermaidPng::MAX_PIXELS,
+        private int $maxPixels = PngBackend::MAX_PIXELS,
         ?bool $gdAvailable = null,
         private string $font = Font::FILE,
         private FallbackFonts $fallbacks = new FallbackFonts(),
@@ -35,10 +35,10 @@ final readonly class MermaidPdf
     }
 
     /** @return \Generator<int, null, mixed, string> */
-    public function render(MermaidDrawing $drawing): \Generator
+    public function render(Drawing $drawing): \Generator
     {
         if ($drawing->width < 1 || $drawing->height < 1 || !\is_finite($drawing->width) || !\is_finite($drawing->height)) {
-            throw new \InvalidArgumentException('Invalid Mermaid PDF dimensions');
+            throw new \InvalidArgumentException('Invalid PDF dimensions');
         }
         $document = new PdfDocument($this->compress);
         $canvas = new PdfCanvas($document);
@@ -55,8 +55,8 @@ final readonly class MermaidPdf
         }
         foreach ($drawing->marks as $mark) {
             match ($mark->kind) {
-                'image' => $this->image($canvas, $mark),
-                'text' => $this->text($canvas, $fonts, $mark),
+                MarkKind::Image => $this->image($canvas, $mark),
+                MarkKind::Text => $this->text($canvas, $fonts, $mark),
                 default => self::outline($canvas, $mark),
             };
             yield null;
@@ -66,9 +66,9 @@ final readonly class MermaidPdf
         return $document->bytes($catalog, producer: 'janalis/viz');
     }
 
-    private static function outline(PdfCanvas $canvas, MermaidMark $mark): void
+    private static function outline(PdfCanvas $canvas, Mark $mark): void
     {
-        $polygon = 'polygon' === $mark->kind;
+        $polygon = MarkKind::Polygon === $mark->kind;
         if ($polygon && null !== $mark->gradient && [] !== $mark->points) {
             self::gradient($canvas, $mark, $mark->gradient);
         }
@@ -102,7 +102,7 @@ final readonly class MermaidPdf
      *
      * @param array{string, string} $stops
      */
-    private static function gradient(PdfCanvas $canvas, MermaidMark $mark, array $stops): void
+    private static function gradient(PdfCanvas $canvas, Mark $mark, array $stops): void
     {
         $xs = \array_column($mark->points, 0);
         [$from, $alpha] = self::color($stops[0]);
@@ -120,7 +120,7 @@ final readonly class MermaidPdf
      * One line centered on its anchor, the baseline through it, turned clockwise about it; the
      * text matrix flips y back so glyphs stand upright under the page transform.
      */
-    private function text(PdfCanvas $canvas, PdfFonts $fonts, MermaidMark $mark): void
+    private function text(PdfCanvas $canvas, PdfFonts $fonts, Mark $mark): void
     {
         $text = \preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', replacement: '', subject: \mb_scrub($mark->text, encoding: 'UTF-8')) ?? '';
         if ('' === $text || [] === $mark->points) {
@@ -153,9 +153,9 @@ final readonly class MermaidPdf
      *
      * @return list<array{PdfFont, list<int>}>
      */
-    private function runs(PdfFonts $fonts, string $text, MermaidMark $mark): array
+    private function runs(PdfFonts $fonts, string $text, Mark $mark): array
     {
-        $bundled = $fonts->get(Font::file($mark->font, $this->font)) ?? throw new \InvalidArgumentException('Cannot read the bundled Mermaid font');
+        $bundled = $fonts->get(Font::file($mark->font, $this->font)) ?? throw new \InvalidArgumentException('Cannot read the bundled font');
         /** @var list<array{PdfFont, list<int>}> $runs */
         $runs = [];
         foreach (\mb_str_split($text) as $character) {
@@ -180,7 +180,7 @@ final readonly class MermaidPdf
     }
 
     /** An embedded picture within the pixel budget, stretched to its box; undecodable ones are skipped. */
-    private function image(PdfCanvas $canvas, MermaidMark $mark): void
+    private function image(PdfCanvas $canvas, Mark $mark): void
     {
         $bytes = (string) \base64_decode(\explode(',', $mark->text, limit: 2)[1] ?? '', strict: true);
         $picture = $this->decode($bytes);

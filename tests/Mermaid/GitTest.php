@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\GitDiagram;
@@ -11,9 +13,8 @@ use Janalis\Viz\Mermaid\GitLayout;
 use Janalis\Viz\Mermaid\GitLexer;
 use Janalis\Viz\Mermaid\GitMarkers;
 use Janalis\Viz\Mermaid\GitParser;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Render\Format;
@@ -280,11 +281,11 @@ final class GitTest extends TestCase
         $this->assertEqualsWithDelta([3.75, 4.5], $cherry[1][0], delta: 1.0e-9);
         $this->assertEqualsWithDelta([5.05, 4.5], $cherry[2][0], delta: 1.0e-9);
         $marks = MermaidOutline::marks($node, 'git:MERGE:REVERSE|#123456');
-        $this->assertSame('polygon', $marks[0]->kind, 'a highlight-free commit keeps its round body');
+        $this->assertSame('polygon', $marks[0]->kind->value, 'a highlight-free commit keeps its round body');
         $glyphs = \array_slice($marks, offset: 1);
         $this->assertSame([[[3.0, 3.0], [5.0, 5.0]], [[3.0, 5.0], [5.0, 3.0]]], \array_column($glyphs, 'points'));
         foreach ($glyphs as $glyph) {
-            $this->assertSame(['polyline', '#123456', 0.2], [$glyph->kind, $glyph->stroke, $glyph->strokeWidth]);
+            $this->assertSame(['polyline', '#123456', 0.2], [$glyph->kind->value, $glyph->stroke, $glyph->strokeWidth]);
         }
     }
 
@@ -320,10 +321,10 @@ final class GitTest extends TestCase
             $this->assertNotSame($r->x, $h->x);
             $this->assertSame('BT' === $direction, $r->y > $n->y);
         }
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         // Two REVERSE strokes, one HIGHLIGHT square, three CHERRY_PICK strokes and one MERGE ring.
-        $white = \array_filter($drawing->getReturn()->marks, static fn (MermaidMark $mark): bool => '#ffffff' === $mark->stroke && 'polyline' === $mark->kind);
+        $white = \array_filter($drawing->getReturn()->marks, static fn (Mark $mark): bool => '#ffffff' === $mark->stroke && MarkKind::Polyline === $mark->kind);
         $this->assertCount(7, $white);
         $svg = NativeFixtureExport::render($source, Format::Svg);
         $this->assertStringContainsString('>cherry-pick:h</text>', $svg, 'a cherry-pick flies its pinned tag');

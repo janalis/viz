@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Draw\Sketch;
+
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 
 /**
  * The pinned hand-drawn look over drawing marks. Outlines and frames become rough double
  * strokes over hachure in their fill color, and edges become rough lines at the pinned edge
  * roughness of 0.3. Text, arrow tips and label boxes stay crisp, as they do upstream.
  */
-final readonly class MermaidSketch
+final readonly class Sketch
 {
     /** Scene units are ten pinned pixels. */
     private const float PIXELS = 10.0;
@@ -24,16 +27,16 @@ final readonly class MermaidSketch
      * A node outline or frame. A polygon is filled with hachure `$hachure` units wide; an open
      * outline is a rough line.
      *
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
-    public function shape(MermaidMark $mark, float $hachure = 0.15): array
+    public function shape(Mark $mark, float $hachure = 0.15): array
     {
-        if (!\in_array($mark->kind, ['polygon', 'polyline'], strict: true) || \count($mark->points) < 2) {
+        if (!\in_array($mark->kind, [MarkKind::Polygon, MarkKind::Polyline], strict: true) || \count($mark->points) < 2) {
             return [$mark];
         }
-        $rough = new MermaidRough($this->seed, roughness: 0.7);
+        $rough = new Rough($this->seed, roughness: 0.7);
         $points = self::pixels($mark->points);
-        $closed = 'polygon' === $mark->kind && \count($points) > 2;
+        $closed = MarkKind::Polygon === $mark->kind && \count($points) > 2;
         [$fill, $outline] = $closed ? $rough->polygon($points) : [[], $rough->line($points)];
         $marks = self::visible($mark->fill) ? self::strokes($fill, $mark->fill, $hachure, dashed: false, opacity: $mark->fillOpacity * $mark->opacity) : [];
         if ($mark->strokeWidth > 0.0 && self::visible($mark->stroke)) {
@@ -46,11 +49,11 @@ final readonly class MermaidSketch
     /**
      * An edge, at its own color and width.
      *
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
-    public function edge(MermaidMark $mark): array
+    public function edge(Mark $mark): array
     {
-        $line = new MermaidRough($this->seed, roughness: 0.3)->line(self::pixels($mark->points));
+        $line = new Rough($this->seed, roughness: 0.3)->line(self::pixels($mark->points));
 
         return self::strokes($line, $mark->stroke, $mark->strokeWidth, $mark->dashed, $mark->opacity, $mark->dashes);
     }
@@ -58,13 +61,13 @@ final readonly class MermaidSketch
     /**
      * @param list<list<float>> $operations
      * @param ?list<float> $dashes
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     private static function strokes(array $operations, string $color, float $width, bool $dashed, float $opacity, ?array $dashes = null): array
     {
         return \array_map(
-            static fn (array $points): MermaidMark => new MermaidMark('polyline', $points, stroke: $color, dashed: $dashed, strokeWidth: $width, opacity: $opacity, dashes: $dashes),
-            MermaidRough::polylines($operations, self::PIXELS),
+            static fn (array $points): Mark => new Mark(MarkKind::Polyline, $points, stroke: $color, dashed: $dashed, strokeWidth: $width, opacity: $opacity, dashes: $dashes),
+            Rough::polylines($operations, self::PIXELS),
         );
     }
 

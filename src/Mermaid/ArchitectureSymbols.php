@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 
 /**
@@ -16,34 +18,34 @@ final class ArchitectureSymbols
     private const string BOX = '#087ebf';
     private const string GLYPH = '#ffffff';
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function marks(GraphNode $node, string $shape): array
     {
         $parts = \explode(':', $shape);
         if ('arch-junction' === $parts[0]) {
             $color = $node->color ?? '#333333';
 
-            return [new MermaidMark('polygon', MermaidOutline::ellipse($node->x - 0.6, $node->y - 0.6, $node->x + 0.6, $node->y + 0.6), stroke: $color, fill: $color)];
+            return [new Mark(MarkKind::Polygon, MermaidOutline::ellipse($node->x - 0.6, $node->y - 0.6, $node->x + 0.6, $node->y + 0.6), stroke: $color, fill: $color)];
         }
         $group = 'arch-group' === $parts[0];
         $x = $group ? $node->x - ($node->w / 2) + 4 : $node->x;
         $y = $group ? $node->y : $node->y - ($node->h / 2) + 4;
         $icon = (string) \base64_decode($parts[1], strict: true);
         $text = (string) \base64_decode($parts[2] ?? '', strict: true);
-        $marks = '' !== $text ? [self::box($x, $y), new MermaidMark('text', [[$x, $y + 0.5]], $text, stroke: self::GLYPH, fontScale: 2.0)] : self::tile($icon, $x, $y);
+        $marks = '' !== $text ? [self::box($x, $y), new Mark(MarkKind::Text, [[$x, $y + 0.5]], $text, stroke: self::GLYPH, fontScale: 2.0)] : self::tile($icon, $x, $y);
         $lines = \explode("\n", $node->label);
         foreach ($lines as $index => $line) {
             $labelX = $group ? $node->x + 4 : $node->x;
             $labelY = $group ? $node->y + (2 * $index) - (\count($lines) - 1) + 0.5 : $y + 6 + (2 * $index);
             [$textWidth] = MermaidText::box($line);
             $half = \max(0.5, ($textWidth - 3) / 2);
-            $marks[] = new MermaidMark(
-                'polygon',
+            $marks[] = new Mark(
+                MarkKind::Polygon,
                 [[$labelX - $half, $labelY - 1.6], [$labelX + $half, $labelY - 1.6], [$labelX + $half, $labelY + 0.5], [$labelX - $half, $labelY + 0.5]],
                 stroke: 'none',
                 fill: $node->fillColor ?? '#ffffff',
             );
-            $marks[] = new MermaidMark('text', [[$labelX, $labelY]], $line, stroke: $node->textColor ?? '#333333');
+            $marks[] = new Mark(MarkKind::Text, [[$labelX, $labelY]], $line, stroke: $node->textColor ?? '#333333');
         }
 
         return $marks;
@@ -53,14 +55,14 @@ final class ArchitectureSymbols
      * A pinned icon tile, `$size` units square about its center: a built-in glyph, else the
      * unknown icon.
      *
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     public static function tile(string $icon, float $x, float $y, float $size = 8.0): array
     {
         $scale = $size / 8;
 
         return \array_map(
-            static fn (MermaidMark $mark): MermaidMark => new MermaidMark(
+            static fn (Mark $mark): Mark => new Mark(
                 $mark->kind,
                 \array_map(static fn (array $point): array => [$x + (($point[0] - $x) * $scale), $y + (($point[1] - $y) * $scale)], $mark->points),
                 $mark->text,
@@ -76,12 +78,12 @@ final class ArchitectureSymbols
         );
     }
 
-    private static function box(float $x, float $y): MermaidMark
+    private static function box(float $x, float $y): Mark
     {
-        return new MermaidMark('polygon', [[$x - 4, $y - 4], [$x + 4, $y - 4], [$x + 4, $y + 4], [$x - 4, $y + 4]], stroke: 'none', fill: self::BOX);
+        return new Mark(MarkKind::Polygon, [[$x - 4, $y - 4], [$x + 4, $y - 4], [$x + 4, $y + 4], [$x - 4, $y + 4]], stroke: 'none', fill: self::BOX);
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function icon(string $icon, float $x, float $y): array
     {
         return match ($icon) {
@@ -89,11 +91,11 @@ final class ArchitectureSymbols
             'database', 'disk' => self::cylinder($x, $y, $icon),
             'internet' => self::globe($x, $y),
             'cloud' => self::cloud($x, $y),
-            default => [self::polygon(MermaidOutline::ellipse($x - 3, $y - 3, $x + 3, $y + 3)), new MermaidMark('text', [[$x, $y + 0.8]], '?', stroke: self::GLYPH, fontScale: 2.0)],
+            default => [self::polygon(MermaidOutline::ellipse($x - 3, $y - 3, $x + 3, $y + 3)), new Mark(MarkKind::Text, [[$x, $y + 0.8]], '?', stroke: self::GLYPH, fontScale: 2.0)],
         };
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function server(float $x, float $y): array
     {
         $marks = [self::polygon([[$x - 3, $y - 4], [$x + 3, $y - 4], [$x + 3, $y + 4], [$x - 3, $y + 4]])];
@@ -105,7 +107,7 @@ final class ArchitectureSymbols
         return $marks;
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function cylinder(float $x, float $y, string $icon): array
     {
         $height = 'disk' === $icon ? 1.8 : 3.2;
@@ -115,7 +117,7 @@ final class ArchitectureSymbols
         return [self::polygon($body), self::polygon(MermaidOutline::ellipse($x - 3.5, $y - $height - 1.2, $x + 3.5, $y - $height + 1.2))];
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function globe(float $x, float $y): array
     {
         return [
@@ -127,7 +129,7 @@ final class ArchitectureSymbols
         ];
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function cloud(float $x, float $y): array
     {
         $points = [];
@@ -142,14 +144,14 @@ final class ArchitectureSymbols
     }
 
     /** @param list<array{float, float}> $points */
-    private static function polygon(array $points): MermaidMark
+    private static function polygon(array $points): Mark
     {
-        return new MermaidMark('polygon', $points, stroke: self::GLYPH, fill: 'none');
+        return new Mark(MarkKind::Polygon, $points, stroke: self::GLYPH, fill: 'none');
     }
 
     /** @param list<array{float, float}> $points */
-    private static function line(array $points): MermaidMark
+    private static function line(array $points): Mark
     {
-        return new MermaidMark('polyline', $points, stroke: self::GLYPH);
+        return new Mark(MarkKind::Polyline, $points, stroke: self::GLYPH);
     }
 }

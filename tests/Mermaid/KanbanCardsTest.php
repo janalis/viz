@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\KanbanCards;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
@@ -51,25 +52,25 @@ final class KanbanCardsTest extends TestCase
         );
         $this->assertStringContainsString('icon: fa:book', $card->label, 'cells and the legend keep every field');
         $marks = KanbanCards::marks($card, $scene->shapes[$card->id], $scene->runs['node:'.$card->id]);
-        $texts = \array_values(\array_filter($marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind));
+        $texts = \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
         $this->assertSame(['Write docs', 'MC-1', 'knsv'], \array_column($texts, 'text'), 'no icon is drawn');
         $left = $card->x - ($card->w / 2);
         $top = $card->y - ($card->h / 2);
         $this->assertSame([$left + 1 + 5.0, $top + 2.5], $texts[0]->points[0], 'the title starts one unit in');
         $this->assertSame([$left + 1 + 2.0, $top + 4.5], $texts[1]->points[0], 'the ticket starts beneath it');
         $this->assertSame([$card->x + ($card->w / 2) - 1 - 2.0, $top + 4.5], $texts[2]->points[0], 'the assignee ends one unit in');
-        $underline = \array_last(\array_filter($marks, static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind && 0.08 === $mark->strokeWidth));
+        $underline = \array_last(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && 0.08 === $mark->strokeWidth));
         $this->assertSame([[$left + 1, $top + 4.8], [$left + 5, $top + 4.8]], $underline->points, 'a linked ticket is underlined');
         $unlinked = NativeFixtureScene::render("kanban\n  Todo\n    a[Write docs]@{ ticket: MC-1 }");
         $node = self::card($unlinked, 'Write docs');
-        $this->assertNull(\array_find(KanbanCards::marks($node, $unlinked->shapes[$node->id], $unlinked->runs['node:'.$node->id]), static fn (MermaidMark $mark): bool => 0.08 === $mark->strokeWidth));
-        $drawing = MermaidDrawing::scene($scene);
+        $this->assertNull(\array_find(KanbanCards::marks($node, $unlinked->shapes[$node->id], $unlinked->runs['node:'.$node->id]), static fn (Mark $mark): bool => 0.08 === $mark->strokeWidth));
+        $drawing = MermaidPainter::scene($scene);
         \iterator_to_array($drawing);
-        $titles = \array_filter($drawing->getReturn()->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind && 'Write docs' === $mark->text);
+        $titles = \array_filter($drawing->getReturn()->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && 'Write docs' === $mark->text);
         $this->assertCount(1, $titles, 'the card draws its own title; the centered label is hidden');
         $wrapped = NativeFixtureScene::render("kanban\n  Todo\n    a[Shipped long title that should wrap around the card width]");
         $long = self::card($wrapped, 'Shipped');
-        $first = \array_find(KanbanCards::marks($long, $wrapped->shapes[$long->id], $wrapped->runs['node:'.$long->id]), static fn (MermaidMark $mark): bool => 'text' === $mark->kind);
+        $first = \array_find(KanbanCards::marks($long, $wrapped->shapes[$long->id], $wrapped->runs['node:'.$long->id]), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind);
         $this->assertSame($long->x - ($long->w / 2) + 1 + (\mb_strlen($first->text) / 2), $first->points[0][0], 'a wrapped line\'s trailing space is no indent');
         $this->assertStringEndsWith('wrap', $first->text);
     }
@@ -80,7 +81,7 @@ final class KanbanCardsTest extends TestCase
             "kanban\n  Todo\n    a[\"`**Bold** and *it* text`\"]\n    b[Plain **stars**]\n    c[A long title that wraps between its words rather than inside any of them]",
         );
         $bold = self::card($scene, 'Bold and it text');
-        $texts = \array_values(\array_filter(KanbanCards::marks($bold, $scene->shapes[$bold->id], $scene->runs['node:'.$bold->id]), static fn (MermaidMark $mark): bool => 'text' === $mark->kind));
+        $texts = \array_values(\array_filter(KanbanCards::marks($bold, $scene->shapes[$bold->id], $scene->runs['node:'.$bold->id]), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
         $this->assertSame(
             [
                 ['Bold', FontFace::Bold],
@@ -88,7 +89,7 @@ final class KanbanCardsTest extends TestCase
                 ['it',   FontFace::Italic],
                 ['text', FontFace::Regular],
             ],
-            \array_map(static fn (MermaidMark $mark): array => [$mark->text, $mark->font], $texts),
+            \array_map(static fn (Mark $mark): array => [$mark->text, $mark->font], $texts),
         );
         $left = $bold->x - ($bold->w / 2);
         $this->assertSame([$left + 1 + 2.0, $left + 1 + 6.5], [$texts[0]->points[0][0], $texts[1]->points[0][0]], 'runs follow each other from the left edge');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Layout\Curve\CurvePath;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
@@ -11,8 +12,7 @@ use Janalis\Viz\Mermaid\GitColors;
 use Janalis\Viz\Mermaid\GitMarkers;
 use Janalis\Viz\Mermaid\MermaidColor;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
-use Janalis\Viz\Mermaid\MermaidCurvePath;
-use Janalis\Viz\Mermaid\MermaidDrawing;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidPalette;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStyleSource;
@@ -150,7 +150,7 @@ final class MermaidPaletteTest extends TestCase
     public function testUnthemedScenesDrawAsLaidOut(): void
     {
         $node = new GraphNode(0, 'a', 'a', 2.0, 2.0, 2.0, 2.0, '#123456', '#abcdef', dashed: false);
-        $work = MermaidDrawing::scene(new MermaidScene(new GraphLayout(4.0, 4.0, [$node], [], clusters: []), [], [], [], [0 => 'rect']));
+        $work = MermaidPainter::scene(new MermaidScene(new GraphLayout(4.0, 4.0, [$node], [], clusters: []), [], [], [], [0 => 'rect']));
         \iterator_to_array($work);
         $this->assertSame('#abcdef', $work->getReturn()->marks[0]->fill);
     }
@@ -164,7 +164,7 @@ final class MermaidPaletteTest extends TestCase
     public function testCurvesRejectNonFiniteCoordinates(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        new MermaidCurvePath()->line([\NAN, 0.0]);
+        new CurvePath()->line([\NAN, 0.0]);
     }
 
     public function testAThemeThatCannotDeriveItsColorsIsALocatedError(): void

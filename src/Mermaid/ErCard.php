@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
 use Janalis\Viz\Text\FontFace;
@@ -89,7 +91,7 @@ final class ErCard
     /**
      * Row stripes, when the shape carries `|odd,even` fills, then the row dividers.
      *
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     public static function dividers(GraphNode $node, string $shape): array
     {
@@ -100,8 +102,8 @@ final class ErCard
         \array_push($marks, ...self::columns($node, (string) $spec, $rows));
         foreach ($rows as $row) {
             $y = $node->y - ($node->h / 2) + 2 + (((2 * (int) $row) + 1) * $node->fontScale);
-            $marks[] = new MermaidMark(
-                'polyline',
+            $marks[] = new Mark(
+                MarkKind::Polyline,
                 [[$node->x - ($node->w / 2), $y], [$node->x + ($node->w / 2), $y]],
                 stroke: $node->color ?? '#333333',
                 dashed: $node->dashed,
@@ -117,7 +119,7 @@ final class ErCard
      * The table's column rules, from the first row divider down, where `;c=WIDTH=OFFSET,…` puts them.
      *
      * @param list<string> $rows
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     private static function columns(GraphNode $node, string $spec, array $rows): array
     {
@@ -132,8 +134,8 @@ final class ErCard
         foreach (\explode(',', $match[2]) as $offset) {
             // @mago-expect analysis:invalid-type-cast -- the shape's pattern admits only decimal offsets
             $x = $left + ((float) $offset * $node->fontScale);
-            $rules[] = new MermaidMark(
-                'polyline',
+            $rules[] = new Mark(
+                MarkKind::Polyline,
                 [[$x, $top], [$x, $node->y + ($node->h / 2)]],
                 stroke: $node->color ?? '#333333',
                 dashed: $node->dashed,
@@ -150,7 +152,7 @@ final class ErCard
      *
      * @param list<string> $rows
      * @param list<string> $fills
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     private static function stripes(GraphNode $node, array $rows, array $fills): array
     {
@@ -162,7 +164,7 @@ final class ErCard
             $top = $node->y - ($node->h / 2) + 2 + (((2 * (int) $row) + 1) * $node->fontScale);
             $next = $rows[$index + 1] ?? null;
             $end = null === $next ? $bottom : $node->y - ($node->h / 2) + 2 + (((2 * (int) $next) + 1) * $node->fontScale);
-            $marks[] = new MermaidMark('polygon', [[$left, $top], [$right, $top], [$right, $end], [$left, $end]], stroke: 'none', fill: $fills[$index % 2] ?? $fills[0], strokeWidth: 0.0);
+            $marks[] = new Mark(MarkKind::Polygon, [[$left, $top], [$right, $top], [$right, $end], [$left, $end]], stroke: 'none', fill: $fills[$index % 2] ?? $fills[0], strokeWidth: 0.0);
         }
 
         return $marks;

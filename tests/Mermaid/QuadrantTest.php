@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\QuadrantDiagram;
@@ -93,13 +94,13 @@ final class QuadrantTest extends TestCase
         $this->assertSame(0.0, $c->strokeWidth);
         $this->assertSame('@quadrantPointFill|textColor', $c->fillColor);
         $this->assertSame('@quadrantPointFill|textColor', $c->color);
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         $marks = $drawing->getReturn()->marks;
-        $point = \array_find_key($marks, static fn (MermaidMark $mark): bool => 'polygon' === $mark->kind && '#ff0000' === $mark->fill);
+        $point = \array_find_key($marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && '#ff0000' === $mark->fill);
         $this->assertIsInt($point);
         $this->assertSame(0.3, $marks[$point]->strokeWidth);
-        $this->assertSame('text', $marks[$point + 1]->kind);
+        $this->assertSame('text', $marks[$point + 1]->kind->value);
         $this->assertGreaterThan($a->y + ($a->h / 2), $marks[$point + 1]->points[0][1]);
     }
 
@@ -129,9 +130,9 @@ final class QuadrantTest extends TestCase
     public function testPointStrokeWidthReachesTheRasterBackend(): void
     {
         $scene = self::scene("quadrantChart\nA: [0.5, 0.5] radius: 10, color: #f00, stroke-color: #0f0, stroke-width: 10px");
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
-        $work = new MermaidPng()->render($drawing->getReturn());
+        $work = new PngBackend()->render($drawing->getReturn());
         \iterator_to_array($work);
         $image = \imagecreatefromstring($work->getReturn());
         $point = \array_first($scene->graph->nodes);

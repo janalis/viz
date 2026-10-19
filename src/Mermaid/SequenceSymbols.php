@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 
 /**
@@ -24,7 +26,7 @@ final class SequenceSymbols
         'queue' => 'h-cyl',
     ];
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function marks(GraphNode $node, string $shape): array
     {
         $x = $node->x;
@@ -44,8 +46,8 @@ final class SequenceSymbols
             ],
             'seq-control' => [
                 self::outline($node, self::circle($x, $top + 2.4, 2.0)),
-                new MermaidMark(
-                    'polygon',
+                new Mark(
+                    MarkKind::Polygon,
                     [[$x + 0.35, $top + 0.4], [$x - 0.3, $top + 0.85], [$x - 0.15, $top + 0.4], [$x - 0.3, $top - 0.05]],
                     stroke: $node->color ?? '#333333',
                     fill: $node->color ?? '#333333',
@@ -62,7 +64,7 @@ final class SequenceSymbols
         };
     }
 
-    /** @return list<MermaidMark> a cylinder four units wide, its rim drawn over the body */
+    /** @return list<Mark> a cylinder four units wide, its rim drawn over the body */
     private static function database(GraphNode $node, float $x, float $top): array
     {
         $rim = [];
@@ -80,17 +82,17 @@ final class SequenceSymbols
     /**
      * @param list<array{float, float}> $points
      */
-    private static function outline(GraphNode $node, array $points): MermaidMark
+    private static function outline(GraphNode $node, array $points): Mark
     {
-        return new MermaidMark('polygon', $points, stroke: $node->color ?? '#333333', fill: $node->fillColor ?? '#ececff', strokeWidth: $node->strokeWidth);
+        return new Mark(MarkKind::Polygon, $points, stroke: $node->color ?? '#333333', fill: $node->fillColor ?? '#ececff', strokeWidth: $node->strokeWidth);
     }
 
     /**
      * @param list<array{float, float}> $points
      */
-    private static function line(GraphNode $node, array $points): MermaidMark
+    private static function line(GraphNode $node, array $points): Mark
     {
-        return new MermaidMark('polyline', $points, stroke: $node->color ?? '#333333', strokeWidth: $node->strokeWidth);
+        return new Mark(MarkKind::Polyline, $points, stroke: $node->color ?? '#333333', strokeWidth: $node->strokeWidth);
     }
 
     /** @return list<array{float, float}> */

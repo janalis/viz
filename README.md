@@ -40,13 +40,13 @@ Each renderer can also be used on its own, and each implements `Janalis\Viz\Rend
 
 | Class | What it is |
 | --- | --- |
-| `Mermaid\MermaidRenderer` | the native renderer |
+| `Draw\NativeRenderer` | the native renderer, over a language's `Draw\Pipeline` (`new NativeRenderer(new MermaidPipeline())`) |
 | `Mermaid\MmdcRenderer` | the `mmdc` renderer |
 | `GraphViz\DotRenderer` | the `dot` renderer; it also exposes `layout()`, the laid-out geometry |
 | `PlantUML\PlantUmlRenderer` | the `plantuml` renderer |
 | `Render\FallbackRenderer` | chains renderers, native first |
 
-The native Mermaid pipeline is also exposed step by step, for a host with an event loop (`Mermaid\MermaidPipeline`). Every step is a generator that yields between small units of work, so a large diagram can be spread over several frames; `Render\Work::run()` runs one to the end.
+The native pipeline is also exposed step by step, for a host with an event loop (`NativeRenderer::image()`, and `Mermaid\MermaidPipeline` for the scene and the drawing). Every step is a generator that yields between small units of work, so a large diagram can be spread over several frames; `Render\Work::run()` runs one to the end.
 
 ## Convert
 

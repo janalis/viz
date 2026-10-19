@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Layout\Curve;
 
 /** Measures along a routed polyline, whose curved stretches are many short segments. */
-final class MermaidPolyline
+final class Polyline
 {
     /** @param list<array{float, float}> $points */
     public static function length(array $points): float

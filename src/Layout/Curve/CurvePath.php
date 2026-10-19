@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Layout\Curve;
 
 /** One sampled path feeds terminal lines, SVG and PNG; its cursor retains even merged points. */
-final class MermaidCurvePath
+final class CurvePath
 {
     /** @var list<array{float, float}> */
     public private(set) array $points = [];

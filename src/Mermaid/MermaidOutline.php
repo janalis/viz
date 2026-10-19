@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Text\DisplayWidth;
 
 /** Bounded polygonal outlines shared by the native SVG and raster backends. */
 final class MermaidOutline
 {
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function marks(GraphNode $node, string $shape): array
     {
         if (FlowchartShapes::custom(self::canonical($shape))) {
@@ -20,8 +22,8 @@ final class MermaidOutline
         return match (true) {
             \str_starts_with($shape, 'wardley:accelerator:') || \str_starts_with($shape, 'wardley:deaccelerator:') => WardleySymbols::marks($node, $shape),
             \str_starts_with($shape, 'journey-face:') => JourneyFaces::marks($node, $shape),
-            \str_starts_with($shape, 'pie:') => [new MermaidMark(
-                'polygon',
+            \str_starts_with($shape, 'pie:') => [new Mark(
+                MarkKind::Polygon,
                 PieSymbols::points($node, $shape),
                 stroke: $node->color ?? '#ffffff',
                 fill: $node->fillColor ?? '#ececff',
@@ -44,7 +46,7 @@ final class MermaidOutline
         };
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function ordinary(GraphNode $node, string $shape): array
     {
         $cardShape = $shape;
@@ -53,8 +55,8 @@ final class MermaidOutline
             return \str_starts_with($shape, 'rotated:') ? self::backdrop($node, $shape) : [];
         }
         $points = self::points($node, $shape);
-        $marks = [new MermaidMark(
-            'polygon',
+        $marks = [new Mark(
+            MarkKind::Polygon,
             $points,
             stroke: $node->color ?? '#333333',
             fill: $node->fillColor ?? '#ececff',
@@ -76,7 +78,7 @@ final class MermaidOutline
         if (\str_starts_with($cardShape, 'git:')) {
             [$type, $custom, $inner] = GitMarkers::parse($cardShape);
             foreach (GitMarkers::points($node, $type, $custom) as $glyph) {
-                $marks[] = new MermaidMark('polyline', $glyph, stroke: $inner, strokeWidth: 0.2);
+                $marks[] = new Mark(MarkKind::Polyline, $glyph, stroke: $inner, strokeWidth: 0.2);
             }
         }
         if (\str_starts_with($cardShape, 'wardley:')) {
@@ -94,7 +96,7 @@ final class MermaidOutline
             $marks[] = self::line($node, self::ellipse($left + 0.8, $top + 0.8, $right - 0.8, $bottom - 0.8));
         }
         if ('state-end' === $shape) {
-            $marks[] = new MermaidMark('polygon', self::ellipse($left + 0.8, $top + 0.8, $right - 0.8, $bottom - 0.8), fill: $node->color ?? '#222222', strokeWidth: 0.0);
+            $marks[] = new Mark(MarkKind::Polygon, self::ellipse($left + 0.8, $top + 0.8, $right - 0.8, $bottom - 0.8), fill: $node->color ?? '#222222', strokeWidth: 0.0);
         }
         if ('cylinder' === $shape) {
             $marks[] = self::line($node, self::ellipse($left, $top, $right, $top + 1.6));
@@ -106,7 +108,7 @@ final class MermaidOutline
     /**
      * A rotated label's backdrop: its text's box in the node's fill, turned with it.
      *
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     private static function backdrop(GraphNode $node, string $shape): array
     {
@@ -123,28 +125,28 @@ final class MermaidOutline
             $corners[] = [(float) $x + ($along * \cos($radians)) - ($across * \sin($radians)), (float) $y + ($along * \sin($radians)) + ($across * \cos($radians))];
         }
 
-        return [new MermaidMark('polygon', $corners, stroke: 'none', fill: $node->fillColor, strokeWidth: 0.0)];
+        return [new Mark(MarkKind::Polygon, $corners, stroke: 'none', fill: $node->fillColor, strokeWidth: 0.0)];
     }
 
     /**
      * Pinned default mindmap nodes: a rounded box in the section color, a line along its foot.
      *
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     private static function plain(GraphNode $node): array
     {
         $bottom = $node->y + ($node->h / 2);
 
         return [
-            new MermaidMark('polygon', self::points($node, 'rounded'), stroke: 'none', fill: $node->fillColor ?? '#ececff', strokeWidth: 0.0),
-            new MermaidMark('polyline', [[$node->x - ($node->w / 2), $bottom], [$node->x + ($node->w / 2), $bottom]], stroke: $node->color ?? '#333333'),
+            new Mark(MarkKind::Polygon, self::points($node, 'rounded'), stroke: 'none', fill: $node->fillColor ?? '#ececff', strokeWidth: 0.0),
+            new Mark(MarkKind::Polyline, [[$node->x - ($node->w / 2), $bottom], [$node->x + ($node->w / 2), $bottom]], stroke: $node->color ?? '#333333'),
         ];
     }
 
     /** @param list<array{float, float}> $points */
-    private static function line(GraphNode $node, array $points): MermaidMark
+    private static function line(GraphNode $node, array $points): Mark
     {
-        return new MermaidMark('polyline', $points, stroke: $node->color ?? '#333333', dashed: $node->dashed, strokeWidth: $node->strokeWidth, dashes: $node->dashes);
+        return new Mark(MarkKind::Polyline, $points, stroke: $node->color ?? '#333333', dashed: $node->dashed, strokeWidth: $node->strokeWidth, dashes: $node->dashes);
     }
 
     /** @return list<array{float, float}> */

@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\WardleyDiagram;
@@ -100,7 +101,7 @@ final class WardleyTest extends TestCase
         $this->assertLessThan(\hypot($tip[0] - $head->x, $tip[1] - $head->y), \hypot($tip[0] - $tail->x, $tip[1] - $tail->y));
         $this->assertCount(1, \array_filter($scene->graph->relationships, static fn (GraphEdge $edge): bool => $edge->dashed));
         $this->assertCount(5, \array_filter($scene->graph->edges, static fn (GraphEdge $edge): bool => null !== $edge->arrowTip));
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         $this->assertGreaterThan(30, \count($drawing->getReturn()->marks));
         $svg = NativeFixtureExport::render($source, Format::Svg);
@@ -208,12 +209,12 @@ final class WardleyTest extends TestCase
         $this->assertLessThan($cloud->y, $service->y);
         $this->assertSame(FontFace::Bold, $user->font);
         $marketMarks = WardleySymbols::marks($cloud, $scene->shapes[$cloud->id]);
-        $this->assertCount(3, \array_filter($marketMarks, static fn (MermaidMark $mark): bool => 'polygon' === $mark->kind));
-        $this->assertCount(1, \array_filter($marketMarks, static fn (MermaidMark $mark): bool => 'polyline' === $mark->kind));
+        $this->assertCount(3, \array_filter($marketMarks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind));
+        $this->assertCount(1, \array_filter($marketMarks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind));
         $this->assertSame(6, $scene->elements[$service->id]);
         $caption = \array_find($scene->graph->nodes, static fn ($node): bool => '@label:Service' === $node->name);
         $this->assertSame([$service->x - 3, $service->y + 2], [$caption->x - ($caption->w / 2), $caption->y]);
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         $inertiaX = $service->x + ($service->w / 2) + 0.8;
         $this->assertContains([[$inertiaX, $service->y - 1.5], [$inertiaX, $service->y + 1.5]], \array_column($drawing->getReturn()->marks, 'points'));
@@ -291,7 +292,7 @@ final class WardleyTest extends TestCase
             $this->assertFalse(MermaidOutline::contains($arrow, $scene->shapes[$arrow->id], $arrow->x, $arrow->y + $arrow->h));
             $marks = MermaidOutline::marks($arrow, $scene->shapes[$arrow->id]);
             $this->assertCount(1, $marks);
-            $this->assertSame(['polygon', '#64748b', '#e2e8f0'], [$marks[0]->kind, $marks[0]->stroke, $marks[0]->fill]);
+            $this->assertSame(['polygon', '#64748b', '#e2e8f0'], [$marks[0]->kind->value, $marks[0]->stroke, $marks[0]->fill]);
             $this->assertSame(MermaidOutline::points($arrow, $scene->shapes[$arrow->id]), $marks[0]->points);
         }
         $this->assertSame(0, $scene->graph->edgeCount());

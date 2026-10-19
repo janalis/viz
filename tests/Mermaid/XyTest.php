@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
-use Janalis\Viz\Mermaid\MermaidDrawing;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
@@ -153,7 +153,7 @@ final class XyTest extends TestCase
         }
         $this->assertCount(4, $scene->graph->edges, 'two axes plus two connected line segments');
         $this->assertSame('@xyChart.plotColorPalette[0]', \array_last($scene->graph->edges)->color);
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         $texts = \array_column($drawing->getReturn()->marks, 'text');
         $this->assertContains('Middle', $texts);

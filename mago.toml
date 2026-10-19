@@ -16,7 +16,7 @@ includes = ["vendor"]
 [analyzer]
 # Static analysis targets the library. Tests build fixtures through dynamic
 # lookups an analyzer cannot follow; the support code they share is analysed.
-excludes = ["tests/Mermaid", "tests/GraphViz", "tests/PlantUML", "tests/Pdf", "tests/Render", "tests/Process", "tests/Source", "tests/Model", "tests/Color", "tests/Text", "tests/Layout", "tests/VizTest.php"]
+excludes = ["tests/Mermaid", "tests/GraphViz", "tests/PlantUML", "tests/Pdf", "tests/Render", "tests/Process", "tests/Source", "tests/Model", "tests/Draw", "tests/Color", "tests/Text", "tests/Layout", "tests/VizTest.php"]
 
 [formatter]
 print-width = 200

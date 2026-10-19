@@ -4,33 +4,35 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 
 /** Sourcing overlays follow the pinned renderer rather than the older prose glyph descriptions. */
 final class WardleySymbols
 {
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function marks(GraphNode $node, string $shape): array
     {
         $parts = \explode(':', $shape);
         $strategy = $parts[1];
         if (\in_array($strategy, ['accelerator', 'deaccelerator'], strict: true)) {
-            return [new MermaidMark('polygon', self::arrow($node, $strategy), stroke: '#64748b', fill: '#e2e8f0')];
+            return [new Mark(MarkKind::Polygon, self::arrow($node, $strategy), stroke: '#64748b', fill: '#e2e8f0')];
         }
         $marks = [];
         if (\in_array($strategy, ['build', 'buy', 'outsource'], strict: true)) {
-            $marks[] = new MermaidMark('polygon', self::ring($node->x, $node->y, radius: 0.8), stroke: $node->color ?? '#333333', fill: '#ffffff');
+            $marks[] = new Mark(MarkKind::Polygon, self::ring($node->x, $node->y, radius: 0.8), stroke: $node->color ?? '#333333', fill: '#ffffff');
         }
         if ('market' === $strategy) {
             $centers = [[$node->x, $node->y - 1], [$node->x - 0.9, $node->y + 0.6], [$node->x + 0.9, $node->y + 0.6]];
-            $marks[] = new MermaidMark('polyline', [...$centers, $centers[0]]);
+            $marks[] = new Mark(MarkKind::Polyline, [...$centers, $centers[0]]);
             foreach ($centers as [$x, $y]) {
-                $marks[] = new MermaidMark('polygon', self::ring($x, $y, radius: 0.5), fill: '#ffffff');
+                $marks[] = new Mark(MarkKind::Polygon, self::ring($x, $y, radius: 0.5), fill: '#ffffff');
             }
         }
         if ('inertia' === $parts[2]) {
             $x = $node->x + ($node->w / 2) + 0.8;
-            $marks[] = new MermaidMark('polyline', [[$x, $node->y - 1.5], [$x, $node->y + 1.5]]);
+            $marks[] = new Mark(MarkKind::Polyline, [[$x, $node->y - 1.5], [$x, $node->y + 1.5]]);
         }
 
         return $marks;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\NativeRenderer;
 use Janalis\Viz\Mermaid\MermaidPipeline;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Render\Work;
@@ -13,6 +14,6 @@ final class NativeFixtureExport
 {
     public static function render(string $source, Format $format): string
     {
-        return Work::run(new MermaidPipeline()->export($source, $format));
+        return Work::run(new NativeRenderer(new MermaidPipeline())->image($source, $format));
     }
 }

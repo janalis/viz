@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Mermaid;
 
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidLexer;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\TreemapDiagram;
@@ -99,7 +99,7 @@ final class TreemapTest extends TestCase
         $this->assertSame(0.8, $scene->graph->nodes[3]->strokeWidth);
         $this->assertTrue($scene->graph->nodes[3]->dashed);
         $this->assertSame('#ff0000', $scene->graph->nodes[3]->color);
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         $marks = $drawing->getReturn()->marks;
         $dark = \array_find($marks, static fn ($mark): bool => 'Dark' === $mark->text);

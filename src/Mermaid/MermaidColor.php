@@ -19,14 +19,6 @@ final class MermaidColor
         return self::css($value) ?? throw $statement->error('Invalid '.$family.' style color');
     }
 
-    /** `#rrggbbaa` a share of the way from one `#rrggbbaa` color to another, channel by channel. */
-    public static function mixed(string $from, string $to, float $share): string
-    {
-        $channel = static fn (int $offset): int => (int) \round(((1 - $share) * \hexdec(\substr($from, 1 + $offset, length: 2))) + ($share * \hexdec(\substr($to, 1 + $offset, length: 2))));
-
-        return \sprintf('#%02x%02x%02x%02x', $channel(0), $channel(2), $channel(4), $channel(6));
-    }
-
     /** A CSS color by name or notation, its alpha kept, or null where a browser would drop the declaration. */
     public static function css(string $value): ?string
     {

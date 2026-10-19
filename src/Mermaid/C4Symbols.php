@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
@@ -42,7 +44,7 @@ final class C4Symbols
         return $edges;
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function person(GraphNode $node): array
     {
         $left = $node->x - ($node->w / 2);
@@ -51,18 +53,18 @@ final class C4Symbols
         $bottom = $node->y + ($node->h / 2);
 
         return [
-            new MermaidMark(
-                'polygon',
+            new Mark(
+                MarkKind::Polygon,
                 [[$left + 0.8, $top + 4], [$right - 0.8, $top + 4], [$right, $top + 4.8], [$right, $bottom], [$left, $bottom], [$left, $top + 4.8]],
                 stroke: $node->color ?? '#333333',
                 fill: $node->fillColor ?? '#08427b',
                 strokeWidth: $node->strokeWidth,
             ),
-            new MermaidMark('polygon', self::ellipse($node->x, $top + 2, rx: 1.7, ry: 1.7), stroke: $node->color ?? '#333333', fill: $node->fillColor ?? '#08427b', strokeWidth: $node->strokeWidth),
+            new Mark(MarkKind::Polygon, self::ellipse($node->x, $top + 2, rx: 1.7, ry: 1.7), stroke: $node->color ?? '#333333', fill: $node->fillColor ?? '#08427b', strokeWidth: $node->strokeWidth),
         ];
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function queue(GraphNode $node): array
     {
         $left = $node->x - ($node->w / 2);
@@ -71,22 +73,22 @@ final class C4Symbols
         $bottom = $node->y + ($node->h / 2);
 
         return [
-            new MermaidMark(
-                'polygon',
+            new Mark(
+                MarkKind::Polygon,
                 [[$left + 1, $top], [$right - 1, $top], [$right - 1, $bottom], [$left + 1, $bottom]],
                 stroke: $node->color ?? '#333333',
                 fill: $node->fillColor ?? '#438dd5',
                 strokeWidth: $node->strokeWidth,
             ),
-            new MermaidMark(
-                'polygon',
+            new Mark(
+                MarkKind::Polygon,
                 self::ellipse($left + 1, $node->y, rx: 1.0, ry: $node->h / 2),
                 stroke: $node->color ?? '#333333',
                 fill: $node->fillColor ?? '#438dd5',
                 strokeWidth: $node->strokeWidth,
             ),
-            new MermaidMark(
-                'polygon',
+            new Mark(
+                MarkKind::Polygon,
                 self::ellipse($right - 1, $node->y, rx: 1.0, ry: $node->h / 2),
                 stroke: $node->color ?? '#333333',
                 fill: $node->fillColor ?? '#438dd5',

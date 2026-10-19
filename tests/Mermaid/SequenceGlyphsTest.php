@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Render\Format;
 use PHPUnit\Framework\TestCase;
@@ -64,15 +66,15 @@ final class SequenceGlyphsTest extends TestCase
                     $this->assertLessThan(3.7, \abs($x - $node->x), $label);
                 }
             }
-            $text = \array_find($drawing->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind && $label === $mark->text && \abs($mark->points[0][1] - $node->y) < ($node->h / 2));
-            $this->assertInstanceOf(MermaidMark::class, $text);
+            $text = \array_find($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && $label === $mark->text && \abs($mark->points[0][1] - $node->y) < ($node->h / 2));
+            $this->assertInstanceOf(Mark::class, $text);
             $this->assertEqualsWithDelta($node->y + ($node->h / 2) - 1.0, $text->points[0][1], 1e-9, $label.' sits on the header\'s last line');
         }
         $boundary = self::node($scene, 'B');
         $bar = MermaidOutline::marks($boundary, 'seq-boundary')[0];
         $this->assertEqualsWithDelta([[$boundary->x - 3.6, $boundary->y - 2.5], [$boundary->x - 3.6, $boundary->y - 0.5]], $bar->points, 1e-9);
         $database = MermaidOutline::marks(self::node($scene, 'D'), 'seq-database');
-        $this->assertSame(['polygon', 'polyline'], [$database[0]->kind, $database[1]->kind]);
+        $this->assertSame(['polygon', 'polyline'], [$database[0]->kind->value, $database[1]->kind->value]);
         $this->assertCount(26, $database[0]->points, 'the rim\'s back half and the base');
         $control = MermaidOutline::marks(self::node($scene, 'C'), 'seq-control');
         $this->assertSame($control[1]->stroke, $control[1]->fill, 'the control arrowhead is solid');
@@ -83,7 +85,7 @@ final class SequenceGlyphsTest extends TestCase
         $scene = NativeFixtureScene::render("sequenceDiagram\nactor A as Two<br>lines");
         $node = self::node($scene, "Two\nlines");
         $this->assertSame(9.4, $node->h);
-        $texts = \array_values(\array_filter(self::drawing($scene)->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind && 'lines' === $mark->text));
+        $texts = \array_values(\array_filter(self::drawing($scene)->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && 'lines' === $mark->text));
         $this->assertEqualsWithDelta($node->y + ($node->h / 2) - 1.0, $texts[0]->points[0][1], 1e-9);
     }
 
@@ -93,17 +95,17 @@ final class SequenceGlyphsTest extends TestCase
         $label = self::node($scene, 'hello');
         $this->assertSame([], MermaidOutline::marks($label, 'seq-message'));
         $drawing = self::drawing($scene);
-        $inside = static fn (MermaidMark $mark): bool => 'polygon' === $mark->kind && \abs($mark->points[0][1] - $label->y) < ($label->h / 2) && \abs($mark->points[0][0] - $label->x) < $label->w;
+        $inside = static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && \abs($mark->points[0][1] - $label->y) < ($label->h / 2) && \abs($mark->points[0][0] - $label->x) < $label->w;
         $this->assertSame([], \array_values(\array_filter($drawing->marks, $inside)));
-        $text = \array_find($drawing->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind && 'hello' === $mark->text);
+        $text = \array_find($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && 'hello' === $mark->text);
         $this->assertEqualsWithDelta($label->y + ($label->h / 2) - 1.0, $text->points[0][1], 1e-9);
         $svg = NativeFixtureExport::render("sequenceDiagram\nactor A\nparticipant D@{ \"type\": \"database\" }\nA->>D: hello", Format::Svg);
         $this->assertStringContainsString('>hello</text>', $svg);
     }
 
-    private static function drawing(MermaidScene $scene): MermaidDrawing
+    private static function drawing(MermaidScene $scene): Drawing
     {
-        $work = MermaidDrawing::scene($scene);
+        $work = MermaidPainter::scene($scene);
         \iterator_to_array($work);
 
         return $work->getReturn();

@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Encoder;
+use Janalis\Viz\Draw\Pipeline;
+use Janalis\Viz\Draw\PngBackend;
 use Janalis\Viz\Render\Format;
 
 /**
- * The native pipeline as resumable steps: source → scene → drawing → image. Each
+ * The native Mermaid pipeline as resumable steps: source → scene → drawing → image. Each
  * step is a generator that yields between units of work, so a host with an event
  * loop can spread a large diagram over several frames ({@see \Janalis\Viz\Render\Work}
  * runs one to the end).
  */
-final readonly class MermaidPipeline
+final readonly class MermaidPipeline implements Pipeline
 {
     public function __construct(
         private MermaidStyleSource $styles = new MermaidStyleSource(),
-        private MermaidPng $png = new MermaidPng(),
-        private MermaidPdf $pdf = new MermaidPdf(),
+        private Encoder $encoder = new Encoder(),
     ) {}
 
     /**
@@ -53,33 +56,30 @@ final readonly class MermaidPipeline
     }
 
     /**
-     * @return \Generator<int, null, mixed, string>
-     * @throws \InvalidArgumentException when the scene cannot be drawn in $format
+     * @return \Generator<int, null, mixed, Drawing>
+     * @throws MermaidSyntaxError when the source does not parse
+     * @throws \InvalidArgumentException when the configuration cannot be applied
      */
-    public function image(MermaidScene $scene, Format $format, int $dpi = MermaidPng::BASE_DPI): \Generator
+    #[\Override]
+    public function drawing(string $source): \Generator
     {
-        $drawing = MermaidDrawing::scene($scene);
+        $scene = $this->scene($source);
+        yield from $scene;
+        $drawing = MermaidPainter::scene($scene->getReturn());
         yield from $drawing;
-        $image = match ($format) {
-            Format::Svg => MermaidSvg::render($drawing->getReturn()),
-            Format::Png => $this->png->render($drawing->getReturn(), $dpi),
-            Format::Pdf => $this->pdf->render($drawing->getReturn()),
-        };
-        yield from $image;
 
-        return $image->getReturn();
+        return $drawing->getReturn();
     }
 
     /**
      * @return \Generator<int, null, mixed, string>
-     * @throws MermaidSyntaxError when the source does not parse
-     * @throws \InvalidArgumentException when the diagram cannot be drawn in $format
+     * @throws \InvalidArgumentException when the scene cannot be drawn in $format
      */
-    public function export(string $source, Format $format, int $dpi = MermaidPng::BASE_DPI): \Generator
+    public function image(MermaidScene $scene, Format $format, int $dpi = PngBackend::BASE_DPI): \Generator
     {
-        $scene = $this->scene($source);
-        yield from $scene;
-        $image = $this->image($scene->getReturn(), $format, $dpi);
+        $drawing = MermaidPainter::scene($scene);
+        yield from $drawing;
+        $image = $this->encoder->encode($drawing->getReturn(), $format, $dpi);
         yield from $image;
 
         return $image->getReturn();

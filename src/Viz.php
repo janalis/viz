@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Janalis\Viz;
 
+use Janalis\Viz\Draw\NativeRenderer;
 use Janalis\Viz\GraphViz\DotRenderer;
-use Janalis\Viz\Mermaid\MermaidRenderer;
+use Janalis\Viz\Mermaid\MermaidPipeline;
 use Janalis\Viz\Mermaid\MmdcRenderer;
 use Janalis\Viz\PlantUML\PlantUmlRenderer;
 use Janalis\Viz\Process\Cli;
@@ -41,7 +42,7 @@ final readonly class Viz
         $cli = new Cli($this->workingDirectory);
 
         return match ($format) {
-            SourceFormat::Mermaid => new FallbackRenderer([new MermaidRenderer(), new MmdcRenderer(new Tool('mmdc', $this->mmdc), $cli)]),
+            SourceFormat::Mermaid => new FallbackRenderer([new NativeRenderer(new MermaidPipeline()), new MmdcRenderer(new Tool('mmdc', $this->mmdc), $cli)]),
             SourceFormat::Dot => $this->dotRenderer(),
             SourceFormat::PlantUml => new PlantUmlRenderer(new Tool('plantuml', $this->plantuml), $cli),
         };

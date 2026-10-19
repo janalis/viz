@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 
 /** Internal strokes distinguish the pinned commit types without creating graph edges. */
@@ -53,7 +55,7 @@ final class GitMarkers
     /**
      * Pinned tag flags: one per tag line, pointing left, with a hole by the point.
      *
-     * @return list<MermaidMark>
+     * @return list<Mark>
      */
     public static function tags(GraphNode $node, string $shape): array
     {
@@ -64,14 +66,14 @@ final class GitMarkers
         $marks = [];
         for ($line = 0; $line < (int) \round($node->h / 2); ++$line) {
             $y = $top + 1 + (2 * $line);
-            $marks[] = new MermaidMark(
-                'polygon',
+            $marks[] = new Mark(
+                MarkKind::Polygon,
                 [[$left - 0.8, $y], [$left, $y - 0.9], [$right, $y - 0.9], [$right, $y + 0.9], [$left, $y + 0.9]],
                 stroke: $node->color ?? '#333333',
                 fill: $node->fillColor ?? '#ffffde',
                 strokeWidth: 0.1,
             );
-            $marks[] = new MermaidMark('polygon', MermaidOutline::ellipse($left - 0.15, $y - 0.15, $left + 0.15, $y + 0.15), stroke: 'none', fill: $hole, strokeWidth: 0.0);
+            $marks[] = new Mark(MarkKind::Polygon, MermaidOutline::ellipse($left - 0.15, $y - 0.15, $left + 0.15, $y + 0.15), stroke: 'none', fill: $hole, strokeWidth: 0.0);
         }
 
         return $marks;

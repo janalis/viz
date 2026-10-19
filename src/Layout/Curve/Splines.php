@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Layout\Curve;
 
 /** d3-shape 3.2.0 spline coefficients; its ISC notice is in resources/licenses/d3-shape.txt. */
-final class MermaidSplines
+final class Splines
 {
     /** @param non-empty-list<array{float, float}> $points */
-    public static function natural(array $points, MermaidCurvePath $path): void
+    public static function natural(array $points, CurvePath $path): void
     {
         $count = \count($points);
         if ($count < 3) {
-            MermaidCurves::linear($points, $path);
+            Curves::linear($points, $path);
 
             return;
         }
@@ -64,11 +64,11 @@ final class MermaidSplines
     }
 
     /** @param non-empty-list<array{float, float}> $points */
-    public static function catmull(array $points, MermaidCurvePath $path): void
+    public static function catmull(array $points, CurvePath $path): void
     {
         $count = \count($points);
         if ($count < 3) {
-            MermaidCurves::linear($points, $path);
+            Curves::linear($points, $path);
 
             return;
         }
@@ -106,7 +106,7 @@ final class MermaidSplines
     }
 
     /** @param non-empty-list<array{float, float}> $points */
-    public static function monotone(array $points, MermaidCurvePath $path, MermaidCurve $curve): void
+    public static function monotone(array $points, CurvePath $path, Curve $curve): void
     {
         $unique = [];
         foreach ($points as $point) {
@@ -186,8 +186,8 @@ final class MermaidSplines
      * @param array{float, float} $point
      * @return array{float, float}
      */
-    private static function reflect(array $point, MermaidCurve $curve): array
+    private static function reflect(array $point, Curve $curve): array
     {
-        return MermaidCurve::MonotoneY === $curve ? [$point[1], $point[0]] : $point;
+        return Curve::MonotoneY === $curve ? [$point[1], $point[0]] : $point;
     }
 }

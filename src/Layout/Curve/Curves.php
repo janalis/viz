@@ -2,38 +2,38 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Mermaid;
+namespace Janalis\Viz\Layout\Curve;
 
 /**
  * Line curves follow d3-shape 3.2.0 (ISC); rounded corners follow pinned Mermaid (MIT).
  * Their copyright and permission notices are in resources/licenses/.
  */
-final class MermaidCurves
+final class Curves
 {
     /** @param list<array{float, float}> $points */
-    public static function path(array $points, MermaidCurve $curve): MermaidCurvePath
+    public static function path(array $points, Curve $curve): CurvePath
     {
-        if ([] === $points || (MermaidCurve::Rounded === $curve && \count($points) < 2)) {
-            return new MermaidCurvePath();
+        if ([] === $points || (Curve::Rounded === $curve && \count($points) < 2)) {
+            return new CurvePath();
         }
-        $path = new MermaidCurvePath($points[0]);
+        $path = new CurvePath($points[0]);
         match ($curve) {
-            MermaidCurve::Linear => self::linear($points, $path),
-            MermaidCurve::Step, MermaidCurve::StepBefore, MermaidCurve::StepAfter => self::step($points, $path, $curve),
-            MermaidCurve::BumpX, MermaidCurve::BumpY => self::bump($points, $path, $curve),
-            MermaidCurve::Basis => self::basis($points, $path),
-            MermaidCurve::Cardinal => self::cardinal($points, $path),
-            MermaidCurve::Natural => MermaidSplines::natural($points, $path),
-            MermaidCurve::CatmullRom => MermaidSplines::catmull($points, $path),
-            MermaidCurve::MonotoneX, MermaidCurve::MonotoneY => MermaidSplines::monotone($points, $path, $curve),
-            MermaidCurve::Rounded => self::rounded($points, $path),
+            Curve::Linear => self::linear($points, $path),
+            Curve::Step, Curve::StepBefore, Curve::StepAfter => self::step($points, $path, $curve),
+            Curve::BumpX, Curve::BumpY => self::bump($points, $path, $curve),
+            Curve::Basis => self::basis($points, $path),
+            Curve::Cardinal => self::cardinal($points, $path),
+            Curve::Natural => Splines::natural($points, $path),
+            Curve::CatmullRom => Splines::catmull($points, $path),
+            Curve::MonotoneX, Curve::MonotoneY => Splines::monotone($points, $path, $curve),
+            Curve::Rounded => self::rounded($points, $path),
         };
 
         return $path;
     }
 
     /** @param list<array{float, float}> $points */
-    public static function linear(array $points, MermaidCurvePath $path): void
+    public static function linear(array $points, CurvePath $path): void
     {
         foreach (\array_slice($points, offset: 1) as $point) {
             $path->line($point);
@@ -41,18 +41,18 @@ final class MermaidCurves
     }
 
     /** @param non-empty-list<array{float, float}> $points */
-    private static function step(array $points, MermaidCurvePath $path, MermaidCurve $curve): void
+    private static function step(array $points, CurvePath $path, Curve $curve): void
     {
         $count = \count($points);
         for ($index = 1; $index < $count; ++$index) {
             $from = $points[$index - 1];
             $to = $points[$index];
-            if (MermaidCurve::StepBefore === $curve) {
+            if (Curve::StepBefore === $curve) {
                 $path->line([$from[0], $to[1]]);
                 $path->line($to);
                 continue;
             }
-            $x = MermaidCurve::StepAfter === $curve ? $to[0] : ($from[0] + $to[0]) / 2;
+            $x = Curve::StepAfter === $curve ? $to[0] : ($from[0] + $to[0]) / 2;
             $path->line([$x, $from[1]]);
             $path->line([$x, $to[1]]);
         }
@@ -60,7 +60,7 @@ final class MermaidCurves
     }
 
     /** @param non-empty-list<array{float, float}> $points */
-    private static function bump(array $points, MermaidCurvePath $path, MermaidCurve $curve): void
+    private static function bump(array $points, CurvePath $path, Curve $curve): void
     {
         $count = \count($points);
         for ($index = 1; $index < $count; ++$index) {
@@ -68,15 +68,15 @@ final class MermaidCurves
             $to = $points[$index];
             $middle = [($from[0] + $to[0]) / 2, ($from[1] + $to[1]) / 2];
             $path->cubic(
-                MermaidCurve::BumpX === $curve ? [$middle[0], $from[1]] : [$from[0], $middle[1]],
-                MermaidCurve::BumpX === $curve ? [$middle[0], $to[1]] : [$to[0], $middle[1]],
+                Curve::BumpX === $curve ? [$middle[0], $from[1]] : [$from[0], $middle[1]],
+                Curve::BumpX === $curve ? [$middle[0], $to[1]] : [$to[0], $middle[1]],
                 $to,
             );
         }
     }
 
     /** @param non-empty-list<array{float, float}> $points */
-    private static function basis(array $points, MermaidCurvePath $path): void
+    private static function basis(array $points, CurvePath $path): void
     {
         $count = \count($points);
         if ($count < 3) {
@@ -99,7 +99,7 @@ final class MermaidCurves
     }
 
     /** @param non-empty-list<array{float, float}> $points */
-    private static function cardinal(array $points, MermaidCurvePath $path): void
+    private static function cardinal(array $points, CurvePath $path): void
     {
         $count = \count($points);
         if ($count < 3) {
@@ -121,7 +121,7 @@ final class MermaidCurves
     }
 
     /** @param non-empty-list<array{float, float}> $points */
-    private static function rounded(array $points, MermaidCurvePath $path): void
+    private static function rounded(array $points, CurvePath $path): void
     {
         $count = \count($points);
         for ($index = 1; $index < ($count - 1); ++$index) {

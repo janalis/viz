@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\FlowchartConfiguration;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
-use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidGraph;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidNodeMetrics;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
@@ -120,9 +121,9 @@ final class FlowchartConfigurationTest extends TestCase
         $this->assertSame(10.0, $new->y1 - $new->y0 - ($old->y1 - $old->y0));
         $this->assertSame(10.0, self::node($spaced, 'A')->y - self::node($base, 'A')->y);
         $this->assertSame([($new->x0 + $new->x1) / 2, $new->y0 + 7], $new->labelPos);
-        $work = MermaidDrawing::graph($spaced->graph, $spaced->shapes);
+        $work = MermaidPainter::graph($spaced->graph, $spaced->shapes);
         \iterator_to_array($work);
-        $labels = \array_filter($work->getReturn()->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind && 'Team' === $mark->text);
+        $labels = \array_filter($work->getReturn()->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && 'Team' === $mark->text);
         $this->assertCount(1, $labels);
         $this->assertSame([$new->labelPos], \array_first($labels)->points);
         foreach ($spaced->graph->nodes as $node) {

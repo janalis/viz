@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\Tests\Mermaid;
+namespace Janalis\Viz\Tests\Draw\Sketch;
 
-use Janalis\Viz\Mermaid\MermaidRough;
-use Janalis\Viz\Mermaid\MermaidRoughRandom;
+use Janalis\Viz\Draw\Sketch\Rough;
+use Janalis\Viz\Draw\Sketch\RoughRandom;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /** The roughjs port against the generator the pinned build bundles (rough-oracle.mjs). */
-final class MermaidRoughTest extends TestCase
+final class RoughTest extends TestCase
 {
-    private const string REFERENCE = __DIR__.'/../fixtures/mermaid/look/rough-reference.json';
+    private const string REFERENCE = __DIR__.'/../../fixtures/mermaid/look/rough-reference.json';
 
     /**
      * @param list<array{float, float}> $points
@@ -21,7 +21,7 @@ final class MermaidRoughTest extends TestCase
     #[DataProvider('generated')]
     public function testOperationsMatchTheBundledRoughjs(string $kind, int $seed, float $roughness, array $points, array $expected): void
     {
-        $rough = new MermaidRough($seed, $roughness);
+        $rough = new Rough($seed, $roughness);
         $actual = 'polygon' === $kind ? $rough->polygon($points) : [$rough->line($points)];
         $this->assertCount(\count($expected), $actual);
         foreach ($expected as $set => $operations) {
@@ -58,14 +58,14 @@ final class MermaidRoughTest extends TestCase
             2_147_483_647 => [2_147_435_377, 1_964_877_855, 856_141_137],
         ];
         foreach ($expected as $seed => $states) {
-            $random = new MermaidRoughRandom($seed);
+            $random = new RoughRandom($seed);
             $this->assertSame(\array_map(static fn (int $state): float => $state / 2_147_483_648, $states), [$random->next(), $random->next(), $random->next()], 'seed '.$seed);
         }
     }
 
     public function testPolylinesFlattenEachCubicAndSplitAtMoves(): void
     {
-        $lines = MermaidRough::polylines([[1.0, 1.0], [0.0, 0.0], [10.0, 0.0, 20.0, 0.0, 30.0, 0.0], [100.0, 100.0], [100.0, 100.0, 100.0, 100.0, 100.0, 100.0]], scale: 10.0);
+        $lines = Rough::polylines([[1.0, 1.0], [0.0, 0.0], [10.0, 0.0, 20.0, 0.0, 30.0, 0.0], [100.0, 100.0], [100.0, 100.0, 100.0, 100.0, 100.0, 100.0]], scale: 10.0);
         $this->assertEqualsWithDelta(
             [
                 [[0.0, 0.0], [1.0, 0.0], [2.0, 0.0], [3.0, 0.0]],
@@ -75,11 +75,11 @@ final class MermaidRoughTest extends TestCase
             1e-12,
             'a lone move draws nothing; three 12px stretches of control polygon are three steps; a point is two',
         );
-        $long = MermaidRough::polylines([[0.0, 0.0], [0.0, 400.0, 0.0, 800.0, 0.0, 1200.0]], scale: 1.0);
+        $long = Rough::polylines([[0.0, 0.0], [0.0, 400.0, 0.0, 800.0, 0.0, 1200.0]], scale: 1.0);
         $this->assertCount(13, $long[0], 'a cubic is never cut in more than twelve');
         $this->assertEqualsWithDelta([0.0, 100.0], $long[0][1], 1e-9);
-        $curve = MermaidRough::polylines([[0.0, 0.0], [0.0, 16.0, 16.0, 16.0, 16.0, 0.0]], scale: 1.0);
+        $curve = Rough::polylines([[0.0, 0.0], [0.0, 16.0, 16.0, 16.0, 16.0, 0.0]], scale: 1.0);
         $this->assertEqualsWithDelta([[0.0, 0.0], [2.5, 9.0], [8.0, 12.0], [13.5, 9.0], [16.0, 0.0]], $curve[0], 1e-9, 'the Bernstein weights of a cubic');
-        $this->assertSame([], MermaidRough::polylines([], scale: 10.0));
+        $this->assertSame([], Rough::polylines([], scale: 10.0));
     }
 }

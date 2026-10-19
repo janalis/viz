@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\FlowchartShapes;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
 
@@ -70,13 +70,13 @@ final class TreeViewIconsTest extends TestCase
     public function testGlyphsDrawBeforeTheLabelInTheIconColor(): void
     {
         $scene = NativeFixtureScene::render("treeView-beta\nsrc/ icon(folder)\nmain icon(file)\nodd icon(odd)\nplain");
-        $drawing = MermaidDrawing::scene($scene);
+        $drawing = MermaidPainter::scene($scene);
         \iterator_to_array($drawing);
         [$folder, $file, $odd, $plain] = \array_values(\array_slice($scene->graph->nodes, offset: 0, length: 4));
         $this->assertSame($plain->w + 1.8 - (\mb_strlen('plain') - \mb_strlen('src')), $folder->w, 'the icon widens its row by its span');
         $marks = MermaidOutline::marks($folder, \str_replace('|@treeView.iconColor|=#546e7a', replace: '|#546e7a', subject: $scene->shapes[$folder->id]));
         $glyph = \array_last($marks);
-        $this->assertSame(['polygon', '#546e7a', 10], [$glyph->kind, $glyph->fill, \count($glyph->points)]);
+        $this->assertSame(['polygon', '#546e7a', 10], [$glyph->kind->value, $glyph->fill, \count($glyph->points)]);
         $this->assertEqualsWithDelta(
             $folder->x - ($folder->w / 2) + 1.7,
             (\min(\array_column($glyph->points, 0)) + \max(\array_column($glyph->points, 0))) / 2,
@@ -89,8 +89,8 @@ final class TreeViewIconsTest extends TestCase
         $this->assertEqualsWithDelta(1.4, \max(\array_column($tile[0]->points, 0)) - \min(\array_column($tile[0]->points, 0)), 1e-9);
         $this->assertSame([0.9 / $folder->w, 0.0], FlowchartShapes::labelOffset($scene->shapes[$folder->id], $folder), 'the label moves past the icon');
         $colors = \array_unique(\array_map(
-            static fn (MermaidMark $mark): string => $mark->fill,
-            \array_filter($drawing->getReturn()->marks, static fn (MermaidMark $mark): bool => 10 === \count($mark->points)),
+            static fn (Mark $mark): string => $mark->fill,
+            \array_filter($drawing->getReturn()->marks, static fn (Mark $mark): bool => 10 === \count($mark->points)),
         ));
         $this->assertSame(['#546e7a'], \array_values($colors), 'the theme token resolves when drawn');
     }

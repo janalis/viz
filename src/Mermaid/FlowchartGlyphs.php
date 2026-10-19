@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 
 /** Modern shapes use the same authored paints for outlines and their internal symbols. */
 final class FlowchartGlyphs
 {
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function marks(GraphNode $node, string $shape): array
     {
         return match (true) {
@@ -19,12 +21,12 @@ final class FlowchartGlyphs
         };
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function closed(GraphNode $node, string $shape): array
     {
         $fill = \in_array($shape, ['sm-circ', 'f-circ', 'fork'], strict: true) ? '#333333' : '#ececff';
-        $marks = [new MermaidMark(
-            'polygon',
+        $marks = [new Mark(
+            MarkKind::Polygon,
             FlowchartShapeGeometry::points($node, $shape),
             stroke: $node->color ?? '#333333',
             fill: $node->fillColor ?? $fill,
@@ -37,7 +39,7 @@ final class FlowchartGlyphs
         return $marks;
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function details(GraphNode $node, string $shape): array
     {
         $paths = match ($shape) {
@@ -57,10 +59,10 @@ final class FlowchartGlyphs
             'console' => [[[0.1, 0.1], [0.17, 0.16], [0.1, 0.22]], [[0.2, 0.22], [0.3, 0.22]]],
             default => [],
         };
-        $marks = \array_map(static fn (array $path): MermaidMark => self::line($node, $path), $paths);
+        $marks = \array_map(static fn (array $path): Mark => self::line($node, $path), $paths);
         if ('fr-circ' === $shape) {
-            $marks[] = new MermaidMark(
-                'polygon',
+            $marks[] = new Mark(
+                MarkKind::Polygon,
                 FlowchartShapeGeometry::project($node, FlowchartShapeGeometry::arc(0.5, 0.5, 0.3, 0.3, 0, 360)),
                 stroke: $node->color ?? '#333333',
                 fill: $node->fillColor ?? '#333333',
@@ -74,10 +76,10 @@ final class FlowchartGlyphs
     }
 
     /** @param list<array{float, float}> $points */
-    private static function line(GraphNode $node, array $points): MermaidMark
+    private static function line(GraphNode $node, array $points): Mark
     {
-        return new MermaidMark(
-            'polyline',
+        return new Mark(
+            MarkKind::Polyline,
             FlowchartShapeGeometry::project($node, $points),
             stroke: $node->color ?? '#333333',
             fill: 'none',
@@ -87,7 +89,7 @@ final class FlowchartGlyphs
         );
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function open(GraphNode $node, string $shape): array
     {
         if ('datastore' === $shape) {
@@ -122,7 +124,7 @@ final class FlowchartGlyphs
         };
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function stack(GraphNode $node, string $shape): array
     {
         $marks = [];
@@ -133,8 +135,8 @@ final class FlowchartGlyphs
             $dx = 0.05 * $index * $node->w;
             $dy = 0.05 * (2 - $index) * $node->h;
             $layer = \array_map(static fn (array $point): array => [$left + (($point[0] - $left) * 0.9) + $dx, $top + (($point[1] - $top) * 0.9) + $dy], $points);
-            $marks[] = new MermaidMark(
-                'polygon',
+            $marks[] = new Mark(
+                MarkKind::Polygon,
                 $layer,
                 stroke: $node->color ?? '#333333',
                 fill: $node->fillColor ?? '#ececff',

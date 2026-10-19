@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 
 /**
@@ -44,7 +46,7 @@ final class FlowchartMedia
         return [$shape, [\max($width, $labelWidth), $height + (0 === $lines ? 0.0 : (2 * $lines) + 1)]];
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     public static function marks(GraphNode $node, string $shape): array
     {
         [$kind, $position, $width, $height] = self::parts($shape);
@@ -55,8 +57,8 @@ final class FlowchartMedia
             // The label sits on a backdrop between the picture and the node's edge.
             $band = 't' === $position ? [$top, $top + $node->h - $height] : [$top + $height, $top + $node->h];
             $half = \min($node->w, MermaidText::box($node->label)[0] - 2) / 2;
-            $marks[] = new MermaidMark(
-                'polygon',
+            $marks[] = new Mark(
+                MarkKind::Polygon,
                 [[$node->x - $half, $band[0]], [$node->x + $half, $band[0]], [$node->x + $half, $band[1]], [$node->x - $half, $band[1]]],
                 stroke: 'none',
                 fill: $node->fillColor ?? '#ffffff',
@@ -84,22 +86,22 @@ final class FlowchartMedia
         return [$kind, $position, \is_numeric($width) ? (float) $width : 0.0, \is_numeric($height) ? (float) $height : 0.0];
     }
 
-    /** @return list<MermaidMark> */
+    /** @return list<Mark> */
     private static function image(GraphNode $node, string $shape, float $x, float $y, float $width, float $height): array
     {
         $bytes = (string) \base64_decode(\explode(':', $shape, limit: 5)[4] ?? '', strict: true);
         $box = [[$x - ($width / 2), $y - ($height / 2)], [$x + ($width / 2), $y + ($height / 2)]];
         if ('' !== $bytes) {
-            return [new MermaidMark('image', $box, self::uri($bytes))];
+            return [new Mark(MarkKind::Image, $box, self::uri($bytes))];
         }
         [[$left, $upper], [$right, $lower]] = $box;
         $color = $node->color ?? '#333333';
 
         // A placeholder for a source native rendering does not fetch: a frame, crossed.
         return [
-            new MermaidMark('polygon', [[$left, $upper], [$right, $upper], [$right, $lower], [$left, $lower]], stroke: $color, fill: 'none'),
-            new MermaidMark('polyline', [[$left, $upper], [$right, $lower]], stroke: $color),
-            new MermaidMark('polyline', [[$left, $lower], [$right, $upper]], stroke: $color),
+            new Mark(MarkKind::Polygon, [[$left, $upper], [$right, $upper], [$right, $lower], [$left, $lower]], stroke: $color, fill: 'none'),
+            new Mark(MarkKind::Polyline, [[$left, $upper], [$right, $lower]], stroke: $color),
+            new Mark(MarkKind::Polyline, [[$left, $lower], [$right, $upper]], stroke: $color),
         ];
     }
 

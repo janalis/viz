@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
+use Janalis\Viz\Draw\SvgBackend;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\ErCard;
 use Janalis\Viz\Mermaid\MermaidCss;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
-use Janalis\Viz\Mermaid\MermaidPng;
 use Janalis\Viz\Mermaid\MermaidStatement;
-use Janalis\Viz\Mermaid\MermaidSvg;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Render\Format;
 use Janalis\Viz\Text\Font;
@@ -30,12 +31,12 @@ final class MermaidTypographyTest extends TestCase
             $this->assertSame($face, $face->overlay([]));
             $this->assertSame(FontFace::Regular, $face->overlay(['font-weight' => false, 'font-style' => false]));
             $this->assertFileExists(Font::file($face));
-            $drawing = new MermaidDrawing(60, 12, [new MermaidMark('text', [[30.0, 7.0]], 'Hamburgefontsiv', font: $face)]);
-            $png = new MermaidPng()->render($drawing);
+            $drawing = new Drawing(60, 12, [new Mark(MarkKind::Text, [[30.0, 7.0]], 'Hamburgefontsiv', font: $face)]);
+            $png = new PngBackend()->render($drawing);
             \iterator_to_array($png);
             $this->assertStringStartsWith("\x89PNG", $png->getReturn());
             $hashes[] = \hash('sha256', $png->getReturn());
-            $svg = MermaidSvg::render($drawing);
+            $svg = SvgBackend::render($drawing);
             \iterator_to_array($svg);
             $this->assertStringContainsString('font-style:'.$face->style().';font-weight:'.$face->weight(), $svg->getReturn());
             if (FontFace::Regular === $face) {
@@ -57,8 +58,8 @@ final class MermaidTypographyTest extends TestCase
     {
         $hashes = [];
         foreach ([1.0, 2.0] as $scale) {
-            $drawing = new MermaidDrawing(60, 16, [new MermaidMark('text', [[30.0, 9.0]], 'Scaled text', fontScale: $scale)]);
-            $png = new MermaidPng()->render($drawing);
+            $drawing = new Drawing(60, 16, [new Mark(MarkKind::Text, [[30.0, 9.0]], 'Scaled text', fontScale: $scale)]);
+            $png = new PngBackend()->render($drawing);
             \iterator_to_array($png);
             $hashes[] = \hash('sha256', $png->getReturn());
         }

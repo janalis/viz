@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Layout\Curve\Polyline;
 use Janalis\Viz\Layout\GraphEdge;
 
 /** Endpoint decorations use existing line/fill primitives and never become selectable entities. */
@@ -26,12 +27,12 @@ final readonly class ErMarkers
             return [];
         }
         // Curved edges are many short segments: aim along the line, three units in, and size by its length.
-        $length = MermaidPolyline::length($points);
+        $length = Polyline::length($points);
         $reversed = \array_reverse($points);
 
         return [
-            ...self::endpoint($edge, $points[0], MermaidPolyline::along($points, \min($length, 3.0))[0], $left, $length),
-            ...self::endpoint($edge, $reversed[0], MermaidPolyline::along($reversed, \min($length, 3.0))[0], $right, $length),
+            ...self::endpoint($edge, $points[0], Polyline::along($points, \min($length, 3.0))[0], $left, $length),
+            ...self::endpoint($edge, $reversed[0], Polyline::along($reversed, \min($length, 3.0))[0], $right, $length),
         ];
     }
 

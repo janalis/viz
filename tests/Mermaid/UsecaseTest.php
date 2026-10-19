@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphEdge;
 use Janalis\Viz\Mermaid\MermaidConfiguration;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\UsecaseConfiguration;
@@ -349,9 +350,9 @@ final class UsecaseTest extends TestCase
             ]],
             $scene->runs['edge:'.$edge],
         );
-        $drawing = MermaidDrawing::scene($scene);
+        $drawing = MermaidPainter::scene($scene);
         \iterator_to_array($drawing);
-        $reviewer = \array_values(\array_filter($drawing->getReturn()->marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind && 'Reviewer' === $mark->text));
+        $reviewer = \array_values(\array_filter($drawing->getReturn()->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && 'Reviewer' === $mark->text));
         $this->assertCount(1, $reviewer, 'an actor draws its caption once, under its glyph');
         $this->assertSame(FontFace::Italic, $reviewer[0]->font);
         $stereotyped = NativeFixtureScene::render("usecase-beta\n  Quote(\"`**Prepare** quote`\") <<Core>>\n");

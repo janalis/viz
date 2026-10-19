@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\PngBackend;
+use Janalis\Viz\Draw\Sketch\Sketch;
 use Janalis\Viz\Mermaid\FlowchartShapes;
-use Janalis\Viz\Mermaid\MermaidDrawing;
-use Janalis\Viz\Mermaid\MermaidMark;
 use Janalis\Viz\Mermaid\MermaidOutline;
-use Janalis\Viz\Mermaid\MermaidPng;
-use Janalis\Viz\Mermaid\MermaidSketch;
 use Janalis\Viz\Mermaid\MermaidText;
 use Janalis\Viz\Render\Format;
 use PHPUnit\Framework\TestCase;
@@ -49,10 +50,10 @@ final class FlowchartMediaTest extends TestCase
         $marks = MermaidOutline::marks($a, $scene->shapes[$a->id]);
         $this->assertSame('#087ebf', $marks[0]->fill);
         $this->assertEqualsWithDelta([[$a->x - 2.4, $a->y - 3.9], [$a->x + 2.4, $a->y - 3.9]], \array_slice($marks[0]->points, offset: 0, length: 2), 1e-9, 'the tile fills the top of the node');
-        $this->assertSame('?', \array_find($marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind)->text);
+        $this->assertSame('?', \array_find($marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)->text);
         $band = \array_last($marks);
         $this->assertEqualsWithDelta([$a->y - 3.9 + 4.8, $a->y + 3.9], [$band->points[0][1], $band->points[2][1]], 1e-9, 'the label band lies beneath the tile');
-        $this->assertEqualsWithDelta(1.2, \array_find($marks, static fn (MermaidMark $mark): bool => 'text' === $mark->kind)->fontScale, 1e-9, 'the eight-unit tile scaled to 4.8');
+        $this->assertEqualsWithDelta(1.2, \array_find($marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)->fontScale, 1e-9, 'the eight-unit tile scaled to 4.8');
         $this->assertSame([0.0, 2.4 / 7.8], FlowchartShapes::labelOffset($scene->shapes[$a->id], $a), 'the label centers in its band');
         $this->assertSame([0.0, -3.0 / 9.0], FlowchartShapes::labelOffset($scene->shapes[$b->id], $b));
         $top = MermaidOutline::marks($b, $scene->shapes[$b->id]);
@@ -78,7 +79,7 @@ final class FlowchartMediaTest extends TestCase
             $this->assertSame($expected, [$node->w, $node->h], $case);
             $marks = MermaidOutline::marks($node, $scene->shapes[$node->id]);
             $this->assertCount(1, $marks, $case);
-            $this->assertSame('image', $marks[0]->kind);
+            $this->assertSame('image', $marks[0]->kind->value);
             $this->assertSame($uri, $marks[0]->text);
         }
         $spaced = NativeFixtureScene::render("flowchart LR\n  E@{ img: \"data:image/png;base64,".\chunk_split(\base64_encode(self::png()), length: 20, separator: ' ').'" }');
@@ -101,7 +102,7 @@ final class FlowchartMediaTest extends TestCase
             $node = $scene->graph->nodes[0];
             $this->assertSame([10.0, 13.0], [$node->w, $node->h], $source.' keeps the default size');
             $marks = MermaidOutline::marks($node, $scene->shapes[$node->id]);
-            $this->assertSame(['polygon', 'polyline', 'polyline', 'polygon'], \array_column($marks, 'kind'), $source.' draws a crossed frame');
+            $this->assertSame(['polygon', 'polyline', 'polyline', 'polygon'], \array_column(\array_column($marks, 'kind'), 'value'), $source.' draws a crossed frame');
             $this->assertSame('none', $marks[0]->fill);
         }
     }
@@ -124,10 +125,10 @@ final class FlowchartMediaTest extends TestCase
         $node = $scene->graph->nodes[0];
         $center = \imagecolorat($picture, (int) ($node->x * 10), (int) (($node->y - ($node->h / 2) + 2.5) * 10));
         $this->assertSame(0xFF_8000, $center & 0xFF_FFFF, 'the picture is drawn at its box');
-        $image = new MermaidMark('image', [[0.0, 0.0], [1.0, 1.0]], self::uri());
-        $this->assertSame([$image], new MermaidSketch(seed: 1)->shape($image));
-        $broken = new MermaidMark('image', [[0.0, 0.0], [1.0, 1.0]], 'data:image/png;base64,AAAA');
-        $work = new MermaidPng()->render(new MermaidDrawing(2.0, 2.0, [$broken]));
+        $image = new Mark(MarkKind::Image, [[0.0, 0.0], [1.0, 1.0]], self::uri());
+        $this->assertSame([$image], new Sketch(seed: 1)->shape($image));
+        $broken = new Mark(MarkKind::Image, [[0.0, 0.0], [1.0, 1.0]], 'data:image/png;base64,AAAA');
+        $work = new PngBackend()->render(new Drawing(2.0, 2.0, [$broken]));
         \iterator_to_array($work);
         $this->assertStringStartsWith("\x89PNG", $work->getReturn(), 'an undecodable picture is skipped');
     }
@@ -139,7 +140,7 @@ final class FlowchartMediaTest extends TestCase
         \ob_start();
         \imagegif($canvas);
         $gif = 'data:image/gif;base64,'.\base64_encode((string) \ob_get_clean());
-        $work = new MermaidPng()->render(new MermaidDrawing(4.0, 4.0, [new MermaidMark('image', [[1.0, 1.0], [3.0, 3.0]], $gif)]));
+        $work = new PngBackend()->render(new Drawing(4.0, 4.0, [new Mark(MarkKind::Image, [[1.0, 1.0], [3.0, 3.0]], $gif)]));
         \iterator_to_array($work);
         $raster = \imagecreatefromstring($work->getReturn());
         $this->assertInstanceOf(\GdImage::class, $raster);

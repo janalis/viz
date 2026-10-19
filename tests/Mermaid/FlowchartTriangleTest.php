@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Mermaid;
 
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Mermaid\FlowchartParser;
-use Janalis\Viz\Mermaid\MermaidDrawing;
 use Janalis\Viz\Mermaid\MermaidLexer;
 use Janalis\Viz\Mermaid\MermaidOutline;
+use Janalis\Viz\Mermaid\MermaidPainter;
 use Janalis\Viz\Mermaid\MermaidScene;
 use Janalis\Viz\Mermaid\RankedGraphLayout;
 use Janalis\Viz\Text\DisplayWidth;
@@ -51,7 +52,7 @@ final class FlowchartTriangleTest extends TestCase
         $this->assertTrue(MermaidOutline::contains($node, $shape, 0.0, 0.0));
         $this->assertSame([5.0, 0.0], MermaidOutline::boundary($node, $shape, 100.0, 0.0));
         $mark = MermaidOutline::marks($node, $shape)[0];
-        $this->assertSame('polygon', $mark->kind);
+        $this->assertSame('polygon', $mark->kind->value);
         $this->assertSame($expected, $mark->points);
     }
 
@@ -69,10 +70,10 @@ final class FlowchartTriangleTest extends TestCase
         $edge = $scene->graph->edges[0];
         $this->assertSame($a->x + ($a->w / 4), $edge->points[0][0]);
         $this->assertSame($b->x - ($b->w / 4), $edge->arrowTip[0]);
-        $drawing = MermaidDrawing::graph($scene->graph, $scene->shapes);
+        $drawing = MermaidPainter::graph($scene->graph, $scene->shapes);
         \iterator_to_array($drawing);
         foreach ($drawing->getReturn()->marks as $mark) {
-            if ('text' !== $mark->kind || !\in_array($mark->text, ['Extract', '漢字', 'File', 'records'], strict: true)) {
+            if (MarkKind::Text !== $mark->kind || !\in_array($mark->text, ['Extract', '漢字', 'File', 'records'], strict: true)) {
                 continue;
             }
             $node = \in_array($mark->text, ['Extract', '漢字'], strict: true) ? $a : $b;

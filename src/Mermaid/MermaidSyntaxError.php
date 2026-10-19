@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Mermaid;
 
+use Janalis\Viz\Source\ParseError;
+
 /** Located native-parser failure, with zero-based source positions. */
-final class MermaidSyntaxError extends \RuntimeException
+final class MermaidSyntaxError extends \RuntimeException implements ParseError
 {
     public function __construct(
         string $message,
