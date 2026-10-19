@@ -18,7 +18,7 @@ Every model belongs to a family (`Model\Family`). A diagram reaches a language b
 | sequence | direct | unsupported | direct |
 | class | direct | via graph | direct |
 | state | direct | via graph | direct |
-| activity | via graph | via graph | via graph |
+| activity | via graph | via graph | direct |
 | entity | direct | via graph | direct |
 | usecase | direct | via graph | direct |
 
@@ -40,6 +40,12 @@ Each language lacks something the others have. Where it does, the writer degrade
 - **Mermaid** has no plain ellipse or actor, which become circles. It draws dashed lines dotted. It renames any identifier it would misread, such as `end`, a space or punctuation, to `n0`, `n1` and so on, while keeping the label.
 - **PlantUML** writes a deployment diagram. It lays out only top-down or left-to-right. It has no diamond or parallelogram, which become rectangles, and no cross arrowhead, which becomes `+`.
 - A node's compartments become a DOT record, and lines under rules in the label for Mermaid and PlantUML. Mermaid flowcharts have no triangle or diamond arrowhead: a triangle becomes an arrow, and either diamond a circle; PlantUML has no hollow diamond on a deployment link, which becomes `o`.
+
+### Activity
+
+An activity is PlantUML's own: Mermaid and DOT draw its graph, a flowchart of rounded actions, diamonds that test and merge again, black bars that fork and join, partitions as clusters and notes on dotted lines. No language reads it yet.
+
+- **PlantUML** refuses a detach that opens a branch, which is dropped.
 
 ### Class
 
