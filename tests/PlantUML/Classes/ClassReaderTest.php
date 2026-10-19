@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\PlantUML\Classes;
 
 use Janalis\Viz\Model\Direction;
-use Janalis\Viz\PlantUML\Classes\ClassLink;
-use Janalis\Viz\PlantUML\Classes\ClassNote;
 use Janalis\Viz\PlantUML\Classes\PlantUmlClasses;
+use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
+use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\Source\Unsupported;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -53,7 +53,7 @@ final class ClassReaderTest extends TestCase
                 ['Other',    'Circle', true],
                 ['Drawable', 'Fancy',  false],
             ],
-            \array_map(static fn (ClassLink $link): array => [$link->from, $link->to, $link->dashed], $classes->links),
+            \array_map(static fn (PlantUmlLink $link): array => [$link->from, $link->to, $link->dashed], $classes->links),
         );
         $this->assertSame(Direction::LeftRight, $classes->direction);
     }
@@ -163,13 +163,13 @@ final class ClassReaderTest extends TestCase
         $this->assertSame(['net', 'together#1', 'inner'], [$classes->entities['Server']->group, $classes->entities['A']->group, $classes->entities['B']->group]);
         $this->assertEquals(
             [
-                new ClassNote('N1', ['floating']),
-                new ClassNote('N2', ['  several', '  lines']),
-                new ClassNote('note#2', ['beside'], 'Server', 'left'),
-                new ClassNote('note#3', ['on the last one'], 'Server', 'top'),
-                new ClassNote('note#4', ['  over', '  two'], 'A', 'right'),
-                new ClassNote('note#5', ['on the link'], position: 'bottom', link: 0),
-                new ClassNote('note#6', ['  link note'], position: 'bottom', link: 0),
+                new PlantUmlNote('N1', ['floating']),
+                new PlantUmlNote('N2', ['  several', '  lines']),
+                new PlantUmlNote('note#2', ['beside'], 'Server', 'left'),
+                new PlantUmlNote('note#3', ['on the last one'], 'Server', 'top'),
+                new PlantUmlNote('note#4', ['  over', '  two'], 'A', 'right'),
+                new PlantUmlNote('note#5', ['on the link'], position: 'bottom', link: 0),
+                new PlantUmlNote('note#6', ['  link note'], position: 'bottom', link: 0),
             ],
             $classes->notes,
         );
@@ -192,9 +192,12 @@ final class ClassReaderTest extends TestCase
         yield 'middle circle' => ['A --0-- B', 'The native PlantUML renderer does not draw: A --0-- B'];
         yield 'object' => ['object o', 'The native PlantUML renderer does not draw: object o'];
         yield 'namespaced' => ['class a.B', 'The native PlantUML renderer does not draw namespaced names such as a.B'];
-        yield 'note without entity' => ["note left : alone\nclass A", 'The PlantUML note has no entity to stand beside: note left : alone'];
+        yield 'mixed in' => ["allowmixing\nclass A\nactor B", 'The native PlantUML renderer does not draw: actor B'];
+        yield 'mixed with a prefix' => ["class A\nmix_actor B", 'The native PlantUML renderer does not draw: mix_actor B'];
+        yield 'unsupported before a refusal' => ["class A\nobject o\nentity E\nclass E", 'PlantUML cannot declare E again as class'];
+        yield 'note alone' => ["note left : alone\nclass A", 'The PlantUML note has no entity to stand beside: note left : alone'];
+        yield 'note on no link' => ["class A\nnote on link : alone", 'The PlantUML note has no link to stand on: note on link : alone'];
         yield 'kind changed' => ["entity E\nclass E", 'PlantUML cannot declare E again as class'];
-        yield 'note without link' => ['note on link : alone', 'The PlantUML note has no link to stand on: note on link : alone'];
     }
 
     #[DataProvider('refused')]

@@ -27,7 +27,10 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | Diagram | Native |
 | --- | --- |
 | Class | yes, below |
-| Sequence, description, state, activity | not yet: drawn by PlantUML |
+| State | yes, below |
+| Sequence, description, activity | not yet: drawn by PlantUML |
+
+A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
 ### Class diagrams
 
@@ -41,3 +44,14 @@ Laid out as PlantUML's svek lays them out, by the native dot engine: each classi
 | Packages and namespaces, `together`, notes (floating, beside a classifier, on a link), `hide`/`show` of members, fields, methods, circles, stereotypes and classifiers, `left to right direction` | Styles by stereotype on links |
 
 Text is set in the bundled monospace font, so boxes are wider than PlantUML's, and positions follow the native dot engine, whose tie-breaking can order a rank differently from `dot`.
+
+### State diagrams
+
+Each scope is laid out as svek lays it out: a composite state no transition crosses into is laid out on its own — each concurrent region apart, stacked side by side for `||` and one above the other for `--`, with dashed lines between them — and stands in its scope as one box, its name and description above; a composite state a transition crosses into is a cluster, transitions to it ending where they meet its frame. Each scope, and each region, has its own `[*]`.
+
+| Drawn natively | Left to PlantUML |
+| --- | --- |
+| `state`, `state "Name" as S`, `state S as "Name"`, descriptions after `:` or as `S : text`; `<<choice>>`, `<<fork>>`, `<<join>>`, `<<start>>`, `<<end>>`, `<<history>>`, `<<history*>>`; `#colours` | `<<entryPoint>>`, `<<exitPoint>>`, pins and expansion nodes, `<<sdlreceive>>`; `frame`; names with a namespace |
+| Composite states with `{ … }` or `end state`, concurrent regions with `--` and `||` | Concurrent regions a transition crosses into |
+| Transitions with `[*]`, `[H]`, `[H*]`, `S[H]`, `==bar==`, `x` at the start and `o` at the end, directions, styles and labels; notes beside states, floating, and on transitions; `hide empty description`; `left to right direction` | `remove`, `restore`, URLs, maps and JSON |
+

@@ -2,15 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Janalis\Viz\PlantUML\Classes;
-
-use Janalis\Viz\PlantUML\Links\LinkDecor;
+namespace Janalis\Viz\PlantUML\Links;
 
 /**
- * A link between two entities as written: its ends in the order dot lays them out, their
+ * A link between two entities as written, in any diagram that has them: its ends in the order dot lays them out, their
  * marks, how many ranks it spans, its line, and its labels in the middle and at each end.
  */
-final class ClassLink
+final class PlantUmlLink
 {
     public bool $dashed = false;
     public bool $dotted = false;

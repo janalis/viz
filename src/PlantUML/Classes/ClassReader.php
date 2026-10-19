@@ -7,7 +7,10 @@ namespace Janalis\Viz\PlantUML\Classes;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
+use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
+use Janalis\Viz\PlantUML\Links\PlantUmlLink;
+use Janalis\Viz\PlantUML\PlantUmlRefusal;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -20,18 +23,19 @@ final class ClassReader
 {
     /** @var array<string, ClassEntity> */
     private array $entities = [];
-    /** @var list<ClassLink> */
+    /** @var list<PlantUmlLink> */
     private array $links = [];
     /** @var array<string, ClassGroup> */
     private array $groups = [];
     /** @var list<string> the groups open around the current line, innermost last */
     private array $open = [];
-    /** @var list<ClassNote> */
+    /** @var list<PlantUmlNote> */
     private array $notes = [];
     /** @var list<array{bool, ?string, bool, string}> show or hide, of what, only when empty, which part */
     private array $visibility = [];
     private Direction $direction = Direction::TopBottom;
     private ?string $last = null;
+    private bool $mixing = false;
 
     /**
      * @param list<PlantUmlCommand> $commands the class diagram commands the lines matched
@@ -40,8 +44,17 @@ final class ClassReader
     public static function read(PlantUmlDocument $document, array $commands): PlantUmlClasses
     {
         $reader = new self();
+        // A command not drawn natively is reported only once every command has run: one after it may yet make PlantUML refuse the lines.
+        $unsupported = null;
         foreach ($commands as $command) {
-            $reader->execute($command);
+            try {
+                $reader->execute($command);
+            } catch (Unsupported $notDrawn) {
+                $unsupported ??= $notDrawn;
+            }
+        }
+        if (null !== $unsupported) {
+            throw $unsupported;
         }
 
         return new PlantUmlClasses($document, $reader->entities, $reader->links, $reader->groups, $reader->notes, $reader->visibility, $reader->direction);
@@ -50,7 +63,7 @@ final class ClassReader
     private function execute(PlantUmlCommand $command): void
     {
         match ($command->name) {
-            'CommandNope', 'CommandFootboxIgnored' => null,
+            'CommandNope', 'CommandFootboxIgnored', 'CommandHideEmptyDescription' => null,
             'CommandRankDir' => $this->direction = \str_starts_with(\strtolower($command->line()), 'left') ? Direction::LeftRight : Direction::TopBottom,
             'CommandCreateClass' => $this->create($command, []),
             'CommandCreateClassMultilines' => $this->create($command, $command->body()),
@@ -64,6 +77,8 @@ final class ClassReader
             'CommandFactoryNoteOnEntity$1', 'CommandFactoryNoteOnEntity$2' => $this->beside($command),
             'CommandFactoryNoteOnLink$1', 'CommandFactoryNoteOnLink$2' => $this->onLink($command),
             'CommandHideShowByGender', 'CommandHideShow2' => $this->hide($command),
+            'CommandAllowMixing' => $this->mixing = true,
+            'CommandCreateElementFull2' => $this->element($command),
             default => throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line()),
         };
     }
@@ -82,7 +97,7 @@ final class ClassReader
         // As PlantUML, a classifier declared again may change between these kinds only.
         $mutable = ['annotation', 'abstract', 'class', 'enum', 'interface', 'record', 'dataclass'];
         if ($known && $type !== $entity->type && (!\in_array($entity->type, $mutable, strict: true) || !\in_array($type, $mutable, strict: true))) {
-            throw new Unsupported('PlantUML cannot declare '.$entity->id.' again as '.$type);
+            throw new PlantUmlRefusal('PlantUML cannot declare '.$entity->id.' again as '.$type);
         }
         $entity->type = $type;
         $entity->visibility = $command->get('VISIBILITY');
@@ -105,10 +120,20 @@ final class ClassReader
         foreach (\explode(',', \trim($parents, characters: '"')) as $id) {
             $parent = $this->entity(\trim($id));
             $parent->type = \array_key_exists($parent->id, $this->entities) && 'class' !== $parent->type ? $parent->type : $type;
-            $link = new ClassLink($parent->id, $entity->id, LinkDecor::Extends, LinkDecor::None, length: 2);
+            $link = new PlantUmlLink($parent->id, $entity->id, LinkDecor::Extends, LinkDecor::None, length: 2);
             $link->dashed = 'interface' === $type && 'interface' !== $entity->type;
             $this->links[] = $link;
         }
+    }
+
+    /** An element of another kind: refused without `allowmixing`, as PlantUML refuses it, and not drawn natively with it. */
+    private function element(PlantUmlCommand $command): never
+    {
+        if (!$this->mixing && !\str_starts_with(\strtolower($command->line()), 'mix_')) {
+            throw new PlantUmlRefusal('A class diagram mixes in other elements only after allowmixing');
+        }
+
+        throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
     }
 
     private function member(PlantUmlCommand $command): void
@@ -146,7 +171,7 @@ final class ClassReader
     private function floating(PlantUmlCommand $command): void
     {
         $lines = 'CommandFactoryNote$1' === $command->name ? self::split((string) $command->get('DISPLAY')) : $command->body();
-        $this->notes[] = new ClassNote((string) $command->get('CODE'), $lines, color: $command->get('COLOR'), group: $this->current());
+        $this->notes[] = new PlantUmlNote((string) $command->get('CODE'), $lines, color: $command->get('COLOR'), group: $this->current());
     }
 
     private function beside(PlantUmlCommand $command): void
@@ -154,19 +179,19 @@ final class ClassReader
         $id = $command->get('CODE');
         $entity = null === $id ? $this->last : $this->entity($id)->id;
         if (null === $entity) {
-            throw new Unsupported('The PlantUML note has no entity to stand beside: '.$command->line());
+            throw new PlantUmlRefusal('The PlantUML note has no entity to stand beside: '.$command->line());
         }
         $lines = 'CommandFactoryNoteOnEntity$1' === $command->name ? self::split((string) $command->get('NOTE')) : $command->body();
-        $this->notes[] = new ClassNote('note#'.\count($this->notes), $lines, $entity, \strtolower((string) $command->get('POSITION')), color: $command->get('COLOR'), group: $this->current());
+        $this->notes[] = new PlantUmlNote('note#'.\count($this->notes), $lines, $entity, \strtolower((string) $command->get('POSITION')), color: $command->get('COLOR'), group: $this->current());
     }
 
     private function onLink(PlantUmlCommand $command): void
     {
         if ([] === $this->links) {
-            throw new Unsupported('The PlantUML note has no link to stand on: '.$command->line());
+            throw new PlantUmlRefusal('The PlantUML note has no link to stand on: '.$command->line());
         }
         $lines = 'CommandFactoryNoteOnLink$2' === $command->name ? self::split((string) $command->get('NOTE')) : $command->body();
-        $this->notes[] = new ClassNote(
+        $this->notes[] = new PlantUmlNote(
             'note#'.\count($this->notes),
             $lines,
             position: \strtolower($command->get('POSITION') ?? 'bottom'),

@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\Classes;
 
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
+use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 
 /**
  * A link command read as PlantUML reads it: the marks at each end, a dotted body for a dashed
@@ -15,7 +16,7 @@ use Janalis\Viz\PlantUML\Links\LinkDecor;
  */
 final class ClassLinks
 {
-    public static function read(PlantUmlCommand $command, string $from, string $to): ClassLink
+    public static function read(PlantUmlCommand $command, string $from, string $to): PlantUmlLink
     {
         $head1 = (string) $command->get('ARROW_HEAD1');
         $head2 = (string) $command->get('ARROW_HEAD2');
@@ -23,7 +24,7 @@ final class ClassLinks
         $full = \str_replace('_', replace: '', subject: $head1).$body.\str_replace('_', replace: '', subject: $head2);
         $direction = self::direction($full);
         $length = \in_array($direction, ['left', 'right'], strict: true) ? 1 : \strlen((string) \preg_replace('/[^-.=]/', replacement: '', subject: $full));
-        $link = new ClassLink($from, $to, LinkDecor::left($head1), LinkDecor::right($head2), \max(1, $length));
+        $link = new PlantUmlLink($from, $to, LinkDecor::left($head1), LinkDecor::right($head2), \max(1, $length));
         $link->dashed = \str_contains((string) $command->get('ARROW_BODY1'), '.') || \str_contains((string) $command->get('ARROW_BODY2'), '.');
         [$link->firstLabel, $link->secondLabel, $text] = self::labels($command);
         [$link->label, $link->labelArrow] = self::arrow($text);
@@ -96,7 +97,7 @@ final class ClassLinks
     }
 
     /** An inverted link with what it carries, its label's arrow turned to match. */
-    private static function carried(ClassLink $link, ClassLink $inverted): ClassLink
+    private static function carried(PlantUmlLink $link, PlantUmlLink $inverted): PlantUmlLink
     {
         $inverted->label = $link->label;
         $inverted->labelArrow = match ($link->labelArrow) {
@@ -109,7 +110,7 @@ final class ClassLinks
     }
 
     /** Applies `[#red,dashed,bold,dotted,hidden,norank,thickness=2]`. */
-    private static function style(ClassLink $link, ?string $style): void
+    public static function style(PlantUmlLink $link, ?string $style): void
     {
         foreach (\explode(',', \str_replace(';', replace: ',', subject: (string) $style)) as $part) {
             $part = \strtolower(\trim($part));

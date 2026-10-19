@@ -9,6 +9,7 @@ use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
+use Janalis\Viz\PlantUML\States\StateFamily;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -30,7 +31,7 @@ final readonly class PlantUmlPipeline implements Pipeline
     /** The pipeline with every family drawn natively. */
     public static function native(): self
     {
-        return new self(['class' => new ClassFamily()]);
+        return new self(['class' => new ClassFamily(), 'state' => new StateFamily()]);
     }
 
     #[\Override]
@@ -46,6 +47,7 @@ final readonly class PlantUmlPipeline implements Pipeline
     public function diagram(string $source): PlantUmlDiagram
     {
         $document = PlantUmlDocument::read(PlantUmlSource::parse($source));
+        $refusal = null;
         foreach (self::FACTORIES as $factory => $name) {
             if ('description' === $factory && PlantUmlKinds::legacyActivity($document)) {
                 throw new Unsupported('The native PlantUML renderer does not draw the legacy activity syntax');
@@ -59,11 +61,20 @@ final readonly class PlantUmlPipeline implements Pipeline
                 throw new Unsupported('The native PlantUML renderer does not draw '.$name.' diagrams');
             }
 
-            return $family->read($document, $commands);
+            try {
+                return $family->read($document, $commands);
+            } catch (PlantUmlRefusal $refused) {
+                $refusal = $refused;
+                continue;
+            }
         }
 
         $claimed = PlantUmlKinds::claimed($document);
 
-        throw new Unsupported(null === $claimed ? 'No PlantUML diagram reads this source' : 'The native PlantUML renderer does not draw '.$claimed);
+        throw new Unsupported(match (true) {
+            null !== $claimed => 'The native PlantUML renderer does not draw '.$claimed,
+            null !== $refusal => $refusal->getMessage(),
+            default => 'No PlantUML diagram reads this source',
+        }, previous: $refusal);
     }
 }

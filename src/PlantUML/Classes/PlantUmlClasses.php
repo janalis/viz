@@ -7,6 +7,8 @@ namespace Janalis\Viz\PlantUML\Classes;
 use Janalis\Viz\Model\Classes\ClassDiagram;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
+use Janalis\Viz\PlantUML\Language\PlantUmlNote;
+use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\PlantUmlDiagram;
 
 /** A PlantUML class diagram read natively: what its lines declared, drawn as PlantUML draws it. */
@@ -14,9 +16,9 @@ final readonly class PlantUmlClasses implements PlantUmlDiagram
 {
     /**
      * @param array<string, ClassEntity> $entities
-     * @param list<ClassLink> $links
+     * @param list<PlantUmlLink> $links
      * @param array<string, ClassGroup> $groups
-     * @param list<ClassNote> $notes
+     * @param list<PlantUmlNote> $notes
      * @param list<array{bool, ?string, bool, string}> $visibility each `show` or `hide`: shown, of what, only when empty, which part
      */
     public function __construct(

@@ -43,7 +43,7 @@ final class LanguagesTest extends TestCase
     public function testPlantUmlIsReadForTheFamiliesItDrawsNatively(): void
     {
         $this->assertSame(
-            [Family::Classes],
+            [Family::Classes, Family::State],
             new Languages()
                 ->reader(SourceFormat::PlantUml)
                 ->families(),

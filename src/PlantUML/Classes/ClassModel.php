@@ -14,7 +14,9 @@ use Janalis\Viz\Model\Classes\Relation;
 use Janalis\Viz\Model\Classes\RelationEnd;
 use Janalis\Viz\Model\Classes\Visibility;
 use Janalis\Viz\Model\LineStyle;
+use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
+use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 
 /**
  * A native PlantUML class diagram as the shared class model: classifiers with their members
@@ -30,9 +32,9 @@ final class ClassModel
 
         return new ClassDiagram(
             \array_values(\array_map(self::classifier(...), $classes->entities)),
-            \array_values(\array_map(self::relation(...), \array_filter($classes->links, static fn (ClassLink $link): bool => !$link->hidden))),
+            \array_values(\array_map(self::relation(...), \array_filter($classes->links, static fn (PlantUmlLink $link): bool => !$link->hidden))),
             self::packages($classes, null),
-            \array_map(static fn (ClassNote $note): Note => new Note(\implode("\n", $note->lines), $note->entity), $classes->notes),
+            \array_map(static fn (PlantUmlNote $note): Note => new Note(\implode("\n", $note->lines), $note->entity), $classes->notes),
             $classes->direction,
             null === $title ? '' : \implode("\n", $title->lines),
         );
@@ -121,7 +123,7 @@ final class ClassModel
             : new Member(\trim(\substr($text, $space + 1)), $visibility, \trim(\substr($text, offset: 0, length: $space)), static: $static, abstract: $abstract);
     }
 
-    private static function relation(ClassLink $link): Relation
+    private static function relation(PlantUmlLink $link): Relation
     {
         return new Relation(
             $link->from,

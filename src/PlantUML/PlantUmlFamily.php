@@ -14,6 +14,7 @@ interface PlantUmlFamily
     /**
      * @param list<PlantUmlCommand> $commands
      * @throws Unsupported when a command is not drawn natively
+     * @throws PlantUmlRefusal when PlantUML fails to carry out a command, so tries its next factory
      */
     public function read(PlantUmlDocument $document, array $commands): PlantUmlDiagram;
 }
