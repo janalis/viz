@@ -28,7 +28,7 @@ Every model belongs to a family (`Model\Family`). A diagram reaches a language b
 | --- | --- |
 | Mermaid | graph (flowcharts), sequence, state, class, entity and use case, natively |
 | DOT | graph, natively: the whole language, with its rules for defaults, subgraphs, strict graphs and clusters, checked against dot itself |
-| PlantUML | sequence, class, state, use case, and graph (from component and deployment diagrams), natively: the diagrams the native renderer reads (see [the compatibility notes](plantuml-compatibility.md)); others are refused |
+| PlantUML | sequence, class, state, activity, use case, and graph (from component and deployment diagrams), natively: the diagrams the native renderer reads (see [the compatibility notes](plantuml-compatibility.md)); others are refused |
 
 ## What each writer loses
 
@@ -43,7 +43,7 @@ Each language lacks something the others have. Where it does, the writer degrade
 
 ### Activity
 
-An activity is PlantUML's own: Mermaid and DOT draw its graph, a flowchart of rounded actions, diamonds that test and merge again, black bars that fork and join, partitions as clusters and notes on dotted lines. No language reads it yet.
+An activity is PlantUML's own: Mermaid and DOT draw its graph, a flowchart of rounded actions, diamonds that test and merge again, black bars that fork and join, partitions as clusters and notes on dotted lines. PlantUML reads it from its new activity syntax; the else branch is kept only where it is written, a `kill` or `detach` ends its flow, and a `break` is left out.
 
 - **PlantUML** refuses a detach that opens a branch, which is dropped.
 
