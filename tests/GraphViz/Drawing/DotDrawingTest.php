@@ -317,6 +317,22 @@ final class DotDrawingTest extends TestCase
         $this->assertEqualsWithDelta($none->width, self::draw('digraph { pad=-1; a -> b; }')->width, 1e-9);
     }
 
+    public function testDecoratedLabelsAreUnderlinedAndJoinedToTheirEdge(): void
+    {
+        $drawing = self::draw('digraph { a -> b [label="hello" decorate=true color=red]; a -> c [label="x" decorate=no] }');
+        $lines = self::kinds($drawing, MarkKind::Polyline);
+        $this->assertCount(3, $lines, 'two edges and one decoration');
+        [$edge, $decoration] = [$lines[0], $lines[1]];
+        $label = self::texts($drawing)[0];
+
+        $this->assertSame('#ff0000', $decoration->stroke);
+        [$far, $near, $middle] = $decoration->points;
+        $this->assertSame($far[1], $near[1], 'an underline');
+        $this->assertGreaterThan($label->points[0][1], $near[1], 'below the label');
+        $this->assertLessThan(\abs($far[0] - $middle[0]), \abs($near[0] - $middle[0]), 'ending at the end nearer the edge');
+        $this->assertContains($middle, $edge->points, 'joined to the edge');
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));

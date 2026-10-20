@@ -209,6 +209,19 @@ final class DotDrawing
             default => $points[\intdiv(\count($points), num2: 2)],
         };
         $this->text($text, $x, $y);
+        if (\in_array(\strtolower($edge->attribute('decorate')), ['true', 'yes', '1'], strict: true)) {
+            // As dot, a decorated label is underlined, from its far end to its near one, then joined to the edge's middle.
+            [$width, $height] = $text->size();
+            [$middleX, $middleY] = $points[\intdiv(\count($points), num2: 2)];
+            $bottom = $y + ($height / 2);
+            $side = $middleX < $x ? -1 : 1;
+            $this->marks[] = new Mark(
+                MarkKind::Polyline,
+                [[$x - (($side * $width) / 2), $bottom], [$x + (($side * $width) / 2), $bottom], [$middleX, $middleY]],
+                stroke: $color,
+                strokeWidth: $penWidth,
+            );
+        }
     }
 
     private function node(GraphNode $placed): void
