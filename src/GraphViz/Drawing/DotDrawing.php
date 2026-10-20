@@ -71,6 +71,13 @@ final class DotDrawing
             $this->text($title, $width / 2, $height + ($titleHeight / 2));
             $height += $titleHeight + 4;
         }
+        // The layout pads the drawing by dot's default 4 points; `pad` asks for more or less.
+        [$padX, $padY] = self::pad($this->graph->attribute('pad'));
+        if (4.0 !== $padX || 4.0 !== $padY) {
+            $this->marks = \array_map(static fn (Mark $mark): Mark => Units::moved($mark, $padX - 4.0, $padY - 4.0), $this->marks);
+            $width += 2 * ($padX - 4.0);
+            $height += 2 * ($padY - 4.0);
+        }
         if (null !== $gradient) {
             // A gradient background is a box behind everything, a plain one the drawing's own.
             \array_unshift($this->marks, new Mark(MarkKind::Polygon, [[0.0, 0.0], [$width, 0.0], [$width, $height], [0.0, $height]], stroke: 'none', fill: $background, gradient: $gradient));
@@ -621,6 +628,19 @@ final class DotDrawing
      * How much `size` shrinks a drawing, in inches as `width,height`: down to fit, and up to
      * fill when it ends in `!`.
      */
+    /**
+     * The `pad` around the drawing, across and down, in points: one length in inches for both, or two.
+     *
+     * @return array{float, float}
+     */
+    private static function pad(string $pad): array
+    {
+        $parts = \explode(',', $pad);
+        $inches = static fn (string $value): float => \max(0.0, \min(DotLayoutInput::MAX_INCHES, DotNodes::number(\trim($value), 4.0 / DotLayoutInput::POINTS)));
+
+        return [$inches($parts[0]) * DotLayoutInput::POINTS, $inches($parts[1] ?? $parts[0]) * DotLayoutInput::POINTS];
+    }
+
     private static function scale(string $size, float $width, float $height): float
     {
         $parts = \explode(',', \rtrim($size, characters: '!'));

@@ -305,6 +305,18 @@ final class DotDrawingTest extends TestCase
         $this->assertSame(['#ff0000', null], [$b->fill, $b->gradient], 'one colour fills plainly');
     }
 
+    public function testPadSurroundsTheDrawing(): void
+    {
+        $plain = self::draw('digraph { a -> b; }');
+        $none = self::draw('digraph { pad=0; a -> b; }');
+        $wide = self::draw('digraph { pad="1,0.2"; a -> b; }');
+
+        $this->assertEqualsWithDelta([$plain->width - (8 * Units::POINT), $plain->height - (8 * Units::POINT)], [$none->width, $none->height], 1e-9, 'four points a side by default');
+        $this->assertEqualsWithDelta([$none->width + (144 * Units::POINT), $none->height + (28.8 * Units::POINT)], [$wide->width, $wide->height], 1e-9);
+        $this->assertEqualsWithDelta($plain->marks[0]->points[0][0] + (68 * Units::POINT), $wide->marks[0]->points[0][0], 1e-9, 'and everything moves in');
+        $this->assertEqualsWithDelta($none->width, self::draw('digraph { pad=-1; a -> b; }')->width, 1e-9);
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));
