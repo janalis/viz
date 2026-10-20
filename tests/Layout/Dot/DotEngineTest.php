@@ -142,6 +142,19 @@ final class DotEngineTest extends TestCase
         $this->assertLessThan($loose->endpoints['a']->x, $loose->endpoints['b']->x, 'unconstrained, the nodes keep their order');
     }
 
+    public function testALongEdgePullsItsRealEndsNoHarderThanAPlainOne(): void
+    {
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            \array_map(static fn (string $id): LayoutNode => new LayoutNode($id, $id, 54, 36), ['a', 'x', 'y', 'b', 'w', 'c']),
+            [new LayoutEdge(0, 'x', 'b'), new LayoutEdge(1, 'y', 'w'), new LayoutEdge(2, 'b', 'c'), new LayoutEdge(3, 'w', 'c'), new LayoutEdge(4, 'a', 'c')],
+            spacing: new Spacing(36, 18, 4),
+            rankSets: [new LayoutRankSet(RankKind::Same, ['a', 'x', 'y'])],
+        )));
+
+        $this->assertSame([[31.0, 22.0], [103.0, 22.0], [175.0, 22.0], [103.0, 94.0], [175.0, 94.0], [103.0, 166.0]], self::centres($placement), 'dot: c under b, not pulled to a');
+        $this->assertSame([206.0, 188.0], [$placement->graph->width, $placement->graph->height], 'dot: 198 by 180, and the pad');
+    }
+
     public function testEveryStepYields(): void
     {
         $steps = 0;

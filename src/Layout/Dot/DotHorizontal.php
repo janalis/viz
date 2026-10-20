@@ -8,12 +8,15 @@ namespace Janalis\Viz\Layout\Dot;
  * Where each node sits across its rank, by network simplex on the auxiliary graph of Gansner
  * et al. Neighbours keep the node separation, whatever clusters lie between them; the
  * outermost clusters two neighbours do not share keep a margin apart, and from the graph's
- * edge. Each layered edge pulls its ends level through a slack node, its weight times 1, 2
- * or 8 as its ends are real or virtual, so long edges run straight. Each cluster is bounded
+ * edge. Each layered edge pulls its ends level through a slack node, its weight times 8
+ * between two virtual nodes, so long edges run straight, and 1 otherwise, as dot pulls them. Each cluster is bounded
  * by a node either side that holds its nodes, sub-clusters and label a margin inside.
  */
 final class DotHorizontal
 {
+    /** How much harder a stretch between two virtual nodes pulls its ends level. */
+    private const int STRAIGHT = 8;
+
     /** @var list<float> each node's x */
     public array $x = [];
     /** @var list<array{float, float}> each cluster's left and right */
@@ -57,14 +60,27 @@ final class DotHorizontal
         $solved = new NetworkSimplex($this->count, $this->edges)->solve(NetworkSimplex::BALANCE_SIDES);
         yield from $solved;
         $values = $solved->getReturn();
-        $shift = $this->padding - $values[$this->rootLeft];
+        // The graph's bounds hold what it draws, its clusters a margin inside, nothing pulling them in: they lie at its extremes.
+        $lefts = [];
+        $rights = [];
+        foreach ($this->layers->rank as $node => $_) {
+            $lefts[] = $values[$node] - $this->layers->left[$node];
+            $rights[] = $values[$node] + $this->layers->right[$node];
+        }
+        foreach ($this->layers->parents as $cluster => $_) {
+            $lefts[] = $values[$this->left($cluster)] - DotPosition::MARGIN;
+            $rights[] = $values[$this->right($cluster)] + DotPosition::MARGIN;
+        }
+        $low = [] === $lefts ? $values[$this->rootLeft] : \min($lefts);
+        $high = [] === $rights ? $values[$this->rootRight] : \max($rights);
+        $shift = $this->padding - $low;
         foreach ($this->layers->rank as $node => $_) {
             $this->x[] = $values[$node] + $shift;
         }
         foreach ($this->layers->parents as $cluster => $_) {
             $this->boxes[] = [$values[$this->left($cluster)] + $shift, $values[$this->right($cluster)] + $shift];
         }
-        $this->width = $values[$this->rootRight] - $values[$this->rootLeft] + (2 * $this->padding);
+        $this->width = $high - $low + (2 * $this->padding);
     }
 
     /** @param list<int> $nodes one rank, in order */
@@ -122,8 +138,10 @@ final class DotHorizontal
     {
         foreach ($this->layers->edges as [$tail, $head, $weight, $omega]) {
             $slack = $this->count++;
-            $this->edges[] = [$slack, $tail, 0, $omega * $weight];
-            $this->edges[] = [$slack, $head, 0, $omega * $weight];
+            // As dot, a stretch between two virtual nodes pulls hardest; one with a real end, as a plain edge.
+            $pull = $omega >= self::STRAIGHT ? self::STRAIGHT : 1;
+            $this->edges[] = [$slack, $tail, 0, $pull * $weight];
+            $this->edges[] = [$slack, $head, 0, $pull * $weight];
         }
         foreach ($this->layers->flat as [$tail, $head]) {
             $slack = $this->count++;
