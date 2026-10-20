@@ -55,7 +55,7 @@ final readonly class DescriptionShapes
                 $this->polyline([[$x, $y + 10], [$right - 10, $y + 10], [$right, $y]]),
                 $this->polyline([[$right - 10, $y + 10], [$right - 10, $bottom]]),
             ],
-            'frame' => [$this->polygon(ClassBox::corners($x, $y, $width, $height)), $this->polyline([[$x, $y + 15], [$x + 30, $y + 15], [$x + 35, $y + 10], [$x + 35, $y]])],
+            'frame' => self::frame($x, $y, $width, $height, $this->line, $this->back, $this->stroke, 0.0, 0.0),
             'stack' => [
                 $this->polygon(ClassBox::corners($x + 10, $y, $width - 20, $height)),
                 $this->polyline([[$x, $y], [$x + 10, $y + 5], [$x + 10, $bottom - 5], [$x, $bottom]]),
@@ -63,6 +63,21 @@ final readonly class DescriptionShapes
             ],
             default => [$this->polygon(ClassBox::corners($x + 4, $y, $width - 4, $height - 4)), $this->polygon(ClassBox::corners($x, $y + 4, $width - 4, $height - 4))],
         };
+    }
+
+    /**
+     * A frame as PlantUML draws one: a box with a tab at its top left, the tab as wide as its
+     * title and 10 more, 3 taller, its corner cut 10 — or with no title, a third of the box wide,
+     * 12 tall, its corner cut 7.
+     *
+     * @return list<Mark>
+     */
+    public static function frame(float $x, float $y, float $width, float $height, string $line, string $back, float $stroke, float $titleWidth, float $titleHeight): array
+    {
+        [$tab, $tall, $corner] = 0.0 === $titleWidth ? [$width / 3, 12.0, 7.0] : [$titleWidth + 10, $titleHeight + 3, 10.0];
+        $pen = new self($line, $back, $stroke);
+
+        return [$pen->polygon(ClassBox::corners($x, $y, $width, $height)), $pen->polyline([[$x + $tab, $y], [$x + $tab, $y + $tall - $corner], [$x + $tab - $corner, $y + $tall], [$x, $y + $tall]])];
     }
 
     /** @return list<Mark> a box with a tab or a folded corner: a folder, a package, a file, an artifact */

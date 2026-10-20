@@ -1,0 +1,10 @@
+@startuml
+start
+fork
+  :Mail;
+  note left: async
+fork again
+  :Log;
+end fork
+stop
+@enduml

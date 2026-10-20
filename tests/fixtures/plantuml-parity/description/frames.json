@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 141,
+    "height": 321,
+    "words": [
+        "Api",
+        "Platform",
+        "Storage",
+        "Worker"
+    ],
+    "baselines": [
+        [
+            "Api",
+            75.535
+        ],
+        [
+            "Platform",
+            21.535
+        ],
+        [
+            "Storage",
+            283.505
+        ],
+        [
+            "Worker",
+            182.015
+        ]
+    ]
+}

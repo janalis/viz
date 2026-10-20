@@ -1,0 +1,49 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 157,
+    "height": 206,
+    "words": [
+        "Alice",
+        "Alice",
+        "Bob",
+        "Bob",
+        "decide",
+        "hmm",
+        "idle",
+        "think"
+    ],
+    "baselines": [
+        [
+            "Alice",
+            30.535
+        ],
+        [
+            "Alice",
+            184.955
+        ],
+        [
+            "Bob",
+            30.535
+        ],
+        [
+            "Bob",
+            184.955
+        ],
+        [
+            "decide",
+            108.367
+        ],
+        [
+            "hmm",
+            72.057
+        ],
+        [
+            "idle",
+            142.678
+        ],
+        [
+            "think",
+            66.057
+        ]
+    ]
+}

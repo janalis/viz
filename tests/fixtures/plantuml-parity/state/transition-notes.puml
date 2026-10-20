@@ -1,0 +1,8 @@
+@startuml
+[*] --> Locked
+Locked --> Open : coin
+note on link
+  pays
+end note
+Open --> Locked : push
+@enduml

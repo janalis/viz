@@ -1,0 +1,10 @@
+@startuml
+start
+group Setup {
+  :Install;
+}
+rectangle Run {
+  :Execute;
+}
+stop
+@enduml

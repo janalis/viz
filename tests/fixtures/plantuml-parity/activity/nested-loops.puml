@@ -1,0 +1,9 @@
+@startuml
+start
+while (More rows?)
+  repeat
+    :Read a cell;
+  repeat while (More cells?)
+endwhile
+stop
+@enduml

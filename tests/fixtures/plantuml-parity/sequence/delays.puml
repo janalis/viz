@@ -1,0 +1,7 @@
+@startuml
+Alice -> Bob : ping
+...5 minutes later...
+Bob -> Alice : pong
+|||
+Alice -> Bob : bye
+@enduml

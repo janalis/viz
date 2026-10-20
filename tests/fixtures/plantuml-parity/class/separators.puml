@@ -1,0 +1,11 @@
+@startuml
+class Report {
+  title : String
+  ..
+  pages : int
+  --
+  print()
+  ==
+  export()
+}
+@enduml

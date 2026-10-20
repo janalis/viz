@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 204,
+    "height": 206,
+    "words": [
+        "Admin",
+        "Browse",
+        "Manage",
+        "User"
+    ],
+    "baselines": [
+        [
+            "Admin",
+            190.035
+        ],
+        [
+            "Browse",
+            72.493
+        ],
+        [
+            "Manage",
+            159.493
+        ],
+        [
+            "User",
+            79.035
+        ]
+    ]
+}

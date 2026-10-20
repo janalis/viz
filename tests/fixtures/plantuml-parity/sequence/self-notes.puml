@@ -1,0 +1,6 @@
+@startuml
+Alice -> Alice : think
+note right : hmm
+Alice -> Bob : decide
+hnote over Bob : idle
+@enduml

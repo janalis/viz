@@ -24,7 +24,7 @@ use Janalis\Viz\PlantUML\Style\Style;
 final class LinkPainter
 {
     /** @return list<Mark> */
-    public static function marks(PlantUmlLink $link, Placement $placement, int $edge, PlantUmlText $label, Style $style, string $background): array
+    public static function marks(PlantUmlLink $link, Placement $placement, int $edge, LinkLabel $label, Style $style, string $background): array
     {
         if ($link->hidden) {
             return [];

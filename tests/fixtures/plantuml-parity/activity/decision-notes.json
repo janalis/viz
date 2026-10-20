@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 242,
+    "height": 230,
+    "words": [
+        "Go",
+        "Ready?",
+        "Wait",
+        "checked",
+        "hourly",
+        "no",
+        "yes"
+    ],
+    "baselines": [
+        [
+            "Go",
+            125.912
+        ],
+        [
+            "Ready?",
+            86.468
+        ],
+        [
+            "Wait",
+            125.912
+        ],
+        [
+            "checked",
+            62.568
+        ],
+        [
+            "hourly",
+            62.568
+        ],
+        [
+            "no",
+            79.99
+        ],
+        [
+            "yes",
+            79.99
+        ]
+    ]
+}

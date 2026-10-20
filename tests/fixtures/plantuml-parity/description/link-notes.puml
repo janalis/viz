@@ -1,0 +1,4 @@
+@startuml
+[Client] --> [Server] : HTTPS
+note on link : port 443
+@enduml

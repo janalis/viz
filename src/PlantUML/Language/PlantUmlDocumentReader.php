@@ -10,6 +10,11 @@ use Janalis\Viz\Source\Unsupported;
 /** Reads the commands every PlantUML diagram shares out of a block's lines; see {@see PlantUmlDocument}. */
 final class PlantUmlDocumentReader
 {
+    /** A classifier opening its body. */
+    private const string CLASSIFIER = '/^(?:abstract\s+class|abstract|class|interface|enum|annotation|entity|protocol|struct|exception|metaclass|stereotype|dataclass|record|object|map|json)\s.*\{$/i';
+    /** A note whose text runs over the next lines: neither `:` text nor quoted text on its line. */
+    private const string NOTE = '/^[hr]?note\b(?!.*[:"])/i';
+
     /** Shared commands the native renderer leaves to PlantUML. */
     private const string LEFT = '/^(?:sprite\b|mainframe\b|newpage\b|rotate$|page\s|minwidth\b|skinparamlocked\b|assume\s+transparent|<style>\s*@import|\$\w+\s*=)/i';
 
@@ -40,12 +45,43 @@ final class PlantUmlDocumentReader
             if (1 === \preg_match(self::LEFT, $trimmed)) {
                 throw new Unsupported('The native PlantUML renderer leaves '.\explode(separator: ' ', string: $trimmed, limit: 2)[0].' to PlantUML');
             }
+            if ($this->body($line)) {
+                continue;
+            }
             if (!$this->style($trimmed) && !$this->skin($trimmed) && !$this->caption($trimmed) && !$this->scaled($trimmed)) {
                 $this->kept[] = $line;
             }
         }
 
         return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas);
+    }
+
+    /**
+     * A classifier's body up to its `}`, or a note over several lines up to `end note`, kept
+     * whole: PlantUML's command for them takes every line, so none is a command of the document.
+     */
+    private function body(string $line): bool
+    {
+        $trimmed = \trim($line);
+        $end = match (true) {
+            1 === \preg_match(self::CLASSIFIER, $trimmed) => '/^\s*}\s*$/',
+            1 === \preg_match(self::NOTE, $trimmed) => '/^\s*end\s?note\s*$/i',
+            default => null,
+        };
+        if (null === $end) {
+            return false;
+        }
+        $this->kept[] = $line;
+        $count = \count($this->lines);
+        while ($this->at < $count) {
+            $inner = $this->lines[$this->at++];
+            $this->kept[] = $inner;
+            if (1 === \preg_match($end, $inner)) {
+                break;
+            }
+        }
+
+        return true;
     }
 
     /** `<style>` sheets, on one line or up to `</style>`. */

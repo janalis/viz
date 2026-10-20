@@ -1,0 +1,7 @@
+@startuml
+[*] --> Check
+Check --> Pass : ok
+Check --> Fail : error
+Pass --> [*]
+Fail --> [*]
+@enduml

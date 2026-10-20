@@ -1,0 +1,34 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 143,
+    "height": 225,
+    "words": [
+        "443",
+        "Client",
+        "HTTPS",
+        "Server",
+        "port"
+    ],
+    "baselines": [
+        [
+            "443",
+            123.369
+        ],
+        [
+            "Client",
+            40.535
+        ],
+        [
+            "HTTPS",
+            97.058
+        ],
+        [
+            "Server",
+            199.025
+        ],
+        [
+            "port",
+            123.369
+        ]
+    ]
+}

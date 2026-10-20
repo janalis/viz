@@ -9,6 +9,7 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
+use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
@@ -122,15 +123,18 @@ final class ClassDrawing
     }
 
     /** A link's middle label: its text, and any note on the link below it. */
-    private function label(int $index): PlantUmlText
+    private function label(int $index): LinkLabel
     {
         $link = $this->classes->links[$index];
-        $lines = null === $link->label ? [] : ClassReader::split($link->label);
-        foreach ($this->classes->notes as $note) {
-            $lines = $note->link === $index ? [...$lines, ...$note->lines] : $lines;
-        }
+        $styles = $this->classes->document->styles;
+        $notes = \array_values(\array_filter($this->classes->notes, static fn (PlantUmlNote $note): bool => $note->link === $index));
 
-        return PlantUmlText::styled($lines, $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'arrow']));
+        return LinkLabel::of(null === $link->label ? [] : ClassReader::split($link->label), $styles->style(['root', 'element', 'classDiagram', 'arrow']), $notes, $styles->style([
+            'root',
+            'element',
+            'classDiagram',
+            'note',
+        ]));
     }
 
     /** @return list<Mark> */

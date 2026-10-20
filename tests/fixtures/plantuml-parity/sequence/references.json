@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 119,
+    "height": 205,
+    "words": [
+        "Alice",
+        "Alice",
+        "Bob",
+        "Bob",
+        "done",
+        "init",
+        "phase",
+        "ref",
+        "start"
+    ],
+    "baselines": [
+        [
+            "Alice",
+            30.535
+        ],
+        [
+            "Alice",
+            183.088
+        ],
+        [
+            "Bob",
+            30.535
+        ],
+        [
+            "Bob",
+            183.088
+        ],
+        [
+            "done",
+            139.811
+        ],
+        [
+            "init",
+            111.4
+        ],
+        [
+            "phase",
+            111.4
+        ],
+        [
+            "ref",
+            93.367
+        ],
+        [
+            "start",
+            66.057
+        ]
+    ]
+}

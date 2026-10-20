@@ -11,10 +11,12 @@ use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
+use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
+use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Svek\Svek;
 
 /**
@@ -113,15 +115,18 @@ final class DescriptionDrawing
         ], $group->stereotypes));
     }
 
-    private function label(int $index): PlantUmlText
+    private function label(int $index): LinkLabel
     {
         $link = $this->diagram->links[$index];
-        $lines = null === $link->label ? [] : ClassReader::split($link->label);
-        foreach ($this->diagram->notes as $note) {
-            $lines = $note->link === $index ? [...$lines, ...$note->lines] : $lines;
-        }
+        $styles = $this->diagram->document->styles;
+        $notes = \array_values(\array_filter($this->diagram->notes, static fn (PlantUmlNote $note): bool => $note->link === $index));
 
-        return PlantUmlText::styled($lines, $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'arrow']));
+        return LinkLabel::of(null === $link->label ? [] : ClassReader::split($link->label), $styles->style(['root', 'element', 'componentDiagram', 'arrow']), $notes, $styles->style([
+            'root',
+            'element',
+            'componentDiagram',
+            'note',
+        ]));
     }
 
     /** @return list<Mark> */
@@ -136,13 +141,20 @@ final class DescriptionDrawing
             $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', $group->symbol], $group->stereotypes);
             $line = ClassColors::line($group->color) ?? $style->color('LineColor', '#181818');
             $back = ClassColors::back($group->color) ?? 'none';
-            \array_push($marks, ...DescriptionShapes::outline($group->symbol, $box->x0, $box->y0, $box->x1 - $box->x0, $box->y1 - $box->y0, $line, $back, $style->number('LineThickness', 1.0), 0.0));
-            // A package's or a folder's title sits in its tab; any other container's is centred at its top, lower for the symbols PlantUML draws it lower in.
             $title = $this->title($group);
-            $tabbed = \in_array($group->symbol, ['package', 'folder'], strict: true);
+            [$width, $height, $thickness] = [$box->x1 - $box->x0, $box->y1 - $box->y0, $style->number('LineThickness', 1.0)];
+            \array_push(
+                $marks,
+                ...'frame' === $group->symbol
+                    ? DescriptionShapes::frame($box->x0, $box->y0, $width, $height, $line, $back, $thickness, ...$title->size())
+                    : DescriptionShapes::outline($group->symbol, $box->x0, $box->y0, $width, $height, $line, $back, $thickness, 0.0),
+            );
+            // A package's, a folder's or a frame's title sits in its tab; any other container's is centred at its top, lower for the symbols PlantUML draws it lower in.
+            $tabbed = \in_array($group->symbol, ['package', 'folder', 'frame'], strict: true);
+            [$tabX, $tabY] = 'frame' === $group->symbol ? [3.0, 1.0] : [4.0, 2.0];
             \array_push($marks, ...$title->marks(
-                $tabbed ? $box->x0 + 4 : $box->x0 + ('node' === $group->symbol ? -4.0 : 0.0),
-                $box->y0 + ($tabbed ? 2.0 : self::TITLE_TOPS[$group->symbol] ?? 4.0),
+                $tabbed ? $box->x0 + $tabX : $box->x0 + ('node' === $group->symbol ? -4.0 : 0.0),
+                $box->y0 + ($tabbed ? $tabY : self::TITLE_TOPS[$group->symbol] ?? 4.0),
                 $tabbed ? $title->size()[0] : $box->x1 - $box->x0,
                 $tabbed ? 'left' : 'center',
             ));

@@ -1,0 +1,10 @@
+@startuml
+class Account {
+  - balance : float
+  # owner : String
+  ~ id : int
+  + deposit(amount : float)
+  + {static} open() : Account
+  + {abstract} close()
+}
+@enduml

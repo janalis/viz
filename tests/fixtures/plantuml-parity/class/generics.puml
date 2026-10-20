@@ -1,0 +1,7 @@
+@startuml
+class Box<T> {
+  + get() : T
+}
+class Shelf
+Shelf o-- "many" Box
+@enduml

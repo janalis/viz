@@ -1,0 +1,7 @@
+@startuml
+autoactivate on
+Alice -> Bob : hello
+Bob -> Carol : forward
+return ok
+return fine
+@enduml

@@ -14,10 +14,12 @@ use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
+use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
+use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Svek\Svek;
 use Janalis\Viz\Source\Unsupported;
 
@@ -263,15 +265,18 @@ final class StateDrawing
         return PlantUmlText::styled($node->description, $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'state'], $node->stereotypes));
     }
 
-    private function label(int $index): PlantUmlText
+    private function label(int $index): LinkLabel
     {
         $link = $this->states->links[$index];
-        $lines = null === $link->label ? [] : ClassReader::split($link->label);
-        foreach ($this->states->notes as $note) {
-            $lines = $note->link === $index ? [...$lines, ...$note->lines] : $lines;
-        }
+        $styles = $this->states->document->styles;
+        $notes = \array_values(\array_filter($this->states->notes, static fn (PlantUmlNote $note): bool => $note->link === $index));
 
-        return PlantUmlText::styled($lines, $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'arrow']));
+        return LinkLabel::of(null === $link->label ? [] : ClassReader::split($link->label), $styles->style(['root', 'element', 'stateDiagram', 'arrow']), $notes, $styles->style([
+            'root',
+            'element',
+            'stateDiagram',
+            'note',
+        ]));
     }
 
     /**

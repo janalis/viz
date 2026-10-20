@@ -1,0 +1,10 @@
+@startuml
+start
+if (Ready?) then (yes)
+  :Go;
+else (no)
+  :Wait;
+endif
+note right: checked hourly
+stop
+@enduml

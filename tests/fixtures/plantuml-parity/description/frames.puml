@@ -1,0 +1,9 @@
+@startuml
+frame Platform {
+  [Api]
+  [Worker]
+}
+cloud Storage
+[Api] --> [Worker]
+[Worker] --> Storage
+@enduml

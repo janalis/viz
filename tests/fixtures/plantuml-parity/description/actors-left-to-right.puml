@@ -1,0 +1,8 @@
+@startuml
+left to right direction
+actor User
+actor Admin
+User --> (Browse)
+Admin --> (Browse)
+Admin --> (Manage)
+@enduml
