@@ -9,7 +9,7 @@ use Janalis\Viz\Source\Unsupported;
 
 /**
  * What the native dot drawing leaves to the `dot` command: other layout engines, HTML in
- * attributes that are no labels, images and `ratio=compress`.
+ * attributes that are no labels, and images.
  */
 final class DotFeatureGate
 {
@@ -26,11 +26,7 @@ final class DotFeatureGate
     {
         $layout = \strtolower($graph->attribute('layout', 'dot'));
 
-        return match (true) {
-            !\in_array($layout, ['', 'dot', 'neato', 'twopi', 'circo', 'fdp', 'sfdp', 'osage', 'patchwork', 'nop', 'nop1', 'nop2'], strict: true) => 'the '.$layout.' layout',
-            'compress' === \strtolower($graph->attribute('ratio')) => 'ratio=compress',
-            default => null,
-        };
+        return \in_array($layout, ['', 'dot', 'neato', 'twopi', 'circo', 'fdp', 'sfdp', 'osage', 'patchwork', 'nop', 'nop1', 'nop2'], strict: true) ? null : 'the '.$layout.' layout';
     }
 
     private static function objects(DotGraph $graph): ?string
