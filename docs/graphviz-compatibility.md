@@ -60,10 +60,12 @@ The latest measurements, against dot 16.1.0, on 300 random graphs of eight nodes
 | | Same ranks | and same order | and same coordinates (±1 pt) |
 | --- | --- | --- | --- |
 | No clusters | 97% | 61% | 9% |
-| With clusters | 84% | 44% | 4% |
+| With clusters | 84% | 44% | 5% |
 
 Known divergences:
 
 - **Ties.** Where several layouts cost the same, `dot` and the native layout can choose differently: which edge of a cycle to reverse, which of two equal-cost ranks, which order among equal medians. The choices follow the papers, not `dot`'s source, so they cannot always agree.
 - **Coordinates across ranks.** `dot` does not minimise the paper's straightening cost exactly, so its horizontal positions differ from the native ones even when order and ranks match.
+- **Orders that tie.** Where the native order differs from `dot`'s, it almost always crosses as few edges: of the 109 graphs without clusters whose orders differ, the native order crosses more edges in 3.
+- **Rank sets reaching into a cluster.** A `rank=same` set holding a cluster's node and a node outside it makes `dot` warn that the node "was already in a rankset" and drop it from the set. Where the other nodes then rank is inconsistent in black-box tests: level with the cluster's node, or its cluster's top, or neither. A set spanning two clusters can crash `dot`. The native layout keeps such a set apart at each level, ranking the outside nodes as if the cluster's node were not in it.
 - **Speed.** The layout runs in PHP. A graph of a few hundred nodes takes seconds; `dot` takes milliseconds.
