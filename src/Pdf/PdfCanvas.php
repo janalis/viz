@@ -151,6 +151,29 @@ final class PdfCanvas
     }
 
     /**
+     * Paints the clip with an RGB blend out from one circle to another, extended past both.
+     *
+     * @param array{float, float, float} $from
+     * @param array{float, float, float} $to
+     * @param array{float, float, float, float, float, float} $coords the inner circle's centre and radius, then the outer's
+     */
+    public function radial(array $from, array $to, array $coords): void
+    {
+        $id = $this->document->add(
+            '<< /ShadingType 3 /ColorSpace /DeviceRGB /Coords ['
+            .self::numbers($coords)
+            .'] /Function << /FunctionType 2 /Domain [0 1] /C0 ['
+            .self::numbers($from)
+            .'] /C1 ['
+            .self::numbers($to)
+            .'] /N 1 >> /Extend [true true] >>',
+        );
+        $name = 'Sh'.++$this->shadings;
+        $this->resources['Shading'] .= '/'.$name.' '.$id.' 0 R ';
+        $this->content .= '/'.$name." sh\n";
+    }
+
+    /**
      * Characters in a face at a font size of one, placed and sized by the text matrix.
      *
      * @param list<int> $codepoints

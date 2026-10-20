@@ -97,7 +97,7 @@ final readonly class PdfBackend
     }
 
     /**
-     * A left-to-right blend across the polygon's own horizontal extent, clipped to it; PDF
+     * A blend left to right across the polygon's own horizontal extent, or out from its box's centre, clipped to it; PDF
      * shadings blend color only, so the first stop's alpha stands for both.
      *
      * @param array{string, string} $stops
@@ -111,9 +111,26 @@ final readonly class PdfBackend
         $canvas->polygon($mark->points);
         $canvas->clip();
         $canvas->alpha($alpha * $mark->fillOpacity * $mark->opacity, stroke: 1.0);
-        // An axial shading needs two distinct ends; a zero-width polygon paints nothing anyway.
-        $canvas->axial($from, $to, [\min($xs), 0.0, \max(\max($xs), \min($xs) + 0.001), 0.0]);
+        match ($mark->shading) {
+            Shading::Radial => self::radial($canvas, $mark, $from, $to),
+            // An axial shading needs two distinct ends; a zero-width polygon paints nothing anyway.
+            Shading::Linear => $canvas->axial($from, $to, [\min($xs), 0.0, \max(\max($xs), \min($xs) + 0.001), 0.0]),
+        };
         $canvas->restore();
+    }
+
+    /**
+     * A unit circle's shading, stretched over three quarters of the polygon's box each way, as dot's.
+     *
+     * @param array{float, float, float} $from
+     * @param array{float, float, float} $to
+     */
+    private static function radial(PdfCanvas $canvas, Mark $mark, array $from, array $to): void
+    {
+        $xs = \array_column($mark->points, 0);
+        $ys = \array_column($mark->points, 1);
+        $canvas->transform([\max(0.001, 0.75 * (\max($xs) - \min($xs))), 0.0, 0.0, \max(0.001, 0.75 * (\max($ys) - \min($ys))), (\min($xs) + \max($xs)) / 2, (\min($ys) + \max($ys)) / 2]);
+        $canvas->radial($from, $to, [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]);
     }
 
     /**

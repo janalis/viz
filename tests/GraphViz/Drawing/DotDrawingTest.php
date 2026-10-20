@@ -7,6 +7,7 @@ namespace Janalis\Viz\Tests\GraphViz\Drawing;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Shading;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\GraphViz\DotPipeline;
 use Janalis\Viz\Render\Work;
@@ -423,6 +424,20 @@ final class DotDrawingTest extends TestCase
             $this->assertSame(-90.0, $a->angle, 'its text reading up');
         }
         $this->assertSame($plain->width, self::draw('digraph { rotate=180; a -> b; }')->width, 'no other turn');
+    }
+
+    public function testRadialFillsBlendOutFromTheCentre(): void
+    {
+        $drawing = self::draw(
+            'digraph { a [style=radial, fillcolor="white:red"]; b [style=radial]; subgraph cluster_x { style=radial; fillcolor="white:green"; c } d [shape=plaintext, label=<<TABLE STYLE="radial" BGCOLOR="white:blue"><TR><TD>t</TD></TR></TABLE>>] }',
+        );
+        $filled = \array_values(\array_filter(self::kinds($drawing, MarkKind::Polygon), static fn (Mark $mark): bool => 'none' !== $mark->fill));
+
+        $this->assertSame(
+            [[['#ffffff', '#00ff00'], Shading::Radial], [['#ffffff', '#ff0000'], Shading::Radial], [null, Shading::Radial], [['#ffffff', '#0000ff'], Shading::Radial]],
+            \array_map(static fn (Mark $mark): array => [$mark->gradient, $mark->shading], $filled),
+        );
+        $this->assertSame('#d3d3d3', $filled[2]->fill, 'without a list, a plain fill');
     }
 
     private static function draw(string $source): Drawing

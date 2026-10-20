@@ -83,7 +83,7 @@ final readonly class PngBackend
             }
             if (null !== $mark->gradient) {
                 \imagesetthickness($canvas, thickness: 1);
-                self::gradient($canvas, [...$points, $points[0]], $mark->gradient, $mark->opacity);
+                self::gradient($canvas, [...$points, $points[0]], $mark->gradient, $mark->opacity, $mark->shading);
             }
             $points[] = $points[0];
         }
@@ -202,16 +202,20 @@ final readonly class PngBackend
     }
 
     /**
-     * A left-to-right gradient fill, one pixel column at a time between the polygon's highest
+     * A gradient fill, left to right or out from the centre, one pixel column at a time between the polygon's highest
      * and lowest crossing of that column; ribbons are a single span per column.
      *
      * @param list<array{int, int}> $points
      * @param array{string, string} $gradient
      */
-    private static function gradient(\GdImage $canvas, array $points, array $gradient, float $opacity): void
+    private static function gradient(\GdImage $canvas, array $points, array $gradient, float $opacity, Shading $shading): void
     {
         $xs = \array_column($points, 0);
+        $heights = \array_column($points, 1);
         [$left, $right] = [\min($xs), \max($xs)];
+        // A radial blend reaches its last colour three quarters of the box away, as dot's.
+        $centre = [($left + $right) / 2, (\min($heights) + \max($heights)) / 2];
+        $reach = [\max(1.0e-9, 0.75 * ($right - $left)), \max(1.0e-9, 0.75 * (\max($heights) - \min($heights)))];
         $count = \count($points);
         for ($x = $left; $x <= $right; ++$x) {
             $ys = [];
@@ -224,9 +228,15 @@ final readonly class PngBackend
             if ([] === $ys) {
                 continue;
             }
-            $share = ($x - $left) / \max(1.0e-9, $right - $left);
-            $color = self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $opacity);
-            \imageline($canvas, $x, \min($ys), $x, \max($ys), $color);
+            if (Shading::Linear === $shading) {
+                $share = ($x - $left) / \max(1.0e-9, $right - $left);
+                \imageline($canvas, $x, \min($ys), $x, \max($ys), self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $opacity));
+                continue;
+            }
+            for ($y = \min($ys); $y <= \max($ys); ++$y) {
+                $share = \min(1.0, \hypot(($x - $centre[0]) / $reach[0], ($y - $centre[1]) / $reach[1]));
+                \imagesetpixel($canvas, $x, $y, self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $opacity));
+            }
         }
     }
 

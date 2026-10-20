@@ -48,6 +48,7 @@ final class Units
             $mark->angle,
             $mark->gradient,
             null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
+            $mark->shading,
         );
     }
 
@@ -69,6 +70,7 @@ final class Units
             $mark->angle,
             $mark->gradient,
             $mark->dashes,
+            $mark->shading,
         );
     }
 
@@ -94,6 +96,7 @@ final class Units
             $mark->angle - 90.0,
             $mark->gradient,
             $mark->dashes,
+            $mark->shading,
         );
     }
 }

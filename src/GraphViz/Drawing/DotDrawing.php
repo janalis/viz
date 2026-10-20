@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Route;
+use Janalis\Viz\Draw\Shading;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\GraphViz\DotLayoutInput;
 use Janalis\Viz\GraphViz\Model\DotEdge;
@@ -138,7 +139,7 @@ final class DotDrawing
                 continue;
             }
             $color = DotColors::resolve($cluster->attribute('pencolor', $cluster->attribute('color')), '#000000');
-            [$fill, $gradient] = \array_key_exists('filled', $styles)
+            [$fill, $gradient] = \array_key_exists('filled', $styles) || \array_key_exists('radial', $styles)
                 ? DotColors::fill($cluster->attribute('fillcolor', $cluster->attribute('color', $cluster->attribute('bgcolor'))), '#d3d3d3', $cluster->attribute('gradientangle'))
                 : DotColors::fill($cluster->attribute('bgcolor'), 'none', $cluster->attribute('gradientangle'));
             $pattern = DotFills::pattern($styles, 'box', [$box->x0, $box->y0, $box->x1, $box->y1], $cluster->attribute('fillcolor', $cluster->attribute('color')), $color);
@@ -153,6 +154,7 @@ final class DotDrawing
                 strokeWidth: self::penWidth($cluster->attribute('penwidth'), $styles),
                 gradient: $gradient,
                 dashes: \array_key_exists('dotted', $styles) ? [1.0, 3.0] : null,
+                shading: self::shading($styles),
             );
             $text = DotNodes::clusterText($cluster);
             if ($text->empty()) {
@@ -250,9 +252,10 @@ final class DotDrawing
         }
         $shapeName = $node->attribute('shape', 'ellipse');
         $color = DotColors::resolve($node->attribute('color'), '#000000');
-        [$fill, $gradient] = \array_key_exists('filled', $styles) || 'point' === $shapeName
-            ? DotColors::fill($node->attribute('fillcolor', $node->attribute('color')), 'point' === $shapeName ? '#000000' : '#d3d3d3', $node->attribute('gradientangle'))
-            : ['none', null];
+        [$fill, $gradient] =
+            \array_key_exists('filled', $styles) || \array_key_exists('radial', $styles) || 'point' === $shapeName
+                ? DotColors::fill($node->attribute('fillcolor', $node->attribute('color')), 'point' === $shapeName ? '#000000' : '#d3d3d3', $node->attribute('gradientangle'))
+                : ['none', null];
         $penWidth = self::penWidth($node->attribute('penwidth'), $styles);
         $dashed = \array_key_exists('dashed', $styles) || \array_key_exists('dotted', $styles);
         $pattern = DotFills::pattern($styles, $shapeName, DotEdgePaths::box($placed), $node->attribute('fillcolor', $node->attribute('color')), $color);
@@ -272,6 +275,7 @@ final class DotDrawing
                 strokeWidth: $penWidth,
                 gradient: $gradient,
                 dashes: \array_key_exists('dotted', $styles) ? [1.0, 3.0] : null,
+                shading: self::shading($styles),
             );
             foreach ($shape->peripheries as $ring) {
                 $this->marks[] = new Mark(MarkKind::Polygon, self::offset($placed, $ring), stroke: $color, fill: 'none', strokeWidth: $penWidth);
@@ -464,6 +468,16 @@ final class DotDrawing
         }
 
         return $styles;
+    }
+
+    /**
+     * How a fill list blends: out from the centre for `radial`, else across.
+     *
+     * @param array<string, true> $styles
+     */
+    private static function shading(array $styles): Shading
+    {
+        return \array_key_exists('radial', $styles) ? Shading::Radial : Shading::Linear;
     }
 
     /** @param array<string, true> $styles */

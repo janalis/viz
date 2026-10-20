@@ -49,7 +49,7 @@ final class SvgBackend
         };
     }
 
-    /** A polygon's left-to-right gradient, spanning its own horizontal extent. */
+    /** A polygon's gradient: left to right across its own horizontal extent, or out from its box's centre. */
     private static function gradient(Mark $mark, string $id): string
     {
         if (null === $mark->gradient) {
@@ -60,6 +60,10 @@ final class SvgBackend
         foreach ($mark->gradient as $offset => $color) {
             $alpha = 9 === \strlen($color) ? \hexdec(\substr($color, offset: 7)) / 255 : 1.0;
             $stops .= '<stop offset="'.$offset.'" stop-color="'.self::escape(\substr($color, offset: 0, length: 7)).'" stop-opacity="'.\round($alpha, precision: 4).'"/>';
+        }
+
+        if (Shading::Radial === $mark->shading) {
+            return '<radialGradient id="'.$id.'" cx="50%" cy="50%" r="75%">'.$stops.'</radialGradient>';
         }
 
         return '<linearGradient id="'.$id.'" gradientUnits="userSpaceOnUse" x1="'.\min($xs).'" y1="0" x2="'.\max($xs).'" y2="0">'.$stops.'</linearGradient>';

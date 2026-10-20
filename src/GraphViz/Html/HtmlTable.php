@@ -6,6 +6,7 @@ namespace Janalis\Viz\GraphViz\Html;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Shading;
 use Janalis\Viz\GraphViz\Drawing\DotColors;
 use Janalis\Viz\GraphViz\Drawing\DotDrawing;
 use Janalis\Viz\GraphViz\Drawing\DotLabel;
@@ -314,7 +315,7 @@ final class HtmlTable implements DotLabel
      * A box's fill and its border, drawn inside it: all around, or along the sides `SIDES`
      * names — `L`, `T`, `R` and `B` — each run of adjacent sides one line. `STYLE` rounds its
      * corners, a third of its shorter side, or dashes or dots its border; `BGCOLOR` fills it, a
-     * list with a gradient across, turned by `GRADIENTANGLE`.
+     * list with a gradient across, turned by `GRADIENTANGLE`, or out from its centre for `radial`.
      *
      * @param array{float, float, float, float} $box
      * @param array<string, string> $attributes the table's or the cell's
@@ -340,7 +341,17 @@ final class HtmlTable implements DotLabel
         $whole = $border > 0 && !\in_array(false, $drawn, strict: true);
         $outline = $rounded ? DotDrawing::round($corners, most: \INF) : $corners;
         $marks = $whole || 'none' !== $fill
-            ? [new Mark(MarkKind::Polygon, $outline, stroke: $whole ? $color : 'none', fill: $fill, dashed: $dashed, strokeWidth: \max($border, 0.01), gradient: $gradient, dashes: $dashes)]
+            ? [new Mark(
+                MarkKind::Polygon,
+                $outline,
+                stroke: $whole ? $color : 'none',
+                fill: $fill,
+                dashed: $dashed,
+                strokeWidth: \max($border, 0.01),
+                gradient: $gradient,
+                dashes: $dashes,
+                shading: \array_key_exists('radial', $styles) ? Shading::Radial : Shading::Linear,
+            )]
             : [];
         if ($whole || $border <= 0) {
             return $marks;

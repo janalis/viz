@@ -99,9 +99,10 @@ final class ColorValue
         return \sprintf('#%02x%02x%02x', (int) \round($r * 255), (int) \round($g * 255), (int) \round($b * 255));
     }
 
-    /** `#rrggbbaa` a share of the way from one `#rrggbbaa` color to another, channel by channel. */
+    /** `#rrggbbaa` a share of the way from one `#rrggbbaa` color to another, channel by channel; a `#rrggbb` color is opaque. */
     public static function mixed(string $from, string $to, float $share): string
     {
+        [$from, $to] = [\str_pad($from, length: 9, pad_string: 'f'), \str_pad($to, length: 9, pad_string: 'f')];
         $channel = static fn (int $offset): int => (int) \round(((1 - $share) * \hexdec(\substr($from, 1 + $offset, length: 2))) + ($share * \hexdec(\substr($to, 1 + $offset, length: 2))));
 
         return \sprintf('#%02x%02x%02x%02x', $channel(0), $channel(2), $channel(4), $channel(6));

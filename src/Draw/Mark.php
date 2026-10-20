@@ -28,5 +28,7 @@ final readonly class Mark
         public ?array $gradient = null,
         /** @var ?list<float> authored dash and gap lengths in units; null draws the default dash */
         public ?array $dashes = null,
+        /** How a gradient runs. */
+        public Shading $shading = Shading::Linear,
     ) {}
 }
