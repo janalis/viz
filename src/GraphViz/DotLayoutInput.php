@@ -19,9 +19,10 @@ use Janalis\Viz\Model\Direction;
 
 /**
  * A parsed DOT graph as a layout engine's input, in points: node sizes from `width` and
- * `height`, the graph's `nodesep`, `ranksep` and `rankdir`, each edge's `minlen`, `weight`
- * and `constraint`, clusters with each node in the first one that claims it, and the
- * `rank` of every subgraph that sets one.
+ * `height`, the graph's `nodesep`, `ranksep` and `rankdir`, each edge's `minlen`, `weight` —
+ * a hundred times more between two nodes of one `group`, as dot holds them straight — and
+ * `constraint`, clusters with each node in the first one that claims it, and the `rank` of
+ * every subgraph that sets one.
  */
 final class DotLayoutInput
 {
@@ -29,6 +30,8 @@ final class DotLayoutInput
     /** The longest an edge may ask to be, in ranks, and the most it may weigh: far past any drawing, short of exhausting memory. */
     public const int MAX_MINLEN = 100;
     public const int MAX_WEIGHT = 10_000;
+    /** How much more an edge weighs between two nodes of one `group`. */
+    public const int GROUP = 100;
     /** The largest size or separation taken, in inches. */
     public const float MAX_INCHES = 1000.0;
 
@@ -77,7 +80,7 @@ final class DotLayoutInput
                 $edge->tail,
                 $edge->head,
                 self::bounded($edge->attribute('minlen', '1'), self::MAX_MINLEN),
-                self::bounded($edge->attribute('weight', '1'), self::MAX_WEIGHT),
+                self::bounded($edge->attribute('weight', '1'), self::MAX_WEIGHT) * (self::grouped($graph, $edge) ? self::GROUP : 1),
                 'false' !== \strtolower($edge->attribute('constraint', 'true')),
                 $labelWidth,
                 $labelHeight,
@@ -143,6 +146,14 @@ final class DotLayoutInput
             $inner = [];
             self::clusters($graph, $subgraph->subgraphs, $id, $members, $inner, $clusters, $clusterOf, $titles);
         }
+    }
+
+    /** Whether an edge's ends share a `group`, which holds it straight. */
+    private static function grouped(DotGraph $graph, DotEdge $edge): bool
+    {
+        $group = $graph->nodes[$edge->tail]->attribute('group');
+
+        return '' !== $group && $graph->nodes[$edge->head]->attribute('group') === $group;
     }
 
     private static function inches(string $value, float $default): float

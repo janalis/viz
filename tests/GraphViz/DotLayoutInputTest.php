@@ -91,6 +91,13 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame(['out', 'in', null], \array_map(static fn ($node): ?string => $node->ordering, $input->nodes));
     }
 
+    public function testEdgesWithinAGroupWeighAHundredTimesMore(): void
+    {
+        $input = self::input('digraph { a [group=g]; b [group=g]; c [group=h]; d; e; a -> b [weight=2]; b -> c; d -> e; }');
+
+        $this->assertSame([200, 1, 1], \array_map(static fn ($edge): int => $edge->weight, $input->edges));
+    }
+
     public function testHugeLengthsWeightsAndSizesAreHeldDown(): void
     {
         $input = self::input('digraph { ranksep="1e300"; nodesep=-5; a [width=inf, height="1e9"]; a -> b [minlen="1e12", weight=99999999]; b -> c [minlen=x, weight=-3] }');
