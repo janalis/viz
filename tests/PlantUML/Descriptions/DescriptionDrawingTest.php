@@ -32,10 +32,15 @@ final class DescriptionDrawingTest extends TestCase
         }
         $box = DescriptionBox::of(new DescriptionElement('R', ['Name'], 'rectangle'), StyleSheet::skin());
         $this->assertEqualsWithDelta([(4 * Units::cell(14.0)) + 20, PlantUmlText::lineHeight(14.0) + 20], [$box->width, $box->height], 1e-9);
-        $this->assertSame([10.0, 10.0], [
-            DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin())->width,
-            DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin())->height,
-        ]);
+        // As PlantUML, an interface's node is a circle 16 across, 1 clear all round; its name hangs below.
+        $this->assertEqualsWithDelta(
+            [18.0, 18.0],
+            [
+                DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin())->width,
+                DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin())->height,
+            ],
+            1e-9,
+        );
     }
 
     public function testWholeDiagramsDrawContainersLinksAndNotes(): void

@@ -65,7 +65,7 @@ final class PlantUmlParityTest extends TestCase
             }
         }
         $expected = \array_map(static fn (array $word): array => [\str_replace(['«', '»'], ['<<', '>>'], $word[0]), $word[1]], $golden['baselines']);
-        $placed = self::withoutGlyphs($placed, \array_column($expected, 0));
+        $placed = self::withoutGlyphs($placed, $expected);
         \sort($placed);
         \sort($expected);
         if (\array_column($placed, 0) !== \array_column($expected, 0)) {
@@ -91,24 +91,31 @@ final class PlantUmlParityTest extends TestCase
 
     /**
      * The words without the single letters PlantUML draws as outlines rather than text — those
-     * in a class's or a connector's circle — beyond the ones it writes as text.
+     * in a class's or a connector's circle — keeping, of each letter, the ones nearest where
+     * PlantUML writes it as text.
      *
      * @param list<array{string, float}> $placed
-     * @param list<string> $golden
+     * @param list<array{string, float}> $expected
      * @return list<array{string, float}>
      */
-    private static function withoutGlyphs(array $placed, array $golden): array
+    private static function withoutGlyphs(array $placed, array $expected): array
     {
-        $written = \array_count_values($golden);
-        $kept = [];
+        $kept = \array_values(\array_filter($placed, static fn (array $word): bool => 1 !== \mb_strlen($word[0])));
+        $letters = [];
         foreach ($placed as $word) {
-            if (1 === \mb_strlen($word[0])) {
-                if (($written[$word[0]] ?? 0) < 1) {
-                    continue;
-                }
-                --$written[$word[0]];
+            if (1 !== \mb_strlen($word[0])) {
+                continue;
             }
-            $kept[] = $word;
+            $letters[$word[0]][] = $word[1];
+        }
+        foreach ($expected as [$letter, $y]) {
+            if (1 !== \mb_strlen($letter) || [] === ($letters[$letter] ?? [])) {
+                continue;
+            }
+            $distances = \array_map(static fn (float $candidate): float => \abs($candidate - $y), $letters[$letter]);
+            $nearest = (int) \array_search(\min($distances), $distances, strict: true);
+            $kept[] = [$letter, $letters[$letter][$nearest]];
+            \array_splice($letters[$letter], $nearest, length: 1);
         }
 
         return $kept;

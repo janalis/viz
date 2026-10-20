@@ -51,9 +51,7 @@ final class LinkPainter
             \array_push($marks, ...$label->marks($x - ($width / 2), $y - ($height / 2), $width));
             \array_push($marks, ...self::labelArrow($link, $from, $to, $x - ($width / 2) - 8, $y, $color));
         }
-        foreach ([[$link->firstLabel, $points], [$link->secondLabel, \array_reverse($points)]] as [$text, $path]) {
-            \array_push($marks, ...self::endLabel($text, $path, $style->fontSize()));
-        }
+        \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $points, $style->fontSize()));
 
         return $marks;
     }
@@ -77,26 +75,61 @@ final class LinkPainter
     }
 
     /**
-     * A label at a link's end, set beside the line a little way from the entity.
+     * The labels at a link's ends, as dot sets a tail and a head label: each with a corner on
+     * the end of the line, on its left going from tail to head — the side the line turns to
+     * 25 degrees off it — but the head's on the other side where it would overlap the tail's.
      *
-     * @param list<array{float, float}> $path from that end
+     * @param list<array{float, float}> $points from the tail to the head, two at least
      * @return list<Mark>
      */
-    private static function endLabel(?string $text, array $path, float $size): array
+    private static function endLabels(?string $tail, ?string $head, array $points, float $size): array
     {
-        if (null === $text || \count($path) < 2) {
-            return [];
+        $last = \count($points) - 1;
+        $tailBox = self::endBox($tail, $points[0], $points[1], 25.0, $size);
+        $headBox = self::endBox($head, $points[$last], $points[$last - 1], -25.0, $size);
+        if (null !== $tailBox && null !== $headBox && self::overlap($tailBox[1], $headBox[1])) {
+            $headBox = self::endBox($head, $points[$last], $points[$last - 1], 25.0, $size);
+        }
+        $marks = [];
+        foreach ([$tailBox, $headBox] as $box) {
+            if (null === $box) {
+                continue;
+            }
+            [$label, [$x0, $y0, $x1]] = $box;
+            \array_push($marks, ...$label->marks($x0, $y0, $x1 - $x0));
+        }
+
+        return $marks;
+    }
+
+    /**
+     * A label with a corner on a line's end, on the side the line turns to by an angle.
+     *
+     * @param array{float, float} $end
+     * @param array{float, float} $along a point further along the line
+     * @return ?array{PlantUmlText, array{float, float, float, float}} the label and its box
+     */
+    private static function endBox(?string $text, array $end, array $along, float $turn, float $size): ?array
+    {
+        if (null === $text) {
+            return null;
         }
         $label = new PlantUmlText(ClassReader::split($text), $size);
         [$width, $height] = $label->size();
-        [$x0, $y0] = $path[0];
-        [$x1, $y1] = $path[1];
-        $length = \max(1e-9, \hypot($x1 - $x0, $y1 - $y0));
-        [$dx, $dy] = [($x1 - $x0) / $length, ($y1 - $y0) / $length];
-        $x = $x0 + ($dx * 12) + ($dy * (($width / 2) + 4));
-        $y = $y0 + ($dy * 12) - ($dx * (($height / 2) + 2));
+        $angle = \atan2($along[1] - $end[1], $along[0] - $end[0]) + \deg2rad($turn);
+        $x = \cos($angle) < 0 ? $end[0] - $width : $end[0];
+        $y = \sin($angle) < 0 ? $end[1] - $height : $end[1];
 
-        return $label->marks($x - ($width / 2), $y - ($height / 2), $width);
+        return [$label, [$x, $y, $x + $width, $y + $height]];
+    }
+
+    /**
+     * @param array{float, float, float, float} $a
+     * @param array{float, float, float, float} $b
+     */
+    private static function overlap(array $a, array $b): bool
+    {
+        return $a[0] < $b[2] && $b[0] < $a[2] && $a[1] < $b[3] && $b[1] < $a[3];
     }
 
     /** @return ?list<float> */

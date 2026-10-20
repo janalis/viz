@@ -53,7 +53,7 @@ final readonly class DescriptionBox
      *
      * @var array<string, array{float, float}>
      */
-    private const array ICONS = ['actor' => [28.0, 60.0], 'boundary' => [30.0, 22.0], 'control' => [22.0, 22.0], 'entity' => [22.0, 22.0], 'interface' => [10.0, 10.0], 'circle' => [10.0, 10.0]];
+    private const array ICONS = ['actor' => [28.0, 60.0], 'boundary' => [30.0, 22.0], 'control' => [22.0, 22.0], 'entity' => [22.0, 22.0], 'interface' => [18.0, 18.0], 'circle' => [18.0, 18.0]];
 
     /** The room a folder keeps for its title, which an element does not show. */
     private const array FOLDER_TITLE = [40.0, 15.0];
@@ -78,6 +78,7 @@ final readonly class DescriptionBox
         $labelHeight = $textHeight + $stereoHeight;
         [$width, $height] = match (true) {
             'usecase' === $element->symbol => [($labelWidth * \M_SQRT2) + 20, ($labelHeight * \M_SQRT2) + 10],
+            // As PlantUML, an interface's node is its circle alone, its name hanging below it.
             \in_array($element->symbol, ['interface', 'circle'], strict: true) => self::ICONS[$element->symbol],
             \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight + 4],
             // As PlantUML, a folder keeps room for a title it does not show, 40 by 15, above its label.
@@ -134,11 +135,18 @@ final readonly class DescriptionBox
                 new Mark(MarkKind::Polygon, [[$centre - 2, $y - 3], [$centre + 4, $y], [$centre - 2, $y + 3]], stroke: $line, fill: $line, strokeWidth: $stroke),
             ],
             'entity' => [StateBox::disc($centre, $y + 11, 11.0, $line, $back), new Mark(MarkKind::Polyline, [[$centre - 11, $y + 22], [$centre + 11, $y + 22]], stroke: $line, strokeWidth: $stroke)],
-            default => [StateBox::disc($centre, $y + 5, 5.0, $line, $back)],
+            // As PlantUML's interface: a circle 16 across, 1 clear of its icon's sides.
+            default => [StateBox::disc($centre, $y + 9, 8.0, $line, $back)],
         };
-        $top = $y + $iconHeight + 4;
+        $top = $y + $iconHeight + self::gap($symbol);
 
         return [...$marks, ...$this->label($x, $top, $this->width)];
+    }
+
+    /** How far an icon's name stands below it: 8 under an interface's circle, outside its node, 4 under the others. */
+    private static function gap(string $symbol): float
+    {
+        return \in_array($symbol, ['interface', 'circle'], strict: true) ? 8.0 : 4.0;
     }
 
     /** @return list<Mark> the stereotypes above the text, both centred within a width */

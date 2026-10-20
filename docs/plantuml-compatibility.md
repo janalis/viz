@@ -103,8 +103,8 @@ The grades at 0.2.0, on 50 self-authored fixtures:
 | --- | --- | --- | --- | --- | --- |
 | Activity | 18 | 18 | 18 | 18 | 18 |
 | Sequence | 8 | 8 | 8 | 8 | 8 |
-| Class | 8 | 8 | 8 | 8 | 6 |
+| Class | 8 | 8 | 8 | 8 | 7 |
 | State | 8 | 8 | 8 | 7 | 7 |
-| Description | 8 | 8 | 8 | 5 | 4 |
+| Description | 8 | 8 | 8 | 5 | 5 |
 
 Text is set a line apart as PlantUML measures its default font, whichever font draws it. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can differ from `dot`'s.

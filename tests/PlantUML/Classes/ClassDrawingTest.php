@@ -163,6 +163,24 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame('#ffffff', $drawing->background);
     }
 
+    public function testAHeadLabelThatWouldOverlapTheTailLabelStandsOnTheOtherSide(): void
+    {
+        $centre = static function (Drawing $drawing, string $text): float {
+            foreach ($drawing->marks as $mark) {
+                if ($text === $mark->text) {
+                    return $mark->points[0][0];
+                }
+            }
+            self::fail('No '.$text);
+        };
+        // Labels short enough leave both ends on the line's left, as dot sets them.
+        $short = self::draw('A "t" --> "h" B');
+        $this->assertEqualsWithDelta($centre($short, text: 't'), $centre($short, text: 'h'), 1e-9);
+        // Labels tall enough to meet put the head's on the right.
+        $tall = self::draw("A \"t\\n1\\n2\\n3\" --> \"h\\n1\\n2\\n3\" B");
+        $this->assertGreaterThan($centre($tall, text: 't'), $centre($tall, text: 'h'));
+    }
+
     public function testCustomIconSizesAndBackgroundsAreHonoured(): void
     {
         $drawing = self::draw("skinparam classAttributeIconSize 0\nskinparam backgroundColor transparent\nclass A {\n  - x\n}\nA --> B");
