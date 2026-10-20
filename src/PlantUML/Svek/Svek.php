@@ -41,6 +41,12 @@ final class Svek
     }
 
     /** An edge, by the dashes of the link it stands for: one lays its ends side by side. Its index in the placement's routes. */
+    /** How much room svek leaves around a link's label, both sides together: 1 each side, 6 on a loop. */
+    public static function labelMargin(string $from, string $to): float
+    {
+        return $from === $to ? 12.0 : 2.0;
+    }
+
     public function edge(string $from, string $to, int $length, float $labelWidth = 0.0, float $labelHeight = 0.0, bool $constraint = true): int
     {
         $this->edges[] = [$from, $to, \max(0, $length - 1), $labelWidth, $labelHeight, $constraint];

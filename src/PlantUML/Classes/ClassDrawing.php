@@ -47,7 +47,7 @@ final class ClassDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        return PlantUmlFrame::drawing($classes->document, $drawing->paint($placement), $placement->graph->width, $placement->graph->height);
+        return PlantUmlFrame::svek($classes->document, $drawing->paint($placement));
     }
 
     /** @return array{float, float} svek's separations, or those `skinparam nodesep` and `ranksep` set */
@@ -98,7 +98,14 @@ final class ClassDrawing
             }
             [$width, $height] = $this->label($index)->size();
             // Svek keeps a margin around a label, so it stands clear of the line.
-            $this->edges[$index] = $svek->edge($link->from, $link->to, $link->length, $width > 0 ? $width + 8 : 0.0, $height > 0 ? $height + 8 : 0.0, !$link->norank);
+            $this->edges[$index] = $svek->edge(
+                $link->from,
+                $link->to,
+                $link->length,
+                $width > 0 ? $width + Svek::labelMargin($link->from, $link->to) : 0.0,
+                $height > 0 ? $height + Svek::labelMargin($link->from, $link->to) : 0.0,
+                !$link->norank,
+            );
         }
         foreach ($this->classes->notes as $note) {
             if (null === $note->entity || !\array_key_exists($note->entity, $this->boxes)) {

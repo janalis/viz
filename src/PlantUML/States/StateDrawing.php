@@ -31,6 +31,9 @@ use Janalis\Viz\Source\Unsupported;
 final class StateDrawing
 {
     private const float MARGIN = 5.0;
+    /** Dot's own node and rank separations, a quarter and half an inch. */
+    private const float DOT_NODESEP = 18.0;
+    private const float DOT_RANKSEP = 36.0;
 
     private function __construct(
         private readonly PlantUmlStates $states,
@@ -42,9 +45,9 @@ final class StateDrawing
         $drawing = new self($states);
         $scope = $drawing->scope(null, 0);
         yield from $scope;
-        [$marks, $width, $height] = $scope->getReturn();
+        [$marks] = $scope->getReturn();
 
-        return PlantUmlFrame::drawing($states->document, $marks, $width, $height);
+        return PlantUmlFrame::svek($states->document, $marks);
     }
 
     /**
@@ -95,9 +98,18 @@ final class StateDrawing
             }
             [$width, $height] = $this->label($index)->size();
             $ends = \array_map(static fn (string $id): string => \in_array($id, $anchored, strict: true) ? self::anchor($id) : $id, [$link->from, $link->to]);
-            $edges[$index] = $svek->edge($ends[0], $ends[1], $link->length, $width > 0 ? $width + 8 : 0.0, $height > 0 ? $height + 8 : 0.0, !$link->norank);
+            $edges[$index] = $svek->edge(
+                $ends[0],
+                $ends[1],
+                $link->length,
+                $width > 0 ? $width + Svek::labelMargin($link->from, $link->to) : 0.0,
+                $height > 0 ? $height + Svek::labelMargin($link->from, $link->to) : 0.0,
+                !$link->norank,
+            );
         }
-        $placing = $svek->place($this->states->direction);
+        // As svek, a composite state's inner image is laid out with dot's own separations: its
+        // graph is written without the diagram's nodesep and ranksep lines.
+        $placing = null === $group ? $svek->place($this->states->direction) : $svek->place($this->states->direction, self::DOT_NODESEP, self::DOT_RANKSEP);
         yield from $placing;
         $placement = $placing->getReturn();
 

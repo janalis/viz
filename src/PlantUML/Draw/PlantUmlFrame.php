@@ -10,6 +10,7 @@ use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Language\PlantUmlCaption;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
+use Janalis\Viz\Text\DisplayWidth;
 
 /**
  * A diagram set in its document, as PlantUML sets it: the header at the top, the title above
@@ -19,9 +20,75 @@ use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 final class PlantUmlFrame
 {
     private const float MARGIN = 10.0;
+    /** Where svek moves what it draws, from the top left, as its limit finder measures it. */
+    private const float SVEK_INSET = 6.0;
+    /** How much room svek leaves past what it draws. */
+    private const float SVEK_TRAIL = 15.0;
 
     /** @param list<Mark> $marks the diagram's, in points, its top left at the origin */
     public static function drawing(PlantUmlDocument $document, array $marks, float $width, float $height): Drawing
+    {
+        return self::framed($document, $marks, $width, $height, self::MARGIN);
+    }
+
+    /**
+     * A diagram laid out by svek, as PlantUML sets one: with no margin of its own around the
+     * document, what it draws moved to stand 6 in from the top left, as PlantUML's limit finder
+     * measures it, and the diagram 15 wider and taller than that.
+     *
+     * @param list<Mark> $marks the diagram's, in points
+     */
+    public static function svek(PlantUmlDocument $document, array $marks): Drawing
+    {
+        [$minX, $minY, $maxX, $maxY] = self::limits($marks);
+
+        return self::framed(
+            $document,
+            \array_map(static fn (Mark $mark): Mark => self::moved($mark, self::SVEK_INSET - $minX, self::SVEK_INSET - $minY), $marks),
+            $maxX - $minX + self::SVEK_INSET + self::SVEK_TRAIL,
+            $maxY - $minY + self::SVEK_INSET + self::SVEK_TRAIL,
+            0.0,
+        );
+    }
+
+    /**
+     * The box PlantUML's limit finder gives marks: a filled shape 1 short of its far sides and
+     * 1 before its near ones, as it finds rectangles; a line as it runs; a text its line's box.
+     *
+     * @param list<Mark> $marks
+     * @return array{float, float, float, float}
+     */
+    private static function limits(array $marks): array
+    {
+        $box = [\INF, \INF, -\INF, -\INF];
+        foreach ($marks as $mark) {
+            foreach (self::extent($mark) as [$x, $y]) {
+                $box = [\min($box[0], $x), \min($box[1], $y), \max($box[2], $x), \max($box[3], $y)];
+            }
+        }
+
+        return \INF === $box[0] ? [0.0, 0.0, 0.0, 0.0] : $box;
+    }
+
+    /** @return list<array{float, float}> */
+    private static function extent(Mark $mark): array
+    {
+        if (MarkKind::Text === $mark->kind) {
+            [$x, $y] = $mark->points[0];
+            $half = (DisplayWidth::of($mark->text) * $mark->fontScale) / 2;
+            $line = 2 * $mark->fontScale;
+
+            return [[$x - $half, $y - (0.75 * $line)], [$x + $half, $y + (0.25 * $line)]];
+        }
+        if (MarkKind::Polygon === $mark->kind) {
+            return \array_map(static fn (array $point): array => [$point[0] - 1, $point[1] - 1], $mark->points);
+        }
+
+        return $mark->points;
+    }
+
+    /** @param list<Mark> $marks */
+    private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, float $margin): Drawing
     {
         $blocks = [];
         foreach (['header', 'title'] as $kind) {
@@ -33,9 +100,9 @@ final class PlantUmlFrame
         }
         $full = \max(\array_map(static fn (array $block): float => $block[1], $blocks));
         $placed = [];
-        $y = self::MARGIN;
+        $y = $margin;
         foreach ($blocks as $index => [$blockMarks, $blockWidth, $blockHeight, $align]) {
-            $x = self::MARGIN
+            $x = $margin
             + match ($align) {
                 'left' => 0.0,
                 'right' => $full - $blockWidth,
@@ -51,8 +118,8 @@ final class PlantUmlFrame
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
 
         return new Drawing(
-            \max(1.0, ($full + (2 * self::MARGIN)) * $scale),
-            \max(1.0, ($y + self::MARGIN) * $scale),
+            \max(1.0, ($full + (2 * $margin)) * $scale),
+            \max(1.0, ($y + $margin) * $scale),
             \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $placed),
             'none' === $background ? null : $background,
         );

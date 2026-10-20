@@ -159,13 +159,22 @@ final class StateReader
 
         return match (true) {
             '[*]' === $name => $this->pseudo('*'.$pseudo.'*'.$scope, $pseudo)->id,
-            1 === \preg_match('/^(.*)\[(H\*?)\]$/i', $name, $match) => $this->pseudo(
-                '*'.\strtolower($match[2]).'*'.('' === $match[1] ? $scope : $match[1]),
-                '[H*]' === \strtoupper('['.$match[2].']') ? 'deephistory' : 'history',
-            )->id,
+            1 === \preg_match('/^(.*)\[(H\*?)\]$/i', $name, $match) => $this->history($match[1], '[H*]' === \strtoupper('['.$match[2].']') ? 'deephistory' : 'history', $scope),
             1 === \preg_match('/^==+(.+?)==+$/', $name, $match) => $this->pseudo('=='.$match[1], 'fork')->id,
             default => $this->state($name)->id,
         };
+    }
+
+    /** `[H]` or `[H*]`: the history of the current scope, or `X[H]` that of X, which stands inside X as PlantUML draws it. */
+    private function history(string $owner, string $kind, string $scope): string
+    {
+        $id = '*'.('history' === $kind ? 'h' : 'h*').'*'.('' === $owner ? $scope : $owner);
+        if ('' !== $owner && !\array_key_exists($id, $this->nodes)) {
+            $this->state($owner);
+            $this->nodes[$id] = new StateNode($id, [], $kind, group: \trim($owner, characters: '"'));
+        }
+
+        return $this->pseudo($id, $kind)->id;
     }
 
     private function pseudo(string $id, string $kind): StateNode

@@ -129,7 +129,7 @@ final readonly class DescriptionShapes
         }
         $body = 0 === $across
             ? [
-                ...\array_reverse($rim),
+                ...$rim,
                 [$x + $width, $y + $height - ($cap / 2)],
                 ...\array_map(static fn (array $point): array => [$point[0], $point[1] + $height - $cap], \array_reverse($side)),
                 [$x, $y + ($cap / 2)],

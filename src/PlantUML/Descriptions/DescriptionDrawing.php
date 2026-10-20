@@ -44,7 +44,7 @@ final class DescriptionDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        return PlantUmlFrame::drawing($diagram->document, $drawing->paint($placement), $placement->graph->width, $placement->graph->height);
+        return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement));
     }
 
     private function graph(): Svek
@@ -71,7 +71,14 @@ final class DescriptionDrawing
         }
         foreach ($this->diagram->links as $index => $link) {
             [$width, $height] = $this->label($index)->size();
-            $this->edges[$index] = $svek->edge($link->from, $link->to, $link->length, $width > 0 ? $width + 8 : 0.0, $height > 0 ? $height + 8 : 0.0, !$link->norank);
+            $this->edges[$index] = $svek->edge(
+                $link->from,
+                $link->to,
+                $link->length,
+                $width > 0 ? $width + Svek::labelMargin($link->from, $link->to) : 0.0,
+                $height > 0 ? $height + Svek::labelMargin($link->from, $link->to) : 0.0,
+                !$link->norank,
+            );
         }
         foreach ($this->diagram->notes as $note) {
             if (null === $note->entity) {

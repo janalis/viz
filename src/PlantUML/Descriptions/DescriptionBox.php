@@ -55,6 +55,9 @@ final readonly class DescriptionBox
      */
     private const array ICONS = ['actor' => [28.0, 60.0], 'boundary' => [30.0, 22.0], 'control' => [22.0, 22.0], 'entity' => [22.0, 22.0], 'interface' => [10.0, 10.0], 'circle' => [10.0, 10.0]];
 
+    /** The room a folder keeps for its title, which an element does not show. */
+    private const array FOLDER_TITLE = [40.0, 15.0];
+
     private function __construct(
         private DescriptionElement $element,
         private Style $style,
@@ -77,6 +80,8 @@ final readonly class DescriptionBox
             'usecase' === $element->symbol => [($labelWidth * \M_SQRT2) + 20, ($labelHeight * \M_SQRT2) + 10],
             \in_array($element->symbol, ['interface', 'circle'], strict: true) => self::ICONS[$element->symbol],
             \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight + 4],
+            // As PlantUML, a folder keeps room for a title it does not show, 40 by 15, above its label.
+            'folder' === $element->symbol => self::boxed($element->symbol, \max(self::FOLDER_TITLE[0], $labelWidth), self::FOLDER_TITLE[1] + $labelHeight),
             default => self::boxed($element->symbol, $labelWidth, $labelHeight),
         };
 
@@ -107,7 +112,7 @@ final readonly class DescriptionBox
             : DescriptionShapes::outline($symbol, $x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'));
         [$labelLeft, $labelTop, $labelWidth] = 'usecase' === $symbol
             ? [$x, $y + (($this->height - $this->labelHeight()) / 2), $this->width]
-            : [$x + $left, $y + $top, $this->width - $left - $right];
+            : [$x + $left, $y + $top + ('folder' === $symbol ? self::FOLDER_TITLE[1] : 0.0), $this->width - $left - $right];
 
         return [...$outline, ...$this->label($labelLeft, $labelTop, $labelWidth)];
     }
