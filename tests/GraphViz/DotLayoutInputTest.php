@@ -84,6 +84,13 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame([RankKind::Same, ['a', 'd']], [$input->rankSets[0]->kind, $input->rankSets[0]->nodes]);
     }
 
+    public function testOrderingComesFromTheNodeOrTheGraph(): void
+    {
+        $input = DotLayoutInput::from(Work::run(new DotParser()->parse('digraph { ordering=out; a; b [ordering=in]; c [ordering=sideways]; }')));
+
+        $this->assertSame(['out', 'in', null], \array_map(static fn ($node): ?string => $node->ordering, $input->nodes));
+    }
+
     public function testHugeLengthsWeightsAndSizesAreHeldDown(): void
     {
         $input = self::input('digraph { ranksep="1e300"; nodesep=-5; a [width=inf, height="1e9"]; a -> b [minlen="1e12", weight=99999999]; b -> c [minlen=x, weight=-3] }');

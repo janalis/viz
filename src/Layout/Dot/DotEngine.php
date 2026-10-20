@@ -92,7 +92,12 @@ final readonly class DotEngine implements LayoutEngine
         $layers = new DotLayers($ranks, $sizes, $owner, $parents, \array_values($edges));
         $constrained = \array_column(\array_map(static fn ($edge): array => [$edge->index, $edge->constraint], $graph->edges), 1, 0);
         $loose = \array_keys(\array_filter(\array_keys($edges), static fn (int $original): bool => !$constrained[$original]));
-        $order = new DotOrdering($layers, turned: \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true), loose: $loose)->order();
+        $order = new DotOrdering(
+            $layers,
+            turned: \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true),
+            loose: $loose,
+            kept: self::ordered($graph, $layers),
+        )->order();
         yield from $order;
         // Laid out top-down to be turned left to right, a cluster keeps its label's band on its left, which becomes its top.
         $clusterLabels = \array_map(static fn ($cluster): array => $turned ? [0.0, 0.0] : [$cluster->minWidth, $cluster->labelHeight], $graph->clusters);
@@ -103,6 +108,37 @@ final readonly class DotEngine implements LayoutEngine
         yield from $placing;
 
         return $this->placement($graph, $layers, $position, \array_keys($edges));
+    }
+
+    /**
+     * As dot's `ordering`, the order a node keeps its edges in: the next node along each of its
+     * edges out, or back along each of its edges in, on the rank beside it, each before the next.
+     *
+     * @return list<array{int, int}> pairs of nodes, the first kept before the second
+     */
+    private static function ordered(LayoutGraph $graph, DotLayers $layers): array
+    {
+        $kept = [];
+        foreach ($graph->nodes as $node => $layout) {
+            if (null === $layout->ordering) {
+                continue;
+            }
+            $out = 'out' === $layout->ordering;
+            $next = [];
+            foreach ($layers->paths as $path) {
+                $end = $out ? $path : \array_reverse($path);
+                if ($end[0] !== $node || $layers->rank[$end[1]] !== ($layers->rank[$node] + ($out ? 1 : -1))) {
+                    continue;
+                }
+                $next[$end[1]] = true;
+            }
+            $next = \array_keys($next);
+            for ($index = 1, $count = \count($next); $index < $count; ++$index) {
+                $kept[] = [$next[$index - 1], $next[$index]];
+            }
+        }
+
+        return $kept;
     }
 
     /** @param list<int> $edgeIndexes the original index of each edge the layers know, in their order */

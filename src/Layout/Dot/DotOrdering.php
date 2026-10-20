@@ -31,7 +31,10 @@ final class DotOrdering
     private int $active = 0;
     private readonly DotFlatOrder $flat;
 
-    /** @param list<int> $loose the edges, by their index in the layers, that do not constrain ranks, whose flat ones keep no order */
+    /**
+     * @param list<int> $loose the edges, by their index in the layers, that do not constrain ranks, whose flat ones keep no order
+     * @param list<array{int, int}> $kept pairs of nodes on one rank, the first kept before the second, as `ordering` asks
+     */
     public function __construct(
         private readonly DotLayers $layers,
         private readonly int $maxIterations = 24,
@@ -40,9 +43,10 @@ final class DotOrdering
         /** Whether the layout is turned to run across, which dot orders from the other end, as its order comes out mirrored. */
         private readonly bool $turned = false,
         array $loose = [],
+        array $kept = [],
     ) {
         $this->crossings = new DotCrossings($layers);
-        $this->flat = new DotFlatOrder($layers, $turned, $loose);
+        $this->flat = new DotFlatOrder($layers, $turned, $loose, $kept);
     }
 
     /** @return \Generator<int, null, mixed, void> */

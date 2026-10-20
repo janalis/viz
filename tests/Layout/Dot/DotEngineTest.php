@@ -155,6 +155,27 @@ final class DotEngineTest extends TestCase
         $this->assertSame([206.0, 188.0], [$placement->graph->width, $placement->graph->height], 'dot: 198 by 180, and the pad');
     }
 
+    public function testOrderingKeepsANodesEdgesInTheirOrder(): void
+    {
+        $order = static function (?string $ordering, LayoutEdge ...$edges): array {
+            $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+                \array_map(static fn (string $id): LayoutNode => new LayoutNode($id, $id, 54, 36, ordering: 'a' === $id ? $ordering : null), ['a', 'b', 'c', 'd']),
+                $edges,
+            )));
+            $names = ['b', 'c'];
+            \usort($names, static fn (string $x, string $y): int => $placement->endpoints[$x]->x <=> $placement->endpoints[$y]->x);
+
+            return $names;
+        };
+        $down = [new LayoutEdge(0, 'a', 'b'), new LayoutEdge(1, 'a', 'c'), new LayoutEdge(2, 'd', 'b')];
+        $up = [new LayoutEdge(0, 'b', 'a'), new LayoutEdge(1, 'c', 'a'), new LayoutEdge(2, 'b', 'd')];
+
+        $this->assertSame(['c', 'b'], $order(null, ...$down), 'unordered, b goes by d');
+        $this->assertSame(['b', 'c'], $order('out', ...$down), 'as dot: b, then c, as a\'s edges out come');
+        $this->assertSame(['b', 'c'], $order('in', ...$up), 'and as its edges in come');
+        $this->assertSame(['c', 'b'], $order('in', ...$down), 'in orders nothing below');
+    }
+
     public function testEveryStepYields(): void
     {
         $steps = 0;

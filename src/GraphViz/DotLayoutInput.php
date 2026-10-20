@@ -58,7 +58,16 @@ final class DotLayoutInput
                 $width = \max($width, $labelWidth);
                 $height = \max($height, $labelHeight);
             }
-            $nodes[] = new LayoutNode($name, $node->attribute('label', '\N'), $width, $height, $clusterOf[$name] ?? null, $order++);
+            $ordering = \strtolower($node->attribute('ordering', $graph->attribute('ordering')));
+            $nodes[] = new LayoutNode(
+                $name,
+                $node->attribute('label', '\N'),
+                $width,
+                $height,
+                $clusterOf[$name] ?? null,
+                $order++,
+                ordering: \in_array($ordering, ['out', 'in'], strict: true) ? $ordering : null,
+            );
         }
         $edges = [];
         foreach ($graph->edges as $index => $edge) {

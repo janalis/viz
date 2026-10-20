@@ -18,5 +18,7 @@ final readonly class LayoutNode
         public int $order = 0,
         public float $marginX = 0.0,
         public float $marginY = 0.0,
+        /** `out` to keep the heads of its edges out, or `in` the tails of its edges in, in the order the edges come, as dot's `ordering` does; null for neither. */
+        public ?string $ordering = null,
     ) {}
 }
