@@ -136,8 +136,10 @@ final class StateDrawing
                 }
             }
         }
+        // As svek, the composite states drawn as images of their own come first, then the rest in order.
+        $images = \array_filter($members, fn (array $member): bool => \array_key_exists($member[0]->id, $this->states->composites) && $this->autarkic($member[0]->id));
 
-        return $members;
+        return [...\array_values($images), ...\array_values(\array_diff_key($members, $images))];
     }
 
     /** Whether no transition joins a state inside a composite state to one outside it. */

@@ -180,8 +180,9 @@ final class PlantUmlFrame
         [$textWidth, $textHeight] = $text->size();
         [$padTop, $padRight, $padBottom, $padLeft] = $style->sides('Padding');
         [$marginTop, $marginRight, $marginBottom, $marginLeft] = $style->sides('Margin');
-        $boxWidth = $textWidth + $padLeft + $padRight;
-        $boxHeight = $textHeight + $padTop + $padBottom;
+        // As PlantUML's bordered text block, 1 more each way than its text and padding.
+        $boxWidth = $textWidth + $padLeft + $padRight + 1;
+        $boxHeight = $textHeight + $padTop + $padBottom + 1;
         $marks = [];
         $line = $style->color('LineColor', 'none');
         $back = $style->color('BackGroundColor', 'none');

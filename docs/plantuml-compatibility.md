@@ -102,9 +102,9 @@ The grades at 0.2.0, on 111 self-authored fixtures:
 | Family | Fixtures | Same words | and height within 5% | and within 2% | and every row within 3 pt |
 | --- | --- | --- | --- | --- | --- |
 | Activity | 30 | 30 | 30 | 30 | 30 |
-| Sequence | 20 | 20 | 20 | 19 | 19 |
+| Sequence | 20 | 20 | 20 | 20 | 20 |
 | Class | 21 | 21 | 21 | 21 | 21 |
-| State | 20 | 20 | 20 | 19 | 18 |
+| State | 20 | 20 | 20 | 19 | 19 |
 | Description | 20 | 20 | 20 | 20 | 20 |
 
 Shadows, which `skin rose` casts under every element, are drawn as a darkened copy of the shape rather than PlantUML's blurred one; they take the room PlantUML gives them.
