@@ -8,8 +8,8 @@ use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\Source\Unsupported;
 
 /**
- * What the native dot drawing leaves to the `dot` command: other layout engines, HTML
- * outside labels, images, orthogonal splines and `ratio=compress`.
+ * What the native dot drawing leaves to the `dot` command: other layout engines, HTML in
+ * attributes that are no labels, images, orthogonal splines and `ratio=compress`.
  */
 final class DotFeatureGate
 {
@@ -59,7 +59,7 @@ final class DotFeatureGate
      */
     private static function object(array $attributes, array $html): ?string
     {
-        $outside = \array_diff(\array_keys($html), ['label']);
+        $outside = \array_diff(\array_keys($html), ['label', 'xlabel', 'headlabel', 'taillabel']);
         if ([] !== $outside) {
             return 'HTML in '.\implode(', ', $outside);
         }

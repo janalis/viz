@@ -11,6 +11,7 @@ use Janalis\Viz\Draw\Shading;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\GraphViz\DotPipeline;
 use Janalis\Viz\Render\Work;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
 
 final class DotDrawingTest extends TestCase
@@ -482,6 +483,20 @@ final class DotDrawingTest extends TestCase
 
         $this->assertSame(['#ff0000', 'none'], [$plain->stroke, $plain->fill]);
         $this->assertSame(['#ff0000', ['#ff0000', '#0000ff']], [$filled->stroke, $filled->gradient]);
+    }
+
+    public function testEndAndExternalLabelsMayBeHtml(): void
+    {
+        $drawing = self::draw('digraph { a -> b [headlabel=<<B>head</B>>, taillabel=<<FONT COLOR="red">tail</FONT>>, labelfontsize=10]; a [xlabel=<<TABLE><TR><TD>x</TD></TR></TABLE>>] }');
+        $texts = [];
+        foreach (self::texts($drawing) as $mark) {
+            $texts[$mark->text] = $mark;
+        }
+
+        $this->assertSame(FontFace::Bold, $texts['head']->font);
+        $this->assertSame('#ff0000', $texts['tail']->stroke);
+        $this->assertEqualsWithDelta(Units::fontScale(10.0), $texts['tail']->fontScale, 1e-9, 'in the labelfontsize');
+        $this->assertArrayHasKey('x', $texts, 'a table beside a');
     }
 
     private static function draw(string $source): Drawing

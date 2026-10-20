@@ -41,34 +41,32 @@ final class DotNodes
         return self::label($graph, '', ['G' => $graph->name, 'L' => '']);
     }
 
-    /** An edge's `headlabel` or `taillabel`, in its `labelfont*` font, or its own where none is set. */
-    public static function endText(DotGraph $graph, DotEdge $edge, string $attribute): DotText
+    /** An edge's `headlabel` or `taillabel`, in its `labelfont*` font, or its own where none is set: HTML too. */
+    public static function endText(DotGraph $graph, DotEdge $edge, string $attribute): DotLabel
     {
         $operator = $graph->directed ? '->' : '--';
 
-        return DotText::parse(
-            $edge->attribute($attribute),
+        return self::label(
+            $edge,
+            '',
             ['E' => $edge->tail.$operator.$edge->head, 'T' => $edge->tail, 'H' => $edge->head, 'G' => $graph->name, 'L' => ''],
-            self::fontSize($edge->attribute('labelfontsize', $edge->attribute('fontsize'))),
-            $edge->attribute('labelfontname', $edge->attribute('fontname')),
-            DotColors::resolve($edge->attribute('labelfontcolor', $edge->attribute('fontcolor')), '#000000'),
+            $attribute,
+            [
+                $edge->attribute('labelfontsize', $edge->attribute('fontsize')),
+                $edge->attribute('labelfontname', $edge->attribute('fontname')),
+                $edge->attribute('labelfontcolor', $edge->attribute('fontcolor')),
+            ],
         );
     }
 
-    /** A node's or edge's `xlabel`, outside it, in its font. */
-    public static function externalText(DotGraph $graph, DotNode|DotEdge $object): DotText
+    /** A node's or edge's `xlabel`, outside it, in its font: HTML too. */
+    public static function externalText(DotGraph $graph, DotNode|DotEdge $object): DotLabel
     {
         $names = $object instanceof DotNode
             ? ['N' => $object->name, 'G' => $graph->name, 'L' => '']
             : ['T' => $object->tail, 'H' => $object->head, 'G' => $graph->name, 'L' => ''];
 
-        return DotText::parse(
-            $object->attribute('xlabel'),
-            $names,
-            self::fontSize($object->attribute('fontsize')),
-            $object->attribute('fontname'),
-            DotColors::resolve($object->attribute('fontcolor'), '#000000'),
-        );
+        return self::label($object, '', $names, 'xlabel');
     }
 
     /** A record node's fields, null for any other node or a label that is not a record's. */
@@ -144,20 +142,22 @@ final class DotNodes
     }
 
     /**
-     * An object's label in its font: HTML when its `label` was written as an HTML string, else text, its escapes standing for names.
+     * An object's label in its font: HTML when it was written as an HTML string, else text, its escapes standing for names.
      *
      * @param array<string, string> $names
+     * @param ?array{string, string, string} $font its size, face and colour, where not the object's own
      */
-    private static function label(DotNode|DotEdge|DotSubgraph|DotGraph $object, string $default, array $names): DotLabel
+    private static function label(DotNode|DotEdge|DotSubgraph|DotGraph $object, string $default, array $names, string $attribute = 'label', ?array $font = null): DotLabel
     {
-        $size = self::fontSize($object->attribute('fontsize'));
-        $color = DotColors::resolve($object->attribute('fontcolor'), '#000000');
-        if (!\array_key_exists('label', $object->html)) {
-            return DotText::parse($object->attribute('label', $default), $names, $size, $object->attribute('fontname'), $color);
+        [$size, $name, $color] = $font ?? [$object->attribute('fontsize'), $object->attribute('fontname'), $object->attribute('fontcolor')];
+        $size = self::fontSize($size);
+        $color = DotColors::resolve($color, '#000000');
+        if (!\array_key_exists($attribute, $object->html)) {
+            return DotText::parse($object->attribute($attribute, $default), $names, $size, $name, $color);
         }
-        $face = DotText::face($object->attribute('fontname'));
+        $face = DotText::face($name);
 
-        return HtmlParser::parse($object->attribute('label'), new HtmlFont(
+        return HtmlParser::parse($object->attribute($attribute), new HtmlFont(
             $size,
             $color,
             \in_array($face, [FontFace::Bold, FontFace::BoldItalic], strict: true),

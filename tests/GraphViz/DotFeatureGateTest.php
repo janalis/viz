@@ -19,7 +19,7 @@ final class DotFeatureGateTest extends TestCase
         yield 'layout' => ['graph { layout=neato }', 'the neato layout'];
         yield 'ortho' => ['graph { splines=ortho }', 'orthogonal splines'];
         yield 'compress' => ['graph { ratio=compress }', 'ratio=compress'];
-        yield 'html' => ['graph { a -- b [taillabel=<b>] }', 'HTML in taillabel'];
+        yield 'html' => ['graph { a -- b [tooltip=<b>] }', 'HTML in tooltip'];
         yield 'image' => ['graph { a [image="x.png"] }', 'images'];
         yield 'shapefile' => ['graph { a [shapefile="x.png"] }', 'images'];
     }
