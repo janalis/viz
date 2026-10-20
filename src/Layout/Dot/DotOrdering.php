@@ -35,7 +35,7 @@ final class DotOrdering
         private readonly int $maxIterations = 24,
         private readonly int $minQuit = 8,
         private readonly float $convergence = 0.995,
-        /** Whether the layout is turned to run across, which reverses a cluster's own order, as dot does. */
+        /** Whether the layout is turned to run across, which dot orders from the other end, as its order comes out mirrored. */
         private readonly bool $turned = false,
     ) {
         $this->crossings = new DotCrossings($layers);
@@ -55,6 +55,12 @@ final class DotOrdering
             $this->active = $component;
             $work = $this->scope(-1);
             yield from $work;
+        }
+        if ($this->turned) {
+            foreach ($this->layers->ranks as $rank => $nodes) {
+                $this->layers->ranks[$rank] = \array_reverse($nodes);
+            }
+            $this->index();
         }
     }
 
@@ -266,8 +272,9 @@ final class DotOrdering
             }
         }
         // The layered graph has no cycle: every item descends from a seed and has been placed.
-        // As dot, a layout turned across lists the nodes of a cluster holding no other the other way.
-        $reversed = $this->turned && $scope >= 0 && [] === $this->children($scope);
+        // As dot, a layout turned across starts each scope from the other end — but for a cluster
+        // holding no other — and its order comes out mirrored, so such a cluster's own lies the other way.
+        $reversed = $this->turned && ($scope < 0 || [] !== $this->children($scope));
         foreach (\array_keys($itemsByRank) as $rank) {
             $this->write($scope, $rank, $reversed ? \array_reverse($orders[$rank]) : $orders[$rank]);
         }

@@ -35,7 +35,7 @@ Where the papers leave a choice open, the behaviour was set by comparing the nat
 | Ordering | `DotOrdering`, `DotCrossings`, `DotComponents` | Each connected component is ordered on its own, starting from an initial order found breadth-first. Weighted-median sweeps leave nodes with no neighbours where they are. Transposition follows each sweep, with dot's schedule of passes. Clusters stay contiguous, and in one order on every rank. |
 | Coordinates | `DotVertical`, `DotHorizontal` | Network simplex on the auxiliary graph, with weights of 1, 2 or 8 for edges between real and virtual nodes. Nodes keep the node separation. Clusters keep an 8-point margin around what they hold, from each other and from the graph's edge. A cluster's label band is the label's height plus 8 points. |
 
-A graph laid out left to right is laid out top-down with every size turned, then turned back; as `dot`, it then lists the nodes of a cluster holding no other cluster the other way round. Within a cluster, the initial order starts from its nodes in the order the cluster holds them, as `dot` does; the top level, from the order a depth-first search meets them. A loop widens its node's right side by its reach and its label. Laid out to be turned, a cluster keeps its label's band on the side that becomes its top.
+A graph laid out left to right is laid out top-down with every size turned, then turned back. As `dot`, such a layout is ordered from the other end of each rank and comes out mirrored, but for a cluster holding no other cluster, whose nodes therefore lie the other way round. Within a cluster, the initial order starts from its nodes in the order the cluster holds them, as `dot` does; the top level, from the order a depth-first search meets them. A loop widens its node's right side by its reach and its label. Laid out to be turned, a cluster keeps its label's band on the side that becomes its top.
 
 ## Drawing
 
@@ -59,8 +59,8 @@ The latest measurements, against dot 16.1.0, on 300 random graphs of eight nodes
 
 | | Same ranks | and same order | and same coordinates (±1 pt) |
 | --- | --- | --- | --- |
-| No clusters | 97% | 39% | 4% |
-| With clusters | 84% | 25% | 2% |
+| No clusters | 97% | 54% | 9% |
+| With clusters | 84% | 38% | 5% |
 
 Known divergences:
 
