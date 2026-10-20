@@ -35,7 +35,7 @@ Where the papers leave a choice open, the behaviour was set by comparing the nat
 | Ordering | `DotOrdering`, `DotCrossings`, `DotComponents` | Each connected component is ordered on its own, starting from an initial order found breadth-first. Weighted-median sweeps leave nodes with no neighbours where they are. Transposition follows each sweep, with dot's schedule of passes. Clusters stay contiguous, and in one order on every rank. |
 | Coordinates | `DotVertical`, `DotHorizontal` | Network simplex on the auxiliary graph, with weights of 1, 2 or 8 for edges between real and virtual nodes. Nodes keep the node separation. Clusters keep an 8-point margin around what they hold, from each other and from the graph's edge. A cluster's label band is the label's height plus 8 points. |
 
-A graph laid out left to right is laid out top-down with every size turned, then turned back. A loop widens its node's right side by its reach and its label. Laid out to be turned, a cluster keeps its label's band on the side that becomes its top.
+A graph laid out left to right is laid out top-down with every size turned, then turned back; as `dot`, it then lists the nodes of a cluster holding no other cluster the other way round. A loop widens its node's right side by its reach and its label. Laid out to be turned, a cluster keeps its label's band on the side that becomes its top.
 
 ## Drawing
 

@@ -49,6 +49,19 @@ final class DotEngineTest extends TestCase
         $this->assertSame(119.0, $placement->endpoints['b']->x);
     }
 
+    public function testLaidOutAcrossAClusterListsItsNodesTheOtherWay(): void
+    {
+        $edges = [['a', 'b'], ['a', 'c']];
+        $down = self::place(['b', 'c', 'a'], $edges, [new LayoutCluster('x', '')], ['b' => 'x', 'c' => 'x']);
+        $across = self::place(['b', 'c', 'a'], $edges, [new LayoutCluster('x', '')], ['b' => 'x', 'c' => 'x'], Direction::LeftRight);
+        $plain = self::place(['b', 'c', 'a'], $edges, direction: Direction::LeftRight);
+
+        // dot: b left of c laid out down, but c above b across, though b stays above c out of a cluster.
+        $this->assertLessThan($down->endpoints['c']->x, $down->endpoints['b']->x);
+        $this->assertLessThan($across->endpoints['b']->y, $across->endpoints['c']->y);
+        $this->assertLessThan($plain->endpoints['c']->y, $plain->endpoints['b']->y);
+    }
+
     public function testNestedAndEmptyClustersAndClustersSideBySide(): void
     {
         $placement = self::place(

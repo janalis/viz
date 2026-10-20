@@ -88,7 +88,7 @@ final readonly class DotEngine implements LayoutEngine
             throw new Unsupported('The graph is too large to lay out natively: its edges span '.$span.' ranks');
         }
         $layers = new DotLayers($ranks, $sizes, $owner, $parents, \array_values($edges));
-        $order = new DotOrdering($layers)->order();
+        $order = new DotOrdering($layers, turned: \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true))->order();
         yield from $order;
         // Laid out top-down to be turned left to right, a cluster keeps its label's band on its left, which becomes its top.
         $clusterLabels = \array_map(static fn ($cluster): array => $turned ? [0.0, 0.0] : [$cluster->minWidth, $cluster->labelHeight], $graph->clusters);
