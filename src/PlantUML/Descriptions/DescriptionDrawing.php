@@ -47,6 +47,9 @@ final class DescriptionDrawing
         return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement));
     }
 
+    /** How far below a container's top its title stands, where PlantUML sets it lower than in a plain box: 11 more, 20 under a database's lid, 5 in storage. */
+    private const array TITLE_TOPS = ['node' => 15.0, 'cloud' => 15.0, 'component' => 15.0, 'stack' => 15.0, 'database' => 24.0, 'storage' => 9.0];
+
     private function graph(): Svek
     {
         $svek = new Svek();
@@ -126,12 +129,12 @@ final class DescriptionDrawing
             $line = ClassColors::line($group->color) ?? $style->color('LineColor', '#181818');
             $back = ClassColors::back($group->color) ?? 'none';
             \array_push($marks, ...DescriptionShapes::outline($group->symbol, $box->x0, $box->y0, $box->x1 - $box->x0, $box->y1 - $box->y0, $line, $back, $style->number('LineThickness', 1.0), 0.0));
-            // A package's or a folder's title sits in its tab; any other container's is centred at its top.
+            // A package's or a folder's title sits in its tab; any other container's is centred at its top, lower for the symbols PlantUML draws it lower in.
             $title = $this->title($group);
             $tabbed = \in_array($group->symbol, ['package', 'folder'], strict: true);
             \array_push($marks, ...$title->marks(
-                $tabbed ? $box->x0 + 10 : $box->x0,
-                $box->y0 + ($tabbed ? 10.0 : 4.0),
+                $tabbed ? $box->x0 + 10 : $box->x0 + ('node' === $group->symbol ? -4.0 : 0.0),
+                $box->y0 + ($tabbed ? 10.0 : self::TITLE_TOPS[$group->symbol] ?? 4.0),
                 $tabbed ? $title->size()[0] : $box->x1 - $box->x0,
                 $tabbed ? 'left' : 'center',
             ));
