@@ -1,0 +1,20 @@
+@startuml
+[*] --> Idle
+Idle --> Connecting : dial
+state Connecting {
+  [*] --> Resolving
+  Resolving --> Handshake
+  Handshake --> [*]
+}
+Connecting --> Connected : ok
+Connecting --> Idle : fail
+state Connected {
+  [*] --> Sending
+  Sending --> Waiting
+  Waiting --> Sending : more
+  --
+  [*] --> Monitoring
+}
+Connected --> Idle : hang up
+Idle --> [*]
+@enduml

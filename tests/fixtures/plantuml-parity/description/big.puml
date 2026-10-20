@@ -1,0 +1,24 @@
+@startuml
+package Frontend {
+  [Web UI]
+  [Mobile UI]
+}
+package Backend {
+  [Gateway]
+  [Orders]
+  [Billing]
+}
+database "Orders DB" as ODB
+database "Billing DB" as BDB
+cloud CDN
+actor Customer
+Customer --> [Web UI]
+Customer --> [Mobile UI]
+[Web UI] --> CDN
+[Web UI] --> [Gateway]
+[Mobile UI] --> [Gateway]
+[Gateway] --> [Orders]
+[Gateway] --> [Billing]
+[Orders] --> ODB
+[Billing] --> BDB
+@enduml

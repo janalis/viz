@@ -1,0 +1,9 @@
+@startuml
+skin rose
+actor U
+participant S
+U -> S : request
+activate S
+S --> U : response
+deactivate S
+@enduml

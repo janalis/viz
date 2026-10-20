@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 96,
+    "height": 286,
+    "words": [
+        "Busy",
+        "Ready",
+        "done",
+        "go"
+    ],
+    "baselines": [
+        [
+            "Busy",
+            232.535
+        ],
+        [
+            "Ready",
+            105.535
+        ],
+        [
+            "done",
+            180.568
+        ],
+        [
+            "go",
+            180.568
+        ]
+    ]
+}

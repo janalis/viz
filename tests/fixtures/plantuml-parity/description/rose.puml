@@ -1,0 +1,5 @@
+@startuml
+skin rose
+[Front] --> [Back]
+[Back] --> [Store]
+@enduml

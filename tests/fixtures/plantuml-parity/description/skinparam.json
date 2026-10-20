@@ -1,0 +1,19 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 101,
+    "height": 173,
+    "words": [
+        "Other",
+        "Styled"
+    ],
+    "baselines": [
+        [
+            "Other",
+            147.025
+        ],
+        [
+            "Styled",
+            40.535
+        ]
+    ]
+}

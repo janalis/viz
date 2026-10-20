@@ -1,0 +1,10 @@
+@startuml
+<style>
+stateDiagram {
+  BackgroundColor #ffeedd
+}
+</style>
+[*] --> A
+A --> B
+B --> [*]
+@enduml

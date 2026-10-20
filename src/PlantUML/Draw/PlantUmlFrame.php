@@ -24,17 +24,37 @@ final class PlantUmlFrame
     private const float SVEK_INSET = 6.0;
     /** How much room svek leaves past what it draws. */
     private const float SVEK_TRAIL = 15.0;
+    /** How much of that room lies past the document's captions, below and to the right of everything. */
+    private const float SVEK_OUTER = 5.0;
 
     /** @param list<Mark> $marks the diagram's, in points, its top left at the origin */
     public static function drawing(PlantUmlDocument $document, array $marks, float $width, float $height): Drawing
     {
-        return self::framed($document, $marks, $width, $height, self::MARGIN);
+        return self::framed($document, $marks, $width, $height, [self::MARGIN, self::MARGIN, self::MARGIN, self::MARGIN]);
     }
 
     /**
-     * A diagram laid out by svek, as PlantUML sets one: with no margin of its own around the
-     * document, what it draws moved to stand 6 in from the top left, as PlantUML's limit finder
-     * measures it, and the diagram 15 wider and taller than that.
+     * A sequence diagram, as PlantUML sets one laid out by teoz: 5 clear of the diagram all
+     * round, which its captions stand outside of, and 5 more around everything.
+     *
+     * @param list<Mark> $marks the diagram's, in points, its top left at the origin
+     */
+    public static function teoz(PlantUmlDocument $document, array $marks, float $width, float $height): Drawing
+    {
+        $inner = self::MARGIN / 2;
+
+        return self::framed($document, \array_map(static fn (Mark $mark): Mark => self::moved($mark, $inner, $inner), $marks), $width + (2 * $inner), $height + (2 * $inner), [
+            $inner,
+            $inner,
+            $inner,
+            $inner,
+        ]);
+    }
+
+    /**
+     * A diagram laid out by svek, as PlantUML sets one: what it draws moved to stand 6 in from
+     * the top left, as PlantUML's limit finder measures it, 10 more room past it, and 5 more
+     * past everything, its captions included.
      *
      * @param list<Mark> $marks the diagram's, in points
      */
@@ -45,9 +65,9 @@ final class PlantUmlFrame
         return self::framed(
             $document,
             \array_map(static fn (Mark $mark): Mark => self::moved($mark, self::SVEK_INSET - $minX, self::SVEK_INSET - $minY), $marks),
-            $maxX - $minX + self::SVEK_INSET + self::SVEK_TRAIL,
-            $maxY - $minY + self::SVEK_INSET + self::SVEK_TRAIL,
-            0.0,
+            $maxX - $minX + self::SVEK_INSET + self::SVEK_TRAIL - self::SVEK_OUTER,
+            $maxY - $minY + self::SVEK_INSET + self::SVEK_TRAIL - self::SVEK_OUTER,
+            [0.0, self::SVEK_OUTER, self::SVEK_OUTER, 0.0],
         );
     }
 
@@ -106,9 +126,13 @@ final class PlantUmlFrame
         return $mark->points;
     }
 
-    /** @param list<Mark> $marks */
-    private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, float $margin): Drawing
+    /**
+     * @param list<Mark> $marks
+     * @param array{float, float, float, float} $margins top, right, bottom and left, around everything
+     */
+    private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, array $margins): Drawing
     {
+        [$top, $right, $bottom, $left] = $margins;
         $blocks = [];
         foreach (['header', 'title'] as $kind) {
             $blocks[] = self::block($document, $kind);
@@ -119,9 +143,9 @@ final class PlantUmlFrame
         }
         $full = \max(\array_map(static fn (array $block): float => $block[1], $blocks));
         $placed = [];
-        $y = $margin;
+        $y = $top;
         foreach ($blocks as $index => [$blockMarks, $blockWidth, $blockHeight, $align]) {
-            $x = $margin
+            $x = $left
             + match ($align) {
                 'left' => 0.0,
                 'right' => $full - $blockWidth,
@@ -137,8 +161,8 @@ final class PlantUmlFrame
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
 
         return new Drawing(
-            \max(1.0, ($full + (2 * $margin)) * $scale),
-            \max(1.0, ($y + $margin) * $scale),
+            \max(1.0, ($full + $left + $right) * $scale),
+            \max(1.0, ($y + $bottom) * $scale),
             \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $placed),
             'none' === $background ? null : $background,
         );

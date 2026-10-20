@@ -1,0 +1,6 @@
+@startuml
+title Machine
+[*] --> On
+On --> Off
+Off --> [*]
+@enduml

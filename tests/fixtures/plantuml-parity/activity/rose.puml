@@ -1,0 +1,10 @@
+@startuml
+skin rose
+start
+if (Stock?) then (yes)
+  :Pick;
+else (no)
+  :Backorder;
+endif
+stop
+@enduml

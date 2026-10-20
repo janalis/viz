@@ -1,0 +1,6 @@
+@startuml
+scale 1.5
+class Small
+class Other
+Small --> Other
+@enduml

@@ -167,7 +167,7 @@ final class PlantUmlDocumentReader
             $this->captions['legend'] = new PlantUmlCaption(
                 $this->until('/^end[\s\x{a0}]?legend$/iu'),
                 '' === ($match[2] ?? '') ? null : \strtolower($match[2]),
-                '' === $match[1] ? null : \strtolower($match[1]),
+                '' === ($match[1] ?? '') ? null : \strtolower($match[1]),
             );
 
             return true;

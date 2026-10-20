@@ -86,7 +86,7 @@ final class TeozDrawing
             ...Marks::moved($foreground, 0.0, $top),
         );
 
-        return PlantUmlFrame::drawing($sequence->document, Marks::moved($marks, -$min, 0.0), $playing->max->value() - $min, $body + $boxes + $below);
+        return PlantUmlFrame::teoz($sequence->document, Marks::moved($marks, -$min, 0.0), $playing->max->value() - $min, $body + $boxes + $below);
     }
 
     /**

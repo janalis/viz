@@ -1,0 +1,84 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 363,
+    "height": 546,
+    "words": [
+        "Backend",
+        "Billing",
+        "Billing",
+        "CDN",
+        "Customer",
+        "DB",
+        "DB",
+        "Frontend",
+        "Gateway",
+        "Mobile",
+        "Orders",
+        "Orders",
+        "UI",
+        "UI",
+        "Web"
+    ],
+    "baselines": [
+        [
+            "Backend",
+            244.015
+        ],
+        [
+            "Billing",
+            403.495
+        ],
+        [
+            "Billing",
+            513.985
+        ],
+        [
+            "CDN",
+            292.015
+        ],
+        [
+            "Customer",
+            79.035
+        ],
+        [
+            "DB",
+            513.985
+        ],
+        [
+            "DB",
+            513.985
+        ],
+        [
+            "Frontend",
+            122.525
+        ],
+        [
+            "Gateway",
+            297.015
+        ],
+        [
+            "Mobile",
+            175.525
+        ],
+        [
+            "Orders",
+            403.495
+        ],
+        [
+            "Orders",
+            513.985
+        ],
+        [
+            "UI",
+            175.525
+        ],
+        [
+            "UI",
+            175.525
+        ],
+        [
+            "Web",
+            175.525
+        ]
+    ]
+}

@@ -1,0 +1,6 @@
+@startuml
+header Page head
+footer Page foot
+A -> B : ping
+B --> A : pong
+@enduml

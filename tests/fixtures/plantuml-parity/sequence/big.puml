@@ -1,0 +1,26 @@
+@startuml
+actor User
+participant Web
+participant Auth
+participant Api
+database Db
+User -> Web : login
+Web -> Auth : verify
+activate Auth
+Auth -> Db : lookup
+Db --> Auth : row
+Auth --> Web : token
+deactivate Auth
+== Session ==
+User -> Web : browse
+Web -> Api : list
+activate Api
+loop pages
+  Api -> Db : page
+  Db --> Api : rows
+end
+Api --> Web : items
+deactivate Api
+Web --> User : view
+note over User, Web : cached
+@enduml

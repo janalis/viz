@@ -1,0 +1,30 @@
+@startuml
+package shop {
+  class Customer {
+    name : String
+    email : String
+  }
+  class Order {
+    id : int
+    total() : float
+  }
+  class Line {
+    qty : int
+  }
+  class Product {
+    sku : String
+    price : float
+  }
+}
+interface Payable
+abstract class Payment
+class Card
+class Transfer
+Customer "1" -- "*" Order
+Order *-- Line
+Line --> Product
+Order ..|> Payable
+Payment <|-- Card
+Payment <|-- Transfer
+Order --> Payment
+@enduml

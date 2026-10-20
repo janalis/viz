@@ -1,0 +1,24 @@
+@startuml
+start
+:Login;
+if (2FA?) then (yes)
+  :Ask code;
+  repeat
+    :Check code;
+  repeat while (Wrong?) is (yes)
+endif
+fork
+  :Load profile;
+fork again
+  :Load feed;
+  while (More?)
+    :Fetch page;
+  endwhile
+end fork
+partition Render {
+  :Layout;
+  :Paint;
+}
+note right: done
+stop
+@enduml

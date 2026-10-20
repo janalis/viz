@@ -1,0 +1,6 @@
+@startuml
+skin rose
+[*] --> Ready
+Ready --> Busy : go
+Busy --> Ready : done
+@enduml

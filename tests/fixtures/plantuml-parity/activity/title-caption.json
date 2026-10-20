@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 119,
+    "height": 262,
+    "words": [
+        "1",
+        "Order",
+        "Receive",
+        "Ship",
+        "figure",
+        "flow"
+    ],
+    "baselines": [
+        [
+            "1",
+            246.289
+        ],
+        [
+            "Order",
+            33.535
+        ],
+        [
+            "Receive",
+            114.09
+        ],
+        [
+            "Ship",
+            168.223
+        ],
+        [
+            "figure",
+            246.289
+        ],
+        [
+            "flow",
+            33.535
+        ]
+    ]
+}

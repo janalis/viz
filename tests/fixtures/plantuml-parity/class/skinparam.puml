@@ -1,0 +1,9 @@
+@startuml
+skinparam classBackgroundColor #eef
+skinparam classBorderColor #336
+class Styled {
+  field : int
+}
+class Other
+Styled --> Other
+@enduml

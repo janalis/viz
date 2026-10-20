@@ -1,0 +1,9 @@
+@startuml
+title Domain
+class User
+class Role
+User --> Role
+legend
+  simplified
+endlegend
+@enduml

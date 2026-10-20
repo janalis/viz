@@ -1,0 +1,8 @@
+@startuml
+A -> B : one
+B --> A : two
+legend right
+  A is the client
+  B is the server
+endlegend
+@enduml

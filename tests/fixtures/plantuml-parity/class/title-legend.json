@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 107,
+    "height": 266,
+    "words": [
+        "Domain",
+        "Role",
+        "User",
+        "simplified"
+    ],
+    "baselines": [
+        [
+            "Domain",
+            23.535
+        ],
+        [
+            "Role",
+            173.779
+        ],
+        [
+            "User",
+            65.779
+        ],
+        [
+            "simplified",
+            240.023
+        ]
+    ]
+}

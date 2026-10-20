@@ -97,6 +97,7 @@ final class PlantUmlDocumentTest extends TestCase
         $this->assertEquals(new PlantUmlCaption(['Cap']), $document->captions['caption']);
         $this->assertEquals(new PlantUmlCaption(['Legend'], 'right', 'bottom'), $document->captions['legend']);
         $this->assertEquals(new PlantUmlCaption(['Top'], vertical: 'top'), self::read("legend top\nTop\nendlegend")->captions['legend']);
+        $this->assertEquals(new PlantUmlCaption(['Plain']), self::read("legend\nPlain\nendlegend")->captions['legend']);
         $this->assertSame(2.0, $document->scale);
     }
 

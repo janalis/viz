@@ -1,0 +1,5 @@
+@startuml
+skinparam componentBackgroundColor #eef
+skinparam componentBorderColor #336
+[Styled] --> [Other]
+@enduml

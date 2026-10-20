@@ -1,0 +1,12 @@
+@startuml
+<style>
+activity {
+  BackgroundColor #ddeeff
+  LineColor #336699
+}
+</style>
+start
+:Styled step;
+:Another;
+stop
+@enduml
