@@ -29,7 +29,9 @@ final class DotOrdering
     /** @var list<int> each node's place in its component's visit order */
     private array $visit = [];
     private int $active = 0;
+    private readonly DotFlatOrder $flat;
 
+    /** @param list<int> $loose the edges, by their index in the layers, that do not constrain ranks, whose flat ones keep no order */
     public function __construct(
         private readonly DotLayers $layers,
         private readonly int $maxIterations = 24,
@@ -37,8 +39,10 @@ final class DotOrdering
         private readonly float $convergence = 0.995,
         /** Whether the layout is turned to run across, which dot orders from the other end, as its order comes out mirrored. */
         private readonly bool $turned = false,
+        array $loose = [],
     ) {
         $this->crossings = new DotCrossings($layers);
+        $this->flat = new DotFlatOrder($layers, $turned, $loose);
     }
 
     /** @return \Generator<int, null, mixed, void> */
@@ -276,7 +280,7 @@ final class DotOrdering
         // holding no other — and its order comes out mirrored, so such a cluster's own lies the other way.
         $reversed = $this->turned && ($scope < 0 || [] !== $this->children($scope));
         foreach (\array_keys($itemsByRank) as $rank) {
-            $this->write($scope, $rank, $reversed ? \array_reverse($orders[$rank]) : $orders[$rank]);
+            $this->write($scope, $rank, $this->flat->leftToRight($reversed ? \array_reverse($orders[$rank]) : $orders[$rank]));
         }
     }
 
@@ -343,7 +347,8 @@ final class DotOrdering
             if ($right >= $count) {
                 break;
             }
-            if ($medians[$left] > $medians[$right] || (Ties::Exchange === $ties && $medians[$left] === $medians[$right])) {
+            $exchange = $medians[$left] > $medians[$right] || (Ties::Exchange === $ties && $medians[$left] === $medians[$right]);
+            if ($exchange && !$this->flat->keeps($items[$left], $items[$right])) {
                 [$items[$left], $items[$right]] = [$items[$right], $items[$left]];
                 [$medians[$left], $medians[$right]] = [$medians[$right], $medians[$left]];
                 $changed = true;
@@ -366,7 +371,7 @@ final class DotOrdering
                 for ($index = 0; ($index + 1) < \count($items); ++$index) {
                     $before = $this->crossings->pair($this->position, $items[$index], $items[$index + 1]);
                     $after = $this->crossings->pair($this->position, $items[$index + 1], $items[$index]);
-                    if ($after > $before || ($after === $before && (Ties::Keep === $ties || 0 === $before))) {
+                    if ($after > $before || ($after === $before && (Ties::Keep === $ties || 0 === $before)) || $this->flat->keeps($items[$index], $items[$index + 1])) {
                         continue;
                     }
                     [$items[$index], $items[$index + 1]] = [$items[$index + 1], $items[$index]];

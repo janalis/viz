@@ -119,6 +119,29 @@ final class DotEngineTest extends TestCase
         $this->assertSame($placement->endpoints['b']->x, $placement->endpoints['c']->x, 'b and c share a rank');
     }
 
+    public function testAFlatEdgeKeepsItsTailFirstUnlessItConstrainsNothing(): void
+    {
+        $place = static fn (Direction $direction, LayoutEdge ...$edges): Placement => Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('b', 'b', 54, 36), new LayoutNode('a', 'a', 54, 36)],
+            $edges,
+            direction: $direction,
+            rankSets: [new LayoutRankSet(RankKind::Same, ['a', 'b'])],
+        )));
+        $edge = new LayoutEdge(0, 'a', 'b');
+        $back = new LayoutEdge(1, 'b', 'a');
+        $down = $place(Direction::TopBottom, $edge);
+        $across = $place(Direction::LeftRight, $edge);
+        $cycle = $place(Direction::TopBottom, $edge, $back);
+        $turnedCycle = $place(Direction::LeftRight, $edge, $back);
+        $loose = $place(Direction::TopBottom, new LayoutEdge(0, 'a', 'b', constraint: false));
+
+        $this->assertLessThan($down->endpoints['b']->x, $down->endpoints['a']->x, 'as dot: a before b');
+        $this->assertLessThan($across->endpoints['b']->y, $across->endpoints['a']->y, 'across, as dot: a above b');
+        $this->assertLessThan($cycle->endpoints['a']->x, $cycle->endpoints['b']->x, 'as dot: the cycle broken from b, met first');
+        $this->assertLessThan($turnedCycle->endpoints['b']->y, $turnedCycle->endpoints['a']->y, 'across, as dot: broken from a');
+        $this->assertLessThan($loose->endpoints['a']->x, $loose->endpoints['b']->x, 'unconstrained, the nodes keep their order');
+    }
+
     public function testEveryStepYields(): void
     {
         $steps = 0;

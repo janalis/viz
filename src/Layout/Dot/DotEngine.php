@@ -80,6 +80,8 @@ final readonly class DotEngine implements LayoutEngine
             [$labelWidth, $labelHeight] = $turned ? [$edge->labelHeight, $edge->labelWidth] : [$edge->labelWidth, $edge->labelHeight];
             $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->weight, $labelWidth, $labelHeight];
         }
+        // As dot, the ordering meets edges node by node, each node's out-edges in turn.
+        \uksort($edges, static fn (int $a, int $b): int => [$edges[$a][0], $a] <=> [$edges[$b][0], $b]);
         $span = 0;
         foreach ($edges as [$tail, $head]) {
             $span += \max(0, \abs($ranks[$tail] - $ranks[$head]) - 1);
@@ -88,7 +90,9 @@ final readonly class DotEngine implements LayoutEngine
             throw new Unsupported('The graph is too large to lay out natively: its edges span '.$span.' ranks');
         }
         $layers = new DotLayers($ranks, $sizes, $owner, $parents, \array_values($edges));
-        $order = new DotOrdering($layers, turned: \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true))->order();
+        $constrained = \array_column(\array_map(static fn ($edge): array => [$edge->index, $edge->constraint], $graph->edges), 1, 0);
+        $loose = \array_keys(\array_filter(\array_keys($edges), static fn (int $original): bool => !$constrained[$original]));
+        $order = new DotOrdering($layers, turned: \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true), loose: $loose)->order();
         yield from $order;
         // Laid out top-down to be turned left to right, a cluster keeps its label's band on its left, which becomes its top.
         $clusterLabels = \array_map(static fn ($cluster): array => $turned ? [0.0, 0.0] : [$cluster->minWidth, $cluster->labelHeight], $graph->clusters);
