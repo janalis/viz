@@ -32,6 +32,10 @@ final class DotDrawing
     private array $shapes = [];
     /** @var array<string, ?DotRecord> each record node's fields, read once */
     private array $records = [];
+    /** @var list<array{float, float, float, float}> the boxes of labels drawn outside what was laid out, which the drawing grows to hold */
+    private array $outside = [];
+    /** @var list<array{float, float, float, float}> the boxes of the labels drawn so far, which an external label keeps clear of */
+    private array $taken = [];
 
     private function __construct(
         private readonly DotGraph $graph,
@@ -60,22 +64,40 @@ final class DotDrawing
         foreach ($this->placement->graph->nodes as $node) {
             $this->node($node);
         }
-        $height = $this->placement->graph->height;
+        [$width, $height] = $this->grown();
         $title = DotNodes::graphText($this->graph);
         if (!$title->empty()) {
             [, $titleHeight] = $title->size();
-            $this->text($title, $this->placement->graph->width / 2, $height + ($titleHeight / 2));
+            $this->text($title, $width / 2, $height + ($titleHeight / 2));
             $height += $titleHeight + 4;
         }
 
-        $scale = self::scale($this->graph->attribute('size'), $this->placement->graph->width, $height) * Units::POINT;
+        $scale = self::scale($this->graph->attribute('size'), $width, $height) * Units::POINT;
 
         return new Drawing(
-            \max(1.0, $this->placement->graph->width * $scale),
+            \max(1.0, $width * $scale),
             \max(1.0, $height * $scale),
             \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $this->marks),
             'none' === $background ? null : $background,
         );
+    }
+
+    /**
+     * The drawing grown to hold the labels drawn outside what was laid out, everything moved
+     * clear of the top and left.
+     *
+     * @return array{float, float} its width and height
+     */
+    private function grown(): array
+    {
+        $boxes = [[0.0, 0.0, $this->placement->graph->width, $this->placement->graph->height], ...$this->outside];
+        $left = \min(\array_column($boxes, 0));
+        $top = \min(\array_column($boxes, 1));
+        if ($left < 0 || $top < 0) {
+            $this->marks = \array_map(static fn (Mark $mark): Mark => Units::moved($mark, -$left, -$top), $this->marks);
+        }
+
+        return [\max(\array_column($boxes, 2)) - $left, \max(\array_column($boxes, 3)) - $top];
     }
 
     private function clusters(): void
@@ -135,6 +157,7 @@ final class DotDrawing
         // Only a loop has no route.
         $points = null === $route ? self::loop($tail) : Route::smooth($this->ported($route, $edge));
         $points = $this->clip($points, $edge, $tail, $head);
+        $this->endLabels($edge, $points);
         $color = DotColors::resolve($edge->attribute('color'), '#000000');
         $penWidth = self::penWidth($edge->attribute('penwidth'), $styles);
         $size = \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0)));
@@ -157,6 +180,12 @@ final class DotDrawing
             strokeWidth: $penWidth,
             dashes: \array_key_exists('dotted', $styles) ? [1.0, 3.0] : null,
         );
+        $external = DotNodes::externalText($this->graph, $edge);
+        if (!$external->empty()) {
+            // As dot, an edge's external label stands by its middle, above and left where it is clear.
+            [$middleX, $middleY] = $points[\intdiv(\count($points), num2: 2)];
+            $this->external($external, [$middleX, $middleY, $middleX, $middleY]);
+        }
         $text = DotNodes::edgeText($this->graph, $edge);
         if ($text->empty()) {
             return;
@@ -204,6 +233,11 @@ final class DotDrawing
                 $this->marks[] = new Mark(MarkKind::Polyline, self::offset($placed, $line), stroke: $color, strokeWidth: $penWidth);
             }
         }
+        $external = DotNodes::externalText($this->graph, $node);
+        if (!$external->empty()) {
+            // As dot, a node's external label stands off a corner of the node, its upper left where it is clear.
+            $this->external($external, self::box($placed));
+        }
         if ('point' === $shapeName) {
             return;
         }
@@ -224,9 +258,104 @@ final class DotDrawing
         }
     }
 
+    /**
+     * An edge's head and tail labels by its ends. Where `labelangle` or `labeldistance` is set,
+     * as DOT documents: 10 points times the distance from the end, turned by the angle, in
+     * degrees counter-clockwise, from the edge's direction there. Otherwise as dot sets them
+     * by default: beside the end, right of the way the edge runs, clear of it by half the label.
+     *
+     * @param list<array{float, float}> $points the edge's path, tail to head, clipped at its ends
+     */
+    private function endLabels(DotEdge $edge, array $points): void
+    {
+        $explicit = '' !== $edge->attribute('labelangle') || '' !== $edge->attribute('labeldistance');
+        $angle = \deg2rad(DotNodes::number($edge->attribute('labelangle'), -25.0));
+        $distance = 10 * \max(0.0, \min(100.0, DotNodes::number($edge->attribute('labeldistance'), 1.0)));
+        foreach (['headlabel' => [\array_reverse($points), -1.0], 'taillabel' => [$points, 1.0]] as $attribute => [$path, $travel]) {
+            $text = DotNodes::endText($this->graph, $edge, $attribute);
+            if ($text->empty()) {
+                continue;
+            }
+            [$x, $y] = $path[0];
+            [$intoX, $intoY] = self::direction($path);
+            if ($explicit) {
+                $this->beside($text, $x + ($distance * (($intoX * \cos($angle)) + ($intoY * \sin($angle)))), $y + ($distance * (($intoY * \cos($angle)) - ($intoX * \sin($angle)))));
+                continue;
+            }
+            [$width, $height] = $text->size();
+            // Right of the way the edge runs: from tail to head, which at the head is back out of the edge.
+            [$rightX, $rightY] = [-$intoY * $travel, $intoX * $travel];
+            $across = ((\abs($rightX) * $width) + (\abs($rightY) * $height)) / 2;
+            $along = ((\abs($intoX) * $width) + (\abs($intoY) * $height)) / 2;
+            $this->beside($text, $x + ($rightX * $across) + ($intoX * $along), $y + ($rightY * $across) + ($intoY * $along));
+        }
+    }
+
+    /**
+     * The direction a path runs from its first point, as a unit vector; down where it does not move.
+     *
+     * @param list<array{float, float}> $path
+     * @return array{float, float}
+     */
+    private static function direction(array $path): array
+    {
+        [$x, $y] = $path[0];
+        [$nextX, $nextY] = \array_find($path, static fn (array $point): bool => \hypot($point[0] - $x, $point[1] - $y) > 0.01) ?? [$x, $y + 1];
+        $length = \hypot($nextX - $x, $nextY - $y);
+
+        return [($nextX - $x) / $length, ($nextY - $y) / $length];
+    }
+
+    /**
+     * An external label off a corner of a box: above and left, above and right, below and left,
+     * or below and right, the first clear of the nodes and the labels drawn so far.
+     *
+     * @param array{float, float, float, float} $box
+     */
+    private function external(DotLabel $label, array $box): void
+    {
+        [$width, $height] = $label->size();
+        [$left, $top, $right, $bottom] = $box;
+        $corners = [
+            [$left - ($width / 2), $top - ($height / 2)],
+            [$right + ($width / 2), $top - ($height / 2)],
+            [$left - ($width / 2), $bottom + ($height / 2)],
+            [$right + ($width / 2), $bottom + ($height / 2)],
+        ];
+        $boxes = [...\array_map(self::box(...), \array_values($this->placement->graph->nodes)), ...$this->taken];
+        foreach ($corners as [$x, $y]) {
+            $clear = [] === \array_filter($boxes, static fn (array $other): bool => self::overlap([$x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2)], $other));
+            if ($clear) {
+                $this->beside($label, $x, $y);
+
+                return;
+            }
+        }
+        $this->beside($label, ...$corners[0]);
+    }
+
+    /**
+     * @param array{float, float, float, float} $a
+     * @param array{float, float, float, float} $b
+     */
+    private static function overlap(array $a, array $b): bool
+    {
+        return $a[0] < $b[2] && $b[0] < $a[2] && $a[1] < $b[3] && $b[1] < $a[3];
+    }
+
+    /** A label centred on a point outside what was laid out: the drawing grows to hold it. */
+    private function beside(DotLabel $label, float $x, float $y): void
+    {
+        [$width, $height] = $label->size();
+        $this->outside[] = [$x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2)];
+        $this->text($label, $x, $y);
+    }
+
     /** A label centred on a point. */
     private function text(DotLabel $label, float $x, float $y): void
     {
+        [$width, $height] = $label->size();
+        $this->taken[] = [$x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2)];
         \array_push($this->marks, ...$label->marks($x, $y));
     }
 

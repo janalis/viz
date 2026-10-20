@@ -195,6 +195,59 @@ final class DotDrawingTest extends TestCase
         $this->assertLessThan(\abs($edge->points[0][0] - $at('y')), \abs($edge->points[0][0] - $at('x')), 'the edge leaves the cell its port names');
     }
 
+    public function testEndLabelsStandByTheirEnds(): void
+    {
+        $drawing = self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [headlabel="H", taillabel="T", labelfontcolor=blue, labelfontsize=20]; }');
+        $texts = self::byText($drawing);
+        [$edge] = self::kinds($drawing, MarkKind::Polyline);
+
+        $this->assertSame('#0000ff', $texts['H']->stroke);
+        $this->assertEqualsWithDelta(Units::fontScale(20.0), $texts['H']->fontScale, 1e-9);
+        // As dot, beside each end, right of the way the edge runs: down, so to the left.
+        $this->assertLessThan($edge->points[0][0], $texts['H']->points[0][0]);
+        $this->assertLessThan($edge->points[0][0], $texts['T']->points[0][0]);
+        $this->assertGreaterThan($texts['T']->points[0][1], $texts['H']->points[0][1], 'the head label lower, by the head');
+
+        $turned = self::byText(self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [headlabel="H", labelangle=90, labeldistance=3]; }'));
+        $plain = self::byText(self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [headlabel="H", labelangle=0]; }'));
+        // Turned 90 degrees counter-clockwise from up the edge: left, 30 points out.
+        $from = static fn (array $texts, int $axis): float => $texts['H']->points[0][$axis] - $texts['b']->points[0][$axis];
+        $this->assertEqualsWithDelta(-30 * Units::POINT, $from($turned, axis: 0) - $from($plain, axis: 0), 1e-6, 'measured from b, as the drawing grows to the left');
+        $this->assertEqualsWithDelta(10 * Units::POINT, $from($turned, axis: 1) - $from($plain, axis: 1), 1e-6);
+    }
+
+    public function testExternalLabelsStandOffACornerClearOfOthersAndTheDrawingGrows(): void
+    {
+        $plain = self::draw('digraph { a -> b; }');
+        $labelled = self::draw('digraph { a [xlabel="outside"]; a -> b; }');
+        $texts = self::byText($labelled);
+
+        $this->assertGreaterThan($plain->width, $labelled->width);
+        $this->assertGreaterThan($plain->height, $labelled->height);
+        $this->assertLessThan($texts['a']->points[0][0], $texts['outside']->points[0][0], 'above and left of a');
+        $this->assertLessThan($texts['a']->points[0][1], $texts['outside']->points[0][1]);
+        $this->assertGreaterThan(0.0, \min(\array_map(static fn (Mark $mark): float => \min(\array_column($mark->points, 0)), $labelled->marks)) + 0.001);
+
+        // The edge's own label takes the first corner by its middle, so the external one goes right.
+        $edge = self::byText(self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [xlabel="X"]; a -> c [label="LLLLLLLLLLLL"]; }'));
+        $this->assertArrayHasKey('X', $edge);
+        $crowded = self::byText(self::draw(
+            'digraph { node [shape=box, fixedsize=true, width=0.3, height=0.3]; ranksep=0.02; nodesep=0.02; {rank=same; a; b; c} {rank=same; d; e; f} {rank=same; g; h; i} a -> d -> g; b -> e -> h; c -> f -> i; e [xlabel="everywhere taken"]; }',
+        ));
+        $this->assertArrayHasKey('everywhere taken', $crowded, 'with no corner clear, the first');
+    }
+
+    /** @return array<string, Mark> */
+    private static function byText(Drawing $drawing): array
+    {
+        $texts = [];
+        foreach (self::texts($drawing) as $mark) {
+            $texts[$mark->text] = $mark;
+        }
+
+        return $texts;
+    }
+
     public function testTheGraphLabelSitsBelowAndSizeScales(): void
     {
         $plain = self::draw('digraph { a -> b; }');

@@ -41,6 +41,36 @@ final class DotNodes
         return self::label($graph, '', ['G' => $graph->name, 'L' => '']);
     }
 
+    /** An edge's `headlabel` or `taillabel`, in its `labelfont*` font, or its own where none is set. */
+    public static function endText(DotGraph $graph, DotEdge $edge, string $attribute): DotText
+    {
+        $operator = $graph->directed ? '->' : '--';
+
+        return DotText::parse(
+            $edge->attribute($attribute),
+            ['E' => $edge->tail.$operator.$edge->head, 'T' => $edge->tail, 'H' => $edge->head, 'G' => $graph->name, 'L' => ''],
+            self::fontSize($edge->attribute('labelfontsize', $edge->attribute('fontsize'))),
+            $edge->attribute('labelfontname', $edge->attribute('fontname')),
+            DotColors::resolve($edge->attribute('labelfontcolor', $edge->attribute('fontcolor')), '#000000'),
+        );
+    }
+
+    /** A node's or edge's `xlabel`, outside it, in its font. */
+    public static function externalText(DotGraph $graph, DotNode|DotEdge $object): DotText
+    {
+        $names = $object instanceof DotNode
+            ? ['N' => $object->name, 'G' => $graph->name, 'L' => '']
+            : ['T' => $object->tail, 'H' => $object->head, 'G' => $graph->name, 'L' => ''];
+
+        return DotText::parse(
+            $object->attribute('xlabel'),
+            $names,
+            self::fontSize($object->attribute('fontsize')),
+            $object->attribute('fontname'),
+            DotColors::resolve($object->attribute('fontcolor'), '#000000'),
+        );
+    }
+
     /** A record node's fields, null for any other node or a label that is not a record's. */
     public static function record(DotGraph $graph, DotNode $node): ?DotRecord
     {

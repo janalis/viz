@@ -50,4 +50,25 @@ final class Units
             null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
         );
     }
+
+    /** A mark moved by an offset, in its own unit. */
+    public static function moved(Mark $mark, float $x, float $y): Mark
+    {
+        return new Mark(
+            $mark->kind,
+            \array_map(static fn (array $point): array => [$point[0] + $x, $point[1] + $y], $mark->points),
+            $mark->text,
+            $mark->stroke,
+            $mark->fill,
+            $mark->dashed,
+            $mark->strokeWidth,
+            $mark->font,
+            $mark->fontScale,
+            $mark->fillOpacity,
+            $mark->opacity,
+            $mark->angle,
+            $mark->gradient,
+            $mark->dashes,
+        );
+    }
 }

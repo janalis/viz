@@ -53,6 +53,12 @@ The native drawing refuses, and `dot` draws: other `layout` engines, HTML outsid
 
 `record` and `Mrecord` nodes are drawn natively. A record label's fields stand side by side, or one above the other when `rankdir` is `LR` or `RL`, and each `{...}` turns them. Each field needs its text plus 8 points of room on each side across and 4 above and below. A node larger than its fields shares the extra room among them in proportion to their size. A label that is not a well-formed record shows the node's name, as `dot` does.
 
+Head and tail labels (`headlabel`, `taillabel`) are drawn in their `labelfontsize`, `labelfontname` and `labelfontcolor`, or the edge's own font.
+- **Explicit:** when `labelangle` or `labeldistance` is set, as documented: 10 points × `labeldistance` from the end, turned `labelangle` degrees counter-clockwise from the edge's direction there.
+- **Default:** otherwise, as `dot` places them: beside the end, to the right of the way the edge runs, half the label clear of it.
+
+External labels (`xlabel`) stand off a corner of their node, or of their edge's middle: above and left, else the first corner clear of the nodes and labels drawn so far. The drawing grows to hold labels drawn outside the layout.
+
 HTML labels are drawn natively on nodes, edges, clusters and the graph, as the attribute docs describe them:
 - **Text:** spans in `<FONT>` (`COLOR`, `POINT-SIZE`, `FACE`, whose name sets bold and italic), `<B>`, `<I>`, `<U>`, `<O>`, `<S>`, `<SUB>` and `<SUP>`, with lines ended by `<BR/>` and its `ALIGN`.
 - **Tables:** `<TABLE>`, `<TR>` and `<TD>`, with `BORDER`, `CELLBORDER`, `CELLSPACING`, `CELLPADDING`, `BGCOLOR`, `COLOR`, `WIDTH`, `HEIGHT`, `FIXEDSIZE`, `COLSPAN`, `ROWSPAN`, `ALIGN`, `VALIGN`, `BALIGN` and `PORT`. Tables can nest, and `<HR/>` and `<VR/>` rules are drawn.
