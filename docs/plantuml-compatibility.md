@@ -102,9 +102,9 @@ The grades at 0.2.0, on 50 self-authored fixtures:
 | Family | Fixtures | Same words | and height within 5% | and within 2% | and every row within 3 pt |
 | --- | --- | --- | --- | --- | --- |
 | Activity | 18 | 18 | 18 | 18 | 18 |
-| Sequence | 8 | 8 | 8 | 2 | 2 |
-| Class | 8 | 8 | 8 | 7 | 5 |
-| State | 8 | 8 | 8 | 6 | 5 |
+| Sequence | 8 | 8 | 8 | 8 | 8 |
+| Class | 8 | 8 | 8 | 8 | 6 |
+| State | 8 | 8 | 8 | 7 | 7 |
 | Description | 8 | 8 | 8 | 5 | 4 |
 
-Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can differ from `dot`'s; sequence diagrams' rows are measured in the bundled font, a few points taller than PlantUML's.
+Text is set a line apart as PlantUML measures its default font, whichever font draws it. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can differ from `dot`'s.

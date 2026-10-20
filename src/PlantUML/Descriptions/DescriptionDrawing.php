@@ -47,6 +47,9 @@ final class DescriptionDrawing
         return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement));
     }
 
+    /** The room PlantUML's symbols keep around a container's title for their shape: a node's depth, a database's lid. */
+    private const array SHAPE_ROOM = ['node' => [60.0, 5.0], 'database' => [0.0, 15.0]];
+
     /** How far below a container's top its title stands, where PlantUML sets it lower than in a plain box: 11 more, 20 under a database's lid, 5 in storage. */
     private const array TITLE_TOPS = ['node' => 15.0, 'cloud' => 15.0, 'component' => 15.0, 'stack' => 15.0, 'database' => 24.0, 'storage' => 9.0];
 
@@ -54,8 +57,13 @@ final class DescriptionDrawing
     {
         $svek = new Svek();
         foreach ($this->diagram->groups as $group) {
-            [$width, $height] = 'together' === $group->symbol ? [0.0, 0.0] : $this->title($group)->size();
-            $svek->cluster($group->id, $group->parent, 'together' === $group->symbol ? 0.0 : $width + 20, 'together' === $group->symbol ? 0.0 : $height + 10);
+            if ('together' === $group->symbol) {
+                $svek->together($group->id, $group->parent);
+                continue;
+            }
+            [$width, $height] = $this->title($group)->size();
+            [$shapeWidth, $shapeHeight] = self::SHAPE_ROOM[$group->symbol] ?? [0.0, 0.0];
+            $svek->cluster($group->id, $group->parent, ...Svek::label($width, $height, shapeWidth: $shapeWidth, shapeHeight: $shapeHeight));
         }
         foreach ($this->diagram->elements as $element) {
             $box = DescriptionBox::of($element, $this->diagram->document->styles);
@@ -133,8 +141,8 @@ final class DescriptionDrawing
             $title = $this->title($group);
             $tabbed = \in_array($group->symbol, ['package', 'folder'], strict: true);
             \array_push($marks, ...$title->marks(
-                $tabbed ? $box->x0 + 10 : $box->x0 + ('node' === $group->symbol ? -4.0 : 0.0),
-                $box->y0 + ($tabbed ? 10.0 : self::TITLE_TOPS[$group->symbol] ?? 4.0),
+                $tabbed ? $box->x0 + 4 : $box->x0 + ('node' === $group->symbol ? -4.0 : 0.0),
+                $box->y0 + ($tabbed ? 2.0 : self::TITLE_TOPS[$group->symbol] ?? 4.0),
                 $tabbed ? $title->size()[0] : $box->x1 - $box->x0,
                 $tabbed ? 'left' : 'center',
             ));

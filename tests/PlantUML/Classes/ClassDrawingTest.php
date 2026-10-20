@@ -12,6 +12,7 @@ use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassEntity;
 use Janalis\Viz\PlantUML\Classes\ClassPortions;
+use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Render\Work;
@@ -101,7 +102,7 @@ final class ClassDrawingTest extends TestCase
 
         $box = ClassBox::of($entity, StyleSheet::skin(), $portions);
         $this->assertSame(8.0, $box->height - $box->header, 'only the shown, empty methods compartment');
-        $this->assertSame(Units::line(14.0) + 10, $box->header, 'no circle, no stereotype');
+        $this->assertSame(PlantUmlText::lineHeight(14.0) + 10, $box->header, 'no circle, no stereotype');
         $this->assertFalse($portions->shown($entity, 'circle'));
         $this->assertTrue($portions->shown($entity, 'field', 3));
         $this->assertFalse($portions->shown($entity, 'field', 0));

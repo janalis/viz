@@ -33,4 +33,11 @@ final class SvekTest extends TestCase
         $turned = Work::run($svek->place(Direction::LeftRight, 10.0, 20.0));
         $this->assertSame($turned->endpoints['a']->x, $turned->endpoints['c']->x);
     }
+
+    public function testAClusterLabelIsItsHeadersSizeInWholePointsFiveShort(): void
+    {
+        $this->assertSame([0.0, 0.0], Svek::label(0.0, 14.0), 'no title, no label');
+        $this->assertSame([40.0, 11.0], Svek::label(40.5, 16.3));
+        $this->assertSame([100.0, 31.0], Svek::label(40.5, 16.3, 40.0, 15.0, 60.0));
+    }
 }

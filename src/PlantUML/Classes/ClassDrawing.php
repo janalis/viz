@@ -66,8 +66,11 @@ final class ClassDrawing
         $icons = $this->classes->document->param('classattributeiconsize', '10');
         foreach ($this->classes->groups as $group) {
             $title = new PlantUmlText(['' === $group->display ? $group->id : $group->display], 14.0);
-            [$width, $height] = 'together' === $group->type ? [0.0, 0.0] : $title->size();
-            $svek->cluster($group->id, $group->parent, 'together' === $group->type ? 0.0 : $width + 12, 'together' === $group->type ? 0.0 : $height + 6);
+            if ('together' === $group->type) {
+                $svek->together($group->id, $group->parent);
+                continue;
+            }
+            $svek->cluster($group->id, $group->parent, ...Svek::label(...$title->size()));
         }
         $linked = [];
         foreach ($this->classes->links as $link) {

@@ -52,6 +52,25 @@ final class PlantUmlFrame
     }
 
     /**
+     * An image svek lays out within a diagram, as its result measures itself: what it draws
+     * moved 6 in from its top left, as PlantUML's limit finder measures it, and 15 wider and
+     * taller than that.
+     *
+     * @param list<Mark> $marks
+     * @return array{list<Mark>, float, float} the marks moved, and the image's size
+     */
+    public static function svekImage(array $marks): array
+    {
+        [$minX, $minY, $maxX, $maxY] = self::limits($marks);
+
+        return [
+            \array_map(static fn (Mark $mark): Mark => self::moved($mark, self::SVEK_INSET - $minX, self::SVEK_INSET - $minY), $marks),
+            $maxX - $minX + self::SVEK_TRAIL,
+            $maxY - $minY + self::SVEK_TRAIL,
+        ];
+    }
+
+    /**
      * The box PlantUML's limit finder gives marks: a filled shape 1 short of its far sides and
      * 1 before its near ones, as it finds rectangles; a line as it runs; a text its line's box.
      *

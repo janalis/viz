@@ -45,15 +45,15 @@ final class StateDrawing
         $drawing = new self($states);
         $scope = $drawing->scope(null, 0);
         yield from $scope;
-        [$marks] = $scope->getReturn();
+        $marks = $scope->getReturn();
 
         return PlantUmlFrame::svek($states->document, $marks);
     }
 
     /**
-     * A scope laid out and drawn: its marks from the origin, and its size.
+     * A scope laid out and drawn: its marks, as dot placed them.
      *
-     * @return \Generator<int, null, mixed, array{list<Mark>, float, float}>
+     * @return \Generator<int, null, mixed, list<Mark>>
      */
     private function scope(?string $group, int $region): \Generator
     {
@@ -70,9 +70,7 @@ final class StateDrawing
                 if ([] !== $this->states->composites[$node->id]) {
                     throw new Unsupported('The native PlantUML renderer does not draw concurrent regions a transition crosses into');
                 }
-                [$titleWidth, $titleHeight] = $this->title($node)->size();
-                [, $descriptionHeight] = $this->description($node)->size();
-                $svek->cluster($node->id, $cluster, $titleWidth + 20, $titleHeight + $descriptionHeight + 15);
+                $svek->cluster($node->id, $cluster, ...Svek::label(...$this->title($node)->size(), ...$this->description($node)->size()));
                 // As svek, a transition to or from a composite state drawn as a cluster ends at a point inside it.
                 $svek->node(self::anchor($node->id), 1.0, 1.0, $node->id);
                 $clusters[] = $node;
@@ -113,7 +111,7 @@ final class StateDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        return [$this->paint($placement, $clusters, $edges, $boxes, $inner, $notes), $placement->graph->width, $placement->graph->height];
+        return $this->paint($placement, $clusters, $edges, $boxes, $inner, $notes);
     }
 
     /**
@@ -177,7 +175,8 @@ final class StateDrawing
         for ($index = 0; $index <= \count($separators); ++$index) {
             $scope = $this->scope($node->id, $index);
             yield from $scope;
-            $regions[] = $scope->getReturn();
+            // As svek, each region is an image of its own, sized by what it draws.
+            $regions[] = PlantUmlFrame::svekImage($scope->getReturn());
         }
         foreach ($regions as $index => [$regionMarks, $regionWidth, $regionHeight]) {
             [$dx, $dy] = $across ? [$width, 0.0] : [0.0, $height];

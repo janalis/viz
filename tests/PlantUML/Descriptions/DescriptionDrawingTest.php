@@ -11,6 +11,7 @@ use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionElement;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionReader;
+use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Render\Work;
@@ -30,7 +31,7 @@ final class DescriptionDrawingTest extends TestCase
             $this->assertContains('Name', \array_map(static fn (Mark $mark): string => $mark->text, $marks), $symbol);
         }
         $box = DescriptionBox::of(new DescriptionElement('R', ['Name'], 'rectangle'), StyleSheet::skin());
-        $this->assertEqualsWithDelta([(4 * Units::cell(14.0)) + 20, Units::line(14.0) + 20], [$box->width, $box->height], 1e-9);
+        $this->assertEqualsWithDelta([(4 * Units::cell(14.0)) + 20, PlantUmlText::lineHeight(14.0) + 20], [$box->width, $box->height], 1e-9);
         $this->assertSame([10.0, 10.0], [
             DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin())->width,
             DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin())->height,

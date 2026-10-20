@@ -18,6 +18,12 @@ use Janalis\Viz\Text\FontFace;
  */
 final readonly class PlantUmlText
 {
+    /**
+     * A line's height for each point of font size, as PlantUML measures its default font:
+     * Java's SansSerif, 11.14 ascent and 2.83 descent at 12 points.
+     */
+    private const float LINE = 1.164_062_5;
+
     private const string TAGS = '/<\/?(?:b|i|u|s|w|strike|sub|sup|color(?::[^>]*)?|back(?::[^>]*)?|size(?::[^>]*)?|font(?:[: ][^>]*)?|plain|code)>|<&[\w-]+>/i';
 
     /** @param list<string> $lines Creole, a line each */
@@ -60,7 +66,13 @@ final readonly class PlantUmlText
 
     public function line(): float
     {
-        return Units::line($this->size);
+        return self::lineHeight($this->size);
+    }
+
+    /** A line's height at a font size in points, as PlantUML measures its default font. */
+    public static function lineHeight(float $size): float
+    {
+        return $size * self::LINE;
     }
 
     /**
