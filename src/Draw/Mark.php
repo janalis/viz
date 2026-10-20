@@ -30,5 +30,9 @@ final readonly class Mark
         public ?array $dashes = null,
         /** How a gradient runs. */
         public Shading $shading = Shading::Linear,
+        /** Which way a linear gradient runs, in degrees counter-clockwise from left to right, as dot's `gradientangle`. */
+        public float $gradientAngle = 0.0,
+        /** Where a linear gradient changes colour at once, as a part of its way; null for a blend. */
+        public ?float $gradientSplit = null,
     ) {}
 }

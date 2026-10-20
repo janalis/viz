@@ -323,7 +323,7 @@ final class HtmlTable implements DotLabel
      */
     private static function frame(array $box, float $border, string $color, array $attributes): array
     {
-        [$fill, $gradient] = DotColors::fill($attributes['bgcolor'] ?? '', 'none', $attributes['gradientangle'] ?? '');
+        [$fill, $gradient, $split] = DotColors::fill($attributes['bgcolor'] ?? '', 'none');
         if ($border <= 0 && 'none' === $fill) {
             return [];
         }
@@ -351,6 +351,8 @@ final class HtmlTable implements DotLabel
                 gradient: $gradient,
                 dashes: $dashes,
                 shading: \array_key_exists('radial', $styles) ? Shading::Radial : Shading::Linear,
+                gradientAngle: DotColors::angle($attributes['gradientangle'] ?? ''),
+                gradientSplit: $split,
             )]
             : [];
         if ($whole || $border <= 0) {

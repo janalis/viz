@@ -166,11 +166,11 @@ final class HtmlParserTest extends TestCase
         [$table, $cell] = self::parse('<TABLE BGCOLOR="red:blue"><TR><TD BGCOLOR="white:black" GRADIENTANGLE="180">a</TD></TR></TABLE>')->marks(0.0, 0.0);
         $this->assertSame(
             [
-                ['#ff0000', '#0000ff'],
-                ['#000000', '#ffffff'],
+                [['#ff0000', '#0000ff'], 0.0],
+                [['#ffffff', '#000000'], 180.0],
             ],
-            [$table->gradient, $cell->gradient],
-            'colour lists fill with gradients across',
+            [[$table->gradient, $table->gradientAngle], [$cell->gradient, $cell->gradientAngle]],
+            'colour lists fill with gradients, at their angle',
         );
     }
 

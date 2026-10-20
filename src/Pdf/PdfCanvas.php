@@ -134,20 +134,36 @@ final class PdfCanvas
      * @param array{float, float, float} $to
      * @param array{float, float, float, float} $coords
      */
-    public function axial(array $from, array $to, array $coords): void
+    public function axial(array $from, array $to, array $coords, ?float $split = null): void
     {
         $id = $this->document->add(
-            '<< /ShadingType 2 /ColorSpace /DeviceRGB /Coords ['
-            .self::numbers($coords)
-            .'] /Function << /FunctionType 2 /Domain [0 1] /C0 ['
-            .self::numbers($from)
-            .'] /C1 ['
-            .self::numbers($to)
-            .'] /N 1 >> /Extend [true true] >>',
+            '<< /ShadingType 2 /ColorSpace /DeviceRGB /Coords ['.self::numbers($coords).'] /Function '.self::blend($from, $to, $split).' /Extend [true true] >>',
         );
         $name = 'Sh'.++$this->shadings;
         $this->resources['Shading'] .= '/'.$name.' '.$id.' 0 R ';
         $this->content .= '/'.$name." sh\n";
+    }
+
+    /**
+     * A blend from one colour to another; or, split, the first up to the split and the second
+     * after it, each flat.
+     *
+     * @param array{float, float, float} $from
+     * @param array{float, float, float} $to
+     */
+    private static function blend(array $from, array $to, ?float $split): string
+    {
+        if (null === $split) {
+            return '<< /FunctionType 2 /Domain [0 1] /C0 ['.self::numbers($from).'] /C1 ['.self::numbers($to).'] /N 1 >>';
+        }
+
+        return '<< /FunctionType 3 /Domain [0 1] /Functions ['.self::flat($from).' '.self::flat($to).'] /Bounds ['.self::numbers([\max(0.0001, \min(0.9999, $split))]).'] /Encode [0 1 0 1] >>';
+    }
+
+    /** @param array{float, float, float} $rgb */
+    private static function flat(array $rgb): string
+    {
+        return '<< /FunctionType 2 /Domain [0 1] /C0 ['.self::numbers($rgb).'] /C1 ['.self::numbers($rgb).'] /N 1 >>';
     }
 
     /**

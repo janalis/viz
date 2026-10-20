@@ -302,7 +302,7 @@ final class DotDrawingTest extends TestCase
         [$page, $cluster, $a, $b] = self::kinds($drawing, MarkKind::Polygon);
         $this->assertSame([[0.0, 0.0], [$drawing->width, 0.0], [$drawing->width, $drawing->height], [0.0, $drawing->height]], $page->points);
         $this->assertSame(['#ffffff', ['#ffffff', '#bebebe']], [$page->fill, $page->gradient]);
-        $this->assertSame(['#ffffff', '#ffff00'], $cluster->gradient, 'turned right to left');
+        $this->assertSame([['#ffff00', '#ffffff'], 180.0], [$cluster->gradient, $cluster->gradientAngle], 'turned right to left');
         $this->assertSame(['#ff0000', ['#ff0000', '#0000ff']], [$a->fill, $a->gradient], 'from the first two colours');
         $this->assertSame(['#ff0000', null], [$b->fill, $b->gradient], 'one colour fills plainly');
     }
@@ -462,6 +462,18 @@ final class DotDrawingTest extends TestCase
         $this->assertSame([2, 2], [\count($straight[2]->points), \count($straight[3]->points)], 'straight, each part');
         $this->assertCount(\count($lines), self::kinds(self::draw('digraph { concentrate=true; splines=polyline; '.$graph.' }'), MarkKind::Polyline), 'corner to corner, the same parts');
         $this->assertCount(3, self::kinds(self::draw('digraph { concentrate=true; a -> a; a -> b; { rank=same; b -> c } }'), MarkKind::Polyline), 'loops and flat edges drawn whole');
+    }
+
+    public function testWeightsSplitAGradientAndAnglesTurnIt(): void
+    {
+        $drawing = self::draw(
+            'digraph { a [style=filled, fillcolor="red;0.3:blue", gradientangle=45]; b [style=filled, fillcolor="red:blue;0.2:green"]; c [style=filled, fillcolor="red:blue", gradientangle=x] }',
+        );
+        [$a, $b, $c] = \array_values(\array_filter(self::kinds($drawing, MarkKind::Polygon), static fn (Mark $mark): bool => null !== $mark->gradient));
+
+        $this->assertSame([['#ff0000', '#0000ff'], 0.3, 45.0], [$a->gradient, $a->gradientSplit, $a->gradientAngle]);
+        $this->assertEqualsWithDelta(0.8, $b->gradientSplit, 1e-9, 'short of the second colour by its weight, the third dropped');
+        $this->assertSame([null, 0.0], [$c->gradientSplit, $c->gradientAngle]);
     }
 
     private static function draw(string $source): Drawing

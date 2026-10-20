@@ -49,24 +49,31 @@ final class SvgBackend
         };
     }
 
-    /** A polygon's gradient: left to right across its own horizontal extent, or out from its box's centre. */
+    /** A polygon's gradient: across its box at its angle ({@see GradientAxis}), left to right by default, or out from its box's centre. */
     private static function gradient(Mark $mark, string $id): string
     {
         if (null === $mark->gradient) {
             return '';
         }
         $xs = \array_column($mark->points, 0);
+        $radial = Shading::Radial === $mark->shading;
+        // A split, as dot draws one, is two stops a thousandth apart; a radial blend never splits.
+        $offsets = null === $mark->gradientSplit || $radial ? [0, 1] : [\round(\max(0.0, $mark->gradientSplit - 0.001), precision: 4), \round($mark->gradientSplit, precision: 4)];
         $stops = '';
-        foreach ($mark->gradient as $offset => $color) {
+        foreach ($mark->gradient as $index => $color) {
             $alpha = 9 === \strlen($color) ? \hexdec(\substr($color, offset: 7)) / 255 : 1.0;
-            $stops .= '<stop offset="'.$offset.'" stop-color="'.self::escape(\substr($color, offset: 0, length: 7)).'" stop-opacity="'.\round($alpha, precision: 4).'"/>';
+            $stops .= '<stop offset="'.$offsets[$index].'" stop-color="'.self::escape(\substr($color, offset: 0, length: 7)).'" stop-opacity="'.\round($alpha, precision: 4).'"/>';
         }
 
-        if (Shading::Radial === $mark->shading) {
+        if ($radial) {
             return '<radialGradient id="'.$id.'" cx="50%" cy="50%" r="75%">'.$stops.'</radialGradient>';
         }
+        if (0.0 === $mark->gradientAngle) {
+            return '<linearGradient id="'.$id.'" gradientUnits="userSpaceOnUse" x1="'.\min($xs).'" y1="0" x2="'.\max($xs).'" y2="0">'.$stops.'</linearGradient>';
+        }
+        [[$x1, $y1], [$x2, $y2]] = GradientAxis::ends($mark->points, $mark->gradientAngle);
 
-        return '<linearGradient id="'.$id.'" gradientUnits="userSpaceOnUse" x1="'.\min($xs).'" y1="0" x2="'.\max($xs).'" y2="0">'.$stops.'</linearGradient>';
+        return '<linearGradient id="'.$id.'" gradientUnits="userSpaceOnUse" x1="'.$x1.'" y1="'.$y1.'" x2="'.$x2.'" y2="'.$y2.'">'.$stops.'</linearGradient>';
     }
 
     /** The URI was rebuilt from validated image bytes, never copied from the document. */

@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\Draw;
 
 use Janalis\Viz\Color\ColorValue;
 use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\GradientAxis;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\PdfBackend;
@@ -59,6 +60,57 @@ final class ShadingTest extends TestCase
         $this->assertSame(Shading::Radial, Units::scaled($mark, 2.0)->shading);
         $this->assertSame(Shading::Radial, Units::moved($mark, 1.0, 1.0)->shading);
         $this->assertSame(Shading::Radial, Units::turned($mark, 20.0)->shading);
+        $this->assertSame(90.0, Units::turned($mark, 20.0)->gradientAngle, 'a gradient turns with the drawing');
+    }
+
+    public function testALinearGradientRunsAtItsAngleAcrossItsBox(): void
+    {
+        $box = [[144.0, 0.0], [198.0, 0.0], [198.0, 36.0], [144.0, 36.0]];
+
+        // dot: 45 degrees on a 54 by 36 box from (151.91, 30.73) to (190.09, 5.27), y down.
+        $this->assertEqualsWithDelta([[151.91, 30.73], [190.09, 5.27]], GradientAxis::ends($box, 45.0), 0.01);
+        $this->assertEqualsWithDelta([[171.0, 36.0], [171.0, 0.0]], GradientAxis::ends($box, 90.0), 1e-9, 'up from the bottom');
+        $ends = GradientAxis::ends($box, 0.0);
+        $this->assertSame([0.0, 0.5, 1.0, 1.0], [
+            GradientAxis::share($ends, null, 144.0, 3.0),
+            GradientAxis::share($ends, null, 171.0, 30.0),
+            GradientAxis::share($ends, null, 198.0, 0.0),
+            GradientAxis::share($ends, null, 400.0, 0.0),
+        ]);
+        $this->assertSame([0.0, 1.0], [GradientAxis::share($ends, 0.3, 159.0, 0.0), GradientAxis::share($ends, 0.3, 161.0, 0.0)], 'all or nothing either side of a split');
+        $this->assertSame(0.0, GradientAxis::share([[1.0, 1.0], [1.0, 1.0]], null, 5.0, 5.0), 'no way at all: the first colour');
+    }
+
+    public function testEveryBackendRunsAtAnAngleAndSplits(): void
+    {
+        $drawing = new Drawing(
+            20.0,
+            10.0,
+            [new Mark(
+                MarkKind::Polygon,
+                [[0.0, 0.0], [20.0, 0.0], [20.0, 10.0], [0.0, 10.0]],
+                stroke: 'none',
+                strokeWidth: 0.0,
+                gradient: ['#ff0000', '#0000ff'],
+                gradientAngle: 90.0,
+                gradientSplit: 0.3,
+            )],
+            '#ffffff',
+        );
+
+        $this->assertStringContainsString(
+            'x1="10" y1="10" x2="10" y2="0"><stop offset="0.299" stop-color="#ff0000" stop-opacity="1"/><stop offset="0.3" stop-color="#0000ff"',
+            Work::run(SvgBackend::render($drawing)),
+        );
+        $pdf = Work::run(new PdfBackend(compress: false)->render($drawing));
+        $this->assertStringContainsString(
+            '/Coords [10 10 10 0] /Function << /FunctionType 3 /Domain [0 1] /Functions [<< /FunctionType 2 /Domain [0 1] /C0 [1 0 0] /C1 [1 0 0] /N 1 >> << /FunctionType 2 /Domain [0 1] /C0 [0 0 1] /C1 [0 0 1] /N 1 >>] /Bounds [0.3]',
+            $pdf,
+        );
+        $png = \imagecreatefromstring(Work::run(new PngBackend()->render($drawing, dpi: 96)));
+        $this->assertNotFalse($png);
+        $middle = \intdiv(\imagesx($png), num2: 2);
+        $this->assertSame([0xFF_0000, 0x00_00FF], [\imagecolorat($png, $middle, \imagesy($png) - 2) & 0xFF_FFFF, \imagecolorat($png, $middle, y: 2) & 0xFF_FFFF], 'red below the split, blue above');
     }
 
     private static function drawing(Shading $shading): Drawing

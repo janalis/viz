@@ -83,7 +83,7 @@ final readonly class PngBackend
             }
             if (null !== $mark->gradient) {
                 \imagesetthickness($canvas, thickness: 1);
-                self::gradient($canvas, [...$points, $points[0]], $mark->gradient, $mark->opacity, $mark->shading);
+                self::gradient($canvas, [...$points, $points[0]], $mark->gradient, $mark);
             }
             $points[] = $points[0];
         }
@@ -202,13 +202,13 @@ final readonly class PngBackend
     }
 
     /**
-     * A gradient fill, left to right or out from the centre, one pixel column at a time between the polygon's highest
+     * A gradient fill, across at its angle, blended or split ({@see GradientAxis}), or out from the centre, one pixel column at a time between the polygon's highest
      * and lowest crossing of that column; ribbons are a single span per column.
      *
      * @param list<array{int, int}> $points
      * @param array{string, string} $gradient
      */
-    private static function gradient(\GdImage $canvas, array $points, array $gradient, float $opacity, Shading $shading): void
+    private static function gradient(\GdImage $canvas, array $points, array $gradient, Mark $mark): void
     {
         $xs = \array_column($points, 0);
         $heights = \array_column($points, 1);
@@ -216,6 +216,10 @@ final readonly class PngBackend
         // A radial blend reaches its last colour three quarters of the box away, as dot's.
         $centre = [($left + $right) / 2, (\min($heights) + \max($heights)) / 2];
         $reach = [\max(1.0e-9, 0.75 * ($right - $left)), \max(1.0e-9, 0.75 * (\max($heights) - \min($heights)))];
+        $radial = Shading::Radial === $mark->shading;
+        // A plain blend across runs column by column; any other, pixel by pixel.
+        $across = !$radial && 0.0 === $mark->gradientAngle && null === $mark->gradientSplit;
+        $ends = GradientAxis::ends(\array_map(static fn (array $point): array => [(float) $point[0], (float) $point[1]], $points), $mark->gradientAngle);
         $count = \count($points);
         for ($x = $left; $x <= $right; ++$x) {
             $ys = [];
@@ -228,14 +232,14 @@ final readonly class PngBackend
             if ([] === $ys) {
                 continue;
             }
-            if (Shading::Linear === $shading) {
+            if ($across) {
                 $share = ($x - $left) / \max(1.0e-9, $right - $left);
-                \imageline($canvas, $x, \min($ys), $x, \max($ys), self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $opacity));
+                \imageline($canvas, $x, \min($ys), $x, \max($ys), self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $mark->opacity));
                 continue;
             }
             for ($y = \min($ys); $y <= \max($ys); ++$y) {
-                $share = \min(1.0, \hypot(($x - $centre[0]) / $reach[0], ($y - $centre[1]) / $reach[1]));
-                \imagesetpixel($canvas, $x, $y, self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $opacity));
+                $share = $radial ? \min(1.0, \hypot(($x - $centre[0]) / $reach[0], ($y - $centre[1]) / $reach[1])) : GradientAxis::share($ends, $mark->gradientSplit, $x, $y);
+                \imagesetpixel($canvas, $x, $y, self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $mark->opacity));
             }
         }
     }

@@ -114,9 +114,24 @@ final readonly class PdfBackend
         match ($mark->shading) {
             Shading::Radial => self::radial($canvas, $mark, $from, $to),
             // An axial shading needs two distinct ends; a zero-width polygon paints nothing anyway.
-            Shading::Linear => $canvas->axial($from, $to, [\min($xs), 0.0, \max(\max($xs), \min($xs) + 0.001), 0.0]),
+            Shading::Linear => self::axial($canvas, $mark, $from, $to),
         };
         $canvas->restore();
+    }
+
+    /**
+     * A blend along the polygon's gradient axis ({@see GradientAxis}); across, its own horizontal extent.
+     *
+     * @param array{float, float, float} $from
+     * @param array{float, float, float} $to
+     */
+    private static function axial(PdfCanvas $canvas, Mark $mark, array $from, array $to): void
+    {
+        $xs = \array_column($mark->points, 0);
+        [[$x1, $y1], [$x2, $y2]] = GradientAxis::ends($mark->points, $mark->gradientAngle);
+        // An axial shading needs two distinct ends; a zero-width polygon paints nothing anyway.
+        $coords = 0.0 === $mark->gradientAngle ? [\min($xs), 0.0, \max(\max($xs), \min($xs) + 0.001), 0.0] : [$x1, $y1, $x2 + ($x1 === $x2 && $y1 === $y2 ? 0.001 : 0.0), $y2];
+        $canvas->axial($from, $to, $coords, $mark->gradientSplit);
     }
 
     /**

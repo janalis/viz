@@ -49,6 +49,8 @@ final class Units
             $mark->gradient,
             null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
             $mark->shading,
+            $mark->gradientAngle,
+            $mark->gradientSplit,
         );
     }
 
@@ -71,13 +73,15 @@ final class Units
             $mark->gradient,
             $mark->dashes,
             $mark->shading,
+            $mark->gradientAngle,
+            $mark->gradientSplit,
         );
     }
 
     /**
      * A mark turned a quarter counter-clockwise with a drawing of a width, its top now on its
      * left: each point at its distance down, across, and at what was left of the drawing's
-     * width, down; text turned with it. A gradient keeps running across.
+     * width, down; text and gradients turned with it.
      */
     public static function turned(Mark $mark, float $width): Mark
     {
@@ -97,6 +101,8 @@ final class Units
             $mark->gradient,
             $mark->dashes,
             $mark->shading,
+            $mark->gradientAngle + 90.0,
+            $mark->gradientSplit,
         );
     }
 }
