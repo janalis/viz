@@ -89,4 +89,34 @@ final class Route
 
         return [$tip, [0.0, 1.0]];
     }
+
+    /**
+     * A path moved to start and end where given, each move easing out along it, so it still
+     * leaves and reaches its ends the way it did.
+     *
+     * @param list<array{float, float}> $points
+     * @param array{float, float} $tail
+     * @param array{float, float} $head
+     * @return list<array{float, float}>
+     */
+    public static function eased(array $points, array $tail, array $head): array
+    {
+        $last = \count($points) - 1;
+        $moves = [[$tail[0] - $points[0][0], $tail[1] - $points[0][1]], [$head[0] - $points[$last][0], $head[1] - $points[$last][1]]];
+        if ([[0.0, 0.0], [0.0, 0.0]] === $moves) {
+            return $points;
+        }
+        $lengths = [0.0];
+        for ($index = 1; $index <= $last; ++$index) {
+            $lengths[] = $lengths[$index - 1] + \hypot($points[$index][0] - $points[$index - 1][0], $points[$index][1] - $points[$index - 1][1]);
+        }
+        $total = \max($lengths[$last], 1e-9);
+        foreach ($points as $index => [$x, $y]) {
+            $along = $lengths[$index] / $total;
+            $toHead = $along * $along * (3 - (2 * $along));
+            $points[$index] = [$x + ($moves[0][0] * (1 - $toHead)) + ($moves[1][0] * $toHead), $y + ($moves[0][1] * (1 - $toHead)) + ($moves[1][1] * $toHead)];
+        }
+
+        return $points;
+    }
 }

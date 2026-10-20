@@ -28,8 +28,6 @@ final class DotFeatureGateTest extends TestCase
         yield 'shapefile' => ['graph { a [shapefile="x.png"] }', 'images'];
         yield 'pos' => ['graph { a [pos="1,1"] }', 'pinned positions'];
         yield 'pin' => ['graph { a [pin=true] }', 'pinned positions'];
-        yield 'samehead' => ['digraph { a -> b [samehead=h] }', 'merged edge ends'];
-        yield 'sametail' => ['digraph { a -> b [sametail=t] }', 'merged edge ends'];
         yield 'striped' => ['graph { subgraph cluster_a { style=striped; a } }', 'striped, wedged or radial styles'];
         yield 'weighted gradient' => ['graph { a [style=filled fillcolor="red;0.3:blue"] }', 'colour lists'];
         yield 'node colour list' => ['graph { a [style=filled color="red:blue"] }', 'colour lists'];

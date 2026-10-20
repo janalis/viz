@@ -353,6 +353,18 @@ final class DotDrawingTest extends TestCase
         }
     }
 
+    public function testEdgesSharingAnEndMeetOnItsOutline(): void
+    {
+        $drawing = self::draw('digraph { edge [dir=none]; a -> d [samehead=h]; b -> d [samehead=h]; c -> d [samehead=h]; c -> d; x -> a [sametail=t]; x -> b [sametail=t]; }');
+        $tips = \array_map(static fn (Mark $mark): array => $mark->points[\count($mark->points) - 1], self::kinds($drawing, MarkKind::Polyline));
+        $starts = \array_map(static fn (Mark $mark): array => $mark->points[0], self::kinds($drawing, MarkKind::Polyline));
+
+        $this->assertEqualsWithDelta($tips[0], $tips[1], 1e-6, 'a and b reach d at one point');
+        $this->assertEqualsWithDelta($tips[0], $tips[2], 1e-6, 'and c');
+        $this->assertNotEqualsWithDelta($tips[0], $tips[3], 1.0, 'but for an edge sharing nothing');
+        $this->assertEqualsWithDelta($starts[4], $starts[5], 1e-6, 'x leaves for a and b from one point');
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));

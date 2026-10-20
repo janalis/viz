@@ -9,8 +9,9 @@ use Janalis\Viz\Source\Unsupported;
 
 /**
  * What the native dot drawing leaves to the `dot` command: other layout engines, HTML
- * outside labels, images, orthogonal splines, merged edges, pinned positions,
- * rotation, compression, and colour lists and gradient styles.
+ * outside labels, images, orthogonal splines, concentrated edges, pinned positions,
+ * rotation, compression, colour lists on lines and weighted or sloped ones, and striped,
+ * wedged or radial styles.
  */
 final class DotFeatureGate
 {
@@ -79,7 +80,6 @@ final class DotFeatureGate
         return match (true) {
             '' !== ($attributes['image'] ?? '') || '' !== ($attributes['shapefile'] ?? '') => 'images',
             '' !== ($attributes['pos'] ?? '') || 'true' === \strtolower($attributes['pin'] ?? '') => 'pinned positions',
-            '' !== ($attributes['samehead'] ?? '') || '' !== ($attributes['sametail'] ?? '') => 'merged edge ends',
             [] !== \array_intersect($styles, ['striped', 'wedged', 'radial']) => 'striped, wedged or radial styles',
             [] !== \array_diff($colors, [$attributes['fillcolor'] ?? '']) || \str_contains(\implode('', $gradients), ';') => 'colour lists',
             [] !== $gradients && 0.0 !== $angle => 'gradients at an angle',

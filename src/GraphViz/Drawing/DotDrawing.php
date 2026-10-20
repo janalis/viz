@@ -32,6 +32,8 @@ final class DotDrawing
     private array $shapes = [];
     /** @var array<string, ?DotRecord> each record node's fields, read once */
     private array $records = [];
+    /** @var array<int, array{?array{float, float}, ?array{float, float}}> where each edge sharing a `sametail` or a `samehead` meets the others, by edge index */
+    private array $meets = [];
     /** @var list<array{float, float, float, float}> the boxes of labels drawn outside what was laid out, which the drawing grows to hold */
     private array $outside = [];
     /** @var list<array{float, float, float, float}> the boxes of the labels drawn so far, which an external label keeps clear of */
@@ -60,7 +62,9 @@ final class DotDrawing
         $this->clusters();
         $splines = \strtolower($this->graph->attribute('splines', 'true'));
         // As dot, `splines=none`, or set empty, draws no edges at all.
-        foreach (\in_array($splines, ['', 'none'], strict: true) ? [] : $this->graph->edges as $index => $edge) {
+        $edges = \in_array($splines, ['', 'none'], strict: true) ? [] : $this->graph->edges;
+        $this->meet($edges, $splines);
+        foreach ($edges as $index => $edge) {
             $this->edge($index, $edge, 'none' === $background ? '#ffffff' : $background, $splines);
         }
         foreach ($this->placement->graph->nodes as $node) {
@@ -168,19 +172,12 @@ final class DotDrawing
             return;
         }
         $tail = $this->placement->endpoints[$edge->tail];
-        $head = $this->placement->endpoints[$edge->head];
         $route = $this->placement->routes[$index] ?? null;
-        $spline = $this->placement->splines[$index] ?? null;
-        $polyline = $this->placement->polylines[$index] ?? $route;
-        // Only a loop has no route; an edge between ranks has its spline, bent to any port.
-        $points = match (true) {
-            null === $route => self::loop($tail),
-            \in_array($splines, ['line', 'false'], strict: true) => $this->ported([$route[0], $route[\count($route) - 1]], $edge),
-            'polyline' === $splines && null !== $polyline => $this->bent($polyline, $edge),
-            null !== $spline => $this->bent($spline, $edge),
-            default => Route::smooth($this->ported($route, $edge)),
-        };
-        $points = $this->clip($points, $edge, $tail, $head);
+        $points = $this->path($index, $edge, $splines);
+        [$tailMeets, $headMeets] = $this->meets[$index] ?? [null, null];
+        if (null !== $tailMeets || null !== $headMeets) {
+            $points = Route::eased($points, $tailMeets ?? $points[0], $headMeets ?? $points[\count($points) - 1]);
+        }
         $this->endLabels($edge, $points);
         $color = DotColors::resolve($edge->attribute('color'), '#000000');
         $penWidth = self::penWidth($edge->attribute('penwidth'), $styles);
@@ -232,6 +229,70 @@ final class DotDrawing
                 stroke: $color,
                 strokeWidth: $penWidth,
             );
+        }
+    }
+
+    /**
+     * An edge's path, clipped at its ends' outlines: a loop's on its node's right; else its
+     * spline, its corners, or a straight line, as `splines` asks, bent to any port.
+     *
+     * @return list<array{float, float}>
+     */
+    private function path(int $index, DotEdge $edge, string $splines): array
+    {
+        $tail = $this->placement->endpoints[$edge->tail];
+        $head = $this->placement->endpoints[$edge->head];
+        $route = $this->placement->routes[$index] ?? null;
+        $spline = $this->placement->splines[$index] ?? null;
+        $polyline = $this->placement->polylines[$index] ?? $route;
+        // Only a loop has no route; an edge between ranks has its spline, bent to any port.
+        $points = match (true) {
+            null === $route => self::loop($tail),
+            \in_array($splines, ['line', 'false'], strict: true) => $this->ported([$route[0], $route[\count($route) - 1]], $edge),
+            'polyline' === $splines && null !== $polyline => $this->bent($polyline, $edge),
+            null !== $spline => $this->bent($spline, $edge),
+            default => Route::smooth($this->ported($route, $edge)),
+        };
+
+        return $this->clip($points, $edge, $tail, $head);
+    }
+
+    /**
+     * Where edges sharing a `samehead` at their head, or a `sametail` at their tail, meet: on
+     * the node's outline, toward where their ends would fall on their own, on average.
+     *
+     * @param array<int, DotEdge> $edges
+     */
+    private function meet(array $edges, string $splines): void
+    {
+        $groups = [];
+        foreach ($edges as $index => $edge) {
+            foreach ([['sametail', $edge->tail, 0], ['samehead', $edge->head, 1]] as [$attribute, $node, $end]) {
+                $value = $edge->attribute($attribute);
+                if ('' === $value) {
+                    continue;
+                }
+                $groups[$attribute."\0".$node."\0".$value] ??= [$node, []];
+                $groups[$attribute."\0".$node."\0".$value][1][] = [$index, $end];
+            }
+        }
+        foreach ($groups as [$name, $members]) {
+            $ends = [];
+            foreach ($members as [$index, $end]) {
+                $points = $this->path($index, $edges[$index], $splines);
+                $ends[] = 0 === $end ? $points[0] : $points[\count($points) - 1];
+            }
+            $node = $this->placement->endpoints[$name];
+            [$x, $y] = [\array_sum(\array_column($ends, 0)) / \count($ends), \array_sum(\array_column($ends, 1)) / \count($ends)];
+            $length = \hypot($x - $node->x, $y - $node->y);
+            $reach = $node->w + $node->h;
+            // From the centre out through their mean, to the outline.
+            $far = $length > 0 ? [$node->x + ((($x - $node->x) * $reach) / $length), $node->y + ((($y - $node->y) * $reach) / $length)] : [$node->x, $node->y + $reach];
+            [$meets] = $this->cut([[$node->x, $node->y], $far], $name, $node, null);
+            foreach ($members as [$index, $end]) {
+                $this->meets[$index] ??= [null, null];
+                $this->meets[$index][$end] = $meets;
+            }
         }
     }
 
@@ -458,25 +519,10 @@ final class DotDrawing
      */
     private function bent(array $points, DotEdge $edge): array
     {
-        $last = \count($points) - 1;
         $tail = $this->anchor($edge->tail, $edge->attribute('tailport'))[0] ?? $points[0];
-        $head = $this->anchor($edge->head, $edge->attribute('headport'))[0] ?? $points[$last];
-        $moves = [[$tail[0] - $points[0][0], $tail[1] - $points[0][1]], [$head[0] - $points[$last][0], $head[1] - $points[$last][1]]];
-        if ([[0.0, 0.0], [0.0, 0.0]] === $moves) {
-            return $points;
-        }
-        $lengths = [0.0];
-        for ($index = 1; $index <= $last; ++$index) {
-            $lengths[] = $lengths[$index - 1] + \hypot($points[$index][0] - $points[$index - 1][0], $points[$index][1] - $points[$index - 1][1]);
-        }
-        $total = \max($lengths[$last], 1e-9);
-        foreach ($points as $index => [$x, $y]) {
-            $along = $lengths[$index] / $total;
-            $toHead = $along * $along * (3 - (2 * $along));
-            $points[$index] = [$x + ($moves[0][0] * (1 - $toHead)) + ($moves[1][0] * $toHead), $y + ($moves[0][1] * (1 - $toHead)) + ($moves[1][1] * $toHead)];
-        }
+        $head = $this->anchor($edge->head, $edge->attribute('headport'))[0] ?? $points[\count($points) - 1];
 
-        return $points;
+        return Route::eased($points, $tail, $head);
     }
 
     /**
