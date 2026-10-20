@@ -62,9 +62,41 @@ final class DotNodes
         );
     }
 
+    /** A record node's fields, null for any other node or a label that is not a record's. */
+    public static function record(DotGraph $graph, DotNode $node): ?DotRecord
+    {
+        if (!self::isRecord($node)) {
+            return null;
+        }
+        $across = !\in_array(\strtoupper($graph->attribute('rankdir')), ['LR', 'RL'], strict: true);
+
+        return DotRecord::parse($node->attribute('label', '\\N'), $across, static fn (string $label): DotText => DotText::parse(
+            $label,
+            ['N' => $node->name, 'G' => $graph->name, 'L' => ''],
+            self::fontSize($node->attribute('fontsize')),
+            $node->attribute('fontname'),
+            DotColors::resolve($node->attribute('fontcolor'), '#000000'),
+        ));
+    }
+
+    public static function isRecord(DotNode $node): bool
+    {
+        return \in_array(\strtolower($node->attribute('shape')), ['record', 'mrecord'], strict: true);
+    }
+
     /** @return array{float, float} the size a node needs for its label, in points */
     public static function size(DotGraph $graph, DotNode $node): array
     {
+        $record = self::record($graph, $node);
+        if (null !== $record) {
+            return $record->size();
+        }
+        if (self::isRecord($node)) {
+            // As dot, a record whose label is not a record's shows its name.
+            [$width, $height] = DotText::parse($node->name, [], self::fontSize($node->attribute('fontsize')))->size();
+
+            return [$width + 16.0, $height + 8.0];
+        }
         $shape = $node->attribute('shape', 'ellipse');
         [$width, $height] = self::text($graph, $node)->size();
         $margins = \array_map(\trim(...), \explode(',', $node->attribute('margin', '0.11,0.055')));

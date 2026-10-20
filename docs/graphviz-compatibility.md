@@ -49,7 +49,11 @@ A graph laid out left to right is laid out top-down with every size turned, then
 | Edges | Curves smoothed through the route, clipped at both outlines. Arrowheads from the documented grammar (`o`, `l`, `r`, up to four shapes) with `dir`, `arrowsize`, `arrowhead` and `arrowtail`. Flat edges are straight; loops sit on a node's right. |
 | Clusters and graph | Cluster boxes with `labeljust` and `labelloc`; the graph label below; `size`, with `!` to fill. |
 
-The native drawing refuses, and `dot` draws: other `layout` engines, HTML labels, `record` and `Mrecord`, `image` and `shapefile`, `splines=ortho`, `concentrate`, `samehead` and `sametail`, colour lists and `striped`, `wedged` or `radial` styles, `rotate` and `landscape`, `pos` and `pin`, and `ratio=compress`. Edges are smoothed polylines, not `dot`'s splines, and ports are ignored.
+The native drawing refuses, and `dot` draws: other `layout` engines, HTML labels, `image` and `shapefile`, `splines=ortho`, `concentrate`, `samehead` and `sametail`, colour lists and `striped`, `wedged` or `radial` styles, `rotate` and `landscape`, `pos` and `pin`, and `ratio=compress`. Edges are smoothed polylines, not `dot`'s splines.
+
+`record` and `Mrecord` nodes are drawn natively. A record label's fields stand side by side, or one above the other when `rankdir` is `LR` or `RL`, and each `{...}` turns them. Each field needs its text plus 8 points of room on each side across and 4 above and below. A node larger than its fields shares the extra room among them in proportion to their size. A label that is not a well-formed record shows the node's name, as `dot` does.
+
+An edge's port that names a record field starts or ends it at that field's centre and clips it at the field's box. A compass point (`n`, `ne`, `e`, `se`, `s`, `sw`, `w`, `nw`) puts the end on that side of the field, or of the node. Ports move only the ends of an edge: unlike `dot`, the layout does not take them into account when ordering and placing nodes.
 
 ## Parity
 

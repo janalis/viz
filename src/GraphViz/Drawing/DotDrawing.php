@@ -132,8 +132,8 @@ final class DotDrawing
         $head = $this->placement->endpoints[$edge->head];
         $route = $this->placement->routes[$index] ?? null;
         // Only a loop has no route.
-        $points = null === $route ? self::loop($tail) : Route::smooth($route);
-        $points = $this->clip($points, $edge->tail, $tail, $edge->head, $head);
+        $points = null === $route ? self::loop($tail) : Route::smooth($this->ported($route, $edge));
+        $points = $this->clip($points, $edge, $tail, $head);
         $color = DotColors::resolve($edge->attribute('color'), '#000000');
         $penWidth = self::penWidth($edge->attribute('penwidth'), $styles);
         $size = \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0)));
@@ -184,8 +184,9 @@ final class DotDrawing
         $dashed = \array_key_exists('dashed', $styles) || \array_key_exists('dotted', $styles);
         if (!\in_array($shapeName, DotShape::BARE, strict: true)) {
             $shape = $this->shapes[$placed->name];
-            // dot rounds plain polygons only, not those it marks.
-            $outline = \array_key_exists('rounded', $styles) && [] === $shape->decorations ? self::round($shape->outline) : $shape->outline;
+            // dot rounds plain polygons only, not those it marks, and an Mrecord always.
+            $rounded = (\array_key_exists('rounded', $styles) && [] === $shape->decorations) || 'Mrecord' === $shapeName;
+            $outline = $rounded ? self::round($shape->outline) : $shape->outline;
             $this->marks[] = new Mark(
                 MarkKind::Polygon,
                 self::offset($placed, $outline),
@@ -205,7 +206,21 @@ final class DotDrawing
         if ('point' === $shapeName) {
             return;
         }
-        $this->text(DotNodes::text($this->graph, $node), $placed->x, $placed->y);
+        $record = DotNodes::record($this->graph, $node);
+        if (null === $record) {
+            // As dot, a record whose label is not a record's shows its name.
+            $text = DotNodes::isRecord($node) ? DotText::parse($node->name, []) : DotNodes::text($this->graph, $node);
+            $this->text($text, $placed->x, $placed->y);
+
+            return;
+        }
+        $box = self::box($placed);
+        foreach ($record->separators($box) as $line) {
+            $this->marks[] = new Mark(MarkKind::Polyline, $line, stroke: $color, strokeWidth: $penWidth);
+        }
+        foreach ($record->cells($box) as [$text, [$left, $top, $right, $bottom]]) {
+            $this->text($text, ($left + $right) / 2, ($top + $bottom) / 2);
+        }
     }
 
     /** Text lines centred on a point, each line set left, centred or right within the block. */
@@ -228,6 +243,12 @@ final class DotDrawing
             }
             $this->marks[] = new Mark(MarkKind::Text, [[$centre, $baseline]], $content, stroke: $text->color, font: $text->face, fontScale: Units::fontScale($text->fontSize) / Units::POINT);
         }
+    }
+
+    /** @return array{float, float, float, float} a node's box: left, top, right, bottom */
+    private static function box(GraphNode $node): array
+    {
+        return [$node->x - ($node->w / 2), $node->y - ($node->h / 2), $node->x + ($node->w / 2), $node->y + ($node->h / 2)];
     }
 
     /** @param array{float, float} $point */
@@ -267,30 +288,98 @@ final class DotDrawing
     }
 
     /**
-     * Trims a path to where it leaves its tail's outline and meets its head's.
+     * A path moved to start and end at its edge's ports: a record's field, at its centre, or
+     * a compass point on the side of the node, or of the field, it names.
      *
      * @param list<array{float, float}> $points
      * @return list<array{float, float}>
      */
-    private function clip(array $points, string $tailName, GraphNode $tail, string $headName, GraphNode $head): array
+    private function ported(array $points, DotEdge $edge): array
     {
-        $points = $this->cut($points, $tailName, $tail);
-        $points = \array_reverse($this->cut(\array_reverse($points), $headName, $head));
+        $tail = $this->anchor($edge->tail, $edge->attribute('tailport'));
+        $head = $this->anchor($edge->head, $edge->attribute('headport'));
+        $last = \count($points) - 1;
+        $points[0] = $tail[0] ?? $points[0];
+        $points[$last] = $head[0] ?? $points[$last];
+
+        return $points;
+    }
+
+    /**
+     * Where a port puts an edge's end, and the box it is clipped at, a field's.
+     *
+     * @return array{?array{float, float}, ?array{float, float, float, float}}
+     */
+    private function anchor(string $name, string $port): array
+    {
+        if ('' === $port) {
+            return [null, null];
+        }
+        $placed = $this->placement->endpoints[$name];
+        $parts = \explode(':', $port);
+        $record = DotNodes::record($this->graph, $this->graph->nodes[$name]);
+        $field = $record?->port($parts[0], self::box($placed));
+        $compass = null === $field ? $parts[0] : $parts[1] ?? 'c';
+        $box = $field ?? self::box($placed);
+        [$left, $top, $right, $bottom] = $box;
+        [$x, $y] = [($left + $right) / 2, ($top + $bottom) / 2];
+        $point = match (\strtolower($compass)) {
+            'n' => [$x, $top],
+            'ne' => [$right, $top],
+            'e' => [$right, $y],
+            'se' => [$right, $bottom],
+            's' => [$x, $bottom],
+            'sw' => [$left, $bottom],
+            'w' => [$left, $y],
+            'nw' => [$left, $top],
+            default => null === $field ? null : [$x, $y],
+        };
+
+        return [$point, $field];
+    }
+
+    /**
+     * Trims a path to where it leaves its tail's outline, or its port's field, and meets its head's.
+     *
+     * @param list<array{float, float}> $points
+     * @return list<array{float, float}>
+     */
+    private function clip(array $points, DotEdge $edge, GraphNode $tail, GraphNode $head): array
+    {
+        $points = $this->cut($points, $edge->tail, $tail, $this->anchor($edge->tail, $edge->attribute('tailport'))[1]);
+        $points = \array_reverse($this->cut(\array_reverse($points), $edge->head, $head, $this->anchor($edge->head, $edge->attribute('headport'))[1]));
 
         return \count($points) >= 2 ? $points : [$points[0] ?? [$tail->x, $tail->y], $points[0] ?? [$head->x, $head->y]];
     }
 
     /**
-     * Drops the points at the start of a path that fall inside a node, the crossing found by bisection.
+     * Whether a point falls inside where an edge's end is clipped: its port's field, or its node's outline.
+     *
+     * @param ?array{float, float, float, float} $field
+     * @param array{float, float} $point
+     */
+    private function within(string $name, GraphNode $node, ?array $field, array $point): bool
+    {
+        if (null === $field) {
+            return $this->inside($name, $node, $point);
+        }
+        [$left, $top, $right, $bottom] = $field;
+
+        return $point[0] > $left && $point[0] < $right && $point[1] > $top && $point[1] < $bottom;
+    }
+
+    /**
+     * Drops the points at the start of a path that fall inside a node, or its port's field, the crossing found by bisection.
      *
      * @param list<array{float, float}> $points
+     * @param ?array{float, float, float, float} $field the port's field the end is clipped at, if any
      * @return list<array{float, float}>
      */
-    private function cut(array $points, string $name, GraphNode $node): array
+    private function cut(array $points, string $name, GraphNode $node, ?array $field): array
     {
         $count = \count($points);
         $index = 0;
-        while ($index < $count && $this->inside($name, $node, $points[$index])) {
+        while ($index < $count && $this->within($name, $node, $field, $points[$index])) {
             ++$index;
         }
         if (0 === $index || $count === $index) {
@@ -299,7 +388,7 @@ final class DotDrawing
         [$in, $out] = [$points[$index - 1], $points[$index]];
         for ($step = 0; $step < 12; ++$step) {
             $middle = [($in[0] + $out[0]) / 2, ($in[1] + $out[1]) / 2];
-            [$in, $out] = $this->inside($name, $node, $middle) ? [$middle, $out] : [$in, $middle];
+            [$in, $out] = $this->within($name, $node, $field, $middle) ? [$middle, $out] : [$in, $middle];
         }
 
         return [$out, ...\array_slice($points, $index)];

@@ -160,6 +160,29 @@ final class DotDrawingTest extends TestCase
         );
     }
 
+    public function testRecordsDrawTheirFieldsAndEdgesLeaveTheFieldsTheirPortsName(): void
+    {
+        $drawing = self::draw('digraph { a [shape=record, label="<l> left|<r> right"]; b [shape=Mrecord, label="{<t> top|bottom}"]; a:r -> b:t; }');
+
+        $this->assertSame(['left', 'right', 'top', 'bottom'], \array_map(static fn (Mark $mark): string => $mark->text, self::texts($drawing)));
+        [$edge, $across, $down] = self::kinds($drawing, MarkKind::Polyline);
+        [$a, $b] = \array_values(\array_filter(self::kinds($drawing, MarkKind::Polygon), static fn (Mark $mark): bool => \count($mark->points) >= 4 && 'none' === $mark->fill));
+        $this->assertSame($across->points[0][0], $across->points[1][0], 'a line between left and right');
+        $this->assertSame($down->points[0][1], $down->points[1][1], 'a line between top and bottom');
+        $this->assertGreaterThan(4, \count($b->points), 'an Mrecord is rounded');
+        $right = self::texts($drawing)[1]->points[0][0];
+        $this->assertEqualsWithDelta($right, $edge->points[0][0], 1.0, 'the edge leaves the right field');
+        $this->assertEqualsWithDelta(\max(\array_column($a->points, 1)), $edge->points[0][1], 0.01, 'from its bottom');
+
+        $compass = self::draw(
+            'digraph { rankdir=LR; a [shape=record, label="<x> x|<y> y"]; a:y:e -> b:w; a:x -> c [tailport="nowhere"]; d:n -> e:ne; f:s -> g:se; h:sw -> i:nw; j -> k [tailport=c]; }',
+        );
+        $lines = self::kinds($compass, MarkKind::Polyline);
+        $this->assertGreaterThanOrEqual(2, \count($lines[0]->points));
+        $named = self::draw('digraph { a [shape=record, label="{bad"]; }');
+        $this->assertSame(['a'], \array_map(static fn (Mark $mark): string => $mark->text, self::texts($named)), 'as dot, a bad record label shows the name');
+    }
+
     public function testTheGraphLabelSitsBelowAndSizeScales(): void
     {
         $plain = self::draw('digraph { a -> b; }');
