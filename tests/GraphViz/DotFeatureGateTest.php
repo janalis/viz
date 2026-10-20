@@ -28,7 +28,7 @@ final class DotFeatureGateTest extends TestCase
         yield 'shapefile' => ['graph { a [shapefile="x.png"] }', 'images'];
         yield 'pos' => ['graph { a [pos="1,1"] }', 'pinned positions'];
         yield 'pin' => ['graph { a [pin=true] }', 'pinned positions'];
-        yield 'striped' => ['graph { subgraph cluster_a { style=striped; a } }', 'striped, wedged or radial styles'];
+        yield 'radial' => ['graph { a [style=radial] }', 'radial styles'];
         yield 'weighted gradient' => ['graph { a [style=filled fillcolor="red;0.3:blue"] }', 'colour lists'];
         yield 'node colour list' => ['graph { a [style=filled color="red:blue"] }', 'colour lists'];
         yield 'sloped gradient' => ['graph { subgraph cluster_a { bgcolor="red:blue" gradientangle=90; a } }', 'gradients at an angle'];
@@ -46,7 +46,7 @@ final class DotFeatureGateTest extends TestCase
     public function testWhatTheNativeDrawingHandlesPasses(): void
     {
         DotFeatureGate::check(Work::run(new DotParser()->parse(
-            'digraph { layout=dot; rotate=0; orientation=portrait; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; a -> b [color="blue:red;0.5"] }',
+            'digraph { layout=dot; rotate=0; orientation=portrait; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; b [style=wedged fillcolor="red;0.3:blue"]; a -> b [color="blue:red;0.5"] }',
         )));
 
         $this->addToAssertionCount(1);

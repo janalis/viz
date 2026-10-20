@@ -103,25 +103,50 @@ final class DotStrokes
      */
     private static function along(array $points, array $colors): array
     {
-        $given = \array_sum(\array_map(static fn (array $color): float => $color[1] ?? 0.0, $colors));
-        $unweighted = \count(\array_filter($colors, static fn (array $color): bool => null === $color[1]));
-        $share = $unweighted > 0 ? \max(0.0, 1 - $given) / $unweighted : 0.0;
         $lengths = [0.0];
         for ($index = 1, $count = \count($points); $index < $count; ++$index) {
             $lengths[] = $lengths[$index - 1] + \hypot($points[$index][0] - $points[$index - 1][0], $points[$index][1] - $points[$index - 1][1]);
         }
         $total = $lengths[\count($lengths) - 1];
         $lines = [];
+        foreach (self::spans($colors) as [$resolved, $from, $to]) {
+            $lines[] = [self::stretch($points, $lengths, $from * $total, $to * $total), $resolved];
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Where each colour of a list starts and ends, as parts of the whole: as much as its weight
+     * after `;` asks, the colours without one sharing what is left; none past the whole.
+     *
+     * @return list<array{string, float, float}> each colour, resolved, and its start and end
+     */
+    public static function shares(string $color): array
+    {
+        return self::spans(self::parse($color));
+    }
+
+    /**
+     * @param list<array{string, ?float}> $colors
+     * @return list<array{string, float, float}>
+     */
+    private static function spans(array $colors): array
+    {
+        $given = \array_sum(\array_map(static fn (array $color): float => $color[1] ?? 0.0, $colors));
+        $unweighted = \count(\array_filter($colors, static fn (array $color): bool => null === $color[1]));
+        $share = $unweighted > 0 ? \max(0.0, 1 - $given) / $unweighted : 0.0;
+        $spans = [];
         $from = 0.0;
         foreach ($colors as [$resolved, $weight]) {
             $to = \min(1.0, $from + ($weight ?? $share));
             if ($to > $from) {
-                $lines[] = [self::stretch($points, $lengths, $from * $total, $to * $total), $resolved];
+                $spans[] = [$resolved, $from, $to];
             }
             $from = $to;
         }
 
-        return $lines;
+        return $spans;
     }
 
     /**

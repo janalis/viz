@@ -137,6 +137,9 @@ final class DotDrawing
             [$fill, $gradient] = \array_key_exists('filled', $styles)
                 ? DotColors::fill($cluster->attribute('fillcolor', $cluster->attribute('color', $cluster->attribute('bgcolor'))), '#d3d3d3', $cluster->attribute('gradientangle'))
                 : DotColors::fill($cluster->attribute('bgcolor'), 'none', $cluster->attribute('gradientangle'));
+            $pattern = DotFills::pattern($styles, 'box', [$box->x0, $box->y0, $box->x1, $box->y1], $cluster->attribute('fillcolor', $cluster->attribute('color')), $color);
+            \array_push($this->marks, ...$pattern);
+            [$fill, $gradient] = [] === $pattern ? [$fill, $gradient] : ['none', null];
             $this->marks[] = new Mark(
                 MarkKind::Polygon,
                 [[$box->x0, $box->y0], [$box->x1, $box->y0], [$box->x1, $box->y1], [$box->x0, $box->y1]],
@@ -248,10 +251,13 @@ final class DotDrawing
             : ['none', null];
         $penWidth = self::penWidth($node->attribute('penwidth'), $styles);
         $dashed = \array_key_exists('dashed', $styles) || \array_key_exists('dotted', $styles);
+        $pattern = DotFills::pattern($styles, $shapeName, DotEdgePaths::box($placed), $node->attribute('fillcolor', $node->attribute('color')), $color);
+        \array_push($this->marks, ...$pattern);
+        [$fill, $gradient] = [] === $pattern ? [$fill, $gradient] : ['none', null];
         if (!\in_array($shapeName, DotShape::BARE, strict: true)) {
             $shape = $this->shapes[$placed->name];
-            // dot rounds plain polygons only, not those it marks, and an Mrecord always.
-            $rounded = (\array_key_exists('rounded', $styles) && [] === $shape->decorations) || 'Mrecord' === $shapeName;
+            // dot rounds plain polygons only, not those it marks or stripes, and an Mrecord always.
+            $rounded = (\array_key_exists('rounded', $styles) && [] === $shape->decorations && [] === $pattern) || 'Mrecord' === $shapeName;
             $outline = $rounded ? self::round($shape->outline) : $shape->outline;
             $this->marks[] = new Mark(
                 MarkKind::Polygon,

@@ -389,6 +389,29 @@ final class DotDrawingTest extends TestCase
         $this->assertEqualsWithDelta($length($lines[4]), (0.3 / 0.7) * $length($lines[3]), 1e-6, 'weights past the whole are cut short');
     }
 
+    public function testStripesAndWedgesShareTheirFillsOut(): void
+    {
+        $drawing = self::draw(
+            'digraph { a [shape=box, style="striped,rounded", fillcolor="red:blue;0.2:green"]; b [style=wedged, fillcolor="red:blue"]; c [shape=circle, style=striped, fillcolor="red:blue"]; subgraph cluster_x { style=striped; fillcolor="yellow:cyan"; d } }',
+        );
+        $fills = \array_values(\array_filter(self::kinds($drawing, MarkKind::Polygon), static fn (Mark $mark): bool => 'none' !== $mark->fill));
+        $width = static fn (Mark $mark): float => \max(\array_column($mark->points, 0)) - \min(\array_column($mark->points, 0));
+
+        $this->assertSame(
+            ['#ffff00', '#00ffff', '#ff0000', '#0000ff', '#00ff00', '#ff0000', '#0000ff'],
+            \array_map(static fn (Mark $mark): string => $mark->fill, $fills),
+            'a circle takes no stripes',
+        );
+        $this->assertEqualsWithDelta($width($fills[0]), $width($fills[1]), 1e-9, 'the cluster in halves');
+        $this->assertEqualsWithDelta(2 * $width($fills[3]), $width($fills[2]), 1e-6, 'a fifth for blue, the rest shared');
+        $this->assertSame(0.5 * Units::POINT, $fills[2]->strokeWidth);
+        $outline = self::kinds($drawing, MarkKind::Polygon)[\array_search($fills[4], self::kinds($drawing, MarkKind::Polygon), strict: true) + 1];
+        $this->assertCount(4, $outline->points, 'striped, a box is not rounded');
+        [$red, $blue] = [$fills[5], $fills[6]];
+        $this->assertLessThan($red->points[0][1] - 1, $red->points[\intdiv(\count($red->points), num2: 2)][1], 'the first wedge turns up from the right, above the centre');
+        $this->assertGreaterThan($blue->points[0][1] + 1, $blue->points[\intdiv(\count($blue->points), num2: 2)][1], 'the second below');
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));
