@@ -1,0 +1,11 @@
+@startuml
+package app {
+  package domain {
+    class Order
+  }
+  package infra {
+    class OrderRepo
+  }
+}
+OrderRepo --> Order
+@enduml

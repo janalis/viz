@@ -1,0 +1,49 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 142,
+    "height": 185,
+    "words": [
+        "Working",
+        "at",
+        "boot",
+        "logs",
+        "requests",
+        "started",
+        "takes",
+        "writes"
+    ],
+    "baselines": [
+        [
+            "Working",
+            104.535
+        ],
+        [
+            "at",
+            131.023
+        ],
+        [
+            "boot",
+            131.023
+        ],
+        [
+            "logs",
+            164
+        ],
+        [
+            "requests",
+            147.512
+        ],
+        [
+            "started",
+            131.023
+        ],
+        [
+            "takes",
+            147.512
+        ],
+        [
+            "writes",
+            164
+        ]
+    ]
+}

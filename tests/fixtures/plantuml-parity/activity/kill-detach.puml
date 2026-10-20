@@ -1,0 +1,15 @@
+@startuml
+start
+if (Valid?) then (no)
+  :Reject;
+  kill
+endif
+:Accept;
+fork
+  :Notify;
+  detach
+fork again
+  :Store;
+end fork
+stop
+@enduml

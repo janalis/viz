@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 189,
+    "height": 281,
+    "words": [
+        "App",
+        "Db",
+        "Runtime",
+        "Server"
+    ],
+    "baselines": [
+        [
+            "App",
+            122.535
+        ],
+        [
+            "Db",
+            233.025
+        ],
+        [
+            "Runtime",
+            68.535
+        ],
+        [
+            "Server",
+            32.535
+        ]
+    ]
+}

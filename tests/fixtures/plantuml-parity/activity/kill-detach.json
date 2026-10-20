@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 252,
+    "height": 306,
+    "words": [
+        "Accept",
+        "Notify",
+        "Reject",
+        "Store",
+        "Valid?",
+        "no"
+    ],
+    "baselines": [
+        [
+            "Accept",
+            125.668
+        ],
+        [
+            "Notify",
+            205.801
+        ],
+        [
+            "Reject",
+            71.535
+        ],
+        [
+            "Store",
+            205.801
+        ],
+        [
+            "Valid?",
+            71.157
+        ],
+        [
+            "no",
+            64.68
+        ]
+    ]
+}

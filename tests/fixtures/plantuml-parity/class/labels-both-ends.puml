@@ -1,0 +1,5 @@
+@startuml
+class Author
+class Book
+Author "1..*" -- "0..*" Book : writes >
+@enduml

@@ -1,0 +1,14 @@
+@startuml
+start
+if (Code?) is (200) then
+  :Parse;
+elseif (Code?) is (404) then
+  :Retry;
+  stop
+else (other)
+  :Fail;
+  end
+endif
+:Next;
+stop
+@enduml

@@ -1,0 +1,8 @@
+@startuml
+participant A
+A -> B ** : create
+B -> C ** : create
+C -> C : work
+B -> C !! : delete
+A -> B !! : delete
+@enduml

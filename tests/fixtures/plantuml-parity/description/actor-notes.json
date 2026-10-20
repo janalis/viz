@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 210,
+    "height": 185,
+    "words": [
+        "Sign",
+        "Visitor",
+        "anonymous",
+        "up"
+    ],
+    "baselines": [
+        [
+            "Sign",
+            161.393
+        ],
+        [
+            "Visitor",
+            79.035
+        ],
+        [
+            "anonymous",
+            48.658
+        ],
+        [
+            "up",
+            161.393
+        ]
+    ]
+}

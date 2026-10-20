@@ -33,6 +33,8 @@ final class LinkPainter
         $to = $placement->endpoints[$link->to];
         $route = $placement->routes[$edge] ?? [[$from->x, $from->y], [$to->x, $to->y]];
         $points = BoxClip::clipped(Route::smooth($route), $from, $to);
+        // As dot sees the line, before the ends make room for their marks: where the end labels stand.
+        $whole = $points;
         $color = ClassColors::back($link->color) ?? $style->color('LineColor', '#181818');
         $stroke = $link->thickness ?? ($link->bold ? 2.0 : $style->number('LineThickness', 1.0));
         $marks = [];
@@ -51,7 +53,7 @@ final class LinkPainter
             \array_push($marks, ...$label->marks($x - ($width / 2), $y - ($height / 2), $width));
             \array_push($marks, ...self::labelArrow($link, $from, $to, $x - ($width / 2) - 8, $y, $color));
         }
-        \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $points, $style->fontSize()));
+        \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes));
 
         return $marks;
     }
@@ -79,10 +81,13 @@ final class LinkPainter
      * the end of the line, on its left going from tail to head — the side the line turns to
      * 25 degrees off it — but the head's on the other side where it would overlap the tail's.
      *
+     * As svek then, each is moved away from any node it comes within 8 of.
+     *
      * @param list<array{float, float}> $points from the tail to the head, two at least
+     * @param array<int, GraphNode> $nodes
      * @return list<Mark>
      */
-    private static function endLabels(?string $tail, ?string $head, array $points, float $size): array
+    private static function endLabels(?string $tail, ?string $head, array $points, float $size, array $nodes): array
     {
         $last = \count($points) - 1;
         $tailBox = self::endBox($tail, $points[0], $points[1], 25.0, $size);
@@ -95,7 +100,11 @@ final class LinkPainter
             if (null === $box) {
                 continue;
             }
-            [$label, [$x0, $y0, $x1]] = $box;
+            [$label, $at] = $box;
+            foreach ($nodes as $node) {
+                $at = self::awayFrom([$node->x - ($node->w / 2) - 8, $node->y - ($node->h / 2) - 8, $node->x + ($node->w / 2) + 8, $node->y + ($node->h / 2) + 8], $at);
+            }
+            [$x0, $y0, $x1] = $at;
             \array_push($marks, ...$label->marks($x0, $y0, $x1 - $x0));
         }
 
@@ -121,6 +130,35 @@ final class LinkPainter
         $y = \sin($angle) < 0 ? $end[1] - $height : $end[1];
 
         return [$label, [$x, $y, $x + $width, $y + $height]];
+    }
+
+    /**
+     * A box moved straight away from another's centre, as svek moves a label off a node: by
+     * the least multiple of the line between their centres, found in a few halvings, that
+     * clears it — or left where it is when it does not overlap.
+     *
+     * @param array{float, float, float, float} $fixed
+     * @param array{float, float, float, float} $box
+     * @return array{float, float, float, float}
+     */
+    private static function awayFrom(array $fixed, array $box): array
+    {
+        if (!self::overlap($fixed, $box)) {
+            return $box;
+        }
+        $dx = (($box[0] + $box[2]) / 2) - (($fixed[0] + $fixed[2]) / 2);
+        $dy = (($box[1] + $box[3]) / 2) - (($fixed[1] + $fixed[3]) / 2);
+        $moved = static fn (float $c): array => [$box[0] + ($dx * $c), $box[1] + ($dy * $c), $box[2] + ($dx * $c), $box[3] + ($dy * $c)];
+        [$min, $max] = [0.0, 0.1];
+        while (self::overlap($fixed, $moved($max))) {
+            $max *= 2;
+        }
+        for ($i = 0; $i < 5; ++$i) {
+            $candidate = ($min + $max) / 2;
+            self::overlap($fixed, $moved($candidate)) ? ($min = $candidate) : ($max = $candidate);
+        }
+
+        return $moved(($min + $max) / 2);
     }
 
     /**

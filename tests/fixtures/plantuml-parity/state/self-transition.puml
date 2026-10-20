@@ -1,0 +1,6 @@
+@startuml
+[*] --> Polling
+Polling --> Polling : tick
+Polling --> Done : ready
+Done --> [*]
+@enduml

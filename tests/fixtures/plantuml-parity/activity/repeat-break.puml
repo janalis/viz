@@ -1,0 +1,12 @@
+@startuml
+start
+repeat
+  :Poll;
+  if (Timeout?) then (yes)
+    break
+  endif
+  :Wait;
+repeat while (Pending?) is (yes)
+:Report;
+stop
+@enduml

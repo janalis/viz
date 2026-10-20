@@ -1,0 +1,6 @@
+@startuml
+state Working : started at boot
+Working : takes requests
+Working : writes logs
+[*] --> Working
+@enduml

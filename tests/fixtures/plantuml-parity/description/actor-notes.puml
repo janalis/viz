@@ -1,0 +1,6 @@
+@startuml
+actor Visitor
+usecase (Sign up)
+Visitor --> (Sign up)
+note right of Visitor : anonymous
+@enduml

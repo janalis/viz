@@ -1,0 +1,6 @@
+@startuml
+A -> B : one
+note across : shared
+B -> C : two
+note over A, C : spans three
+@enduml

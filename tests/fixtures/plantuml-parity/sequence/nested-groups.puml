@@ -1,0 +1,11 @@
+@startuml
+A -> B : request
+alt cached
+  B --> A : hit
+else not cached
+  loop retries
+    B -> C : fetch
+  end
+  B --> A : miss
+end
+@enduml

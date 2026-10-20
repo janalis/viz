@@ -1,0 +1,8 @@
+@startuml
+node Web
+node App
+database Data
+Web --> App : REST
+App --> Data : SQL
+Web ..> Data : cache
+@enduml

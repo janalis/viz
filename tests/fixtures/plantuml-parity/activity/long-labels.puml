@@ -1,0 +1,10 @@
+@startuml
+start
+:A step whose description
+runs over three lines
+of text;
+-> and an arrow label
+over two lines;
+:Done;
+stop
+@enduml

@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 157,
+    "height": 361,
+    "words": [
+        "Done",
+        "Polling",
+        "ready",
+        "tick"
+    ],
+    "baselines": [
+        [
+            "Done",
+            232.535
+        ],
+        [
+            "Polling",
+            105.535
+        ],
+        [
+            "ready",
+            180.568
+        ],
+        [
+            "tick",
+            117.068
+        ]
+    ]
+}

@@ -1,0 +1,6 @@
+@startuml
+participant "The\nClient" as C
+participant "Remote\nService" as S
+C -> S : call
+S --> C : reply
+@enduml

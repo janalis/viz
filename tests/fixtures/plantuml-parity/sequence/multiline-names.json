@@ -1,0 +1,59 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 149,
+    "height": 193,
+    "words": [
+        "Client",
+        "Client",
+        "Remote",
+        "Remote",
+        "Service",
+        "Service",
+        "The",
+        "The",
+        "call",
+        "reply"
+    ],
+    "baselines": [
+        [
+            "Client",
+            47.023
+        ],
+        [
+            "Client",
+            171.621
+        ],
+        [
+            "Remote",
+            30.535
+        ],
+        [
+            "Remote",
+            155.133
+        ],
+        [
+            "Service",
+            47.023
+        ],
+        [
+            "Service",
+            171.621
+        ],
+        [
+            "The",
+            30.535
+        ],
+        [
+            "The",
+            155.133
+        ],
+        [
+            "call",
+            82.545
+        ],
+        [
+            "reply",
+            111.855
+        ]
+    ]
+}

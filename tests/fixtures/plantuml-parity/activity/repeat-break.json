@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 156,
+    "height": 482,
+    "words": [
+        "Pending?",
+        "Poll",
+        "Report",
+        "Timeout?",
+        "Wait",
+        "yes",
+        "yes"
+    ],
+    "baselines": [
+        [
+            "Pending?",
+            314.9
+        ],
+        [
+            "Poll",
+            120.602
+        ],
+        [
+            "Report",
+            408.345
+        ],
+        [
+            "Timeout?",
+            169.29
+        ],
+        [
+            "Wait",
+            266.212
+        ],
+        [
+            "yes",
+            187.768
+        ],
+        [
+            "yes",
+            308.423
+        ]
+    ]
+}

@@ -1,0 +1,9 @@
+@startuml
+node Server {
+  frame Runtime {
+    [App]
+  }
+  database Db
+}
+[App] --> Db
+@enduml

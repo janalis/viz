@@ -1,0 +1,7 @@
+@startuml
+queue Inbox
+stack Undo
+collections Items
+Inbox --> Undo
+Undo --> Items
+@enduml

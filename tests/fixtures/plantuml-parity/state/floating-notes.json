@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 187,
+    "height": 265,
+    "words": [
+        "Busy",
+        "Idle",
+        "Shared",
+        "note"
+    ],
+    "baselines": [
+        [
+            "Busy",
+            219.845
+        ],
+        [
+            "Idle",
+            109.845
+        ],
+        [
+            "Shared",
+            23.568
+        ],
+        [
+            "note",
+            23.568
+        ]
+    ]
+}

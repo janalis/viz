@@ -1,0 +1,5 @@
+@startuml
+[*] --> Idle
+Idle --> Busy
+note "Shared note" as N1
+@enduml
