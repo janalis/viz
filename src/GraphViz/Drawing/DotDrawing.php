@@ -143,7 +143,11 @@ final class DotDrawing
         // The layout input lists clusters as the graph's subgraphs nest, parents first.
         $subgraphs = \array_values(\array_filter($this->graph->allSubgraphs(), static fn (DotSubgraph $subgraph): bool => $subgraph->cluster()));
         foreach ($this->input->clusters as $position => $layout) {
-            $box = $boxes[$layout->id];
+            $box = $boxes[$layout->id] ?? null;
+            // A layout that places no clusters, as neato, draws none.
+            if (null === $box) {
+                continue;
+            }
             $cluster = $subgraphs[$position];
             $styles = self::styles($cluster->attribute('style'));
             if (\array_key_exists('invis', $styles)) {

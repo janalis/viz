@@ -13,6 +13,7 @@ use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotNode;
 use Janalis\Viz\GraphViz\Model\DotSubgraph;
 use Janalis\Viz\Layout\Dot\DotEngine;
+use Janalis\Viz\Layout\Neato\NeatoEngine;
 
 /**
  * DOT drawn natively: parsed as the language reads it, checked against what the native
@@ -39,7 +40,8 @@ final readonly class DotPipeline implements Pipeline
                 $height / 2,
             ])[0],
         );
-        $place = new DotEngine()->place($input);
+        // neato places nodes by their distances along edges; any other layout left here is dot.
+        $place = ('neato' === \strtolower($graph->attribute('layout')) ? new NeatoEngine() : new DotEngine())->place($input);
         yield from $place;
 
         return DotDrawing::draw($graph, $input, $place->getReturn());

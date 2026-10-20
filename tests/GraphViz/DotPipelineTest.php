@@ -38,10 +38,10 @@ final class DotPipelineTest extends TestCase
     public function testUnsupportedFeaturesAndSyntaxErrorsRefuse(): void
     {
         try {
-            Work::run(new DotPipeline()->drawing('digraph { layout=neato; a }'));
+            Work::run(new DotPipeline()->drawing('digraph { layout=fdp; a }'));
             $this->fail('Expected a refusal');
         } catch (Unsupported $refusal) {
-            $this->assertSame('The native DOT renderer does not draw the neato layout', $refusal->getMessage());
+            $this->assertSame('The native DOT renderer does not draw the fdp layout', $refusal->getMessage());
         }
         $this->expectException(DotSyntaxError::class);
 

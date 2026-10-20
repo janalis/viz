@@ -23,5 +23,7 @@ final readonly class LayoutEdge
         public float $tailPort = 0.0,
         /** Where across its head the edge arrives, likewise. */
         public float $headPort = 0.0,
+        /** How long the edge would be, centre to centre, for a layout that places nodes by it, as neato does; nought for its own default. */
+        public float $length = 0.0,
     ) {}
 }

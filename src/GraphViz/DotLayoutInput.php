@@ -89,6 +89,7 @@ final class DotLayoutInput
                 $labelHeight,
                 self::port($graph, $ports, $sizes, $edge->tail, $edge->attribute('tailport')),
                 self::port($graph, $ports, $sizes, $edge->head, $edge->attribute('headport')),
+                self::inches($edge->attribute('len'), 1.0),
             );
         }
         $sets = [];

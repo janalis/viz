@@ -16,7 +16,7 @@ final class DotFeatureGateTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
-        yield 'layout' => ['graph { layout=neato }', 'the neato layout'];
+        yield 'layout' => ['graph { layout=fdp }', 'the fdp layout'];
         yield 'compress' => ['graph { ratio=compress }', 'ratio=compress'];
         yield 'html' => ['graph { a -- b [tooltip=<b>] }', 'HTML in tooltip'];
         yield 'image' => ['graph { a [image="x.png"] }', 'images'];
