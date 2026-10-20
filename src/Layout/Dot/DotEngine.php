@@ -106,8 +106,32 @@ final readonly class DotEngine implements LayoutEngine
         $position = new DotPosition($layers, $clusterLabels, $graph->spacing->nodeGap, $rankSeparation, $graph->spacing->padding, $bands);
         $placing = $position->place();
         yield from $placing;
+        self::stretch($graph, $position);
 
         return $this->placement($graph, $layers, $position, \array_keys($edges));
+    }
+
+    /**
+     * As dot's `ratio`, positions stretched until the drawing is as tall for its width as
+     * asked: down where it is too flat, else across; laid out to be turned, the other way.
+     */
+    private static function stretch(LayoutGraph $graph, DotPosition $position): void
+    {
+        $turned = \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true);
+        $padding = $graph->spacing->padding;
+        [$width, $height] = [$position->width - (2 * $padding), $position->height - (2 * $padding)];
+        [$width, $height] = $turned ? [$height, $width] : [$width, $height];
+        if (null === $graph->aspect || $graph->aspect <= 0 || $width <= 0 || $height <= 0) {
+            return;
+        }
+        $wanted = $graph->aspect * $width;
+        [$across, $down] = $height < $wanted ? [1.0, $wanted / $height] : [$height / $wanted, 1.0];
+        if ($turned) {
+            $position->stretch($down, $across);
+
+            return;
+        }
+        $position->stretch($across, $down);
     }
 
     /**

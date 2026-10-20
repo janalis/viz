@@ -127,6 +127,17 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame([0.0, 0.0], [$none->edges[0]->tailPort, $none->edges[0]->headPort], 'without measuring ports');
     }
 
+    public function testRatioAsksForAnAspect(): void
+    {
+        $this->assertSame(2.0, self::input('digraph { ratio=2 }')->aspect);
+        $this->assertSame(100.0, self::input('digraph { ratio="1e9" }')->aspect);
+        $this->assertSame(5.0, self::input('digraph { ratio=fill; size="1,5!" }')->aspect);
+        $this->assertSame(1.0, self::input('digraph { ratio=fill; size="3" }')->aspect);
+        foreach (['ratio=fill', 'ratio=fill; size="0,1"', 'ratio=auto; size="1,5"', 'ratio=expand', ''] as $none) {
+            $this->assertNull(self::input('digraph { '.$none.' }')->aspect, $none);
+        }
+    }
+
     private static function input(string $source): LayoutGraph
     {
         return DotLayoutInput::from(Work::run(new DotParser()->parse($source)));

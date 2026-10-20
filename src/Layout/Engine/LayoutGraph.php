@@ -31,5 +31,7 @@ final readonly class LayoutGraph
         /** The gap between a cluster's label and its content. */
         public float $titleGap = 0.0,
         public array $rankSets = [],
+        /** The height-to-width ratio a layout stretches its positions to, never shrinking them, as dot's `ratio`; null for none. */
+        public ?float $aspect = null,
     ) {}
 }

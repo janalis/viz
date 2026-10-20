@@ -111,7 +111,27 @@ final class DotLayoutInput
                 4.0,
             ),
             rankSets: $sets,
+            aspect: self::aspect($graph),
         );
+    }
+
+    /**
+     * The height-to-width ratio `ratio` asks the drawing for: a number itself, or `fill` the
+     * ratio of `size`; null for any other value, or none.
+     */
+    private static function aspect(DotGraph $graph): ?float
+    {
+        $ratio = \strtolower(\trim($graph->attribute('ratio')));
+        if (\is_numeric($ratio)) {
+            return \max(0.01, \min(100.0, (float) $ratio));
+        }
+        $size = \explode(',', \rtrim($graph->attribute('size'), characters: '!'));
+        [$width, $height] = [\trim($size[0]), \trim($size[1] ?? $size[0])];
+        if ('fill' !== $ratio || !\is_numeric($width) || !\is_numeric($height) || (float) $width <= 0) {
+            return null;
+        }
+
+        return \max(0.01, \min(100.0, (float) $height / (float) $width));
     }
 
     /**

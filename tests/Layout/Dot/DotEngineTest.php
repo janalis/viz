@@ -235,6 +235,29 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta($pulled->endpoints['a']->x - 27, $pulled->endpoints['b']->x, 1.0, 'b under the port, a quarter of a across from its centre');
     }
 
+    public function testAnAspectStretchesPositionsNeverNodes(): void
+    {
+        $graph = static fn (Direction $direction, ?float $aspect): LayoutGraph => new LayoutGraph(
+            \array_map(static fn (string $id): LayoutNode => new LayoutNode($id, $id, 54, 36), ['a', 'b', 'c', 'd', 'e']),
+            [new LayoutEdge(0, 'a', 'b'), new LayoutEdge(1, 'a', 'c'), new LayoutEdge(2, 'a', 'd'), new LayoutEdge(3, 'b', 'e')],
+            [new LayoutCluster('x', '')],
+            $direction,
+            new Spacing(36, 18, 4),
+            aspect: $aspect,
+        );
+        $size = static fn (Placement $placement): array => [$placement->graph->width - 8, $placement->graph->height - 8];
+
+        // dot: 198 by 180, 198 by 396 at ratio 2, 900 by 180 at 0.2, 234 by 468 laid out across at 2.
+        $this->assertSame([198.0, 180.0], $size(Work::run(new DotEngine()->place($graph(Direction::TopBottom, aspect: null)))));
+        $tall = Work::run(new DotEngine()->place($graph(Direction::TopBottom, aspect: 2.0)));
+        $this->assertEqualsWithDelta([198.0, 396.0], $size($tall), 1e-9);
+        $this->assertEqualsWithDelta(356.4, $tall->endpoints['e']->y - 4, 1e-9);
+        $this->assertSame(54.0, $tall->endpoints['e']->w);
+        $this->assertEqualsWithDelta([900.0, 180.0], $size(Work::run(new DotEngine()->place($graph(Direction::TopBottom, aspect: 0.2)))), 1e-9);
+        $this->assertEqualsWithDelta([234.0, 468.0], $size(Work::run(new DotEngine()->place($graph(Direction::LeftRight, aspect: 2.0)))), 1e-9);
+        $this->assertSame([198.0, 180.0], $size(Work::run(new DotEngine()->place($graph(Direction::TopBottom, aspect: 0.0)))), 'no aspect at nought');
+    }
+
     private static function place(array $nodes, array $edges, array $clusters = [], array $owners = [], Direction $direction = Direction::TopBottom): Placement
     {
         return Work::run(new DotEngine()->place(new LayoutGraph(
