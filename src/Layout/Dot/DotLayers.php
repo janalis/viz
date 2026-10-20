@@ -32,7 +32,7 @@ final class DotLayers
     public array $height = [];
     /** @var list<int> each node's innermost cluster, -1 at the top level */
     public array $cluster = [];
-    /** @var list<array{int, int, int, int}> tail, head, weight, crossing penalty: every edge between neighbouring ranks, tail above */
+    /** @var list<array{int, int, int, int, float, float}> tail, head, weight, crossing penalty, and where across the tail and the head it ends (see {@see \Janalis\Viz\Layout\Engine\LayoutEdge::$tailPort}): every edge between neighbouring ranks, tail above */
     public array $edges = [];
     /** @var list<list<int>> the nodes of each rank, in order */
     public array $ranks = [];
@@ -52,7 +52,7 @@ final class DotLayers
      * @param list<array{float, float}> $sizes each real node's width and height
      * @param list<int> $owner each real node's innermost cluster, -1 for none
      * @param list<int> $parents each cluster's parent, -1 for none
-     * @param list<array{int, int, int, float, float}> $edges tail, head, weight, label width, label height, in authored order
+     * @param list<array{0: int, 1: int, 2: int, 3: float, 4: float, 5?: float, 6?: float}> $edges tail, head, weight, label width, label height, and where across its tail and its head it ends, in authored order
      * @param float $spread how far apart edges sharing a chain run: each widens its virtual nodes by as much
      */
     public function __construct(
@@ -69,7 +69,8 @@ final class DotLayers
             $this->add($rank, self::REAL, $width / 2, $width / 2, $height, $owner[$node]);
         }
         $chains = [];
-        foreach ($edges as $index => [$tail, $head, $weight, $labelWidth, $labelHeight]) {
+        foreach ($edges as $index => $edge) {
+            [$tail, $head, $weight, $labelWidth, $labelHeight] = $edge;
             if ($tail === $head) {
                 // Loops are drawn to a node's right, one beside the other: the node is as wide as they reach.
                 $this->loops[] = [$tail, $index];
@@ -80,11 +81,13 @@ final class DotLayers
                 $this->flat[] = [$tail, $head, $index];
                 continue;
             }
-            [$top, $bottom] = $ranks[$tail] < $ranks[$head] ? [$tail, $head] : [$head, $tail];
+            $down = $ranks[$tail] < $ranks[$head];
+            [$top, $bottom] = $down ? [$tail, $head] : [$head, $tail];
+            $ports = $down ? [$edge[5] ?? 0.0, $edge[6] ?? 0.0] : [$edge[6] ?? 0.0, $edge[5] ?? 0.0];
             $path =
                 $labelWidth > 0 || $labelHeight > 0
-                    ? $this->chain($top, $bottom, $weight, [$labelWidth, $labelHeight, $index])
-                    : $this->shared($chains, $top, $bottom, $weight);
+                    ? $this->chain($top, $bottom, $weight, $ports, [$labelWidth, $labelHeight, $index])
+                    : $this->shared($chains, $top, $bottom, $weight, $ports);
             $this->paths[$index] = $ranks[$tail] < $ranks[$head] ? $path : \array_reverse($path);
         }
     }
@@ -93,12 +96,13 @@ final class DotLayers
      * The chain between two nodes that unlabelled edges share: made by the first, its weight
      * raised by each one after.
      *
-     * @param array<string, array{list<int>, list<int>}> $chains each shared chain's path and layered edges, by its ends
+     * @param array<string, array{list<int>, list<int>}> $chains each shared chain's path and layered edges, by its ends and ports
+     * @param array{float, float} $ports where across its top and its bottom node it ends: edges ending elsewhere share no chain
      * @return list<int> the path, top to bottom
      */
-    private function shared(array &$chains, int $top, int $bottom, int $weight): array
+    private function shared(array &$chains, int $top, int $bottom, int $weight, array $ports): array
     {
-        $key = $top.'>'.$bottom;
+        $key = $top.'>'.$bottom.'@'.\implode(',', $ports);
         if (\array_key_exists($key, $chains)) {
             [$path, $layered] = $chains[$key];
             foreach ($layered as $edge) {
@@ -112,17 +116,18 @@ final class DotLayers
             return $path;
         }
         $first = \count($this->edges);
-        $path = $this->chain($top, $bottom, $weight, null);
+        $path = $this->chain($top, $bottom, $weight, $ports, null);
         $chains[$key] = [$path, \range($first, \count($this->edges) - 1)];
 
         return $path;
     }
 
     /**
+     * @param array{float, float} $ports where across its top and its bottom node the chain ends
      * @param ?array{float, float, int} $label the label's width and height, and its edge
      * @return list<int> the path, top to bottom
      */
-    private function chain(int $top, int $bottom, int $weight, ?array $label): array
+    private function chain(int $top, int $bottom, int $weight, array $ports, ?array $label): array
     {
         $owner = $this->common($this->cluster[$top], $this->cluster[$bottom]);
         $path = [$top];
@@ -152,6 +157,8 @@ final class DotLayers
                     1 => 2,
                     default => 1,
                 },
+                1 === $index ? $ports[0] : 0.0,
+                ($count - 1) === $index ? $ports[1] : 0.0,
             ];
         }
 

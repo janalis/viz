@@ -33,6 +33,18 @@ final class DotCrossingsTest extends TestCase
         $this->assertSame(1.0, $crossings->median($position, [6, 7], Side::Above), 'an item of several nodes pools their neighbours');
     }
 
+    public function testPortsCountWhereEdgesEndAcrossTheirNodes(): void
+    {
+        // a over x and y, its edge to x leaving right of its edge to y: they cross, unless x stands right.
+        $layers = new DotLayers([0, 1, 1], \array_fill(0, count: 3, value: [10.0, 10.0]), [-1, -1, -1], [], [[0, 1, 1, 0, 0, 0.25, 0.0], [0, 2, 1, 0, 0, -0.25, 0.0]]);
+        $crossings = new DotCrossings($layers);
+
+        $this->assertSame(1, $crossings->total([0, 0, 1]));
+        $this->assertSame(0, $crossings->total([0, 1, 0]));
+        $this->assertSame(0.25, $crossings->median([0, 0, 1], [1], Side::Above), 'a median counts where across a node the edge ends');
+        $this->assertSame(1, $crossings->pair([0, 0, 1], [1], [2]) - $crossings->pair([0, 0, 1], [2], [1]), 'x before y costs a crossing more');
+    }
+
     public function testAnEvenMedianOfOneRepeatedPositionIsThatPosition(): void
     {
         // A block of four nodes, all under one node.

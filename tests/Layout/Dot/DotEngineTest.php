@@ -209,6 +209,32 @@ final class DotEngineTest extends TestCase
      * @param list<LayoutCluster> $clusters
      * @param array<string, string> $owners
      */
+    public function testPortsOrderTheNodesTheyLeadToAndPullTheirEndsLevel(): void
+    {
+        $graph = static fn (Direction $direction): LayoutGraph => new LayoutGraph(
+            \array_map(static fn (string $id): LayoutNode => new LayoutNode($id, $id, 108, 36), ['a', 'x', 'y', 'z']),
+            [new LayoutEdge(0, 'a', 'x', tailPort: 0.33), new LayoutEdge(1, 'a', 'y'), new LayoutEdge(2, 'a', 'z', tailPort: -0.33)],
+            [],
+            $direction,
+            new Spacing(36, 18, 4),
+        );
+        $down = Work::run(new DotEngine()->place($graph(Direction::TopBottom)));
+        $across = Work::run(new DotEngine()->place($graph(Direction::LeftRight)));
+
+        $this->assertLessThan($down->endpoints['y']->x, $down->endpoints['z']->x, 'z under the left port');
+        $this->assertLessThan($down->endpoints['x']->x, $down->endpoints['y']->x);
+        $this->assertLessThan($across->endpoints['z']->y, $across->endpoints['x']->y, 'laid out sideways, the order turned over');
+
+        $pulled = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 108, 36), new LayoutNode('b', 'b', 54, 36)],
+            [new LayoutEdge(0, 'a', 'b', tailPort: -0.25)],
+            [],
+            Direction::TopBottom,
+            new Spacing(36, 18, 4),
+        )));
+        $this->assertEqualsWithDelta($pulled->endpoints['a']->x - 27, $pulled->endpoints['b']->x, 1.0, 'b under the port, a quarter of a across from its centre');
+    }
+
     private static function place(array $nodes, array $edges, array $clusters = [], array $owners = [], Direction $direction = Direction::TopBottom): Placement
     {
         return Work::run(new DotEngine()->place(new LayoutGraph(

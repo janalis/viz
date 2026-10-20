@@ -71,7 +71,7 @@ HTML labels are drawn natively on nodes, edges, clusters and the graph, as the a
 - **Layout:** a column is as wide as its widest cell, and a spanning cell widens the columns it covers evenly. Other attributes, such as the `radial` style, are ignored.
 - **Fallback:** a malformed label, or one nested more than 32 deep, goes to `dot`.
 
-An edge's port that names a record field starts or ends it at that field's centre and clips it at the field's box. A compass point (`n`, `ne`, `e`, `se`, `s`, `sw`, `w`, `nw`) puts the end on that side of the field, or of the node. A port naming an HTML cell aims the edge at the cell, but clips it at the node's outline, so no cell drawn over it hides its arrowhead; `dot` routes such an edge to the cell's side. Ports move only the ends of an edge: unlike `dot`, the layout does not take them into account when ordering and placing nodes.
+An edge's port that names a record field starts or ends it at that field's centre and clips it at the field's box. A compass point (`n`, `ne`, `e`, `se`, `s`, `sw`, `w`, `nw`) puts the end on that side of the field, or of the node. A port naming an HTML cell aims the edge at the cell, but clips it at the node's outline, so no cell drawn over it hides its arrowhead; `dot` routes such an edge to the cell's side. As `dot`, the layout counts ports: crossing minimisation takes an edge's end where its port puts it across its node, in medians and crossings alike, and coordinates pull the two ports of an edge level rather than its nodes' centres. Edges between two nodes that end at different ports share no virtual chain.
 
 ## Parity
 

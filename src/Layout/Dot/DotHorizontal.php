@@ -136,12 +136,16 @@ final class DotHorizontal
     /** Each layered edge, and each flat edge, pulls its ends level through a slack node of its own. */
     private function straighten(): void
     {
-        foreach ($this->layers->edges as [$tail, $head, $weight, $omega]) {
+        foreach ($this->layers->edges as [$tail, $head, $weight, $omega, $tailPort, $headPort]) {
             $slack = $this->count++;
             // As dot, a stretch between two virtual nodes pulls hardest; one with a real end, as a plain edge.
             $pull = $omega >= self::STRAIGHT ? self::STRAIGHT : 1;
-            $this->edges[] = [$slack, $tail, 0, $pull * $weight];
-            $this->edges[] = [$slack, $head, 0, $pull * $weight];
+            // It pulls its ends' ports level, where they stand off their nodes' centres.
+            $tailAt = $tailPort * 2 * $this->layers->left[$tail];
+            $headAt = $headPort * 2 * $this->layers->left[$head];
+            $most = \max($tailAt, $headAt);
+            $this->edges[] = [$slack, $tail, self::length($most - $tailAt), $pull * $weight];
+            $this->edges[] = [$slack, $head, self::length($most - $headAt), $pull * $weight];
         }
         foreach ($this->layers->flat as [$tail, $head]) {
             $slack = $this->count++;

@@ -500,28 +500,8 @@ final class DotDrawing
      */
     private function anchor(string $name, string $port): array
     {
-        if ('' === $port) {
-            return [null, null];
-        }
-        $placed = $this->placement->endpoints[$name];
-        $parts = \explode(':', $port);
         $record = $this->record($name);
-        $field = $record?->port($parts[0], self::box($placed)) ?? DotNodes::text($this->graph, $this->graph->nodes[$name])->ports($placed->x, $placed->y)[$parts[0]] ?? null;
-        $compass = null === $field ? $parts[0] : $parts[1] ?? 'c';
-        $box = $field ?? self::box($placed);
-        [$left, $top, $right, $bottom] = $box;
-        [$x, $y] = [($left + $right) / 2, ($top + $bottom) / 2];
-        $point = match (\strtolower($compass)) {
-            'n' => [$x, $top],
-            'ne' => [$right, $top],
-            'e' => [$right, $y],
-            'se' => [$right, $bottom],
-            's' => [$x, $bottom],
-            'sw' => [$left, $bottom],
-            'w' => [$left, $y],
-            'nw' => [$left, $top],
-            default => null === $field ? null : [$x, $y],
-        };
+        [$point, $field] = DotPorts::anchor($this->graph, $this->graph->nodes[$name], $record, $port, self::box($this->placement->endpoints[$name]));
 
         return [$point, null === $record ? null : $field];
     }

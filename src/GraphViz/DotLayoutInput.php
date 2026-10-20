@@ -39,9 +39,11 @@ final class DotLayoutInput
      * @param ?\Closure(DotNode): array{float, float} $measure the size a node's label needs, in points; null takes width and height alone
      * @param ?\Closure(DotEdge): array{float, float} $labels an edge label's size, in points
      * @param ?\Closure(DotSubgraph): array{float, float} $titles a cluster label's size, in points
+     * @param ?\Closure(DotNode, string, float, float): ?array{float, float} $ports where a port puts an edge's end on a node of a width and height, from its centre, in points; null where it names nothing
      */
-    public static function from(DotGraph $graph, ?\Closure $measure = null, ?\Closure $labels = null, ?\Closure $titles = null): LayoutGraph
+    public static function from(DotGraph $graph, ?\Closure $measure = null, ?\Closure $labels = null, ?\Closure $titles = null, ?\Closure $ports = null): LayoutGraph
     {
+        $sizes = [];
         $nodes = [];
         $clusterOf = [];
         $clusters = [];
@@ -61,6 +63,7 @@ final class DotLayoutInput
                 $width = \max($width, $labelWidth);
                 $height = \max($height, $labelHeight);
             }
+            $sizes[$name] = [$width, $height];
             $ordering = \strtolower($node->attribute('ordering', $graph->attribute('ordering')));
             $nodes[] = new LayoutNode(
                 $name,
@@ -84,6 +87,8 @@ final class DotLayoutInput
                 'false' !== \strtolower($edge->attribute('constraint', 'true')),
                 $labelWidth,
                 $labelHeight,
+                self::port($graph, $ports, $sizes, $edge->tail, $edge->attribute('tailport')),
+                self::port($graph, $ports, $sizes, $edge->head, $edge->attribute('headport')),
             );
         }
         $sets = [];
@@ -107,6 +112,29 @@ final class DotLayoutInput
             ),
             rankSets: $sets,
         );
+    }
+
+    /**
+     * Where across a node a port puts an edge's end, along its rank's order as the ordering
+     * runs: across it laid out down, up it laid out sideways, as a part of its breadth from its centre.
+     *
+     * @param ?\Closure(DotNode, string, float, float): ?array{float, float} $ports
+     * @param array<string, array{float, float}> $sizes
+     */
+    private static function port(DotGraph $graph, ?\Closure $ports, array $sizes, string $name, string $port): float
+    {
+        if (null === $ports || '' === $port) {
+            return 0.0;
+        }
+        [$width, $height] = $sizes[$name];
+        $at = $ports($graph->nodes[$name], $port, $width, $height);
+        if (null === $at) {
+            return 0.0;
+        }
+        // Laid out sideways, ranks are ordered from their far end, as dot orders them, then turned over.
+        $across = \in_array(\strtoupper($graph->attribute('rankdir')), ['LR', 'RL'], strict: true) ? -$at[1] / $height : $at[0] / $width;
+
+        return \max(-0.5, \min(0.5, $across));
     }
 
     /**

@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\GraphViz;
 
 use Janalis\Viz\GraphViz\DotLayoutInput;
 use Janalis\Viz\GraphViz\Language\DotParser;
+use Janalis\Viz\GraphViz\Model\DotNode;
 use Janalis\Viz\Layout\Engine\LayoutCluster;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\RankKind;
@@ -106,6 +107,24 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame([1, 0], [$input->edges[1]->minLength, $input->edges[1]->weight], 'unreadable falls back to one, negative to zero');
         $this->assertSame([54.0, 72_000.0], [$input->nodes[0]->width, $input->nodes[0]->height]);
         $this->assertSame([72_000.0, 1.44], [$input->spacing->rankGap, $input->spacing->nodeGap]);
+    }
+
+    public function testPortsStandAcrossTheirNodesAlongTheOrder(): void
+    {
+        // A port's end, from the node's centre: a quarter of the way across and up, or past the side.
+        $ports = static fn (DotNode $node, string $port, float $width, float $height): ?array => match ($port) {
+            'q' => [$width / 4, -$height / 4],
+            'far' => [$width, $height],
+            default => null,
+        };
+        $down = DotLayoutInput::from(Work::run(new DotParser()->parse('digraph { a:q -> b:far; a -> b:none; a:q -> b }')), ports: $ports);
+        $across = DotLayoutInput::from(Work::run(new DotParser()->parse('digraph { rankdir=LR; a:q -> b }')), ports: $ports);
+        $none = self::input('digraph { a:q -> b:far }');
+
+        $this->assertSame([0.25, 0.5], [$down->edges[0]->tailPort, $down->edges[0]->headPort], 'across, as far as the node reaches');
+        $this->assertSame([0.0, 0.0], [$down->edges[1]->tailPort, $down->edges[1]->headPort], 'none, or one naming nothing');
+        $this->assertSame(0.25, $across->edges[0]->tailPort, 'laid out sideways, up the node, the order running from its far end');
+        $this->assertSame([0.0, 0.0], [$none->edges[0]->tailPort, $none->edges[0]->headPort], 'without measuring ports');
     }
 
     private static function input(string $source): LayoutGraph

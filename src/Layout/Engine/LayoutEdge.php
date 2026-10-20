@@ -19,5 +19,9 @@ final readonly class LayoutEdge
         /** The size of the edge's label, which a layout may give room of its own; zero for none. */
         public float $labelWidth = 0.0,
         public float $labelHeight = 0.0,
+        /** Where across its tail the edge leaves, along its rank's order as a layout runs it: -0.5 at the start, 0.5 at the end, 0 at the centre. A layout turned sideways may run it from the far end. */
+        public float $tailPort = 0.0,
+        /** Where across its head the edge arrives, likewise. */
+        public float $headPort = 0.0,
     ) {}
 }

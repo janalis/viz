@@ -78,7 +78,7 @@ final readonly class DotEngine implements LayoutEngine
                 continue;
             }
             [$labelWidth, $labelHeight] = $turned ? [$edge->labelHeight, $edge->labelWidth] : [$edge->labelWidth, $edge->labelHeight];
-            $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->weight, $labelWidth, $labelHeight];
+            $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->weight, $labelWidth, $labelHeight, $edge->tailPort, $edge->headPort];
         }
         // As dot, the ordering meets edges node by node, each node's out-edges in turn.
         \uksort($edges, static fn (int $a, int $b): int => [$edges[$a][0], $a] <=> [$edges[$b][0], $b]);

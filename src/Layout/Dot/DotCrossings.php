@@ -44,29 +44,35 @@ final readonly class DotCrossings
     }
 
     /**
-     * Every crossing between neighbouring ranks, with a Fenwick tree of penalties by head position.
+     * Every crossing between neighbouring ranks, with a Fenwick tree of penalties by head
+     * position. As dot, an edge ends where its port puts it across its node, so two edges
+     * from one node cross when their ports stand the other way round from their far ends.
      *
      * @param list<int> $position each node's index in its rank
      */
     public function total(array $position): int
     {
         $byRank = [];
-        foreach ($this->layers->edges as [$tail, $head, , $penalty]) {
-            $byRank[$this->layers->rank[$tail]][] = [$position[$tail], $position[$head], $penalty];
+        foreach ($this->layers->edges as [$tail, $head, , $penalty, $tailPort, $headPort]) {
+            $byRank[$this->layers->rank[$tail]][] = [$position[$tail] + $tailPort, $position[$head] + $headPort, $penalty];
         }
         $total = 0;
         foreach ($byRank as $edges) {
             \usort($edges, static fn (array $a, array $b): int => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
-            $size = \max(1, 1 + \max(\array_column($edges, 1)));
+            $heads = \array_values(\array_unique(\array_column($edges, 1), \SORT_REGULAR));
+            \sort($heads);
+            $slots = \array_flip(\array_map(\strval(...), $heads));
+            $size = \count($heads);
             $tree = \array_fill(0, $size + 1, value: 0);
             $inserted = 0;
             foreach ($edges as [, $head, $penalty]) {
+                $slot = $slots[(string) $head];
                 $before = 0;
-                for ($index = $head + 1; $index > 0; $index -= $index & -$index) {
+                for ($index = $slot + 1; $index > 0; $index -= $index & -$index) {
                     $before += $tree[$index];
                 }
                 $total += $penalty * ($inserted - $before);
-                for ($index = $head + 1; $index <= $size; $index += $index & -$index) {
+                for ($index = $slot + 1; $index <= $size; $index += $index & -$index) {
                     $tree[$index] += $penalty;
                 }
                 $inserted += $penalty;
@@ -90,12 +96,12 @@ final readonly class DotCrossings
             $leftEnds = [];
             foreach ($left as $node) {
                 foreach ($this->edges($node, $side) as $edge) {
-                    $leftEnds[] = [$position[$this->far($edge, $side)], $this->layers->edges[$edge][3]];
+                    $leftEnds[] = [$this->end($position, $edge, $side), $this->layers->edges[$edge][3]];
                 }
             }
             foreach ($right as $node) {
                 foreach ($this->edges($node, $side) as $edge) {
-                    $end = $position[$this->far($edge, $side)];
+                    $end = $this->end($position, $edge, $side);
                     foreach ($leftEnds as [$leftEnd, $penalty]) {
                         $cost += $leftEnd > $end ? $penalty * $this->layers->edges[$edge][3] : 0;
                     }
@@ -117,7 +123,7 @@ final readonly class DotCrossings
         $positions = [];
         foreach ($item as $node) {
             foreach ($this->edges($node, $side) as $edge) {
-                $positions[] = $position[$this->far($edge, $side)];
+                $positions[] = $this->end($position, $edge, $side);
             }
         }
         \sort($positions);
@@ -126,22 +132,33 @@ final readonly class DotCrossings
 
         return match (true) {
             0 === $count => -1.0,
-            1 === ($count % 2) => (float) $positions[$middle],
+            1 === ($count % 2) => $positions[$middle],
             2 === $count => ($positions[0] + $positions[1]) / 2,
             default => self::weighted($positions, $middle),
         };
     }
 
     /**
+     * Where a layered edge's far end stands, seen from one side: its node's position, and as
+     * dot counts it, where across the node its port puts it.
+     *
+     * @param list<int> $position
+     */
+    private function end(array $position, int $edge, Side $side): float
+    {
+        return $position[$this->far($edge, $side)] + $this->layers->edges[$edge][Side::Above === $side ? 4 : 5];
+    }
+
+    /**
      * The median of an even number of positions, leaning to the side where they bunch.
      *
-     * @param list<int> $positions
+     * @param list<float> $positions
      */
     private static function weighted(array $positions, int $middle): float
     {
         $left = $positions[$middle - 1] - $positions[0];
         $right = $positions[\count($positions) - 1] - $positions[$middle];
-        if (0 === ($left + $right)) {
+        if (0.0 === ($left + $right)) {
             return ($positions[$middle - 1] + $positions[$middle]) / 2;
         }
 
