@@ -47,7 +47,12 @@ final readonly class Rose
         $back = $style->color('BackGroundColor', '#e2e2f0');
 
         return match ($participant->type) {
-            'actor', 'boundary', 'control', 'entity', 'database' => new ParticipantIcon(new Icon($participant->type, $pen, $back), RoseText::of($lines, $style, [0.0, 3.0, 0.0, 3.0]), $head),
+            'actor', 'boundary', 'control', 'entity', 'database' => new ParticipantIcon(new Icon($participant->type, $pen, $back, $style->number('Shadowing')), RoseText::of($lines, $style, [
+                0.0,
+                3.0,
+                0.0,
+                3.0,
+            ]), $head),
             'queue' => new ParticipantQueue(RoseText::of($lines, $style, [0.0, 3.0, 0.0, 3.0]), $pen, $back),
             default => new ParticipantBox(
                 RoseText::of($lines, $style, $style->sides('Padding')),
@@ -57,6 +62,7 @@ final readonly class Rose
                 $style->sides('Margin'),
                 $style->number('MinimumWidth'),
                 'collections' === $participant->type ? 4.0 : 0.0,
+                $style->number('Shadowing'),
             ),
         };
     }

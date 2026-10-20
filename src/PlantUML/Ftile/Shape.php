@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Ftile;
 
 use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 
 /** Marks drawn as one of PlantUML's shapes, with the box it spans and whether compression skips it across or down. */
 final readonly class Shape
@@ -39,6 +40,38 @@ final readonly class Shape
         }
 
         return new self($kind, $marks, [] === $xs ? 0.0 : \min($xs), [] === $ys ? 0.0 : \min($ys), [] === $xs ? 0.0 : \max($xs), [] === $ys ? 0.0 : \max($ys), $ignoreX, anchor: $anchor);
+    }
+
+    /**
+     * A shape with its shadow, as PlantUML casts one when a style's `Shadowing` is set: a
+     * darkened copy of its filled outlines, its distance down and right, which compression passes over,
+     * and the room PlantUML's limit finder gives it, twice that distance past the shape.
+     *
+     * @return list<self> the shadow, the room it takes, then the shape
+     */
+    public static function shadowed(self $shape, float $distance): array
+    {
+        if ($distance <= 0.0) {
+            return [$shape];
+        }
+        $marks = [];
+        foreach ($shape->marks as $mark) {
+            $marks[] = new Mark(
+                MarkKind::Polygon,
+                \array_map(static fn (array $point): array => [$point[0] + $distance, $point[1] + $distance], $mark->points),
+                stroke: 'none',
+                fill: '#000000',
+                strokeWidth: 0.0,
+                fillOpacity: 0.2,
+            );
+        }
+        [$x, $y] = [$shape->maxX + (2 * $distance) - 1, $shape->maxY + (2 * $distance) - 1];
+
+        return [
+            new self(ShapeKind::Polygon, $marks, $shape->minX + $distance, $shape->minY + $distance, $shape->maxX + $distance, $shape->maxY + $distance, ignoreX: true, ignoreY: true),
+            new self(ShapeKind::Line, [], $x, $y, $x, $y),
+            $shape,
+        ];
     }
 
     /** Room taken at a point, nothing drawn. */

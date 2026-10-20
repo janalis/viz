@@ -10,6 +10,7 @@ use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
+use Janalis\Viz\PlantUML\Draw\Shadow;
 use Janalis\Viz\PlantUML\Style\Style;
 
 /**
@@ -92,7 +93,7 @@ final readonly class StateBox
     private function state(float $x, float $y, string $line, string $back, float $stroke): array
     {
         [, $nameHeight] = $this->name->size();
-        $marks = [ClassBox::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner', 25.0))];
+        $marks = Shadow::cast([ClassBox::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner', 25.0))], $this->style->number('Shadowing'));
         if (!$this->line) {
             return [...$marks, ...$this->name->marks($x, $y + (($this->height - $nameHeight) / 2), $this->width)];
         }

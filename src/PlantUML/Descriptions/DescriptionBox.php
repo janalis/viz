@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
+use Janalis\Viz\PlantUML\Draw\Shadow;
 use Janalis\Viz\PlantUML\States\StateBox;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
@@ -118,7 +119,7 @@ final readonly class DescriptionBox
             ? [$x, $y + (($this->height - $this->labelHeight()) / 2), $this->width]
             : [$x + $left, $y + $top + ('folder' === $symbol ? self::FOLDER_TITLE[1] : 0.0), $this->width - $left - $right];
 
-        return [...$outline, ...$this->label($labelLeft, $labelTop, $labelWidth)];
+        return [...Shadow::cast($outline, $this->style->number('Shadowing')), ...$this->label($labelLeft, $labelTop, $labelWidth)];
     }
 
     /** @return list<Mark> an icon above its centred name */

@@ -20,10 +20,12 @@ final readonly class Icon
         private string $kind,
         private Pen $pen,
         private string $back,
+        /** How far its shadow falls: a stick man is that much taller, as Rose sizes it. */
+        float $shadow = 0.0,
     ) {
         $thickness = $pen->width;
         [$this->width, $this->height] = match ($kind) {
-            'actor' => [26 + (2 * $thickness), 59 + (2 * $thickness)],
+            'actor' => [26 + (2 * $thickness), 59 + (2 * $thickness) + $shadow],
             'boundary' => [49.0, 32.0],
             'database' => [36.0, 46.0],
             default => [32.0, 32.0],

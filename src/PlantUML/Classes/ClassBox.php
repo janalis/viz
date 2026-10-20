@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
+use Janalis\Viz\PlantUML\Draw\Shadow;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Text\FontFace;
@@ -110,7 +111,7 @@ final readonly class ClassBox
         $line = $this->style->color('LineColor', '#181818');
         $back = ClassColors::back($this->entity->color) ?? $this->style->color('BackGroundColor', '#f1f1f1');
         $stroke = $this->style->number('LineThickness', 0.5);
-        $marks = [self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))];
+        $marks = Shadow::cast([self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))], $this->style->number('Shadowing'));
         \array_push($marks, ...$this->headerMarks($x, $y));
         $top = $y + $this->header;
         foreach ($this->compartments as [$lines, $separator, $title]) {

@@ -1,0 +1,9 @@
+@startuml
+skin rose
+class Account {
+  balance : float
+  deposit()
+}
+class Owner
+Owner --> Account
+@enduml

@@ -54,7 +54,8 @@ final class FtileBox extends AbstractFtile
         $geometry = $this->geometry();
         [$textWidth] = $this->text->size();
         [$top, $right, $bottom, $left] = $this->style->sides('Padding');
-        $canvas->add($this->outline($geometry->width - $this->shield(), $geometry->height));
+        $outline = $this->outline($geometry->width - $this->shield(), $geometry->height);
+        $canvas->add(...Shape::shadowed($outline, $this->style->number('Shadowing')));
         [$x, $y] = match (\strtolower($this->style->value('HorizontalAlignment', 'left'))) {
             'right' => [$geometry->width - $textWidth - $right, $bottom],
             'center' => [($geometry->width - $textWidth) / 2, $bottom],

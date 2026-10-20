@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Teoz\Rose;
 
+use Janalis\Viz\PlantUML\Draw\Shadow;
+
 /**
  * A participant's head or foot box, as Rose draws it: its name in a rounded box inside the
  * participant's margin, at least its minimum width, and for collections a second box behind
@@ -20,14 +22,16 @@ final readonly class ParticipantBox implements Component
         private array $margin,
         private float $minWidth = 0.0,
         private float $collection = 0.0,
+        /** How far its shadow falls, which it is that much bigger for. */
+        private float $shadow = 0.0,
     ) {}
 
     #[\Override]
     public function size(): array
     {
         return [
-            $this->boxWidth() + $this->margin[1] + $this->margin[3] + $this->collection,
-            $this->text->height() + $this->margin[0] + $this->margin[2] + 1 + $this->collection,
+            $this->boxWidth() + $this->margin[1] + $this->margin[3] + $this->collection + $this->shadow,
+            $this->text->height() + $this->margin[0] + $this->margin[2] + 1 + $this->collection + $this->shadow,
         ];
     }
 
@@ -46,7 +50,7 @@ final readonly class ParticipantBox implements Component
         }
         $marks[] = $this->pen->rectangle($x, $y, $this->boxWidth(), $this->text->height(), $this->back, $this->round);
 
-        return [...$marks, ...$this->text->marks($x + $this->text->padding[3], $y + $this->text->padding[0])];
+        return [...Shadow::cast($marks, $this->shadow), ...$this->text->marks($x + $this->text->padding[3], $y + $this->text->padding[0])];
     }
 
     /** The box's width: its text's, at least the minimum, with its padding. */

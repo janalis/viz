@@ -38,12 +38,13 @@ final class FtileCircle extends AbstractFtile
         $line = $this->style->color('LineColor', '#222222');
         $back = $this->style->color('BackGroundColor', '#222222');
         $pen = Pen::of($this->style, '#222222');
+        $shadow = $this->style->number('Shadowing');
         match ($this->kind) {
-            'start' => $canvas->add(Shape::of(ShapeKind::Ellipse, [$pen->ellipse(0.0, 0.0, 20.0, 20.0, $back)])),
-            'stop' => $canvas->add(
-                Shape::of(ShapeKind::Ellipse, [$pen->ellipse(0.0, 0.0, 22.0, 22.0, 'none')]),
+            'start' => $canvas->add(...Shape::shadowed(Shape::of(ShapeKind::Ellipse, [$pen->ellipse(0.0, 0.0, 20.0, 20.0, $back)]), $shadow)),
+            'stop' => $canvas->add(...[
+                ...Shape::shadowed(Shape::of(ShapeKind::Ellipse, [$pen->ellipse(0.0, 0.0, 22.0, 22.0, 'none')]), $shadow),
                 Shape::of(ShapeKind::Ellipse, [$pen->withWidth(1.0)->withDashes(null)->ellipse(5.0, 5.0, 12.0, 12.0, $back)]),
-            ),
+            ]),
             'end' => $this->cross($canvas, $pen, $line),
             default => $this->connector($canvas, $pen),
         };

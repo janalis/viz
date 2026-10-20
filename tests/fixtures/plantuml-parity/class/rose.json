@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 137,
+    "height": 217,
+    "words": [
+        ":",
+        "Account",
+        "Owner",
+        "balance",
+        "deposit()",
+        "float"
+    ],
+    "baselines": [
+        [
+            ":",
+            164.535
+        ],
+        [
+            "Account",
+            136.291
+        ],
+        [
+            "Owner",
+            28.291
+        ],
+        [
+            "balance",
+            164.535
+        ],
+        [
+            "deposit()",
+            189.023
+        ],
+        [
+            "float",
+            164.535
+        ]
+    ]
+}
