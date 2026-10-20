@@ -55,6 +55,9 @@ final readonly class DescriptionBox
      */
     private const array ICONS = ['actor' => [28.0, 60.0], 'boundary' => [30.0, 22.0], 'control' => [22.0, 22.0], 'entity' => [22.0, 22.0], 'interface' => [18.0, 18.0], 'circle' => [18.0, 18.0]];
 
+    /** How wide PlantUML's default font sets a text, for the bundled font's width. */
+    private const float PLANTUML_WIDTH = 0.8;
+
     /** The room a folder keeps for its title, which an element does not show. */
     private const array FOLDER_TITLE = [40.0, 15.0];
 
@@ -77,10 +80,7 @@ final readonly class DescriptionBox
         $labelWidth = \max($textWidth, $stereoWidth);
         $labelHeight = $textHeight + $stereoHeight;
         [$width, $height] = match (true) {
-            // PlantUML fits the smallest ellipse of the text's aspect around it, so its height grows
-            // with the text's width; the bundled font is wider than PlantUML's, so the height is
-            // taken from the text's height alone, which keeps it as tall as PlantUML's.
-            'usecase' === $element->symbol => [($labelWidth * \M_SQRT2) + 20, ($labelHeight * \M_SQRT2) + 10],
+            'usecase' === $element->symbol => [($labelWidth * \M_SQRT2) + 20, self::useCaseHeight($labelWidth, $labelHeight)],
             // As PlantUML, an interface's node is its circle alone, its name hanging below it.
             \in_array($element->symbol, ['interface', 'circle'], strict: true) => self::ICONS[$element->symbol],
             \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight],
@@ -144,6 +144,24 @@ final readonly class DescriptionBox
         $top = $y + $iconHeight + self::gap($symbol);
 
         return [...$marks, ...$this->label($x, $top, $this->width)];
+    }
+
+    /**
+     * A use case's height, as PlantUML fits its ellipse: the smallest around its text, as flat
+     * as the text but between a fifth and four fifths as tall as wide, 6 bigger. A text no
+     * wider than five times its height gives the height √2 times its own; a wider one, a
+     * height that grows with its width — taken as PlantUML's font would set it, 0.8 of the
+     * bundled font's, as it measures on PlantUML's own drawings.
+     */
+    private static function useCaseHeight(float $width, float $height): float
+    {
+        $width *= self::PLANTUML_WIDTH;
+        if (0.0 === $width) {
+            return 6.0;
+        }
+        $aspect = \min(0.8, \max(0.2, $height / $width));
+
+        return ($aspect * \hypot($width, $height / $aspect)) + 6;
     }
 
     /** How far an icon's name stands below it: 8 under an interface's circle, outside its node, right under the others. */

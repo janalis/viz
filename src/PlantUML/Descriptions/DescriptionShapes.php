@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Descriptions;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
+use Janalis\Viz\PlantUML\Draw\JavaRandom;
 
 /** The outlines of PlantUML's boxed symbols, in points: each its own shape around a box. */
 final readonly class DescriptionShapes
@@ -36,7 +37,7 @@ final readonly class DescriptionShapes
                 'hexagon', 'action', 'process' => [$pen->polygon(self::pointed($symbol, $x, $y, $width, $height))],
                 'database' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke),
                 'queue' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke, across: 1),
-                'cloud' => [$pen->polygon(self::cloud($x, $y, $width, $height))],
+                'cloud' => self::cloud($pen, $x, $y, $width, $height),
                 'storage' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 50.0)],
                 'person' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 20.0)],
                 'card' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 0.0)],
@@ -174,16 +175,138 @@ final readonly class DescriptionShapes
         return [new Mark(MarkKind::Polygon, $body, stroke: $line, fill: $back, strokeWidth: $stroke), new Mark(MarkKind::Polyline, $side, stroke: $line, strokeWidth: $stroke)];
     }
 
-    /** @return list<array{float, float}> a cloud: bumps around a box */
-    private static function cloud(float $x, float $y, float $width, float $height): array
+    /**
+     * A cloud as PlantUML draws it: bubbles along a box 8 in from its sides, a few more on
+     * longer sides, each a curve bulging out, the whole jittered by Java's random numbers
+     * seeded with its size — and the room its curves' handles reach, which PlantUML counts.
+     *
+     * @return list<Mark>
+     */
+    private static function cloud(self $pen, float $x, float $y, float $width, float $height): array
+    {
+        $random = new JavaRandom((int) $width + (7919 * (int) $height));
+        $points = self::cloudPoints($random, $width, $height);
+        $outline = [[$x + $points[0][0], $y + $points[0][1]]];
+        $handles = [];
+        for ($i = 0, $count = \count($points); $i < ($count - 1); ++$i) {
+            $length = self::distance($points[$i], $points[$i + 1]);
+            $share = self::between($random, 0.25, 0.35);
+            $first = self::along($points[$i], $points[$i + 1], $length * $share, -$length * self::between($random, 0.4, 0.55));
+            $second = self::along($points[$i], $points[$i + 1], $length * (1 - $share), -$length * self::between($random, 0.4, 0.55));
+            \array_push($handles, $first, $second);
+            \array_push($outline, ...self::curve($x, $y, $points[$i], $first, $second, $points[$i + 1]));
+        }
+        $xs = \array_column($handles, 0);
+        $ys = \array_column($handles, 1);
+
+        return [
+            $pen->polygon($outline),
+            new Mark(MarkKind::Polyline, [[$x + \min($xs), $y + \min($ys)], [$x + \max($xs), $y + \max($ys)]], stroke: 'none', strokeWidth: 0.0),
+        ];
+    }
+
+    /**
+     * The points a cloud's curves join: bubbles along each side of a box 8 in, the sides
+     * pulled in 7 from the corners on a cloud over 100 each way, closed back to the first.
+     *
+     * @return non-empty-list<array{float, float}>
+     */
+    private static function cloudPoints(JavaRandom $random, float $width, float $height): array
+    {
+        $bubble = (\max($width, $height) / 11) > 16 ? \max($width, $height) / 16 : 11.0;
+        [$a, $b, $c, $d] = [[8.0, 8.0], [$width - 8, 8.0], [$width - 8, $height - 8], [8.0, $height - 8]];
+        $sides =
+            $width > 100 && $height > 100
+                ? [
+                    [[$a[0] + 7, $a[1]], [$b[0] - 7, $b[1]], [$b[0], $b[1] + 7]],
+                    [[$b[0], $b[1] + 7], [$c[0], $c[1] - 7], [$c[0] - 7, $c[1]]],
+                    [[$c[0] - 7, $c[1]], [$d[0] + 7, $d[1]], [$d[0], $d[1] - 7]],
+                    [[$d[0], $d[1] - 7], [$a[0], $a[1] + 7], [$a[0] + 7, $a[1]]],
+                ]
+                : [[$a, $b, null], [$b, $c, null], [$c, $d, null], [$d, $a, null]];
+        $points = [];
+        foreach ($sides as [$from, $to, $corner]) {
+            $middle = self::along($from, $to, self::distance($from, $to) / 2, -self::between($random, 1, 1 + \min(12, $bubble * 0.8)));
+            self::bubbles($random, $points, $from, $middle, $bubble);
+            self::bubbles($random, $points, $middle, $to, $bubble);
+            if (null !== $corner) {
+                $points[] = $corner;
+            }
+        }
+        $points[] = $points[0] ?? [8.0, 8.0];
+
+        return $points;
+    }
+
+    /**
+     * A cubic curve's points, eight steps from its start, moved to a point.
+     *
+     * @param array{float, float} $start
+     * @param array{float, float} $first
+     * @param array{float, float} $second
+     * @param array{float, float} $end
+     * @return list<array{float, float}>
+     */
+    private static function curve(float $x, float $y, array $start, array $first, array $second, array $end): array
     {
         $points = [];
-        for ($step = 0; $step < 72; ++$step) {
-            $angle = (2 * \M_PI * $step) / 72;
-            $bump = 1 + (0.06 * \abs(\sin($angle * 6)));
-            $points[] = [$x + ($width / 2) + ((($width / 2) * $bump * \cos($angle)) / 1.06), $y + ($height / 2) + ((($height / 2) * $bump * \sin($angle)) / 1.06)];
+        for ($step = 1; $step <= 8; ++$step) {
+            $t = $step / 8;
+            $u = 1 - $t;
+            [$k0, $k1, $k2, $k3] = [$u * $u * $u, 3 * $u * $u * $t, 3 * $u * $t * $t, $t * $t * $t];
+            $points[] = [$x + ($k0 * $start[0]) + ($k1 * $first[0]) + ($k2 * $second[0]) + ($k3 * $end[0]), $y + ($k0 * $start[1]) + ($k1 * $first[1]) + ($k2 * $second[1]) + ($k3 * $end[1])];
         }
 
         return $points;
+    }
+
+    /**
+     * Points every bubble's length along a stretch, each jittered by up to a fifth of it.
+     *
+     * @param list<array{float, float}> $points
+     * @param array{float, float} $from
+     * @param array{float, float} $to
+     */
+    private static function bubbles(JavaRandom $random, array &$points, array $from, array $to, float $size): void
+    {
+        $length = self::distance($from, $to);
+        $count = (int) ($length / $size);
+        if (0 === $count) {
+            $size = $length / 2;
+            $count = (int) ($length / $size);
+        }
+        for ($i = 0; $i < $count; ++$i) {
+            [$px, $py] = self::along($from, $to, ($i * $length) / $count, 0.0);
+            $points[] = [$px + ($size * 0.2 * $random->nextDouble()), $py + ($size * 0.2 * $random->nextDouble())];
+        }
+    }
+
+    /**
+     * A point a distance along a stretch and a distance across it, to its left going along.
+     *
+     * @param array{float, float} $from
+     * @param array{float, float} $to
+     * @return array{float, float}
+     */
+    private static function along(array $from, array $to, float $a, float $b): array
+    {
+        $length = \max(1e-9, self::distance($from, $to));
+        [$ux, $uy] = [($to[0] - $from[0]) / $length, ($to[1] - $from[1]) / $length];
+
+        return [$from[0] + ($a * $ux) - ($b * $uy), $from[1] + ($a * $uy) + ($b * $ux)];
+    }
+
+    /**
+     * @param array{float, float} $a
+     * @param array{float, float} $b
+     */
+    private static function distance(array $a, array $b): float
+    {
+        return \hypot($b[0] - $a[0], $b[1] - $a[1]);
+    }
+
+    private static function between(JavaRandom $random, float $low, float $high): float
+    {
+        return ($random->nextDouble() * ($high - $low)) + $low;
     }
 }

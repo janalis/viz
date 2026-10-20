@@ -105,6 +105,6 @@ The grades at 0.2.0, on 90 self-authored fixtures:
 | Sequence | 16 | 16 | 16 | 16 | 16 |
 | Class | 16 | 16 | 16 | 16 | 16 |
 | State | 16 | 16 | 16 | 15 | 15 |
-| Description | 16 | 16 | 16 | 13 | 12 |
+| Description | 16 | 16 | 16 | 16 | 16 |
 
 Text is set a line apart as PlantUML measures its default font, whichever font draws it. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can differ from `dot`'s.

@@ -19,6 +19,21 @@ use PHPUnit\Framework\TestCase;
 
 final class DescriptionDrawingTest extends TestCase
 {
+    public function testABigCloudAndAnEmptyUseCaseTakeTheirShapes(): void
+    {
+        // A cloud over 100 each way pulls its sides in from its corners; it takes the room its curves' handles reach.
+        $cloud = DescriptionBox::of(new DescriptionElement('C', ['A cloud with a long name', 'over', 'several', 'lines', 'of text'], 'cloud'), StyleSheet::skin());
+        $this->assertGreaterThan(100.0, $cloud->width);
+        $this->assertGreaterThan(100.0, $cloud->height);
+        $points = \array_merge(...\array_map(static fn (Mark $mark): array => $mark->points, $cloud->marks(0.0, 0.0)));
+        $this->assertGreaterThan($cloud->height, \max(\array_column($points, 1)));
+        // A cloud too small for a bubble a side spreads two along each half side.
+        $small = DescriptionBox::of(new DescriptionElement('S', [''], 'cloud'), StyleSheet::skin());
+        $this->assertNotEmpty($small->marks(0.0, 0.0)[0]->points);
+        // A use case with no text is its ellipse's 6 alone.
+        $this->assertSame(6.0, DescriptionBox::of(new DescriptionElement('U', [''], 'usecase'), StyleSheet::skin())->height);
+    }
+
     public function testEverySymbolHasItsShapeAndMargins(): void
     {
         foreach (DescriptionReader::SYMBOLS as $symbol) {
