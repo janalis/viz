@@ -237,6 +237,29 @@ final class DotDrawingTest extends TestCase
         $this->assertArrayHasKey('everywhere taken', $crowded, 'with no corner clear, the first');
     }
 
+    public function testCompoundEdgesClipAtTheirClustersAndClipCanBeTurnedOff(): void
+    {
+        $source = 'digraph { %s subgraph cluster_a { a } subgraph cluster_b { b; c } a -> b [lhead=%s, ltail=cluster_a, arrowhead=none]; }';
+        $ends = static function (string $graph, string $lhead) use ($source): array {
+            $points = self::kinds(self::draw(\sprintf($source, $graph, $lhead)), MarkKind::Polyline)[0]->points;
+
+            return [$points[0], $points[\count($points) - 1]];
+        };
+        [$plainStart, $plainEnd] = $ends('', lhead: 'cluster_b');
+        [$compoundStart, $compoundEnd] = $ends('compound=true;', lhead: 'cluster_b');
+
+        $this->assertLessThan($plainEnd[1], $compoundEnd[1], 'clipped at cluster b, above b');
+        $this->assertGreaterThan($plainStart[1], $compoundStart[1], 'and at cluster a, below a');
+        $this->assertEqualsWithDelta($plainEnd, $ends('compound=true;', lhead: 'nowhere')[1], 0.01, 'no cluster by the name');
+        $inside = self::kinds(self::draw('digraph { compound=true; subgraph cluster_b { a -> b [lhead=cluster_b, arrowhead=none] } }'), MarkKind::Polyline)[0]->points;
+        $this->assertGreaterThan(0.0, $inside[\count($inside) - 1][1], 'the tail inside the cluster: the node clips');
+
+        $drawing = self::draw('digraph { a -> b [headclip=false, tailclip=false, arrowhead=none]; }');
+        [$line] = self::kinds($drawing, MarkKind::Polyline);
+        $a = self::kinds($drawing, MarkKind::Polygon)[0];
+        $this->assertEqualsWithDelta((\min(\array_column($a->points, 1)) + \max(\array_column($a->points, 1))) / 2, $line->points[0][1], 0.01, 'from the centre of a');
+    }
+
     /** @return array<string, Mark> */
     private static function byText(Drawing $drawing): array
     {

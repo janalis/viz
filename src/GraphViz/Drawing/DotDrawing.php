@@ -472,10 +472,43 @@ final class DotDrawing
      */
     private function clip(array $points, DotEdge $edge, GraphNode $tail, GraphNode $head): array
     {
-        $points = $this->cut($points, $edge->tail, $tail, $this->anchor($edge->tail, $edge->attribute('tailport'))[1]);
-        $points = \array_reverse($this->cut(\array_reverse($points), $edge->head, $head, $this->anchor($edge->head, $edge->attribute('headport'))[1]));
+        if ('false' !== \strtolower($edge->attribute('tailclip'))) {
+            $points = $this->cut($points, $edge->tail, $tail, $this->compound($edge->attribute('ltail'), $head) ?? $this->anchor($edge->tail, $edge->attribute('tailport'))[1]);
+        }
+        if ('false' !== \strtolower($edge->attribute('headclip'))) {
+            $points = \array_reverse($this->cut(
+                \array_reverse($points),
+                $edge->head,
+                $head,
+                $this->compound($edge->attribute('lhead'), $tail) ?? $this->anchor($edge->head, $edge->attribute('headport'))[1],
+            ));
+        }
 
         return \count($points) >= 2 ? $points : [$points[0] ?? [$tail->x, $tail->y], $points[0] ?? [$head->x, $head->y]];
+    }
+
+    /**
+     * The box of the cluster an edge's `lhead` or `ltail` names, which it is clipped at, as dot
+     * does in a `compound` graph; null when the graph is not compound, no cluster has the name,
+     * or the edge's other end stands inside it.
+     *
+     * @return ?array{float, float, float, float}
+     */
+    private function compound(string $cluster, GraphNode $other): ?array
+    {
+        if ('true' !== \strtolower($this->graph->attribute('compound')) || '' === $cluster) {
+            return null;
+        }
+        foreach ($this->placement->graph->clusters as $box) {
+            if ($box->name !== $cluster) {
+                continue;
+            }
+            $inside = $other->x > $box->x0 && $other->x < $box->x1 && $other->y > $box->y0 && $other->y < $box->y1;
+
+            return $inside ? null : [$box->x0, $box->y0, $box->x1, $box->y1];
+        }
+
+        return null;
     }
 
     /**

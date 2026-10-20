@@ -57,6 +57,8 @@ Head and tail labels (`headlabel`, `taillabel`) are drawn in their `labelfontsiz
 - **Explicit:** when `labelangle` or `labeldistance` is set, as documented: 10 points × `labeldistance` from the end, turned `labelangle` degrees counter-clockwise from the edge's direction there.
 - **Default:** otherwise, as `dot` places them: beside the end, to the right of the way the edge runs, half the label clear of it.
 
+In a `compound` graph, an edge's `lhead` or `ltail` clips it at the named cluster's box, as documented, unless its other end stands inside that cluster. `headclip=false` and `tailclip=false` run an end to its node's centre.
+
 External labels (`xlabel`) stand off a corner of their node, or of their edge's middle: above and left, else the first corner clear of the nodes and labels drawn so far. The drawing grows to hold labels drawn outside the layout.
 
 HTML labels are drawn natively on nodes, edges, clusters and the graph, as the attribute docs describe them:
