@@ -1,0 +1,7 @@
+@startuml
+actor :Human:
+actor/ Business
+(Use) as U
+Human --> U
+Business --> U
+@enduml

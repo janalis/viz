@@ -1,0 +1,8 @@
+@startuml
+start
+:Blue step; <<#lightblue>>
+:Plain step;
+-[#red]->
+:Red arrow above;
+stop
+@enduml

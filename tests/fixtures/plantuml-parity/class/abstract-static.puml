@@ -1,0 +1,8 @@
+@startuml
+abstract class Base {
+  {abstract} run()
+  {static} count : int
+}
+class Impl
+Base <|-- Impl
+@enduml

@@ -1,0 +1,5 @@
+@startuml
+[*] --> Prêt
+Prêt --> Terminé : fini
+Terminé --> [*]
+@enduml

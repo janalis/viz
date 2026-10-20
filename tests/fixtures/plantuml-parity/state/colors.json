@@ -1,0 +1,19 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 73,
+    "height": 342,
+    "words": [
+        "Cold",
+        "Hot"
+    ],
+    "baselines": [
+        [
+            "Cold",
+            214.535
+        ],
+        [
+            "Hot",
+            104.535
+        ]
+    ]
+}

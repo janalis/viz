@@ -1,0 +1,8 @@
+@startuml
+A ->> B : async
+A -\\ B : half
+A ->x B : lost
+A <-> B : both
+A -[#red]> B : red
+A --> B : dashed
+@enduml

@@ -1,0 +1,6 @@
+@startuml
+state "A state with a fairly long name" as Long
+[*] --> Long
+Long --> Short
+Short --> [*]
+@enduml

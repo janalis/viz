@@ -1,0 +1,7 @@
+@startuml
+class Café {
+  größe : int
+}
+class Crème
+Café --> Crème : mélange
+@enduml

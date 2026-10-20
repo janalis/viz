@@ -1,0 +1,8 @@
+@startuml
+state c <<choice>>
+[*] --> Try
+Try --> c
+c --> Try : [retry]
+c --> Done : [ok]
+Done --> [*]
+@enduml

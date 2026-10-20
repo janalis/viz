@@ -1,0 +1,6 @@
+@startuml
+participant A #lightblue
+participant B #pink
+A -> B : hi
+note right of B #yellow : coloured
+@enduml

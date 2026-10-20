@@ -1,0 +1,7 @@
+@startuml
+state Hot #pink
+state Cold #lightblue
+[*] --> Hot
+Hot --> Cold
+Cold --> [*]
+@enduml

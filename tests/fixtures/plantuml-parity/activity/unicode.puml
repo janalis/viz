@@ -1,0 +1,7 @@
+@startuml
+start
+:Café crème;
+:Größe prüfen;
+:日本語のテキスト;
+stop
+@enduml

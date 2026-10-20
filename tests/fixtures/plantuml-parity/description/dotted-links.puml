@@ -1,0 +1,5 @@
+@startuml
+[A] ..> [B] : uses
+[B] -- [C]
+[C] --> [D]
+@enduml

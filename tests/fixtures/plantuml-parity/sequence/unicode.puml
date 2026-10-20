@@ -1,0 +1,6 @@
+@startuml
+participant "Café" as C
+participant "Größe" as G
+C -> G : prüfen
+G --> C : 日本語
+@enduml

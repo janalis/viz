@@ -1,0 +1,5 @@
+@startuml
+[Red] #pink
+[Blue] #lightblue
+[Red] --> [Blue]
+@enduml

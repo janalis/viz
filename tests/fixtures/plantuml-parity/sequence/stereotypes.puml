@@ -1,0 +1,5 @@
+@startuml
+participant API <<REST>>
+participant DB <<SQL>>
+API -> DB : query
+@enduml

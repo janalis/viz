@@ -1,0 +1,4 @@
+@startuml
+[Café] --> [Crème]
+[Crème] --> [Größe]
+@enduml

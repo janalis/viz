@@ -1,0 +1,15 @@
+@startuml
+start
+if (A?) then (1)
+  :one;
+elseif (B?) then (2)
+  :two;
+elseif (C?) then (3)
+  :three;
+elseif (D?) then (4)
+  :four;
+else (none)
+  :zero;
+endif
+stop
+@enduml

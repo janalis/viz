@@ -1,0 +1,7 @@
+@startuml
+start
+:**bold** and //italic//
+and ""mono"" text;
+:<color:red>red</color> word;
+stop
+@enduml
