@@ -138,6 +138,14 @@ final class DotLayoutInputTest extends TestCase
         }
     }
 
+    public function testNodesNamedByNumbersKeepTheirNames(): void
+    {
+        $input = self::input('digraph { 1 -> 2; subgraph cluster_0 { 3 } }');
+
+        $this->assertSame(['1', '2', '3'], \array_map(static fn ($node): string => $node->id, $input->nodes), 'a name, not the number PHP makes of it as a key');
+        $this->assertSame(['1', '2'], [$input->edges[0]->from, $input->edges[0]->to]);
+    }
+
     private static function input(string $source): LayoutGraph
     {
         return DotLayoutInput::from(Work::run(new DotParser()->parse($source)));

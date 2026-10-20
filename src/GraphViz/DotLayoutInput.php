@@ -50,7 +50,9 @@ final class DotLayoutInput
         $claimed = [];
         self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf, $titles);
         $order = 0;
-        foreach ($graph->nodes as $name => $node) {
+        foreach ($graph->nodes as $node) {
+            // The node's own name: its key in the list is a number where the name is one.
+            $name = $node->name;
             $width = self::inches($node->attribute('width'), 0.75);
             $height = self::inches($node->attribute('height'), 0.5);
             // A point takes no label: it is a dot as wide as the smaller of its sizes, 0.05in by default.
