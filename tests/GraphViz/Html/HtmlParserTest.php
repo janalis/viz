@@ -7,6 +7,7 @@ namespace Janalis\Viz\Tests\GraphViz\Html;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\GraphViz\DotImage;
 use Janalis\Viz\GraphViz\Drawing\DotLabel;
 use Janalis\Viz\GraphViz\Drawing\Justify;
 use Janalis\Viz\GraphViz\Html\HtmlFont;
@@ -210,7 +211,8 @@ final class HtmlParserTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refusals(): iterable
     {
-        yield 'image' => ['<TABLE><TR><TD><IMG SRC="x.png"/></TD></TR></TABLE>', 'images in HTML labels'];
+        yield 'image not read' => ['<TABLE><TR><TD><IMG SRC="x.png"/></TD></TR></TABLE>', 'images in HTML labels it may not read'];
+        yield 'image in text' => ['<B><IMG SRC="x.png"/></B>', 'images in HTML labels'];
         yield 'unknown element' => ['<BLINK>a</BLINK>', 'this HTML label'];
         yield 'unclosed' => ['<B>a', 'this HTML label'];
         yield 'mismatched' => ['<B>a</I>', 'this HTML label'];
@@ -244,6 +246,22 @@ final class HtmlParserTest extends TestCase
 
         $this->assertInstanceOf(HtmlText::class, self::parse('<B>not a table</B>'));
         $this->assertInstanceOf(HtmlText::class, self::parse('<B><I>text</I></B>'));
+    }
+
+    public function testACellsImageIsReadAlreadyAndStandsAlone(): void
+    {
+        $images = ['x.png' => new DotImage('bytes', 'image/png', 20.0, 10.0)];
+        $table = HtmlParser::parse('<TABLE><TR><TD> <IMG SRC="x.png"></IMG> </TD></TR></TABLE>', new HtmlFont(14.0, '#000000'), $images);
+
+        $this->assertSame(
+            [MarkKind::Image],
+            \array_values(\array_unique(
+                \array_map(static fn (Mark $mark): MarkKind => $mark->kind, \array_filter($table->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Polygon !== $mark->kind)),
+                \SORT_REGULAR,
+            )),
+        );
+        $this->expectExceptionMessage('this HTML label');
+        HtmlParser::parse('<TABLE><TR><TD><IMG SRC="x.png"/> and text</TD></TR></TABLE>', new HtmlFont(14.0, '#000000'), $images);
     }
 
     private static function parse(string $html): DotLabel

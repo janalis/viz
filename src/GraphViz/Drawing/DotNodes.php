@@ -21,14 +21,14 @@ final class DotNodes
 {
     public static function text(DotGraph $graph, DotNode $node): DotLabel
     {
-        return self::label($node, '\\N', ['N' => $node->name, 'G' => $graph->name, 'L' => '']);
+        return self::label($node, '\\N', ['N' => $node->name, 'G' => $graph->name, 'L' => ''], images: $graph->images);
     }
 
     public static function edgeText(DotGraph $graph, DotEdge $edge): DotLabel
     {
         $operator = $graph->directed ? '->' : '--';
 
-        return self::label($edge, '', ['E' => $edge->tail.$operator.$edge->head, 'T' => $edge->tail, 'H' => $edge->head, 'G' => $graph->name, 'L' => '']);
+        return self::label($edge, '', ['E' => $edge->tail.$operator.$edge->head, 'T' => $edge->tail, 'H' => $edge->head, 'G' => $graph->name, 'L' => ''], images: $graph->images);
     }
 
     public static function clusterText(DotSubgraph $cluster): DotLabel
@@ -38,7 +38,7 @@ final class DotNodes
 
     public static function graphText(DotGraph $graph): DotLabel
     {
-        return self::label($graph, '', ['G' => $graph->name, 'L' => '']);
+        return self::label($graph, '', ['G' => $graph->name, 'L' => ''], images: $graph->images);
     }
 
     /** An edge's `headlabel` or `taillabel`, in its `labelfont*` font, or its own where none is set: HTML too. */
@@ -56,6 +56,7 @@ final class DotNodes
                 $edge->attribute('labelfontname', $edge->attribute('fontname')),
                 $edge->attribute('labelfontcolor', $edge->attribute('fontcolor')),
             ],
+            $graph->images,
         );
     }
 
@@ -66,7 +67,7 @@ final class DotNodes
             ? ['N' => $object->name, 'G' => $graph->name, 'L' => '']
             : ['T' => $object->tail, 'H' => $object->head, 'G' => $graph->name, 'L' => ''];
 
-        return self::label($object, '', $names, 'xlabel');
+        return self::label($object, '', $names, 'xlabel', images: $graph->images);
     }
 
     /** A record node's fields, null for any other node or a label that is not a record's. */
@@ -107,8 +108,11 @@ final class DotNodes
         $marginX = self::number($margins[0], 0.11) * DotLayoutInput::POINTS;
         $marginY = self::number($margins[1] ?? $margins[0], 0.055) * DotLayoutInput::POINTS;
         $growth = \in_array($shape, DotShape::BARE, strict: true) ? 1.0 : DotShape::growth($shape);
-        $width = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, ($width + (2 * $marginX)) * $growth);
-        $height = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, ($height + (2 * $marginY)) * $growth);
+        // An image needs its own size and a point either side, as dot measures it, its label laid over it.
+        $image = $graph->images[$node->attribute('image')] ?? null;
+        [$imageWidth, $imageHeight] = null === $image ? [0.0, 0.0] : [$image->width + 2, $image->height + 2];
+        $width = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, \max($width + (2 * $marginX), $imageWidth) * $growth);
+        $height = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, \max($height + (2 * $marginY), $imageHeight) * $growth);
         if (DotShape::round($shape) || 'true' === \strtolower($node->attribute('regular'))) {
             $width = \max($width, $height);
             $height = $width;
@@ -146,8 +150,9 @@ final class DotNodes
      *
      * @param array<string, string> $names
      * @param ?array{string, string, string} $font its size, face and colour, where not the object's own
+     * @param array<string, \Janalis\Viz\GraphViz\DotImage> $images the images an HTML label's `<IMG>` may name, read already
      */
-    private static function label(DotNode|DotEdge|DotSubgraph|DotGraph $object, string $default, array $names, string $attribute = 'label', ?array $font = null): DotLabel
+    private static function label(DotNode|DotEdge|DotSubgraph|DotGraph $object, string $default, array $names, string $attribute = 'label', ?array $font = null, array $images = []): DotLabel
     {
         [$size, $name, $color] = $font ?? [$object->attribute('fontsize'), $object->attribute('fontname'), $object->attribute('fontcolor')];
         $size = self::fontSize($size);
@@ -157,12 +162,16 @@ final class DotNodes
         }
         $face = DotText::face($name);
 
-        return HtmlParser::parse($object->attribute($attribute), new HtmlFont(
-            $size,
-            $color,
-            \in_array($face, [FontFace::Bold, FontFace::BoldItalic], strict: true),
-            \in_array($face, [FontFace::Italic, FontFace::BoldItalic], strict: true),
-        ));
+        return HtmlParser::parse(
+            $object->attribute($attribute),
+            new HtmlFont(
+                $size,
+                $color,
+                \in_array($face, [FontFace::Bold, FontFace::BoldItalic], strict: true),
+                \in_array($face, [FontFace::Italic, FontFace::BoldItalic], strict: true),
+            ),
+            $images,
+        );
     }
 
     /** A numeric attribute's value, or a default when it is not a number. */

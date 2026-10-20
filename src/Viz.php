@@ -40,6 +40,8 @@ final readonly class Viz
         private ?string $mmdc = null,
         private ?string $workingDirectory = null,
         private Engine $engine = Engine::Auto,
+        /** @var list<string> the directories the images a DOT graph names may be read from, natively; none, and such a graph goes to `dot` */
+        private array $imageDirectories = [],
     ) {}
 
     public function renderer(SourceFormat $format): Renderer
@@ -78,7 +80,7 @@ final readonly class Viz
     {
         return match ($format) {
             SourceFormat::Mermaid => new NativeRenderer(new MermaidPipeline()),
-            SourceFormat::Dot => new NativeRenderer(new DotPipeline()),
+            SourceFormat::Dot => new NativeRenderer(new DotPipeline($this->imageDirectories)),
             SourceFormat::PlantUml => new NativeRenderer(PlantUmlPipeline::native()),
         };
     }

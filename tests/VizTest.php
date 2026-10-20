@@ -110,4 +110,17 @@ final class VizTest extends TestCase
         $viz = new Viz(dot: $this->tool->path(), workingDirectory: $this->tool->directory);
         $this->assertSame('digraph { layout=unknown; a }', $viz->render('digraph { layout=unknown; a }', SourceFormat::Dot, Format::Svg)->bytes);
     }
+
+    public function testDotImagesAreDrawnNativelyFromTheDirectoriesAllowed(): void
+    {
+        $this->tool = new FakeTool('cat');
+        $png = \imagecreatetruecolor(width: 4, height: 4);
+        \imagepng($png, $this->tool->directory.'/dot.png');
+        $source = 'digraph { a [image="dot.png"] }';
+
+        $allowed = new Viz(dot: $this->tool->path(), imageDirectories: [$this->tool->directory]);
+        $this->assertStringContainsString('<image ', $allowed->render($source, SourceFormat::Dot, Format::Svg)->bytes, 'drawn natively, the image read');
+        $none = new Viz(dot: $this->tool->path(), workingDirectory: $this->tool->directory);
+        $this->assertSame($source, $none->render($source, SourceFormat::Dot, Format::Svg)->bytes, 'none allowed, left to dot');
+    }
 }

@@ -9,7 +9,7 @@ use Janalis\Viz\Source\Unsupported;
 
 /**
  * What the native dot drawing leaves to the `dot` command: other layout engines, HTML in
- * attributes that are no labels, and images.
+ * attributes that are no labels, and `shapefile`. Images are checked by {@see DotPipeline}.
  */
 final class DotFeatureGate
 {
@@ -59,6 +59,6 @@ final class DotFeatureGate
             return 'HTML in '.\implode(', ', $outside);
         }
 
-        return '' !== ($attributes['image'] ?? '') || '' !== ($attributes['shapefile'] ?? '') ? 'images' : null;
+        return '' !== ($attributes['shapefile'] ?? '') ? 'images' : null;
     }
 }

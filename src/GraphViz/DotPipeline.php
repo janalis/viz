@@ -24,6 +24,7 @@ use Janalis\Viz\Layout\Nop\NopEngine;
 use Janalis\Viz\Layout\Osage\OsageEngine;
 use Janalis\Viz\Layout\Patchwork\PatchworkEngine;
 use Janalis\Viz\Layout\Twopi\TwopiEngine;
+use Janalis\Viz\Source\Unsupported;
 
 /**
  * DOT drawn natively: parsed as the language reads it, checked against what the native
@@ -31,6 +32,44 @@ use Janalis\Viz\Layout\Twopi\TwopiEngine;
  */
 final readonly class DotPipeline implements Pipeline
 {
+    private DotImages $allowed;
+
+    /** @param list<string> $imageDirectories where the images a graph names may be read from; none, and a graph naming one goes to dot */
+    public function __construct(array $imageDirectories = [])
+    {
+        $this->allowed = new DotImages($imageDirectories);
+    }
+
+    /**
+     * The images the graph names, a node's `image` or an HTML label's `<IMG SRC>`, read where allowed.
+     *
+     * @return array<string, DotImage>
+     * @throws Unsupported where one may not be read
+     */
+    private function images(DotGraph $graph): array
+    {
+        $names = [];
+        $objects = [$graph, ...$graph->allSubgraphs(), ...\array_values($graph->nodes), ...$graph->edges];
+        foreach ($objects as $object) {
+            if ($object instanceof DotNode && '' !== $object->attribute('image')) {
+                $names[] = $object->attribute('image');
+            }
+            foreach (\array_keys($object->html) as $attribute) {
+                $found = [];
+                \preg_match_all('~<\s*IMG\b[^>]*\bSRC\s*=\s*(?:"([^"]*)"|\'([^\']*)\')~i', $object->attribute($attribute), $found, \PREG_SET_ORDER);
+                foreach ($found as $match) {
+                    $names[] = \html_entity_decode(($match[1] ?? '').($match[2] ?? ''), \ENT_QUOTES | \ENT_HTML5, encoding: 'UTF-8');
+                }
+            }
+        }
+        $images = [];
+        foreach (\array_unique($names) as $name) {
+            $images[$name] = $this->allowed->read($name) ?? throw new Unsupported('The native DOT renderer does not draw images it may not read: '.$name);
+        }
+
+        return $images;
+    }
+
     /** The layout the graph asks for: neato by distances along edges, twopi on rings, circo on circles, fdp cluster by cluster and sfdp likewise without them, osage in grids, patchwork as a treemap, nop where the graph says, any other left here dot. */
     private static function engine(DotGraph $graph): LayoutEngine
     {
@@ -86,6 +125,7 @@ final readonly class DotPipeline implements Pipeline
         yield from $parse;
         $graph = $parse->getReturn();
         DotFeatureGate::check($graph);
+        $graph->images = $this->images($graph);
         if ('patchwork' === \strtolower($graph->attribute('layout'))) {
             // patchwork draws each node as the box it fills, where no shape is asked for.
             foreach ($graph->nodes as $node) {

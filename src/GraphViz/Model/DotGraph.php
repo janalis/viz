@@ -25,6 +25,9 @@ final class DotGraph
         public array $subgraphs = [],
     ) {}
 
+    /** @var array<string, \Janalis\Viz\GraphViz\DotImage> the images its nodes and labels name, read where the host allows, by name */
+    public array $images = [];
+
     public function attribute(string $name, string $default = ''): string
     {
         return $this->attributes[$name] ?? $default;

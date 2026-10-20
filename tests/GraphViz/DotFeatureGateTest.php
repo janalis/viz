@@ -18,7 +18,6 @@ final class DotFeatureGateTest extends TestCase
     {
         yield 'layout' => ['graph { layout=unknown }', 'the unknown layout'];
         yield 'html' => ['graph { a -- b [tooltip=<b>] }', 'HTML in tooltip'];
-        yield 'image' => ['graph { a [image="x.png"] }', 'images'];
         yield 'shapefile' => ['graph { a [shapefile="x.png"] }', 'images'];
     }
 

@@ -312,6 +312,10 @@ final class DotDrawing
                 $this->marks[] = new Mark(MarkKind::Polyline, self::offset($placed, $line), stroke: $color, strokeWidth: $penWidth);
             }
         }
+        $image = $this->graph->images[$node->attribute('image')] ?? null;
+        if (null !== $image) {
+            \array_push($this->marks, ...DotPictures::marks($image, DotEdgePaths::box($placed), $node->attribute('imagescale'), $node->attribute('imagepos')));
+        }
         $external = DotNodes::externalText($this->graph, $node);
         if (!$external->empty()) {
             // As dot, a node's external label stands off a corner of the node, its upper left where it is clear.

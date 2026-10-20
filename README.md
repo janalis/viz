@@ -37,6 +37,8 @@ An export writes the file only once the image has rendered in full, so a failed 
 
 Tool paths can be configured: `new Viz(dot: '/opt/graphviz/bin/dot', plantuml: '~/plantuml.jar', mmdc: null)`. A language is drawn natively where it can be, with its tool as the fallback; `engine: Engine::Native` or `Engine::Cli` forces one or the other.
 
+A DOT graph's images (a node's `image`, an HTML label's `<IMG>`) are drawn natively only from the directories you allow: `new Viz(imageDirectories: [__DIR__.'/images'])`. A name must resolve, links followed, to a PNG, JPEG, GIF or WebP file inside one of them; the graph's own `imagepath` is ignored. Any other image, and every image when no directory is allowed, leaves the graph to `dot`.
+
 Each renderer can also be used on its own, and each implements `Janalis\Viz\Render\Renderer`:
 
 | Class | What it is |

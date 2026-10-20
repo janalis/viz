@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\GraphViz\Html;
 
+use Janalis\Viz\GraphViz\DotImage;
 use Janalis\Viz\GraphViz\Drawing\DotColors;
 use Janalis\Viz\GraphViz\Drawing\DotLabel;
 use Janalis\Viz\GraphViz\Drawing\Justify;
@@ -12,8 +13,9 @@ use Janalis\Viz\Source\Unsupported;
 /**
  * Reads an HTML label as DOT documents it: text, its spans in `<FONT>`, `<B>`, `<I>`, `<U>`,
  * `<O>`, `<S>`, `<SUB>` and `<SUP>`, its lines ended by `<BR/>`; or a `<TABLE>` of `<TR>` rows of
- * `<TD>` cells, ruled by `<HR/>` and `<VR/>`, a cell holding text or a table. Whatever else it
- * meets — `<IMG>`, a malformed label, nesting past {@see self::MAX_DEPTH} — it leaves to `dot`.
+ * `<TD>` cells, ruled by `<HR/>` and `<VR/>`, a cell holding text, a table or an `<IMG/>` read
+ * already. Whatever else it meets — an image not read, a malformed label, nesting past
+ * {@see self::MAX_DEPTH} — it leaves to `dot`.
  */
 final class HtmlParser
 {
@@ -31,8 +33,11 @@ final class HtmlParser
     private int $at = 0;
     private int $area = 0;
 
-    private function __construct(string $source)
-    {
+    /** @param array<string, DotImage> $images the images `<IMG SRC>` may name, read already */
+    private function __construct(
+        string $source,
+        private readonly array $images = [],
+    ) {
         $matches = [];
         \preg_match_all(self::PATTERN, $source, $matches, \PREG_SET_ORDER);
         foreach ($matches as $match) {
@@ -42,9 +47,13 @@ final class HtmlParser
     }
 
     /** @throws Unsupported when the label holds what the native drawing leaves to `dot` */
-    public static function parse(string $source, HtmlFont $font): DotLabel
+    /**
+     * @param array<string, DotImage> $images the images `<IMG SRC>` may name, read already
+     * @throws Unsupported when the label holds what the native drawing leaves to `dot`
+     */
+    public static function parse(string $source, HtmlFont $font, array $images = []): DotLabel
     {
-        $parser = new self($source);
+        $parser = new self($source, $images);
         $label = $parser->label($font, closing: null, depth: 0);
         if ($parser->at < \count($parser->tokens)) {
             throw self::malformed();
@@ -195,8 +204,8 @@ final class HtmlParser
                 $this->skip('vr');
                 continue;
             }
-            $content = $this->label($font, 'td', $depth + 1);
-            if ($content instanceof HtmlTable) {
+            $content = $this->image() ?? $this->label($font, 'td', $depth + 1);
+            if (!$content instanceof HtmlText) {
                 $this->close('td');
             }
             $rowspan = self::span($attributes['rowspan'] ?? '');
@@ -214,6 +223,25 @@ final class HtmlParser
                 $colspan,
             );
         }
+    }
+
+    /** A cell's `<IMG/>`, where it holds one and nothing more: one of the images read, else left to dot. */
+    private function image(): ?HtmlImage
+    {
+        $start = $this->at;
+        $this->blank();
+        [$kind, $name, $attributes] = $this->tokens[$this->at] ?? ['', '', []];
+        if ('img' !== $name || 'close' === $kind) {
+            $this->at = $start;
+
+            return null;
+        }
+        ++$this->at;
+        $this->skip('img');
+        $this->blank();
+        $image = $this->images[$attributes['src'] ?? ''] ?? throw new Unsupported('The native DOT renderer does not draw images in HTML labels it may not read');
+
+        return new HtmlImage($image);
     }
 
     /** Steps past text that is only white space. */
