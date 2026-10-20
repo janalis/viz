@@ -110,6 +110,9 @@ final class StateDrawingTest extends TestCase
             $this->assertContains($text, $texts);
         }
 
+        // A cluster no transition starts or ends at has no point of its own for one to end at.
+        $this->assertContains('Kept', self::texts(self::draw("state Box {\n  state Kept\n}\nAway --> Kept")));
+
         $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw concurrent regions a transition crosses into'));
         self::draw("state Split {\n  state P\n  --\n  state Q\n}\nP --> Out");
     }

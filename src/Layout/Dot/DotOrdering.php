@@ -233,7 +233,8 @@ final class DotOrdering
                 foreach ($item as $node) {
                     $itemOf[$node] = [$rank, $index];
                 }
-                $seeds[] = [\min(\array_map(fn (int $node): int => $this->visit[$node], $item)), $rank, $index];
+                // As dot, the top level starts from its nodes in the order a depth-first search meets them; a cluster, in the order it holds them.
+                $seeds[] = [\min(\array_map(fn (int $node): int => $scope >= 0 ? $node : $this->visit[$node], $item)), $rank, $index];
             }
         }
         \usort($seeds, static fn (array $a, array $b): int => $a <=> $b);

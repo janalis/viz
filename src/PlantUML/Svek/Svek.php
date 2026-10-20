@@ -27,6 +27,9 @@ final class Svek
     /** The prefixes of the clusters svek wraps each cluster in, and holds its content in. */
     private const string OUTER = "\0p0:";
     private const string INNER = "\0p1:";
+    /** The prefixes of the two more a cluster a link starts or ends at stands in, and holds its content in. */
+    private const string AROUND = "\0a:";
+    private const string WITHIN = "\0i:";
 
     /** @var array<string, array{string, float, float, ?string}> by id, which each carries, as a numeric one would not stay a string key */
     private array $nodes = [];
@@ -34,6 +37,10 @@ final class Svek
     private array $clusters = [];
     /** @var array<string, true> the clusters `together` packs, which svek protects with no clusters of its own */
     private array $packed = [];
+    /** @var array<string, true> the clusters a link starts or ends at, which svek wraps twice more */
+    private array $linked = [];
+    /** @var array<string, true> the nodes standing in their cluster itself, not in its inner protection */
+    private array $points = [];
     /** @var list<array{string, string, int, float, float, bool}> */
     private array $edges = [];
 
@@ -46,6 +53,17 @@ final class Svek
     public function cluster(string $id, ?string $parent, float $titleWidth = 0.0, float $titleHeight = 0.0): void
     {
         $this->clusters[$id] = [$id, $parent, $titleWidth, $titleHeight];
+    }
+
+    /**
+     * The point a link to or from a cluster ends at, as svek puts one in the cluster: in it
+     * directly, outside its inner protections, which the cluster then gains two more of.
+     */
+    public function point(string $id, string $cluster): void
+    {
+        $this->nodes[$id] = [$id, 1.0, 1.0, $cluster];
+        $this->points[$id] = true;
+        $this->linked[$cluster] = true;
     }
 
     /** Nodes kept together, as `together` packs them: a cluster with no title and no protection around it. */
@@ -102,9 +120,18 @@ final class Svek
                 $clusters[] = new LayoutCluster($id, '', $holder, order: \count($clusters));
                 continue;
             }
+            // A cluster a link starts or ends at stands in one more, and holds its content in one more.
+            $linked = \array_key_exists($id, $this->linked);
+            if ($linked) {
+                $clusters[] = new LayoutCluster(self::AROUND.$id, '', $holder, order: \count($clusters));
+                $holder = self::AROUND.$id;
+            }
             $clusters[] = new LayoutCluster(self::OUTER.$id, '', $holder, order: \count($clusters));
             $clusters[] = new LayoutCluster($id, '', self::OUTER.$id, minWidth: $titleWidth, labelHeight: $titleHeight, order: \count($clusters));
-            $clusters[] = new LayoutCluster(self::INNER.$id, '', $id, order: \count($clusters));
+            if ($linked) {
+                $clusters[] = new LayoutCluster(self::WITHIN.$id, '', $id, order: \count($clusters));
+            }
+            $clusters[] = new LayoutCluster(self::INNER.$id, '', $linked ? self::WITHIN.$id : $id, order: \count($clusters));
         }
         $graph = new LayoutGraph($this->ordered(), $edges, $clusters, $direction, new Spacing($rankSeparation, $nodeSeparation, 4.0));
         $placing = new DotEngine()->place($graph);
@@ -131,7 +158,11 @@ final class Svek
                 if ($owner !== $cluster) {
                     continue;
                 }
-                $ordered[] = new LayoutNode($id, '', $width, $height, null === $owner ? null : $this->holder($owner), \count($ordered));
+                $holder = match (true) {
+                    null === $owner, \array_key_exists($id, $this->points) => $owner,
+                    default => $this->holder($owner),
+                };
+                $ordered[] = new LayoutNode($id, '', $width, $height, $holder, \count($ordered));
             }
         }
 

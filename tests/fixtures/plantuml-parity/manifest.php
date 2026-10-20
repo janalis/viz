@@ -104,7 +104,7 @@ return [
     'state/end-states' => 4,
     'state/floating-notes' => 4,
     'state/fork' => 4,
-    'state/history' => 2,
+    'state/history' => 4,
     'state/left-to-right' => 4,
     'state/multiline-description' => 4,
     'state/nested-composites' => 4,

@@ -104,9 +104,9 @@ The grades at 0.2.0, on 111 self-authored fixtures:
 | Activity | 30 | 30 | 30 | 30 | 30 |
 | Sequence | 20 | 20 | 20 | 20 | 20 |
 | Class | 21 | 21 | 21 | 21 | 21 |
-| State | 20 | 20 | 20 | 19 | 19 |
+| State | 20 | 20 | 20 | 20 | 20 |
 | Description | 20 | 20 | 20 | 20 | 20 |
 
 Shadows, which `skin rose` casts under every element, are drawn as a darkened copy of the shape rather than PlantUML's blurred one; they take the room PlantUML gives them.
 
-Text is set a line apart as PlantUML measures its default font, whichever font draws it. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can differ from `dot`'s.
+Text is set a line apart as PlantUML measures its default font, whichever font draws it. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can still differ from `dot`'s on graphs these fixtures do not cover.

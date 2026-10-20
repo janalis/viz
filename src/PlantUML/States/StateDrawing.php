@@ -74,7 +74,9 @@ final class StateDrawing
                 }
                 $svek->cluster($node->id, $cluster, ...Svek::label(...$this->title($node)->size(), ...$this->description($node)->size()));
                 // As svek, a transition to or from a composite state drawn as a cluster ends at a point inside it.
-                $svek->node(self::anchor($node->id), 1.0, 1.0, $node->id);
+                if ($this->endpoint($node->id)) {
+                    $svek->point(self::anchor($node->id), $node->id);
+                }
                 $clusters[] = $node;
                 continue;
             }
@@ -140,6 +142,18 @@ final class StateDrawing
         $images = \array_filter($members, fn (array $member): bool => \array_key_exists($member[0]->id, $this->states->composites) && $this->autarkic($member[0]->id));
 
         return [...\array_values($images), ...\array_values(\array_diff_key($members, $images))];
+    }
+
+    /** Whether a transition starts or ends at a state itself. */
+    private function endpoint(string $id): bool
+    {
+        foreach ($this->states->links as $link) {
+            if ($link->from === $id || $link->to === $id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Whether no transition joins a state inside a composite state to one outside it. */
