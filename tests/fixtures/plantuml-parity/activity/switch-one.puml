@@ -1,0 +1,8 @@
+@startuml
+start
+switch (alone?)
+case (only)
+  :the one;
+endswitch
+stop
+@enduml

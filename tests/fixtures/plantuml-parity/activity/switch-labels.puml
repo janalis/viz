@@ -1,0 +1,15 @@
+@startuml
+start
+switch (kind?)
+case (a)
+  :first;
+  -> out of a;
+case (b)
+  :second;
+  -> out of b;
+case (c)
+  :third;
+  -> out of c;
+endswitch
+stop
+@enduml

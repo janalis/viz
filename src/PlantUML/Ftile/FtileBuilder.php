@@ -14,6 +14,7 @@ use Janalis\Viz\PlantUML\Activities\Instruction\InstructionList;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionRepeat;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSimple;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSpot;
+use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSwitch;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionTerminal;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionWhile;
 use Janalis\Viz\PlantUML\Activities\LinkRendering;
@@ -65,6 +66,7 @@ final readonly class FtileBuilder
             $instruction instanceof InstructionSpot => $this->spot($instruction),
             $instruction instanceof InstructionBreak => new FtileBreak(),
             $instruction instanceof InstructionIf => $this->decision($instruction),
+            $instruction instanceof InstructionSwitch => $this->switch($instruction),
             $instruction instanceof InstructionWhile => $this->loop($instruction),
             $instruction instanceof InstructionRepeat => $this->repeat($instruction),
             $instruction instanceof InstructionFork => $this->parallel($instruction),
@@ -115,6 +117,54 @@ final readonly class FtileBuilder
         }
 
         return [] === $breaks ? $result : new FtileDecorate($result, weldings: $breaks);
+    }
+
+    /**
+     * A `switch`: each case with room for its labels in and out, between its test's diamond
+     * and the one its cases meet at, coloured by the first case's colour or the switch's.
+     *
+     * @throws Unsupported for notes on the switch itself, which PlantUML puts at its top
+     */
+    private function switch(InstructionSwitch $switch): Ftile
+    {
+        if ([] !== $switch->notes) {
+            throw new Unsupported('The native PlantUML renderer does not draw notes on a switch');
+        }
+        if ([] === $switch->cases) {
+            throw new Unsupported('The native PlantUML renderer does not draw a switch without cases');
+        }
+        $cases = \array_map($this->branch(...), $switch->cases);
+        $first = Stereogroup::back($switch->cases[0]->specialColors);
+        $diamond1 = $this->factory->diamond('inside', $first ?? Stereogroup::back($switch->stereogroup), $this->factory->test($switch->test));
+        $diamond2 = $this->factory->diamond('inside', $first ?? Stereogroup::back($switch->endColors) ?? Stereogroup::back($switch->stereogroup));
+        $positives = \array_map(fn (BranchTile $case): ?TextBlock => $this->factory->label($case->displayPositive()), $cases);
+        $specials = \array_map(static fn (BranchTile $case): ?array => $case->branch->special?->display, $cases);
+        $specials = \array_map($this->factory->label(...), $specials);
+        $tiles = [];
+        foreach ($cases as $index => $case) {
+            $tiles[] = self::labelled($case->tile, $positives[$index], $specials[$index]);
+        }
+        $tile = new FtileSwitch($tiles, $diamond1, $diamond2, $positives);
+        $result = new FtileDecorate($tile, connections: [new Arrows(new SwitchArrows($tile, $this->factory->arrow, $positives, $specials)->snakes())]);
+        $breaks = [];
+        foreach ($cases as $case) {
+            \array_push($breaks, ...$case->tile->weldings());
+        }
+
+        return [] === $breaks ? $result : new FtileDecorate($result, weldings: $breaks);
+    }
+
+    /** A case with room above it for its label in, below it for its label out, and on its right for the wider. */
+    private static function labelled(Ftile $tile, ?TextBlock $in, ?TextBlock $out): Ftile
+    {
+        [$inWidth, $inHeight] = $in?->size() ?? [0.0, 0.0];
+        [$outWidth, $outHeight] = $out?->size() ?? [0.0, 0.0];
+        $geometry = $tile->geometry();
+        $right = $geometry->width - $geometry->left;
+        $missing = \max(0.0, $inWidth - $right);
+        $missing += \max(0.0, $outWidth - $right - $missing);
+
+        return FtileMarged::horizontal(FtileMarged::vertical($tile, $inHeight, $outHeight), 0.0, $missing);
     }
 
     private function branch(Branch $branch): BranchTile

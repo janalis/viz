@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 113,
+    "height": 252,
+    "words": [
+        "alone?",
+        "one",
+        "only",
+        "the"
+    ],
+    "baselines": [
+        [
+            "alone?",
+            71.157
+        ],
+        [
+            "one",
+            133.557
+        ],
+        [
+            "only",
+            99.635
+        ],
+        [
+            "the",
+            133.557
+        ]
+    ]
+}

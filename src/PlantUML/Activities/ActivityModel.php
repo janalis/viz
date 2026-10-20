@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Activities;
 use Janalis\Viz\Model\Activity\Action;
 use Janalis\Viz\Model\Activity\ActivityDiagram;
 use Janalis\Viz\Model\Activity\Branch;
+use Janalis\Viz\Model\Activity\Choice;
 use Janalis\Viz\Model\Activity\Decision;
 use Janalis\Viz\Model\Activity\Fork;
 use Janalis\Viz\Model\Activity\Loop;
@@ -24,6 +25,7 @@ use Janalis\Viz\PlantUML\Activities\Instruction\InstructionList;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionRepeat;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSimple;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSpot;
+use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSwitch;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionTerminal;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionWhile;
 use Janalis\Viz\PlantUML\Activities\Instruction\Noted;
@@ -31,8 +33,8 @@ use Janalis\Viz\PlantUML\Activities\Instruction\Noted;
 /**
  * A native PlantUML activity diagram as the shared activity model: actions — a connector as
  * its letter — starts, stops and ends, a step ending its flow followed by a detach, decisions
- * with their branches, loops, forks and splits, groups as partitions, and notes after the step
- * they stand beside. A `break` has no shared form and is left out.
+ * with their branches, switches with their cases, loops, forks and splits, groups as
+ * partitions, and notes after the step they stand beside. A `break` has no shared form and is left out.
  */
 final class ActivityModel
 {
@@ -62,6 +64,12 @@ final class ActivityModel
             $instruction instanceof InstructionSpot => [new Action($instruction->spot)],
             $instruction instanceof InstructionTerminal => [new Terminal(TerminalKind::from($instruction->kind))],
             $instruction instanceof InstructionIf => [self::decision($instruction)],
+            $instruction instanceof InstructionSwitch => [] === $instruction->cases
+                ? []
+                : [new Choice(
+                    self::text($instruction->test),
+                    \array_map(static fn (PlantUmlBranch $case): Branch => new Branch(label: self::text($case->labelTest), steps: self::list($case->list)), $instruction->cases),
+                )],
             $instruction instanceof InstructionWhile => self::while($instruction),
             $instruction instanceof InstructionRepeat => [new Loop(
                 self::text($instruction->test),

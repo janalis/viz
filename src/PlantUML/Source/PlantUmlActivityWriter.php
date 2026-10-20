@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Source;
 use Janalis\Viz\Model\Activity\Action;
 use Janalis\Viz\Model\Activity\ActivityDiagram;
 use Janalis\Viz\Model\Activity\Branch;
+use Janalis\Viz\Model\Activity\Choice;
 use Janalis\Viz\Model\Activity\Decision;
 use Janalis\Viz\Model\Activity\Fork;
 use Janalis\Viz\Model\Activity\Loop;
@@ -49,6 +50,7 @@ final class PlantUmlActivityWriter
                 $step instanceof Terminal => [$indent.$step->kind->value],
                 $step instanceof Action => [$indent.':'.self::text($step->label).';'],
                 $step instanceof Decision => self::decision($step, $indent),
+                $step instanceof Choice => self::choice($step, $indent),
                 $step instanceof Loop => self::loop($step, $indent),
                 $step instanceof Fork => self::fork($step, $indent),
                 $step instanceof Partition => [$indent.'partition "'.self::text($step->label).'" {', ...self::steps($step->steps, $indent.'  '), $indent.'}'],
@@ -56,6 +58,19 @@ final class PlantUmlActivityWriter
                 default => [],
             });
         }
+
+        return $lines;
+    }
+
+    /** @return list<string> */
+    private static function choice(Choice $choice, string $indent): array
+    {
+        $lines = [$indent.'switch ('.self::text($choice->test).')'];
+        foreach ($choice->cases as $case) {
+            $lines[] = $indent.'case ('.self::text($case->label).')';
+            \array_push($lines, ...self::steps($case->steps, $indent.'  '));
+        }
+        $lines[] = $indent.'endswitch';
 
         return $lines;
     }

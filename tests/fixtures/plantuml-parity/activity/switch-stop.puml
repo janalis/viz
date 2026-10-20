@@ -1,0 +1,13 @@
+@startuml
+start
+switch (state?)
+case (done)
+  :finish;
+  stop
+case (empty)
+case (busy)
+  :wait;
+  :retry;
+endswitch
+:go on;
+@enduml

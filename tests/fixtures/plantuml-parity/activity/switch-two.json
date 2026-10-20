@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 172,
+    "height": 264,
+    "words": [
+        "after",
+        "left",
+        "one",
+        "right",
+        "two",
+        "which?"
+    ],
+    "baselines": [
+        [
+            "after",
+            231.689
+        ],
+        [
+            "left",
+            100.455
+        ],
+        [
+            "one",
+            143.557
+        ],
+        [
+            "right",
+            100.455
+        ],
+        [
+            "two",
+            143.557
+        ],
+        [
+            "which?",
+            71.157
+        ]
+    ]
+}

@@ -14,6 +14,7 @@ use Janalis\Viz\PlantUML\Activities\Instruction\InstructionList;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionRepeat;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSimple;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSpot;
+use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSwitch;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionTerminal;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionWhile;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
@@ -81,6 +82,9 @@ final class ActivityReader
             'CommandElseIf2', 'CommandElseIf3' => $this->elseIf($command),
             'CommandElse3' => $this->else($command),
             'CommandEndif3' => $this->endif($command),
+            'CommandSwitch' => $this->startSwitch($command),
+            'CommandCase' => $this->currentSwitch()->case(self::nonBlank($command->get('TEST')), $this->take()),
+            'CommandEndSwitch' => $this->endSwitch($command),
             'CommandWhile3' => $this->startWhile($command),
             'CommandWhileEnd3' => $this->endWhile($command),
             'CommandRepeat3' => $this->startRepeat($command),
@@ -228,6 +232,32 @@ final class ActivityReader
     private function currentIf(): InstructionIf
     {
         return $this->current instanceof InstructionIf ? $this->current : throw new PlantUmlRefusal('Cannot find if');
+    }
+
+    private function startSwitch(PlantUmlCommand $command): void
+    {
+        $switch = new InstructionSwitch($this->current, self::nonBlank($command->get('TEST')), $this->take(), $command->get('STEREOGROUP'));
+        $this->current->add($switch);
+        $this->current = $switch;
+    }
+
+    private function endSwitch(PlantUmlCommand $command): void
+    {
+        $switch = $this->currentSwitch();
+        $switch->end($this->take(), $command->get('STEREOGROUP'));
+        $this->current = $switch->parent;
+    }
+
+    /** @throws PlantUmlRefusal */
+    private function currentSwitch(): InstructionSwitch
+    {
+        return $this->current instanceof InstructionSwitch ? $this->current : throw new PlantUmlRefusal('Cannot find switch');
+    }
+
+    /** @return ?list<string> a test's or a case's lines, none when it is empty, as PlantUML takes it */
+    private static function nonBlank(?string $text): ?array
+    {
+        return null === $text || '' === $text ? null : self::lines($text);
     }
 
     private function startWhile(PlantUmlCommand $command): void

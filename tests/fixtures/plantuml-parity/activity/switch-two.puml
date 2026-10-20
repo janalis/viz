@@ -1,0 +1,10 @@
+@startuml
+start
+switch (which?)
+case (left)
+  :one;
+case (right)
+  :two;
+endswitch
+:after;
+@enduml

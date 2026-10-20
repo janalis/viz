@@ -13,8 +13,8 @@ use Janalis\Viz\Model\Graph\Shape;
 use Janalis\Viz\Model\LineStyle;
 
 /**
- * An activity as a flowchart: actions as rounded boxes, decisions and loop tests as
- * diamonds that merge again, forks as black bars, partitions as clusters, notes on a
+ * An activity as a flowchart: actions as rounded boxes, decisions, switches and loop tests
+ * as diamonds that merge again, forks as black bars, partitions as clusters, notes on a
  * dotted line. Each node is numbered in the order it is drawn.
  */
 final class ActivityLowering
@@ -52,6 +52,7 @@ final class ActivityLowering
                 $step instanceof Terminal => $this->terminal($step, $ends),
                 $step instanceof Action => [[$this->node($step->label, Shape::Rounded, $ends), '']],
                 $step instanceof Decision => $this->decision($step, $ends),
+                $step instanceof Choice => $this->choice($step, $ends),
                 $step instanceof Loop => $this->loop($step, $ends),
                 $step instanceof Fork => $this->fork($step, $ends),
                 $step instanceof Partition => $this->partition($step, $ends),
@@ -97,6 +98,21 @@ final class ActivityLowering
             \array_push($out, ...$this->flow($branch->steps, [[$from, $branch->label]]));
         }
         $out = [...$out, ...(null === $decision->otherwise ? [[$test, '']] : $this->flow($decision->otherwise->steps, [[$test, $decision->otherwise->label]]))];
+
+        return \count($out) > 1 ? [[$this->node('', Shape::Diamond, $out), '']] : $out;
+    }
+
+    /**
+     * @param list<array{string, string}> $ends
+     * @return list<array{string, string}>
+     */
+    private function choice(Choice $choice, array $ends): array
+    {
+        $test = $this->node($choice->test, Shape::Diamond, $ends);
+        $out = [];
+        foreach ($choice->cases as $case) {
+            \array_push($out, ...$this->flow($case->steps, [[$test, $case->label]]));
+        }
 
         return \count($out) > 1 ? [[$this->node('', Shape::Diamond, $out), '']] : $out;
     }

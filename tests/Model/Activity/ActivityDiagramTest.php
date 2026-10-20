@@ -6,6 +6,8 @@ namespace Janalis\Viz\Tests\Model\Activity;
 
 use Janalis\Viz\Model\Activity\Action;
 use Janalis\Viz\Model\Activity\ActivityDiagram;
+use Janalis\Viz\Model\Activity\Branch;
+use Janalis\Viz\Model\Activity\Choice;
 use Janalis\Viz\Model\Activity\Note;
 use Janalis\Viz\Model\Activity\Step;
 use Janalis\Viz\Model\Family;
@@ -51,6 +53,20 @@ final class ActivityDiagramTest extends TestCase
         $this->assertSame([$label('Store')?->id], $graph->clusters[0]->nodes);
         $this->assertSame([$label('Label')?->id], $graph->clusters[0]->clusters[0]->nodes);
         $this->assertSame('#ffffff', \array_last($graph->nodes)?->stroke, 'stop is a ringed circle');
+    }
+
+    public function testASwitchIsOneTestEachCaseLeavesAndADiamondTheyMeetAt(): void
+    {
+        $graph = new ActivityDiagram([
+            new Choice('kind?', [new Branch(label: 'a', steps: [new Action('x')]), new Branch(label: 'b')]),
+            new Action('after'),
+            new Choice('alone?', [new Branch(label: 'only', steps: [new Action('y')])]),
+        ])->graph();
+        $links = \array_map(static fn (Edge $edge): string => $edge->from.'>'.$edge->to.('' === $edge->label ? '' : ':'.$edge->label), $graph->edges);
+
+        $this->assertSame(['kind?', 'x', '', 'after', 'alone?', 'y'], \array_map(static fn (Node $node): string => $node->label, $graph->nodes));
+        $this->assertSame([Shape::Diamond, Shape::Diamond], [$graph->nodes[0]->shape, $graph->nodes[2]->shape]);
+        $this->assertSame(['n0>n1:a', 'n1>n2', 'n0>n2:b', 'n2>n3', 'n3>n4', 'n4>n5:only'], $links, 'one case alone leaves without a diamond to meet at');
     }
 
     public function testANoteWithNothingBeforeItAndAStepOfNoKnownKindStandAlone(): void

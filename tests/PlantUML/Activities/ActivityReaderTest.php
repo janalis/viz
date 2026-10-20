@@ -11,6 +11,7 @@ use Janalis\Viz\PlantUML\Activities\Instruction\InstructionIf;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionRepeat;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSimple;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSpot;
+use Janalis\Viz\PlantUML\Activities\Instruction\InstructionSwitch;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionTerminal;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionWhile;
 use Janalis\Viz\PlantUML\Activities\LinkRendering;
@@ -98,6 +99,46 @@ final class ActivityReaderTest extends TestCase
         $this->assertInstanceOf(InstructionIf::class, $third);
         // As PlantUML, the colour written before `if` is ignored: the one in `<<…>>` after it colours the diamond.
         $this->assertSame('#gold', $third->thens[0]->color);
+    }
+
+    public function testSwitchesHoldTheirCasesAndTheArrowsBetweenThem(): void
+    {
+        $root = self::read(<<<'PUML'
+            -> in;
+            #pink:switch (a?) <<#gold>>
+            case ( one )
+              :x;
+              -> out of one;
+            case ()
+              note right: beside
+            case (three)
+              :y;
+              note left: on y
+              -> out of three;
+            endswitch <<#green>>
+            switch ()
+            case (only)
+            endswitch
+            PUML)->root;
+
+        [$first, $second] = $root->all;
+        $this->assertInstanceOf(InstructionSwitch::class, $first);
+        $this->assertSame([['a?'], '<<#gold>>', '<<#green>>', ['in']], [$first->test, $first->stereogroup, $first->endColors, $first->inLink()->display]);
+        $this->assertSame([[' one '], null, ['three']], \array_map(static fn ($case): ?array => $case->labelTest, $first->cases));
+        $this->assertSame([' one '], $first->cases[0]->labelPositive->display);
+        $this->assertEquals(new LinkRendering(display: ['out of one']), $first->cases[0]->special);
+        $this->assertEquals(new LinkRendering(display: ['out of three']), $first->cases[2]->special);
+        $this->assertSame('<<#green>>', $first->cases[2]->specialColors);
+        $this->assertCount(1, $first->notes, 'as PlantUML, a note in an empty case is the switch\'s');
+        $this->assertSame([['on y']], \array_map(static fn ($note): array => $note->text, $first->cases[2]->list->all[0]->notes));
+        $this->assertFalse($first->containsBreak());
+        $this->assertInstanceOf(InstructionSimple::class, $first->last());
+        $this->assertInstanceOf(InstructionSwitch::class, $second);
+        $this->assertNull($second->test);
+        $this->assertNull($second->last());
+        $loop = self::read("while (a)\n  switch (b)\n  case (c)\n  case (d)\n    break\n  endswitch\nendwhile")->root->all[0];
+        $this->assertInstanceOf(InstructionWhile::class, $loop);
+        $this->assertTrue($loop->list->all[0]->containsBreak());
     }
 
     public function testLoopsHoldTheirBodiesLabelsAndBackwardActions(): void
@@ -241,6 +282,10 @@ final class ActivityReaderTest extends TestCase
         yield 'kill a start' => ["start\nkill", 'kill cannot be used here'];
         yield 'kill a decision ended' => ["if (a) then\n  start\nendif\nkill", 'kill cannot be used here'];
         yield 'kill a decision ended in its else' => ["if (a) then\nelse\n  start\nendif\nkill", 'kill cannot be used here'];
+        yield 'case alone' => ['case (a)', 'Cannot find switch'];
+        yield 'endswitch alone' => ['endswitch', 'Cannot find switch'];
+        yield 'a step before the first case' => ["switch (a)\n:b;", "No 'case' in this switch"];
+        yield 'kill a switch without cases' => ["switch (a)\nkill", 'kill cannot be used here'];
         yield 'kill a break' => ["while (a)\n  break\n  kill\nendwhile", 'kill cannot be used here'];
     }
 

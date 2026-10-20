@@ -87,7 +87,7 @@ Activity diagrams in the new syntax are read natively — with PlantUML's own ru
 | Drawn natively | Left to PlantUML |
 | --- | --- |
 | Actions over one or several lines, with `<<input>>`, `<<output>>`, `<<procedure>>`, `<<load>>`, `<<save>>`, `<<continuous>>`, `<<task>>`, `<<object>>`, `<<objectsignal>>`, `<<acceptevent>>`, `<<timeevent>>` and `<<#colour>>`; `start`, `stop`, `end`, connectors `(A)`, `kill`, `detach` | Swimlanes, `goto` and `label`, URLs, emoji and sprite stereotypes, the legacy syntax (`(*)`, `-->`) |
-| `if`, `elseif`, `else`, `endif` with tests, labels and colours, laid out side by side, down one side when a branch is empty or only stops, or across for else-ifs; `skinparam conditionStyle` | `switch`; `skinparam conditionEndStyle hline`; `!pragma useVerticalIf` |
+| `if`, `elseif`, `else`, `endif` with tests, labels and colours, laid out side by side, down one side when a branch is empty or only stops, or across for else-ifs; `skinparam conditionStyle`; `switch`, `case`, `endswitch` with their labels and colours | `skinparam conditionEndStyle hline`; `!pragma useVerticalIf`; notes on a `switch` itself |
 | `while` with its labels, `backward`, `break`, and a stop or end drawn on its way out; `repeat` with a starting action, `backward`, `break`, and its test's labels | Arrows of several colours (`-[#red;#blue]->`) |
 | `fork`, `fork again`, `end fork` with its label, `end merge`; `split`, `split again`, `end split` | |
 | `partition`, `group`, `rectangle` and `card` with their titles and colours; notes beside steps, floating, over several lines, beside decisions, loops and forks | `package`; deprecated forms PlantUML warns of |

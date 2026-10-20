@@ -7,6 +7,7 @@ namespace Janalis\Viz\Tests\PlantUML\Activities;
 use Janalis\Viz\Model\Activity\Action;
 use Janalis\Viz\Model\Activity\ActivityDiagram;
 use Janalis\Viz\Model\Activity\Branch;
+use Janalis\Viz\Model\Activity\Choice;
 use Janalis\Viz\Model\Activity\Decision;
 use Janalis\Viz\Model\Activity\Fork;
 use Janalis\Viz\Model\Activity\Loop;
@@ -61,6 +62,13 @@ final class ActivityModelTest extends TestCase
               note : inside
               :p;
             }
+            switch (s?)
+            case (one)
+              :u;
+            case ()
+            endswitch
+            switch (none)
+            endswitch
             end
             PUML);
 
@@ -81,13 +89,14 @@ final class ActivityModelTest extends TestCase
             new Fork([[new Action('f')], [new Action('g')]]),
             new Fork([[new Action('s')], [new Action('t')]], split: true),
             new Partition('P', [new Note('inside', left: true), new Action('p')]),
+            new Choice('s?', [new Branch(label: 'one', steps: [new Action('u')]), new Branch()]),
             new Terminal(TerminalKind::End),
         ], 'Flow'), $model);
     }
 
     public function testTheModelWrittenBackReadsTheSame(): void
     {
-        $source = "start\n:a;\nif (x) then (yes)\n  :b;\nelse (no)\n  :c;\nendif\nwhile (w) is (go)\n  :d;\nendwhile (out)\nrepeat\n  :e;\nrepeat while (r)\nfork\n  :f;\nfork again\n  :g;\nend fork\npartition \"P\" {\n  :h;\n}\nnote right : n\nstop";
+        $source = "start\n:a;\nif (x) then (yes)\n  :b;\nelse (no)\n  :c;\nendif\nwhile (w) is (go)\n  :d;\nendwhile (out)\nrepeat\n  :e;\nrepeat while (r)\nfork\n  :f;\nfork again\n  :g;\nend fork\npartition \"P\" {\n  :h;\n}\nnote right : n\nswitch (s)\ncase (a)\n  :i;\ncase (b)\nendswitch\nstop";
         $model = self::model($source);
 
         $this->assertEquals($model, self::model(\trim(\substr(PlantUmlActivityWriter::write($model), offset: 9, length: -8))));
