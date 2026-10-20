@@ -7,8 +7,7 @@ namespace Janalis\Viz\Layout\Neato;
 use Janalis\Viz\Layout\Engine\LayoutEngine;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\Placement;
-use Janalis\Viz\Layout\GraphLayout;
-use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Layout\Free\FreePlacement;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -26,8 +25,6 @@ final readonly class NeatoEngine implements LayoutEngine
     private const int PASSES = 200;
     /** Majorization stops where a pass lowers the stress by less than this part of it. */
     private const float SETTLED = 1e-5;
-    /** The space between two parts laid side by side, in the graph's unit. */
-    private const float APART = 18.0;
 
     /**
      * @return \Generator<int, null, mixed, Placement>
@@ -51,24 +48,17 @@ final readonly class NeatoEngine implements LayoutEngine
             $lengths[$tail][$head] = \min($lengths[$tail][$head] ?? \INF, $length);
             $lengths[$head][$tail] = $lengths[$tail][$head];
         }
-        $positions = [];
-        $cursor = 0.0;
+        $placed = [];
         foreach (self::parts($lengths) as $part) {
             if (\count($part) > self::MAX_NODES) {
                 throw new Unsupported('The graph is too large to lay out natively with neato: a connected part holds '.\count($part).' nodes');
             }
             $work = self::majorize($part, $lengths);
             yield from $work;
-            $placed = $work->getReturn();
-            // Side by side, from the left, each part's boxes aligned at their tops.
-            [$left, $top, $right] = self::extent($placed, $graph);
-            foreach ($placed as $node => [$x, $y]) {
-                $positions[$node] = [$x - $left + $cursor, $y - $top];
-            }
-            $cursor += $right - $left + self::APART;
+            $placed[] = $work->getReturn();
         }
 
-        return self::placement($graph, $positions);
+        return FreePlacement::of($graph, FreePlacement::sideBySide($graph, $placed));
     }
 
     /**
@@ -284,56 +274,5 @@ final readonly class NeatoEngine implements LayoutEngine
         }
 
         return $stress;
-    }
-
-    /**
-     * How far a part's boxes reach: left, top, right, bottom.
-     *
-     * @param array<int, array{float, float}> $positions
-     * @return array{float, float, float, float}
-     */
-    private static function extent(array $positions, LayoutGraph $graph): array
-    {
-        [$left, $top, $right, $bottom] = [\INF, \INF, -\INF, -\INF];
-        foreach ($positions as $node => [$x, $y]) {
-            $box = $graph->nodes[$node];
-            $left = \min($left, $x - ($box->width / 2));
-            $top = \min($top, $y - ($box->height / 2));
-            $right = \max($right, $x + ($box->width / 2));
-            $bottom = \max($bottom, $y + ($box->height / 2));
-        }
-
-        return [$left, $top, $right, $bottom];
-    }
-
-    /** @param array<int, array{float, float}> $positions */
-    private static function placement(LayoutGraph $graph, array $positions): Placement
-    {
-        $padding = $graph->spacing->padding;
-        $nodes = [];
-        $endpoints = [];
-        [$width, $height] = [0.0, 0.0];
-        foreach ($graph->nodes as $id => $node) {
-            [$x, $y] = $positions[$id];
-            $placed = new GraphNode($id, $node->id, $node->label, $x + $padding, $y + $padding, $node->width, $node->height, null, null, dashed: false);
-            $nodes[$id] = $placed;
-            $endpoints[$node->id] = $placed;
-            $width = \max($width, $x + ($node->width / 2) + (2 * $padding));
-            $height = \max($height, $y + ($node->height / 2) + (2 * $padding));
-        }
-        $routes = [];
-        $labels = [];
-        foreach ($graph->edges as $edge) {
-            [$tail, $head] = [$endpoints[$edge->from] ?? null, $endpoints[$edge->to] ?? null];
-            if (null === $tail || null === $head || $tail === $head) {
-                continue;
-            }
-            $routes[$edge->index] = [[$tail->x, $tail->y], [$head->x, $head->y]];
-            if ($edge->labelWidth > 0 || $edge->labelHeight > 0) {
-                $labels[$edge->index] = [($tail->x + $head->x) / 2, ($tail->y + $head->y) / 2];
-            }
-        }
-
-        return new Placement(new GraphLayout($width, $height, $nodes, [], []), $endpoints, ['' => $graph->direction], $routes, $labels);
     }
 }
