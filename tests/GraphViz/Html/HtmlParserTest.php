@@ -147,6 +147,24 @@ final class HtmlParserTest extends TestCase
         );
     }
 
+    public function testStylesRoundDashAndHide(): void
+    {
+        $label = self::parse(
+            '<TABLE STYLE="rounded" CELLSPACING="4" BORDER="0" CELLBORDER="1" BGCOLOR="yellow"><TR><TD STYLE="Dashed">a</TD><TD STYLE="dotted" SIDES="B">b</TD><TD STYLE=" invis">c</TD><TD STYLE="invisible">d</TD></TR></TABLE>',
+        );
+        $marks = $label->marks(0.0, 0.0);
+        [$width, $height] = $label->size();
+
+        $this->assertSame('#ffff00', $marks[0]->fill);
+        $this->assertSame('none', $marks[0]->stroke, 'a table with no border is only filled');
+        $this->assertCount(20, $marks[0]->points, 'each corner rounded');
+        $this->assertEqualsWithDelta([(-$width / 2) + ($height / 3), -$height / 2], $marks[0]->points[4], 1e-9, 'a third of the shorter side');
+        $this->assertSame([true, null], [$marks[1]->dashed, $marks[1]->dashes]);
+        $this->assertSame([MarkKind::Polyline, true, [1.0, 3.0]], [$marks[3]->kind, $marks[3]->dashed, $marks[3]->dashes]);
+        $this->assertSame(['a', 'b'], \array_values(\array_filter(\array_map(static fn (Mark $mark): string => $mark->text, $marks))), 'what an invisible cell holds is hidden too');
+        $this->assertSame([], self::parse('<TABLE STYLE="rounded,invis"><TR><TD>a</TD></TR></TABLE>')->marks(0.0, 0.0));
+    }
+
     /** @return iterable<string, array{string, string}> */
     public static function refusals(): iterable
     {

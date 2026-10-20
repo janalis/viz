@@ -554,19 +554,19 @@ final class DotDrawing
     }
 
     /**
-     * Rounds a polygon's corners.
+     * Rounds a polygon's corners, each as far as a third of its shorter side, and at most as `$most`.
      *
      * @param list<array{float, float}> $outline
      * @return list<array{float, float}>
      */
-    private static function round(array $outline): array
+    public static function round(array $outline, float $most = 8.0): array
     {
         $rounded = [];
         $count = \count($outline);
         foreach ($outline as $index => [$x, $y]) {
             [$px, $py] = $outline[($index + $count - 1) % $count];
             [$nx, $ny] = $outline[($index + 1) % $count];
-            $radius = \min(8.0, \hypot($x - $px, $y - $py) / 3, \hypot($nx - $x, $ny - $y) / 3);
+            $radius = \min($most, \hypot($x - $px, $y - $py) / 3, \hypot($nx - $x, $ny - $y) / 3);
             $from = self::toward([$x, $y], [$px, $py], $radius);
             $to = self::toward([$x, $y], [$nx, $ny], $radius);
             foreach ([0.0, 0.25, 0.5, 0.75, 1.0] as $t) {

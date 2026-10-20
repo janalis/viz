@@ -7,6 +7,7 @@ namespace Janalis\Viz\GraphViz\Html;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\GraphViz\Drawing\DotColors;
+use Janalis\Viz\GraphViz\Drawing\DotDrawing;
 use Janalis\Viz\GraphViz\Drawing\DotLabel;
 use Janalis\Viz\GraphViz\Drawing\Justify;
 
@@ -81,11 +82,17 @@ final class HtmlTable implements DotLabel
     {
         [$width, $height] = $this->size();
         $box = [$x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2)];
-        $marks = self::frame($box, $this->border, DotColors::resolve($this->attributes['bgcolor'] ?? '', 'none'), $this->color, $this->attributes['sides'] ?? '');
+        if (self::invisible($this->attributes)) {
+            return [];
+        }
+        $marks = self::frame($box, $this->border, DotColors::resolve($this->attributes['bgcolor'] ?? '', 'none'), $this->color, $this->attributes);
         foreach ($this->cells as $index => $cell) {
+            if (self::invisible($cell->attributes)) {
+                continue;
+            }
             $cellBox = $this->box($index, $box);
             $color = DotColors::resolve($cell->attributes['color'] ?? '', $this->color);
-            \array_push($marks, ...self::frame($cellBox, $cell->border, DotColors::resolve($cell->attributes['bgcolor'] ?? '', 'none'), $color, $cell->attributes['sides'] ?? ''));
+            \array_push($marks, ...self::frame($cellBox, $cell->border, DotColors::resolve($cell->attributes['bgcolor'] ?? '', 'none'), $color, $cell->attributes));
             [$contentX, $contentY] = self::placed($cell, $cellBox);
             $content = $cell->content instanceof HtmlText ? $cell->content->justified(self::justify($cell->attributes['balign'] ?? '')) : $cell->content;
             \array_push($marks, ...$content->marks($contentX, $contentY));
@@ -276,24 +283,63 @@ final class HtmlTable implements DotLabel
     }
 
     /**
+     * The styles `STYLE` lists, by name.
+     *
+     * @param array<string, string> $attributes
+     * @return array<string, true>
+     */
+    private static function styles(array $attributes): array
+    {
+        $styles = [];
+        foreach (\explode(',', \strtolower($attributes['style'] ?? '')) as $style) {
+            $styles[\trim($style)] = true;
+        }
+
+        return $styles;
+    }
+
+    /**
+     * Whether `STYLE` hides a table or a cell, with all it holds.
+     *
+     * @param array<string, string> $attributes
+     */
+    private static function invisible(array $attributes): bool
+    {
+        $styles = self::styles($attributes);
+
+        return \array_key_exists('invis', $styles) || \array_key_exists('invisible', $styles);
+    }
+
+    /**
      * A box's fill and its border, drawn inside it: all around, or along the sides `SIDES`
-     * names — `L`, `T`, `R` and `B` — each run of adjacent sides one line.
+     * names — `L`, `T`, `R` and `B` — each run of adjacent sides one line. `STYLE` rounds its
+     * corners, a third of its shorter side, or dashes or dots its border.
      *
      * @param array{float, float, float, float} $box
+     * @param array<string, string> $attributes the table's or the cell's
      * @return list<Mark>
      */
-    private static function frame(array $box, float $border, string $fill, string $color, string $sides): array
+    private static function frame(array $box, float $border, string $fill, string $color, array $attributes): array
     {
         if ($border <= 0 && 'none' === $fill) {
             return [];
         }
+        $styles = self::styles($attributes);
+        $sides = \strtolower($attributes['sides'] ?? '');
+        $rounded = \array_key_exists('rounded', $styles);
+        $dotted = \array_key_exists('dotted', $styles);
+        $dashed = $dotted || \array_key_exists('dashed', $styles);
+        $dashes = $dotted ? [1.0, 3.0] : null;
         $inset = $border / 2;
         [$left, $top, $right, $bottom] = [$box[0] + $inset, $box[1] + $inset, $box[2] - $inset, $box[3] - $inset];
         $corners = [[$left, $top], [$right, $top], [$right, $bottom], [$left, $bottom]];
         // Each side runs from its corner to the next: top, right, bottom, left.
-        $drawn = '' === $sides ? [true, true, true, true] : \array_map(static fn (string $side): bool => \str_contains(\strtolower($sides), $side), ['t', 'r', 'b', 'l']);
+        $drawn = '' === $sides || $rounded ? [true, true, true, true] : \array_map(static fn (string $side): bool => \str_contains($sides, $side), ['t', 'r', 'b', 'l']);
         $whole = $border > 0 && !\in_array(false, $drawn, strict: true);
-        $marks = $whole || 'none' !== $fill ? [new Mark(MarkKind::Polygon, $corners, stroke: $whole ? $color : 'none', fill: $fill, strokeWidth: \max($border, 0.01))] : [];
+        $outline = $rounded ? DotDrawing::round($corners, most: \INF) : $corners;
+        $marks = $whole || 'none' !== $fill
+            ? [new Mark(MarkKind::Polygon, $outline, stroke: $whole ? $color : 'none', fill: $fill, dashed: $dashed, strokeWidth: \max($border, 0.01), dashes: $dashes)]
+            : [];
         if ($whole || $border <= 0) {
             return $marks;
         }
@@ -305,7 +351,7 @@ final class HtmlTable implements DotLabel
             for ($next = $side; $drawn[$next]; $next = ($next + 1) % 4) {
                 $run[] = $corners[($next + 1) % 4];
             }
-            $marks[] = new Mark(MarkKind::Polyline, $run, stroke: $color, strokeWidth: $border);
+            $marks[] = new Mark(MarkKind::Polyline, $run, stroke: $color, dashed: $dashed, strokeWidth: $border, dashes: $dashes);
         }
 
         return $marks;
