@@ -412,6 +412,19 @@ final class DotDrawingTest extends TestCase
         $this->assertGreaterThan($blue->points[0][1] + 1, $blue->points[\intdiv(\count($blue->points), num2: 2)][1], 'the second below');
     }
 
+    public function testLandscapeTurnsTheDrawingAQuarterToTheLeft(): void
+    {
+        $plain = self::draw('digraph { a -> b; }');
+        foreach (['rotate=90', 'landscape=true', 'orientation=Landscape'] as $turn) {
+            $turned = self::draw('digraph { '.$turn.'; a -> b; }');
+            $this->assertEqualsWithDelta([$plain->height, $plain->width], [$turned->width, $turned->height], 1e-9, $turn);
+            [$a, $b] = self::texts($turned);
+            $this->assertLessThan($b->points[0][0], $a->points[0][0], 'the top now on the left');
+            $this->assertSame(-90.0, $a->angle, 'its text reading up');
+        }
+        $this->assertSame($plain->width, self::draw('digraph { rotate=180; a -> b; }')->width, 'no other turn');
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));

@@ -20,9 +20,6 @@ final class DotFeatureGateTest extends TestCase
         yield 'ortho' => ['graph { splines=ortho }', 'orthogonal splines'];
         yield 'concentrate' => ['graph { concentrate=true }', 'concentrated edges'];
         yield 'compress' => ['graph { ratio=compress }', 'ratio=compress'];
-        yield 'rotate' => ['graph { rotate=90 }', 'rotated drawings'];
-        yield 'landscape' => ['graph { landscape=true }', 'rotated drawings'];
-        yield 'orientation' => ['graph { orientation=land }', 'rotated drawings'];
         yield 'html' => ['graph { a -- b [taillabel=<b>] }', 'HTML in taillabel'];
         yield 'image' => ['graph { a [image="x.png"] }', 'images'];
         yield 'shapefile' => ['graph { a [shapefile="x.png"] }', 'images'];
@@ -46,7 +43,7 @@ final class DotFeatureGateTest extends TestCase
     public function testWhatTheNativeDrawingHandlesPasses(): void
     {
         DotFeatureGate::check(Work::run(new DotParser()->parse(
-            'digraph { layout=dot; rotate=0; orientation=portrait; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; b [style=wedged fillcolor="red;0.3:blue"]; a -> b [color="blue:red;0.5"] }',
+            'digraph { layout=dot; rotate=90; landscape=true; orientation=land; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; b [style=wedged fillcolor="red;0.3:blue"]; a -> b [color="blue:red;0.5"] }',
         )));
 
         $this->addToAssertionCount(1);

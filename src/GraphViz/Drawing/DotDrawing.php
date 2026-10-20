@@ -89,6 +89,10 @@ final class DotDrawing
             \array_unshift($this->marks, new Mark(MarkKind::Polygon, [[0.0, 0.0], [$width, 0.0], [$width, $height], [0.0, $height]], stroke: 'none', fill: $background, gradient: $gradient));
             $background = 'none';
         }
+        if ($this->landscape()) {
+            $this->marks = \array_map(static fn (Mark $mark): Mark => Units::turned($mark, $width), $this->marks);
+            [$width, $height] = [$height, $width];
+        }
 
         $scale = self::scale($this->graph->attribute('size'), $width, $height) * Units::POINT;
 
@@ -468,6 +472,16 @@ final class DotDrawing
         $width = \is_numeric($value) ? \max(0.0, \min(50.0, (float) $value)) : 1.0;
 
         return \array_key_exists('bold', $styles) ? \max($width, 2.0) : $width;
+    }
+
+    /** Whether the drawing is turned to landscape, as `rotate=90`, `landscape` or an `orientation` starting with `l` ask; dot turns it no other way. */
+    private function landscape(): bool
+    {
+        return (
+            '90' === \trim($this->graph->attribute('rotate'))
+            || \in_array(\strtolower($this->graph->attribute('landscape')), ['true', 'yes', '1'], strict: true)
+            || \str_starts_with(\strtolower($this->graph->attribute('orientation')), 'l')
+        );
     }
 
     /**

@@ -10,7 +10,7 @@ use Janalis\Viz\Source\Unsupported;
 /**
  * What the native dot drawing leaves to the `dot` command: other layout engines, HTML
  * outside labels, images, orthogonal splines, concentrated edges, pinned positions,
- * rotation, compression, colour lists on node and cluster lines and weighted or sloped fills, and radial
+ * compression, colour lists on node and cluster lines and weighted or sloped fills, and radial
  * styles.
  */
 final class DotFeatureGate
@@ -33,10 +33,6 @@ final class DotFeatureGate
             \in_array(\strtolower($graph->attribute('splines')), ['ortho'], strict: true) => 'orthogonal splines',
             'true' === \strtolower($graph->attribute('concentrate')) => 'concentrated edges',
             'compress' === \strtolower($graph->attribute('ratio')) => 'ratio=compress',
-            \in_array($graph->attribute('rotate'), ['90', '-90', '270'], strict: true)
-                || 'true' === \strtolower($graph->attribute('landscape'))
-                || \str_starts_with(\strtolower($graph->attribute('orientation')), 'l')
-                => 'rotated drawings',
             default => null,
         };
     }

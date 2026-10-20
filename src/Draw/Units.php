@@ -71,4 +71,29 @@ final class Units
             $mark->dashes,
         );
     }
+
+    /**
+     * A mark turned a quarter counter-clockwise with a drawing of a width, its top now on its
+     * left: each point at its distance down, across, and at what was left of the drawing's
+     * width, down; text turned with it. A gradient keeps running across.
+     */
+    public static function turned(Mark $mark, float $width): Mark
+    {
+        return new Mark(
+            $mark->kind,
+            \array_map(static fn (array $point): array => [$point[1], $width - $point[0]], $mark->points),
+            $mark->text,
+            $mark->stroke,
+            $mark->fill,
+            $mark->dashed,
+            $mark->strokeWidth,
+            $mark->font,
+            $mark->fontScale,
+            $mark->fillOpacity,
+            $mark->opacity,
+            $mark->angle - 90.0,
+            $mark->gradient,
+            $mark->dashes,
+        );
+    }
 }
