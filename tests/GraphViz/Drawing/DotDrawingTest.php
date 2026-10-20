@@ -499,6 +499,27 @@ final class DotDrawingTest extends TestCase
         $this->assertArrayHasKey('x', $texts, 'a table beside a');
     }
 
+    public function testOrthogonalEdgesRunSquareAndApart(): void
+    {
+        foreach (['TB', 'LR'] as $direction) {
+            $drawing = self::draw('digraph { splines=ortho; rankdir='.$direction.'; node [shape=box]; a -> b; a -> c; b -> d; c -> d; a -> d; e -> c; a -> a; { rank=same; b -> x -> c2; b -> c2 } }');
+            $lines = self::kinds($drawing, MarkKind::Polyline);
+            foreach ($lines as $line) {
+                for ($index = 1, $count = \count($line->points); $index < $count; ++$index) {
+                    [[$ax, $ay], [$bx, $by]] = [$line->points[$index - 1], $line->points[$index]];
+                    $this->assertTrue(\abs($ax - $bx) < 1e-9 || \abs($ay - $by) < 1e-9, $direction.': each stretch across or down');
+                }
+            }
+            $starts = \array_map(static fn (Mark $mark): string => \round($mark->points[0][0], precision: 3).','.\round($mark->points[0][1], precision: 3), \array_slice($lines, offset: 0, length: 3));
+            $this->assertCount(3, \array_unique($starts), $direction.': a\'s edges leave it apart');
+            $this->assertCount(4, $lines[6]->points, $direction.': a loop square, out and back');
+            $this->assertCount(4, $lines[9]->points, $direction.': an edge past others along its rank goes round below them');
+            $this->assertCount(2, $lines[8]->points, $direction.': and one to its neighbour straight across');
+        }
+        $straight = self::kinds(self::draw('digraph { splines=ortho; node [shape=box]; e -> c }'), MarkKind::Polyline)[0];
+        $this->assertCount(2, $straight->points, 'right above its head, an edge runs straight down');
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));

@@ -9,7 +9,7 @@ use Janalis\Viz\Source\Unsupported;
 
 /**
  * What the native dot drawing leaves to the `dot` command: other layout engines, HTML in
- * attributes that are no labels, images, orthogonal splines and `ratio=compress`.
+ * attributes that are no labels, images and `ratio=compress`.
  */
 final class DotFeatureGate
 {
@@ -28,7 +28,6 @@ final class DotFeatureGate
 
         return match (true) {
             !\in_array($layout, ['', 'dot'], strict: true) => 'the '.$layout.' layout',
-            \in_array(\strtolower($graph->attribute('splines')), ['ortho'], strict: true) => 'orthogonal splines',
             'compress' === \strtolower($graph->attribute('ratio')) => 'ratio=compress',
             default => null,
         };

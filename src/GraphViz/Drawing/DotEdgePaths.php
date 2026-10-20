@@ -20,6 +20,8 @@ final class DotEdgePaths
 {
     /** @var array<string, ?DotRecord> each record node's fields, read once */
     private array $records = [];
+    /** Square paths, routed together the first time one is asked for. */
+    private ?DotOrtho $ortho = null;
 
     /** @param array<string, DotShape> $shapes each node's shape, by name */
     public function __construct(
@@ -49,7 +51,9 @@ final class DotEdgePaths
         $polyline = $this->placement->polylines[$index] ?? $route;
         // Only a loop has no route; an edge between ranks has its spline, bent to any port.
         $points = match (true) {
+            null === $route && 'ortho' === $splines => self::squareLoop($tail),
             null === $route => self::loop($tail),
+            'ortho' === $splines => $this->ortho()->path($index),
             \in_array($splines, ['line', 'false'], strict: true) => $this->ported([$route[0], $route[\count($route) - 1]], $edge),
             'polyline' === $splines && null !== $polyline => $this->bent($polyline, $edge),
             null !== $spline => $this->bent($spline, $edge),
@@ -57,6 +61,11 @@ final class DotEdgePaths
         };
 
         return $this->clip($points, $edge, $tail, $head);
+    }
+
+    private function ortho(): DotOrtho
+    {
+        return $this->ortho ??= new DotOrtho($this->graph, $this->placement);
     }
 
     /**
@@ -79,7 +88,7 @@ final class DotEdgePaths
             $this->clip(
                 match (true) {
                     \in_array($splines, ['line', 'false'], strict: true) => [$part[1][0], $part[1][\count($part[1]) - 1]],
-                    'polyline' === $splines => $part[1],
+                    \in_array($splines, ['polyline', 'ortho'], strict: true) => $part[1],
                     default => $part[0],
                 },
                 $edge,
@@ -142,6 +151,14 @@ final class DotEdgePaths
         }
 
         return $this->shapes[$name]->contains($point[0] - $node->x, $point[1] - $node->y);
+    }
+
+    /** @return list<array{float, float}> a square loop out to a node's right and back, for `splines=ortho` */
+    private static function squareLoop(GraphNode $node): array
+    {
+        $out = $node->x + ($node->w / 2) + \max(DotLayers::LOOP, $node->h / 2);
+
+        return [[$node->x, $node->y - ($node->h / 4)], [$out, $node->y - ($node->h / 4)], [$out, $node->y + ($node->h / 4)], [$node->x, $node->y + ($node->h / 4)]];
     }
 
     /** @return list<array{float, float}> a loop out to a node's right and back */
