@@ -90,4 +90,4 @@ Known divergences:
 - **Coordinates across ranks.** `dot` does not minimise the paper's straightening cost exactly, so its horizontal positions differ from the native ones even when order and ranks match.
 - **Orders that tie.** Where the native order differs from `dot`'s, it almost always crosses as few edges: of the 109 graphs without clusters whose orders differ, the native order crosses more edges in 3.
 - **Rank sets reaching into a cluster.** A `rank=same` set holding a cluster's node and a node outside it makes `dot` warn that the node "was already in a rankset" and drop it from the set. Where the other nodes then rank is inconsistent in black-box tests: level with the cluster's node, or its cluster's top, or neither. A set spanning two clusters can crash `dot`. The native layout keeps such a set apart at each level, ranking the outside nodes as if the cluster's node were not in it.
-- **Speed.** The layout runs in PHP. A graph of a few hundred nodes takes seconds; `dot` takes milliseconds.
+- **Speed.** The layout runs in PHP. A random graph of 400 nodes takes about a second, 800 about two; `dot` takes milliseconds.

@@ -212,6 +212,27 @@ final class DotOrdering
     }
 
     /**
+     * Swaps two neighbouring items: two nodes alone trade slots; anything larger is written back whole.
+     *
+     * @param list<list<int>> $items
+     */
+    private function swap(int $scope, int $rank, array &$items, int $index): void
+    {
+        [$left, $right] = [$items[$index], $items[$index + 1]];
+        [$items[$index], $items[$index + 1]] = [$right, $left];
+        if (1 !== \count($left) || 1 !== \count($right)) {
+            $this->write($scope, $rank, $items);
+
+            return;
+        }
+        [$a, $b] = [$left[0], $right[0]];
+        [$slotA, $slotB] = [$this->position[$a], $this->position[$b]];
+        $this->layers->ranks[$rank][$slotA] = $b;
+        $this->layers->ranks[$rank][$slotB] = $a;
+        [$this->position[$a], $this->position[$b]] = [$slotB, $slotA];
+    }
+
+    /**
      * Writes a scope's items back to their rank in a new order, into the slots the scope holds there.
      *
      * @param list<list<int>> $items
@@ -367,19 +388,27 @@ final class DotOrdering
     private function transpose(int $scope, Ties $ties): void
     {
         $ranks = \count($this->layers->ranks);
+        // A rank's swaps depend on it and its neighbours alone: one none of them changed in
+        // since it was last tried would swap nothing again, and is passed over.
+        $changed = \array_fill(0, \max(1, $ranks), value: 0);
+        $tried = \array_fill(0, \max(1, $ranks), value: -1);
+        $clock = 0;
         $improved = true;
         for ($passes = 0; $improved && $passes < 32; ++$passes) {
             $improved = false;
             for ($rank = 0; $rank < $ranks; ++$rank) {
+                if (\max($changed[$rank], $changed[$rank - 1] ?? 0, $changed[$rank + 1] ?? 0) < $tried[$rank]) {
+                    continue;
+                }
+                $tried[$rank] = ++$clock;
                 $items = $this->items($scope, $rank);
                 for ($index = 0; ($index + 1) < \count($items); ++$index) {
-                    $before = $this->crossings->pair($this->position, $items[$index], $items[$index + 1]);
-                    $after = $this->crossings->pair($this->position, $items[$index + 1], $items[$index]);
+                    [$before, $after] = $this->crossings->both($this->position, $items[$index], $items[$index + 1]);
                     if ($after > $before || ($after === $before && (Ties::Keep === $ties || 0 === $before)) || $this->flat->keeps($items[$index], $items[$index + 1])) {
                         continue;
                     }
-                    [$items[$index], $items[$index + 1]] = [$items[$index + 1], $items[$index]];
-                    $this->write($scope, $rank, $items);
+                    $this->swap($scope, $rank, $items, $index);
+                    $changed[$rank] = ++$clock;
                     $improved = $improved || $after < $before;
                 }
             }

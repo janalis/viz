@@ -42,7 +42,7 @@ final class DotCrossingsTest extends TestCase
         $this->assertSame(1, $crossings->total([0, 0, 1]));
         $this->assertSame(0, $crossings->total([0, 1, 0]));
         $this->assertSame(0.25, $crossings->median([0, 0, 1], [1], Side::Above), 'a median counts where across a node the edge ends');
-        $this->assertSame(1, $crossings->pair([0, 0, 1], [1], [2]) - $crossings->pair([0, 0, 1], [2], [1]), 'x before y costs a crossing more');
+        $this->assertSame([1, 0], $crossings->both([0, 0, 1], [1], [2]), 'x before y costs a crossing more');
     }
 
     public function testAnEvenMedianOfOneRepeatedPositionIsThatPosition(): void
@@ -61,8 +61,8 @@ final class DotCrossingsTest extends TestCase
 
         $this->assertSame(1, $crossings->total([0, 1, 0, 1]));
         $this->assertSame(0, $crossings->total([0, 1, 1, 0]));
-        $this->assertSame(1, $crossings->pair([0, 1, 0, 1], [0], [1]));
-        $this->assertSame(0, $crossings->pair([0, 1, 0, 1], [1], [0]));
+        $this->assertSame([1, 0], $crossings->both([0, 1, 0, 1], [0], [1]), 'a before b crosses; b before a does not');
+        $this->assertSame([0, 0], $crossings->both([0, 0, 0, 1], [0], [2]), 'nothing on one side of the left item');
         $this->assertSame(Side::Below, Side::Above->other());
         $this->assertSame(Ties::Keep, Ties::Exchange->other());
     }

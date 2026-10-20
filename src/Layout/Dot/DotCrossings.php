@@ -16,6 +16,8 @@ final readonly class DotCrossings
     public array $up;
     /** @var list<list<int>> layered edges below each node */
     public array $down;
+    /** @var array{array<int, list<array{int, float, int}>>, array<int, list<array{int, float, int}>>} each node's edges above, then below: the far node, where across it the edge ends, and its penalty */
+    private array $ends;
 
     public function __construct(
         private DotLayers $layers,
@@ -29,6 +31,14 @@ final readonly class DotCrossings
         }
         $this->up = $up;
         $this->down = $down;
+        $above = [];
+        $below = [];
+        foreach ($layers->edges as $index => [$tail, $head, , $penalty, $tailPort, $headPort]) {
+            $above[$head][] = [$tail, $tailPort, $penalty];
+            $below[$tail][] = [$head, $headPort, $penalty];
+        }
+        $ends = [$above, $below];
+        $this->ends = $ends;
     }
 
     /** @return list<int> the layered edges on one side of a node */
@@ -83,33 +93,40 @@ final readonly class DotCrossings
     }
 
     /**
-     * What it costs to have $left just before $right, counting their edges up and down.
+     * What it costs to have $left just before $right, and $right just before $left, at once:
+     * of two edges, one from each, on one side, the pair crosses in exactly one order, or in
+     * neither where they end at one point.
      *
      * @param list<int> $position
      * @param list<int> $left
      * @param list<int> $right
+     * @return array{int, int}
      */
-    public function pair(array $position, array $left, array $right): int
+    public function both(array $position, array $left, array $right): array
     {
-        $cost = 0;
-        foreach (Side::cases() as $side) {
+        [$leftFirst, $rightFirst] = [0, 0];
+        for ($side = 0; $side < 2; ++$side) {
             $leftEnds = [];
             foreach ($left as $node) {
-                foreach ($this->edges($node, $side) as $edge) {
-                    $leftEnds[] = [$this->end($position, $edge, $side), $this->layers->edges[$edge][3]];
+                foreach ($this->ends[$side][$node] ?? [] as [$far, $port, $penalty]) {
+                    $leftEnds[] = [$position[$far] + $port, $penalty];
                 }
             }
+            if ([] === $leftEnds) {
+                continue;
+            }
             foreach ($right as $node) {
-                foreach ($this->edges($node, $side) as $edge) {
-                    $end = $this->end($position, $edge, $side);
-                    foreach ($leftEnds as [$leftEnd, $penalty]) {
-                        $cost += $leftEnd > $end ? $penalty * $this->layers->edges[$edge][3] : 0;
+                foreach ($this->ends[$side][$node] ?? [] as [$far, $port, $penalty]) {
+                    $end = $position[$far] + $port;
+                    foreach ($leftEnds as [$leftEnd, $leftPenalty]) {
+                        $leftFirst += $leftEnd > $end ? $leftPenalty * $penalty : 0;
+                        $rightFirst += $leftEnd < $end ? $leftPenalty * $penalty : 0;
                     }
                 }
             }
         }
 
-        return $cost;
+        return [$leftFirst, $rightFirst];
     }
 
     /**
@@ -121,9 +138,11 @@ final readonly class DotCrossings
     public function median(array $position, array $item, Side $side): float
     {
         $positions = [];
+        $ends = $this->ends[Side::Above === $side ? 0 : 1];
         foreach ($item as $node) {
-            foreach ($this->edges($node, $side) as $edge) {
-                $positions[] = $this->end($position, $edge, $side);
+            // As dot, a neighbour counts where across it the edge ends, by its port.
+            foreach ($ends[$node] ?? [] as [$far, $port]) {
+                $positions[] = $position[$far] + $port;
             }
         }
         \sort($positions);
@@ -136,17 +155,6 @@ final readonly class DotCrossings
             2 === $count => ($positions[0] + $positions[1]) / 2,
             default => self::weighted($positions, $middle),
         };
-    }
-
-    /**
-     * Where a layered edge's far end stands, seen from one side: its node's position, and as
-     * dot counts it, where across the node its port puts it.
-     *
-     * @param list<int> $position
-     */
-    private function end(array $position, int $edge, Side $side): float
-    {
-        return $position[$this->far($edge, $side)] + $this->layers->edges[$edge][Side::Above === $side ? 4 : 5];
     }
 
     /**
