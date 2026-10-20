@@ -22,9 +22,6 @@ final class DotFeatureGateTest extends TestCase
         yield 'html' => ['graph { a -- b [taillabel=<b>] }', 'HTML in taillabel'];
         yield 'image' => ['graph { a [image="x.png"] }', 'images'];
         yield 'shapefile' => ['graph { a [shapefile="x.png"] }', 'images'];
-        yield 'node colour list' => ['graph { a [style=filled color="red:blue"] }', 'colour lists'];
-        yield 'sloped radial gradient' => ['graph { a [style=radial fillcolor="red:blue" gradientangle=90] }', 'radial gradients at an angle'];
-        yield 'cluster colour list' => ['digraph { subgraph cluster_a { color="red:blue"; a } }', 'colour lists'];
     }
 
     #[DataProvider('refused')]
@@ -38,7 +35,7 @@ final class DotFeatureGateTest extends TestCase
     public function testWhatTheNativeDrawingHandlesPasses(): void
     {
         DotFeatureGate::check(Work::run(new DotParser()->parse(
-            'digraph { layout=dot; concentrate=true; rotate=90; landscape=true; orientation=land; splines=true; bgcolor="white:grey" gradientangle=-180; subgraph cluster_g { bgcolor="red;0.3:blue" gradientangle=45; g } a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; b [style=wedged fillcolor="red;0.3:blue"]; c [style=radial fillcolor="white:red" pos="1,1" pin=true]; a -> b [color="blue:red;0.5"] }',
+            'digraph { layout=dot; concentrate=true; rotate=90; landscape=true; orientation=land; splines=true; bgcolor="white:grey" gradientangle=-180; subgraph cluster_g { bgcolor="red;0.3:blue" gradientangle=45; g } a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; b [style=wedged fillcolor="red;0.3:blue"]; c [style=radial fillcolor="white:red" gradientangle=45 pos="1,1" pin=true color="red:blue"]; subgraph cluster_c { color="red:blue"; d } a -> b [color="blue:red;0.5"] }',
         )));
 
         $this->addToAssertionCount(1);

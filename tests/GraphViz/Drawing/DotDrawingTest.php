@@ -476,6 +476,14 @@ final class DotDrawingTest extends TestCase
         $this->assertSame([null, 0.0], [$c->gradientSplit, $c->gradientAngle]);
     }
 
+    public function testAnOutlinesColourListDrawsItInTheFirstAndFillsWithTheList(): void
+    {
+        [$plain, $filled] = self::kinds(self::draw('digraph { a [color="red:blue"]; b [color="red:blue", style=filled] }'), MarkKind::Polygon);
+
+        $this->assertSame(['#ff0000', 'none'], [$plain->stroke, $plain->fill]);
+        $this->assertSame(['#ff0000', ['#ff0000', '#0000ff']], [$filled->stroke, $filled->gradient]);
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));

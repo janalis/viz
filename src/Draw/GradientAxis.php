@@ -46,4 +46,42 @@ final class GradientAxis
 
         return $along < $split ? 0.0 : 1.0;
     }
+
+    /**
+     * A radial gradient's focus, as parts of its box from its left and top: the centre, or, at
+     * an angle, half the box out from it that way, as dot moves it.
+     *
+     * @return array{float, float}
+     */
+    public static function focus(float $angle): array
+    {
+        if (0.0 === $angle) {
+            return [0.5, 0.5];
+        }
+        $radians = \deg2rad($angle);
+
+        return [0.5 + (0.5 * \cos($radians)), 0.5 - (0.5 * \sin($radians))];
+    }
+
+    /**
+     * How much of the second colour a point of a radial gradient takes: how far it stands from
+     * the focus toward the circle three quarters of the box out from the centre, all in parts
+     * of the box, so the circle is the box's ellipse.
+     *
+     * @param array{float, float, float, float} $box left, top, width, height
+     * @param array{float, float} $focus
+     */
+    public static function radial(array $box, array $focus, float $x, float $y): float
+    {
+        [$left, $top, $width, $height] = $box;
+        $d = [(($x - $left) / \max(1.0e-9, $width)) - $focus[0], (($y - $top) / \max(1.0e-9, $height)) - $focus[1]];
+        $e = [0.5 - $focus[0], 0.5 - $focus[1]];
+        // The circle through the point among those from the focus, t = 0, to the outer one, t = 1.
+        $a = $e[0] ** 2 + $e[1] ** 2 - 0.75 ** 2;
+        $de = ($d[0] * $e[0]) + ($d[1] * $e[1]);
+        $dd = $d[0] ** 2 + $d[1] ** 2;
+        $t = ($de - \sqrt(\max(0.0, $de ** 2 - ($a * $dd)))) / $a;
+
+        return \max(0.0, \min(1.0, $t));
+    }
 }

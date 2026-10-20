@@ -9,8 +9,7 @@ use Janalis\Viz\Source\Unsupported;
 
 /**
  * What the native dot drawing leaves to the `dot` command: other layout engines, HTML
- * outside labels, images, orthogonal splines, compression, colour lists on node and cluster
- * lines, and radial gradients at an angle.
+ * outside labels, images, orthogonal splines and `ratio=compress`.
  */
 final class DotFeatureGate
 {
@@ -42,8 +41,7 @@ final class DotFeatureGate
             $objects[] = [$node->attributes, $node->html];
         }
         foreach ($graph->edges as $edge) {
-            // An edge's colour list is drawn natively, as parallel or successive lines.
-            $objects[] = [\array_diff_key($edge->attributes, ['color' => true]), $edge->html];
+            $objects[] = [$edge->attributes, $edge->html];
         }
         foreach ($objects as [$attributes, $html]) {
             $reason = self::object($attributes, $html);
@@ -65,18 +63,7 @@ final class DotFeatureGate
         if ([] !== $outside) {
             return 'HTML in '.\implode(', ', $outside);
         }
-        $styles = \array_map(static fn (string $style): string => \strtolower(\trim($style)), \explode(',', $attributes['style'] ?? ''));
-        $colors = \array_filter([$attributes['color'] ?? '', $attributes['fillcolor'] ?? ''], static fn (string $color): bool => \str_contains($color, ':'));
-        // A list fills with a gradient, drawn natively at any angle, unless radial: its angle moves its focus.
-        $gradients = \array_filter([$attributes['fillcolor'] ?? '', $attributes['bgcolor'] ?? ''], static fn (string $color): bool => \str_contains($color, ':'));
-        $angle = $attributes['gradientangle'] ?? '';
-        $angle = \is_numeric($angle) ? \fmod((float) $angle, num2: 360.0) : 0.0;
 
-        return match (true) {
-            '' !== ($attributes['image'] ?? '') || '' !== ($attributes['shapefile'] ?? '') => 'images',
-            [] !== \array_diff($colors, [$attributes['fillcolor'] ?? '']) => 'colour lists',
-            [] !== $gradients && 0.0 !== $angle && \in_array('radial', $styles, strict: true) => 'radial gradients at an angle',
-            default => null,
-        };
+        return '' !== ($attributes['image'] ?? '') || '' !== ($attributes['shapefile'] ?? '') ? 'images' : null;
     }
 }

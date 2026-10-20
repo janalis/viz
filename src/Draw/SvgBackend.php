@@ -66,7 +66,10 @@ final class SvgBackend
         }
 
         if ($radial) {
-            return '<radialGradient id="'.$id.'" cx="50%" cy="50%" r="75%">'.$stops.'</radialGradient>';
+            [$fx, $fy] = GradientAxis::focus($mark->gradientAngle);
+            $focus = 0.0 === $mark->gradientAngle ? '' : ' fx="'.\round(100 * $fx, precision: 2).'%" fy="'.\round(100 * $fy, precision: 2).'%"';
+
+            return '<radialGradient id="'.$id.'" cx="50%" cy="50%" r="75%"'.$focus.'>'.$stops.'</radialGradient>';
         }
         if (0.0 === $mark->gradientAngle) {
             return '<linearGradient id="'.$id.'" gradientUnits="userSpaceOnUse" x1="'.\min($xs).'" y1="0" x2="'.\max($xs).'" y2="0">'.$stops.'</linearGradient>';

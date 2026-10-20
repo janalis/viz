@@ -213,9 +213,9 @@ final readonly class PngBackend
         $xs = \array_column($points, 0);
         $heights = \array_column($points, 1);
         [$left, $right] = [\min($xs), \max($xs)];
-        // A radial blend reaches its last colour three quarters of the box away, as dot's.
-        $centre = [($left + $right) / 2, (\min($heights) + \max($heights)) / 2];
-        $reach = [\max(1.0e-9, 0.75 * ($right - $left)), \max(1.0e-9, 0.75 * (\max($heights) - \min($heights)))];
+        // A radial blend reaches its last colour three quarters of the box away, as dot's, from its focus.
+        $box = [(float) $left, (float) \min($heights), (float) ($right - $left), (float) (\max($heights) - \min($heights))];
+        $focus = GradientAxis::focus($mark->gradientAngle);
         $radial = Shading::Radial === $mark->shading;
         // A plain blend across runs column by column; any other, pixel by pixel.
         $across = !$radial && 0.0 === $mark->gradientAngle && null === $mark->gradientSplit;
@@ -238,7 +238,7 @@ final readonly class PngBackend
                 continue;
             }
             for ($y = \min($ys); $y <= \max($ys); ++$y) {
-                $share = $radial ? \min(1.0, \hypot(($x - $centre[0]) / $reach[0], ($y - $centre[1]) / $reach[1])) : GradientAxis::share($ends, $mark->gradientSplit, $x, $y);
+                $share = $radial ? GradientAxis::radial($box, $focus, $x, $y) : GradientAxis::share($ends, $mark->gradientSplit, $x, $y);
                 \imagesetpixel($canvas, $x, $y, self::color(ColorValue::mixed($gradient[0], $gradient[1], $share), $mark->opacity));
             }
         }

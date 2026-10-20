@@ -113,6 +113,45 @@ final class ShadingTest extends TestCase
         $this->assertSame([0xFF_0000, 0x00_00FF], [\imagecolorat($png, $middle, \imagesy($png) - 2) & 0xFF_FFFF, \imagecolorat($png, $middle, y: 2) & 0xFF_FFFF], 'red below the split, blue above');
     }
 
+    public function testAnAngleMovesARadialGradientsFocus(): void
+    {
+        // dot: 45 degrees puts the focus at 85% across, 15% down.
+        $this->assertEqualsWithDelta([0.8536, 0.1464], GradientAxis::focus(45.0), 1e-4);
+        $this->assertSame([0.5, 0.5], GradientAxis::focus(0.0));
+        $box = [0.0, 0.0, 20.0, 10.0];
+        $centre = [0.5, 0.5];
+        $this->assertSame(
+            [0.0, 1.0, 1.0],
+            [GradientAxis::radial($box, $centre, 10.0, 5.0), GradientAxis::radial($box, $centre, 25.0, 5.0), GradientAxis::radial($box, $centre, 10.0, 12.5)],
+            'out to three quarters of the box',
+        );
+        $this->assertEqualsWithDelta(2 / 3, GradientAxis::radial($box, $centre, 20.0, 5.0), 1e-9, 'its side, two thirds of the way');
+        $focus = GradientAxis::focus(90.0);
+        $this->assertSame(0.0, GradientAxis::radial($box, $focus, 10.0, 0.0), 'the focus takes the first colour');
+        $this->assertEqualsWithDelta(0.4, GradientAxis::radial($box, $focus, 10.0, 5.0), 1e-9, 'the centre: on the circle half its radius from the focus, 0.5 - 0.5t = 0.75t');
+
+        $drawing = new Drawing(
+            20.0,
+            10.0,
+            [new Mark(
+                MarkKind::Polygon,
+                [[0.0, 0.0], [20.0, 0.0], [20.0, 10.0], [0.0, 10.0]],
+                stroke: 'none',
+                strokeWidth: 0.0,
+                gradient: ['#ffffff', '#0000ff'],
+                shading: Shading::Radial,
+                gradientAngle: 90.0,
+            )],
+            '#000000',
+        );
+        $this->assertStringContainsString('<radialGradient id="gradient-0" cx="50%" cy="50%" r="75%" fx="50%" fy="0%">', Work::run(SvgBackend::render($drawing)));
+        $this->assertStringContainsString('/ShadingType 3 /ColorSpace /DeviceRGB /Coords [0 -0.6667 0 0 0 1]', Work::run(new PdfBackend(compress: false)->render($drawing)));
+        $png = \imagecreatefromstring(Work::run(new PngBackend()->render($drawing, dpi: 96)));
+        $this->assertNotFalse($png);
+        $middle = \intdiv(\imagesx($png), num2: 2);
+        $this->assertGreaterThan(\imagecolorat($png, $middle, \imagesy($png) - 2) & 0xFF_0000, \imagecolorat($png, $middle, y: 1) & 0xFF_0000, 'whiter at the top, where the focus is');
+    }
+
     private static function drawing(Shading $shading): Drawing
     {
         return new Drawing(

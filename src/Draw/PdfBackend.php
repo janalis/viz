@@ -145,7 +145,9 @@ final readonly class PdfBackend
         $xs = \array_column($mark->points, 0);
         $ys = \array_column($mark->points, 1);
         $canvas->transform([\max(0.001, 0.75 * (\max($xs) - \min($xs))), 0.0, 0.0, \max(0.001, 0.75 * (\max($ys) - \min($ys))), (\min($xs) + \max($xs)) / 2, (\min($ys) + \max($ys)) / 2]);
-        $canvas->radial($from, $to, [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]);
+        // The focus, in the circle's own units: half the box is two thirds of its radius.
+        [$fx, $fy] = GradientAxis::focus($mark->gradientAngle);
+        $canvas->radial($from, $to, [($fx - 0.5) / 0.75, ($fy - 0.5) / 0.75, 0.0, 0.0, 0.0, 1.0]);
     }
 
     /**
