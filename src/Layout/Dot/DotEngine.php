@@ -197,13 +197,16 @@ final readonly class DotEngine implements LayoutEngine
         $routes = [];
         $labels = [];
         $splines = [];
+        $polylines = [];
         $router = new DotSplines($layers, $position, $graph->spacing->nodeGap);
         $offsets = self::spread($layers, $graph->spacing->nodeGap * DotSplines::SPREAD);
         foreach ($edgeIndexes as $layered => $original) {
             $path = $layers->paths[$layered] ?? null;
             if (null !== $path) {
                 $routes[$original] = \array_map(static fn (int $node): array => $point($position->x[$node], $position->y[$layers->rank[$node]]), $path);
-                $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $router->route($path, $offsets[$layered]));
+                [$spline, $corners] = $router->route($path, $offsets[$layered]);
+                $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $spline);
+                $polylines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $corners);
             }
             $label = $layers->labels[$layered] ?? null;
             if (null !== $label) {
@@ -214,6 +217,6 @@ final readonly class DotEngine implements LayoutEngine
             $routes[$edgeIndexes[$layered]] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
         }
 
-        return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines);
+        return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines);
     }
 }

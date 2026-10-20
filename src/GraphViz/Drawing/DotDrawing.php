@@ -58,8 +58,10 @@ final class DotDrawing
             $this->shapes[$node->id] = DotNodes::shape($this->graph->nodes[$node->id], $endpoint->w, $endpoint->h);
         }
         $this->clusters();
-        foreach ($this->graph->edges as $index => $edge) {
-            $this->edge($index, $edge, 'none' === $background ? '#ffffff' : $background);
+        $splines = \strtolower($this->graph->attribute('splines', 'true'));
+        // As dot, `splines=none`, or set empty, draws no edges at all.
+        foreach (\in_array($splines, ['', 'none'], strict: true) ? [] : $this->graph->edges as $index => $edge) {
+            $this->edge($index, $edge, 'none' === $background ? '#ffffff' : $background, $splines);
         }
         foreach ($this->placement->graph->nodes as $node) {
             $this->node($node);
@@ -158,7 +160,8 @@ final class DotDrawing
         }
     }
 
-    private function edge(int $index, DotEdge $edge, string $background): void
+    /** @param string $splines how edges are drawn: `line` or `false` straight, `polyline` corner to corner, else curved */
+    private function edge(int $index, DotEdge $edge, string $background, string $splines): void
     {
         $styles = self::styles($edge->attribute('style'));
         if (\array_key_exists('invis', $styles)) {
@@ -168,9 +171,12 @@ final class DotDrawing
         $head = $this->placement->endpoints[$edge->head];
         $route = $this->placement->routes[$index] ?? null;
         $spline = $this->placement->splines[$index] ?? null;
+        $polyline = $this->placement->polylines[$index] ?? $route;
         // Only a loop has no route; an edge between ranks has its spline, bent to any port.
         $points = match (true) {
             null === $route => self::loop($tail),
+            \in_array($splines, ['line', 'false'], strict: true) => $this->ported([$route[0], $route[\count($route) - 1]], $edge),
+            'polyline' === $splines && null !== $polyline => $this->bent($polyline, $edge),
             null !== $spline => $this->bent($spline, $edge),
             default => Route::smooth($this->ported($route, $edge)),
         };

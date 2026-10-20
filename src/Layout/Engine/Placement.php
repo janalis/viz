@@ -17,6 +17,7 @@ final readonly class Placement
      * @param array<int, list<array{float, float}>>           $routes     waypoints by edge index, for edges that span ranks
      * @param array<int, array{float, float}>                 $labels     where each edge's label centres, by edge index, where the engine placed it
      * @param array<int, list<array{float, float}>>           $splines    each edge's curve, drawn in straight steps from its tail's centre to its head's, by edge index, where the engine routed one
+     * @param array<int, list<array{float, float}>>           $polylines  each routed edge's shortest path, corner to corner, the curve's skeleton
      */
     public function __construct(
         public GraphLayout $graph,
@@ -25,5 +26,6 @@ final readonly class Placement
         public array $routes = [],
         public array $labels = [],
         public array $splines = [],
+        public array $polylines = [],
     ) {}
 }

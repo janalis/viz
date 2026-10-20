@@ -46,12 +46,13 @@ final class DotSplines
     }
 
     /**
-     * The spline along a path through the ranks, from its first node's centre to its last's;
-     * moved across by an offset, for one of several edges sharing the path, the full offset
-     * along its middle and no further than its ends' outlines allow where it starts and ends.
+     * The spline along a path through the ranks, from its first node's centre to its last's,
+     * and the shortest path it is fitted to, corner to corner; each moved across by an offset,
+     * for one of several edges sharing the path, the full offset along its middle and no
+     * further than its ends' outlines allow where it starts and ends.
      *
      * @param list<int> $path one edge's nodes, rank by rank, either way
-     * @return list<array{float, float}> the curve, drawn in straight steps
+     * @return array{list<array{float, float}>, list<array{float, float}>} the curve, drawn in straight steps, and the corners
      */
     public function route(array $path, float $offset = 0.0): array
     {
@@ -68,12 +69,12 @@ final class DotSplines
                 $drawn[] = self::at($curve, $step / self::STEPS);
             }
         }
-
         if (0.0 !== $offset) {
             $drawn = $this->spread($drawn, $offset, $path[0], $path[\count($path) - 1]);
+            $points = $this->spread($points, $offset, $path[0], $path[\count($path) - 1]);
         }
 
-        return $down ? $drawn : \array_reverse($drawn);
+        return $down ? [$drawn, $points] : [\array_reverse($drawn), \array_reverse($points)];
     }
 
     /**

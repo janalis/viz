@@ -32,6 +32,9 @@ final class DotSplinesTest extends TestCase
             }
         }
         $this->assertCount(\count($placement->routes), $placement->splines);
+        $corners = $placement->polylines[$index];
+        $this->assertSame([$spline[0], $spline[\count($spline) - 1]], [$corners[0], $corners[\count($corners) - 1]], 'its skeleton, corner to corner');
+        $this->assertLessThan(\count($spline), \count($corners));
     }
 
     public function testAnEdgeUpTheRanksRunsFromItsTail(): void

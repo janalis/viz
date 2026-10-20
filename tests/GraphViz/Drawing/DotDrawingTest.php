@@ -334,6 +334,25 @@ final class DotDrawingTest extends TestCase
         $this->assertContains($middle, $edge->points, 'joined to the edge');
     }
 
+    public function testSplinesChooseHowEdgesAreDrawn(): void
+    {
+        $graph = 'a -> b -> c -> d; a -> x -> y -> d; a -> d [label=l]; b -> b';
+        $curved = self::kinds(self::draw('digraph { '.$graph.' }'), MarkKind::Polyline);
+        $straight = self::kinds(self::draw('digraph { splines=line; '.$graph.' }'), MarkKind::Polyline);
+        $cornered = self::kinds(self::draw('digraph { splines=polyline; '.$graph.' }'), MarkKind::Polyline);
+
+        $this->assertCount(\count($curved), $straight);
+        $this->assertCount(2, $straight[6]->points, 'a straight line');
+        $this->assertGreaterThan(2, \count($straight[7]->points), 'but for a loop');
+        $this->assertLessThan(\count($curved[6]->points), \count($cornered[6]->points), 'corner to corner');
+        $this->assertSame($straight[6]->points, self::kinds(self::draw('digraph { splines=false; '.$graph.' }'), MarkKind::Polyline)[6]->points);
+        foreach (['none', '""'] as $none) {
+            $drawing = self::draw('digraph { splines='.$none.'; '.$graph.' }');
+            $this->assertSame([], self::kinds($drawing, MarkKind::Polyline), 'no edges');
+            $this->assertNotContains('l', \array_map(static fn (Mark $mark): string => $mark->text, self::texts($drawing)), 'nor their labels');
+        }
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));
