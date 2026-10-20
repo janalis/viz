@@ -89,7 +89,7 @@ final readonly class DotEngine implements LayoutEngine
         if ($span > self::MAX_VIRTUAL) {
             throw new Unsupported('The graph is too large to lay out natively: its edges span '.$span.' ranks');
         }
-        $layers = new DotLayers($ranks, $sizes, $owner, $parents, \array_values($edges));
+        $layers = new DotLayers($ranks, $sizes, $owner, $parents, \array_values($edges), $graph->spacing->nodeGap * DotSplines::SPREAD);
         $constrained = \array_column(\array_map(static fn ($edge): array => [$edge->index, $edge->constraint], $graph->edges), 1, 0);
         $loose = \array_keys(\array_filter(\array_keys($edges), static fn (int $original): bool => !$constrained[$original]));
         $order = new DotOrdering(
@@ -141,6 +141,29 @@ final readonly class DotEngine implements LayoutEngine
         return $kept;
     }
 
+    /**
+     * How far across each edge between ranks runs from the path it shares: edges sharing one
+     * spread evenly about it, in the order they were written.
+     *
+     * @return array<int, float> by layered edge
+     */
+    private static function spread(DotLayers $layers, float $apart): array
+    {
+        $sharing = [];
+        foreach ($layers->paths as $edge => $path) {
+            $top = $layers->rank[$path[0]] < $layers->rank[$path[\count($path) - 1]] ? $path : \array_reverse($path);
+            $sharing[\implode(',', $top)][] = $edge;
+        }
+        $offsets = [];
+        foreach ($sharing as $edges) {
+            foreach ($edges as $place => $edge) {
+                $offsets[$edge] = ($place - ((\count($edges) - 1) / 2)) * $apart;
+            }
+        }
+
+        return $offsets;
+    }
+
     /** @param list<int> $edgeIndexes the original index of each edge the layers know, in their order */
     private function placement(LayoutGraph $graph, DotLayers $layers, DotPosition $position, array $edgeIndexes): Placement
     {
@@ -173,10 +196,14 @@ final readonly class DotEngine implements LayoutEngine
         }
         $routes = [];
         $labels = [];
+        $splines = [];
+        $router = new DotSplines($layers, $position, $graph->spacing->nodeGap);
+        $offsets = self::spread($layers, $graph->spacing->nodeGap * DotSplines::SPREAD);
         foreach ($edgeIndexes as $layered => $original) {
             $path = $layers->paths[$layered] ?? null;
             if (null !== $path) {
                 $routes[$original] = \array_map(static fn (int $node): array => $point($position->x[$node], $position->y[$layers->rank[$node]]), $path);
+                $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $router->route($path, $offsets[$layered]));
             }
             $label = $layers->labels[$layered] ?? null;
             if (null !== $label) {
@@ -187,6 +214,6 @@ final readonly class DotEngine implements LayoutEngine
             $routes[$edgeIndexes[$layered]] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
         }
 
-        return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels);
+        return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines);
     }
 }

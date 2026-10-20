@@ -53,9 +53,16 @@ final class DotLayers
      * @param list<int> $owner each real node's innermost cluster, -1 for none
      * @param list<int> $parents each cluster's parent, -1 for none
      * @param list<array{int, int, int, float, float}> $edges tail, head, weight, label width, label height, in authored order
+     * @param float $spread how far apart edges sharing a chain run: each widens its virtual nodes by as much
      */
-    public function __construct(array $ranks, array $sizes, array $owner, array $parents, array $edges)
-    {
+    public function __construct(
+        array $ranks,
+        array $sizes,
+        array $owner,
+        array $parents,
+        array $edges,
+        private readonly float $spread = 0.0,
+    ) {
         $this->parents = $parents;
         foreach ($ranks as $node => $rank) {
             [$width, $height] = $sizes[$node];
@@ -96,6 +103,10 @@ final class DotLayers
             [$path, $layered] = $chains[$key];
             foreach ($layered as $edge) {
                 $this->edges[$edge][2] += $weight;
+            }
+            foreach (\array_slice($path, offset: 1, length: -1) as $node) {
+                $this->left[$node] += $this->spread / 2;
+                $this->right[$node] += $this->spread / 2;
             }
 
             return $path;

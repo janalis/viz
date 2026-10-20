@@ -167,8 +167,13 @@ final class DotDrawing
         $tail = $this->placement->endpoints[$edge->tail];
         $head = $this->placement->endpoints[$edge->head];
         $route = $this->placement->routes[$index] ?? null;
-        // Only a loop has no route.
-        $points = null === $route ? self::loop($tail) : Route::smooth($this->ported($route, $edge));
+        $spline = $this->placement->splines[$index] ?? null;
+        // Only a loop has no route; an edge between ranks has its spline, unless a port moves its ends.
+        $points = match (true) {
+            null === $route => self::loop($tail),
+            null !== $spline && '' === $edge->attribute('tailport') && '' === $edge->attribute('headport') => $spline,
+            default => Route::smooth($this->ported($route, $edge)),
+        };
         $points = $this->clip($points, $edge, $tail, $head);
         $this->endLabels($edge, $points);
         $color = DotColors::resolve($edge->attribute('color'), '#000000');
