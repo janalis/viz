@@ -56,6 +56,6 @@ final class DotPipelineTest extends TestCase
         $this->assertStringStartsWith('%PDF-', $renderer->render('digraph { a -> b }', Format::Pdf)->bytes);
         $this->expectException(RenderFailure::class);
 
-        $renderer->render('digraph { layout=circo }', Format::Svg);
+        $renderer->render('digraph { layout=fdp }', Format::Svg);
     }
 }

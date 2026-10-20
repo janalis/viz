@@ -13,6 +13,7 @@ use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\GraphViz\Model\DotNode;
 use Janalis\Viz\GraphViz\Model\DotSubgraph;
+use Janalis\Viz\Layout\Circo\CircoEngine;
 use Janalis\Viz\Layout\Dot\DotEngine;
 use Janalis\Viz\Layout\Engine\LayoutEngine;
 use Janalis\Viz\Layout\Neato\NeatoEngine;
@@ -24,20 +25,29 @@ use Janalis\Viz\Layout\Twopi\TwopiEngine;
  */
 final readonly class DotPipeline implements Pipeline
 {
-    /** The layout the graph asks for: neato by distances along edges, twopi on rings, any other left here dot. */
+    /** The layout the graph asks for: neato by distances along edges, twopi on rings, circo on circles, any other left here dot. */
     private static function engine(DotGraph $graph): LayoutEngine
     {
         $root = $graph->attribute('root');
         foreach ($graph->nodes as $node) {
             $root = '' === $root && \in_array(\strtolower($node->attribute('root')), ['true', 'yes', '1'], strict: true) ? $node->name : $root;
         }
-        $gap = \trim(\explode(':', $graph->attribute('ranksep'))[0]);
+        $gap = \explode(':', $graph->attribute('ranksep'))[0];
 
         return match (\strtolower($graph->attribute('layout'))) {
             'neato' => new NeatoEngine(),
-            'twopi' => new TwopiEngine(\is_numeric($gap) ? \max(0.02, \min(DotLayoutInput::MAX_INCHES, (float) $gap)) * DotLayoutInput::POINTS : 72.0, '' === $root ? null : $root),
+            'circo' => new CircoEngine(self::points($graph->attribute('mindist'), 72.0)),
+            'twopi' => new TwopiEngine(self::points($gap, 72.0), '' === $root ? null : $root),
             default => new DotEngine(),
         };
+    }
+
+    /** A length in inches, in points: a default where it is no number, bounded otherwise. */
+    private static function points(string $inches, float $default): float
+    {
+        $inches = \trim($inches);
+
+        return \is_numeric($inches) ? \max(0.02, \min(DotLayoutInput::MAX_INCHES, (float) $inches)) * DotLayoutInput::POINTS : $default;
     }
 
     #[\Override]
