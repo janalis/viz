@@ -16,6 +16,8 @@ final readonly class DotRecord
     /** The room around a field's text, across and down, both sides together. */
     private const float ROOM_ACROSS = 16.0;
     private const float ROOM_DOWN = 8.0;
+    /** The deepest `{...}` nesting read: past it, the label is refused, so a hostile one cannot exhaust the stack. */
+    public const int MAX_DEPTH = 32;
 
     /** @param list<self> $fields */
     private function __construct(
@@ -34,7 +36,7 @@ final readonly class DotRecord
     public static function parse(string $label, bool $across, \Closure $text): ?self
     {
         $at = 0;
-        $record = self::fields($label, $at, $across, $text);
+        $record = self::fields($label, $at, $across, $text, depth: 0);
 
         return null !== $record && \strlen($label) === $at ? $record : null;
     }
@@ -138,12 +140,12 @@ final readonly class DotRecord
     }
 
     /** @param \Closure(string): DotText $text */
-    private static function fields(string $label, int &$at, bool $across, \Closure $text): ?self
+    private static function fields(string $label, int &$at, bool $across, \Closure $text, int $depth): ?self
     {
         $fields = [];
         $length = \strlen($label);
         while (true) {
-            $field = self::field($label, $at, $across, $text);
+            $field = self::field($label, $at, $across, $text, $depth);
             if (null === $field) {
                 return null;
             }
@@ -157,7 +159,7 @@ final readonly class DotRecord
     }
 
     /** @param \Closure(string): DotText $text */
-    private static function field(string $label, int &$at, bool $across, \Closure $text): ?self
+    private static function field(string $label, int &$at, bool $across, \Closure $text, int $depth): ?self
     {
         $length = \strlen($label);
         while ($at < $length && ' ' === $label[$at]) {
@@ -165,7 +167,10 @@ final readonly class DotRecord
         }
         if ($at < $length && '{' === $label[$at]) {
             ++$at;
-            $inner = self::fields($label, $at, !$across, $text);
+            if ($depth >= self::MAX_DEPTH) {
+                return null;
+            }
+            $inner = self::fields($label, $at, !$across, $text, $depth + 1);
             if (null === $inner || $at >= $length) {
                 return null;
             }

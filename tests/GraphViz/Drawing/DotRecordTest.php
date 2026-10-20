@@ -48,6 +48,12 @@ final class DotRecordTest extends TestCase
         foreach (['{a', 'a}', '{a}b', 'a{b', 'a>b', '<a', '<a><b>c', '{a}}'] as $bad) {
             $this->assertNull(DotRecord::parse($bad, across: true, text: static fn (string $label): DotText => DotText::parse($label, [])), $bad);
         }
+        $deep = \str_repeat('{', DotRecord::MAX_DEPTH);
+        $this->assertNotNull(DotRecord::parse($deep.'a'.\str_repeat('}', DotRecord::MAX_DEPTH), across: true, text: static fn (string $label): DotText => DotText::parse($label, [])));
+        $this->assertNull(
+            DotRecord::parse('{'.$deep.'a}'.\str_repeat('}', DotRecord::MAX_DEPTH), across: true, text: static fn (string $label): DotText => DotText::parse($label, [])),
+            'nested past the limit',
+        );
         $this->assertNotNull(DotRecord::parse(' { a } | b', across: true, text: static fn (string $label): DotText => DotText::parse($label, [])));
     }
 

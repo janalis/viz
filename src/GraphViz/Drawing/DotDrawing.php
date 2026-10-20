@@ -31,6 +31,8 @@ final class DotDrawing
     private array $marks = [];
     /** @var array<string, DotShape> */
     private array $shapes = [];
+    /** @var array<string, ?DotRecord> each record node's fields, read once */
+    private array $records = [];
 
     private function __construct(
         private readonly DotGraph $graph,
@@ -206,7 +208,7 @@ final class DotDrawing
         if ('point' === $shapeName) {
             return;
         }
-        $record = DotNodes::record($this->graph, $node);
+        $record = $this->record($placed->name);
         if (null === $record) {
             // As dot, a record whose label is not a record's shows its name.
             $text = DotNodes::isRecord($node) ? DotText::parse($node->name, []) : DotNodes::text($this->graph, $node);
@@ -243,6 +245,16 @@ final class DotDrawing
             }
             $this->marks[] = new Mark(MarkKind::Text, [[$centre, $baseline]], $content, stroke: $text->color, font: $text->face, fontScale: Units::fontScale($text->fontSize) / Units::POINT);
         }
+    }
+
+    /** A record node's fields, read once however many edges reach it; null for any other node. */
+    private function record(string $name): ?DotRecord
+    {
+        if (!\array_key_exists($name, $this->records)) {
+            $this->records[$name] = DotNodes::record($this->graph, $this->graph->nodes[$name]);
+        }
+
+        return $this->records[$name];
     }
 
     /** @return array{float, float, float, float} a node's box: left, top, right, bottom */
@@ -317,7 +329,7 @@ final class DotDrawing
         }
         $placed = $this->placement->endpoints[$name];
         $parts = \explode(':', $port);
-        $record = DotNodes::record($this->graph, $this->graph->nodes[$name]);
+        $record = $this->record($name);
         $field = $record?->port($parts[0], self::box($placed));
         $compass = null === $field ? $parts[0] : $parts[1] ?? 'c';
         $box = $field ?? self::box($placed);

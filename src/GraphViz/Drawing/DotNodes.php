@@ -87,15 +87,12 @@ final class DotNodes
     /** @return array{float, float} the size a node needs for its label, in points */
     public static function size(DotGraph $graph, DotNode $node): array
     {
-        $record = self::record($graph, $node);
-        if (null !== $record) {
-            return $record->size();
-        }
         if (self::isRecord($node)) {
             // As dot, a record whose label is not a record's shows its name.
-            [$width, $height] = DotText::parse($node->name, [], self::fontSize($node->attribute('fontsize')))->size();
+            [$width, $height] = self::record($graph, $node)?->size() ?? self::named($node);
+            $most = DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS;
 
-            return [$width + 16.0, $height + 8.0];
+            return [\min($most, $width), \min($most, $height)];
         }
         $shape = $node->attribute('shape', 'ellipse');
         [$width, $height] = self::text($graph, $node)->size();
@@ -127,6 +124,14 @@ final class DotNodes
             $number('distortion', default: 0.0),
             $number('orientation', default: 0.0),
         );
+    }
+
+    /** @return array{float, float} the size of a record that shows its node's name */
+    private static function named(DotNode $node): array
+    {
+        [$width, $height] = DotText::parse($node->name, [], self::fontSize($node->attribute('fontsize')))->size();
+
+        return [$width + 16.0, $height + 8.0];
     }
 
     /** A numeric attribute's value, or a default when it is not a number. */

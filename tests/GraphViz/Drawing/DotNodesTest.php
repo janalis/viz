@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\GraphViz\Drawing;
 
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\GraphViz\DotLayoutInput;
 use Janalis\Viz\GraphViz\Drawing\DotNodes;
 use Janalis\Viz\GraphViz\Drawing\Justify;
 use Janalis\Viz\GraphViz\Language\DotParser;
@@ -46,6 +47,16 @@ final class DotNodesTest extends TestCase
         $this->assertEqualsWithDelta([(4 * $cell) + 15.84, $line + 7.92], DotNodes::size($graph, $graph->nodes['bare']), 1e-9);
         $this->assertEqualsWithDelta([(6 * $cell) + 72, $line + 72], DotNodes::size($graph, $graph->nodes['margin']), 1e-9);
         $this->assertEqualsWithDelta([(3 * $cell) + 15.84, $line + 7.92], DotNodes::size($graph, $graph->nodes['odd']), 1e-9);
+    }
+
+    public function testRecordSizesKeepToTheLargestSizeTaken(): void
+    {
+        $graph = Work::run(new DotParser()->parse('digraph { a [shape=record, label="'.\str_repeat('x|', times: 20_000).'"]; b [shape=record, label="{bad"] }'));
+        [$width] = DotNodes::size($graph, $graph->nodes['a']);
+        [$named] = DotNodes::size($graph, $graph->nodes['b']);
+
+        $this->assertSame(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, $width);
+        $this->assertGreaterThan(16.0, $named, 'a bad label sizes the name');
     }
 
     public function testShapesTakeTheirPolygonAttributes(): void
