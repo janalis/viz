@@ -77,10 +77,13 @@ final readonly class DescriptionBox
         $labelWidth = \max($textWidth, $stereoWidth);
         $labelHeight = $textHeight + $stereoHeight;
         [$width, $height] = match (true) {
+            // PlantUML fits the smallest ellipse of the text's aspect around it, so its height grows
+            // with the text's width; the bundled font is wider than PlantUML's, so the height is
+            // taken from the text's height alone, which keeps it as tall as PlantUML's.
             'usecase' === $element->symbol => [($labelWidth * \M_SQRT2) + 20, ($labelHeight * \M_SQRT2) + 10],
             // As PlantUML, an interface's node is its circle alone, its name hanging below it.
             \in_array($element->symbol, ['interface', 'circle'], strict: true) => self::ICONS[$element->symbol],
-            \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight + 4],
+            \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight],
             // As PlantUML, a folder keeps room for a title it does not show, 40 by 15, above its label.
             'folder' === $element->symbol => self::boxed($element->symbol, \max(self::FOLDER_TITLE[0], $labelWidth), self::FOLDER_TITLE[1] + $labelHeight),
             default => self::boxed($element->symbol, $labelWidth, $labelHeight),
@@ -143,10 +146,10 @@ final readonly class DescriptionBox
         return [...$marks, ...$this->label($x, $top, $this->width)];
     }
 
-    /** How far an icon's name stands below it: 8 under an interface's circle, outside its node, 4 under the others. */
+    /** How far an icon's name stands below it: 8 under an interface's circle, outside its node, right under the others. */
     private static function gap(string $symbol): float
     {
-        return \in_array($symbol, ['interface', 'circle'], strict: true) ? 8.0 : 4.0;
+        return \in_array($symbol, ['interface', 'circle'], strict: true) ? 8.0 : 0.0;
     }
 
     /** @return list<Mark> the stereotypes above the text, both centred within a width */

@@ -37,7 +37,7 @@ return [
     'description/notes' => 4,
     'description/packages' => 4,
     'description/symbols' => 4,
-    'description/usecases' => 2,
+    'description/usecases' => 4,
     'sequence/activations' => 4,
     'sequence/autonumber' => 4,
     'sequence/boxes' => 4,
