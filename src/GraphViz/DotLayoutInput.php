@@ -112,6 +112,7 @@ final class DotLayoutInput
             ),
             rankSets: $sets,
             aspect: self::aspect($graph),
+            concentrate: \in_array(\strtolower($graph->attribute('concentrate')), ['true', 'yes', '1'], strict: true),
         );
     }
 

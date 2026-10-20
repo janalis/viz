@@ -18,6 +18,7 @@ final readonly class Placement
      * @param array<int, array{float, float}>                 $labels     where each edge's label centres, by edge index, where the engine placed it
      * @param array<int, list<array{float, float}>>           $splines    each edge's curve, drawn in straight steps from its tail's centre to its head's, by edge index, where the engine routed one
      * @param array<int, list<array{float, float}>>           $polylines  each routed edge's shortest path, corner to corner, the curve's skeleton
+     * @param array<int, list<array{list<array{float, float}>, list<array{float, float}>, bool, bool}>> $pieces where edges merge, each edge's own parts, drawn by it alone: their curve, its corners, and whether a part starts at the edge's tail and ends at its head
      */
     public function __construct(
         public GraphLayout $graph,
@@ -27,5 +28,6 @@ final readonly class Placement
         public array $labels = [],
         public array $splines = [],
         public array $polylines = [],
+        public array $pieces = [],
     ) {}
 }

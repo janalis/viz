@@ -440,6 +440,30 @@ final class DotDrawingTest extends TestCase
         $this->assertSame('#d3d3d3', $filled[2]->fill, 'without a list, a plain fill');
     }
 
+    public function testConcentratedEdgesDrawEachStretchOnceAndJoinWhereTheyBranch(): void
+    {
+        $graph = 'a -> b -> c -> d -> e; a -> c; a -> d; a -> e; a -> e';
+        $apart = self::draw('digraph { '.$graph.' }');
+        $merged = self::draw('digraph { concentrate=true; '.$graph.' }');
+        $arrows = static fn (Drawing $drawing): int => \count(\array_filter(self::kinds($drawing, MarkKind::Polygon), static fn (Mark $mark): bool => '#000000' === $mark->fill));
+        $lines = self::kinds($merged, MarkKind::Polyline);
+
+        $this->assertSame(8, $arrows($apart));
+        $this->assertSame(7, $arrows($merged), 'one arrowhead into e from a, the edges to it merged');
+        // a → b, b → c, c → d, d → e, then a's trunk: to its first branch, on to c, to its second, on to d, on to e.
+        $this->assertCount(9, $lines);
+        [$trunk, $toC, $onward, $toD, $toE] = \array_slice($lines, offset: 4);
+        $end = static fn (Mark $mark): array => $mark->points[\count($mark->points) - 1];
+        $this->assertEqualsWithDelta($end($trunk), $toC->points[0], 1e-9, 'the parts join where they branch');
+        $this->assertEqualsWithDelta($end($trunk), $onward->points[0], 1e-9);
+        $this->assertEqualsWithDelta($end($onward), $toD->points[0], 1e-9);
+        $this->assertEqualsWithDelta($end($onward), $toE->points[0], 1e-9);
+        $straight = self::kinds(self::draw('digraph { concentrate=true; splines=line; a -> b -> c; a -> c; a -> d -> e; a -> e }'), MarkKind::Polyline);
+        $this->assertSame([2, 2], [\count($straight[2]->points), \count($straight[3]->points)], 'straight, each part');
+        $this->assertCount(\count($lines), self::kinds(self::draw('digraph { concentrate=true; splines=polyline; '.$graph.' }'), MarkKind::Polyline), 'corner to corner, the same parts');
+        $this->assertCount(3, self::kinds(self::draw('digraph { concentrate=true; a -> a; a -> b; { rank=same; b -> c } }'), MarkKind::Polyline), 'loops and flat edges drawn whole');
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));

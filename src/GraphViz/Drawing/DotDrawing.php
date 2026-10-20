@@ -182,36 +182,44 @@ final class DotDrawing
         }
         $tail = $this->placement->endpoints[$edge->tail];
         $route = $this->placement->routes[$index] ?? null;
-        $points = $this->paths->path($index, $edge, $splines);
+        // An edge merged with others draws only its own parts; one wholly drawn by them, nothing.
+        $pieces = $this->paths->pieces($index, $edge, $splines);
+        if ([] === $pieces) {
+            return;
+        }
         [$tailMeets, $headMeets] = $this->meets[$index] ?? [null, null];
         if (null !== $tailMeets || null !== $headMeets) {
-            $points = Route::eased($points, $tailMeets ?? $points[0], $headMeets ?? $points[\count($points) - 1]);
+            $only = $pieces[0][0];
+            $pieces[0][0] = Route::eased($only, $tailMeets ?? $only[0], $headMeets ?? $only[\count($only) - 1]);
         }
-        $this->endLabels($edge, $points);
+        $this->endLabels($edge, self::joined($pieces));
         $colors = DotStrokes::ends($edge->attribute('color'));
         $penWidth = self::penWidth($edge->attribute('penwidth'), $styles);
         $size = \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0)));
         $direction = \strtolower($edge->attribute('dir', $this->graph->directed ? 'forward' : 'none'));
-        foreach ([['head', 'forward'], ['tail', 'back']] as [$end, $wanted]) {
-            if ($direction !== $wanted && 'both' !== $direction) {
+        foreach ([['head', 'forward', \count($pieces) - 1, 2], ['tail', 'back', 0, 1]] as [$end, $wanted, $at, $reaches]) {
+            if (($direction !== $wanted && 'both' !== $direction) || !$pieces[$at][$reaches]) {
                 continue;
             }
             $arrow = DotArrow::parse($edge->attribute('arrow'.$end, 'normal'));
-            $points = 'head' === $end ? $points : \array_reverse($points);
-            [$points, $tip, $along] = Route::shorten($points, $arrow->length($size));
+            $line = 'head' === $end ? $pieces[$at][0] : \array_reverse($pieces[$at][0]);
+            [$line, $tip, $along] = Route::shorten($line, $arrow->length($size));
             \array_push($this->marks, ...$arrow->marks($tip, $along, $size, $colors['head' === $end ? 1 : 0], $background, $penWidth));
-            $points = 'head' === $end ? $points : \array_reverse($points);
+            $pieces[$at][0] = 'head' === $end ? $line : \array_reverse($line);
         }
-        foreach (DotStrokes::lines($points, $edge->attribute('color')) as [$line, $stroke]) {
-            $this->marks[] = new Mark(
-                MarkKind::Polyline,
-                $line,
-                stroke: $stroke,
-                dashed: \array_key_exists('dashed', $styles) || \array_key_exists('dotted', $styles),
-                strokeWidth: $penWidth,
-                dashes: \array_key_exists('dotted', $styles) ? [1.0, 3.0] : null,
-            );
+        foreach ($pieces as [$piece]) {
+            foreach (DotStrokes::lines($piece, $edge->attribute('color')) as [$line, $stroke]) {
+                $this->marks[] = new Mark(
+                    MarkKind::Polyline,
+                    $line,
+                    stroke: $stroke,
+                    dashed: \array_key_exists('dashed', $styles) || \array_key_exists('dotted', $styles),
+                    strokeWidth: $penWidth,
+                    dashes: \array_key_exists('dotted', $styles) ? [1.0, 3.0] : null,
+                );
+            }
         }
+        $points = self::joined($pieces);
         $external = DotNodes::externalText($this->graph, $edge);
         if (!$external->empty()) {
             // As dot, an edge's external label stands by its middle, above and left where it is clear.
@@ -468,6 +476,22 @@ final class DotDrawing
         }
 
         return $styles;
+    }
+
+    /**
+     * An edge's parts, one after the other.
+     *
+     * @param list<array{list<array{float, float}>, bool, bool}> $pieces
+     * @return list<array{float, float}>
+     */
+    private static function joined(array $pieces): array
+    {
+        $points = [];
+        foreach ($pieces as [$piece]) {
+            \array_push($points, ...$piece);
+        }
+
+        return $points;
     }
 
     /**

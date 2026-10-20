@@ -33,5 +33,7 @@ final readonly class LayoutGraph
         public array $rankSets = [],
         /** The height-to-width ratio a layout stretches its positions to, never shrinking them, as dot's `ratio`; null for none. */
         public ?float $aspect = null,
+        /** Whether edges running together merge into one line, as dot's `concentrate` merges them. */
+        public bool $concentrate = false,
     ) {}
 }

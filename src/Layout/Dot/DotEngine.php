@@ -89,7 +89,15 @@ final readonly class DotEngine implements LayoutEngine
         if ($span > self::MAX_VIRTUAL) {
             throw new Unsupported('The graph is too large to lay out natively: its edges span '.$span.' ranks');
         }
-        $layers = new DotLayers($ranks, $sizes, $owner, $parents, \array_values($edges), $graph->spacing->nodeGap * DotSplines::SPREAD);
+        $layers = new DotLayers(
+            $ranks,
+            $sizes,
+            $owner,
+            $parents,
+            \array_values($edges),
+            $graph->spacing->nodeGap * DotSplines::SPREAD,
+            $graph->concentrate ? Concentration::Merged : Concentration::Apart,
+        );
         $constrained = \array_column(\array_map(static fn ($edge): array => [$edge->index, $edge->constraint], $graph->edges), 1, 0);
         $loose = \array_keys(\array_filter(\array_keys($edges), static fn (int $original): bool => !$constrained[$original]));
         $order = new DotOrdering(
@@ -223,7 +231,8 @@ final readonly class DotEngine implements LayoutEngine
         $splines = [];
         $polylines = [];
         $router = new DotSplines($layers, $position, $graph->spacing->nodeGap);
-        $offsets = self::spread($layers, $graph->spacing->nodeGap * DotSplines::SPREAD);
+        // Merged, edges between the same two nodes are one line, none spread.
+        $offsets = self::spread($layers, $graph->concentrate ? 0.0 : $graph->spacing->nodeGap * DotSplines::SPREAD);
         foreach ($edgeIndexes as $layered => $original) {
             $path = $layers->paths[$layered] ?? null;
             if (null !== $path) {
@@ -241,6 +250,68 @@ final readonly class DotEngine implements LayoutEngine
             $routes[$edgeIndexes[$layered]] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
         }
 
-        return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines);
+        $pieces = [];
+        if ($graph->concentrate) {
+            foreach (self::pieces($layers, $edgeIndexes) as $original => $runs) {
+                $pieces[$original] = \array_map(static function (array $run) use ($router, $point): array {
+                    [$spline, $corners] = $router->route($run[0]);
+
+                    return [
+                        \array_map(static fn (array $at): array => $point($at[0], $at[1]), $spline),
+                        \array_map(static fn (array $at): array => $point($at[0], $at[1]), $corners),
+                        $run[1],
+                        $run[2],
+                    ];
+                }, $runs);
+            }
+        }
+
+        return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines, $pieces);
+    }
+
+    /**
+     * As dot draws merged edges, each stretch between ranks once: by the first edge along it.
+     * Each edge's own stretches, in runs broken where chains branch, and whether a run starts
+     * at its tail and ends at its head.
+     *
+     * @param list<int> $edgeIndexes
+     * @return array<int, list<array{list<int>, bool, bool}>> by original edge
+     */
+    private static function pieces(DotLayers $layers, array $edgeIndexes): array
+    {
+        // Where merged chains branch, at a node more than two stretches meet, each part ends, so they join there.
+        $stretches = [];
+        foreach ($layers->paths as $path) {
+            for ($index = 1, $count = \count($path); $index < $count; ++$index) {
+                $stretches[$path[$index - 1]][$path[$index]] = true;
+                $stretches[$path[$index]][$path[$index - 1]] = true;
+            }
+        }
+        $drawn = [];
+        $pieces = [];
+        foreach ($edgeIndexes as $layered => $original) {
+            $path = $layers->paths[$layered] ?? null;
+            if (null === $path) {
+                continue;
+            }
+            $pieces[$original] = [];
+            // The run of stretches this edge draws, from one place along its path to another; none at -1.
+            [$from, $to] = [-1, 0];
+            $last = \count($path) - 1;
+            for ($index = 1; $index <= $last; ++$index) {
+                $key = \min($path[$index - 1], $path[$index]).'-'.\max($path[$index - 1], $path[$index]);
+                $own = !\array_key_exists($key, $drawn);
+                $drawn[$key] = true;
+                if ($own) {
+                    [$from, $to] = [-1 === $from ? $index - 1 : $from, $index];
+                }
+                if (-1 !== $from && (!$own || $index === $last || \count($stretches[$path[$index]]) > 2)) {
+                    $pieces[$original][] = [\array_slice($path, $from, $to - $from + 1), 0 === $from, $last === $to];
+                    $from = -1;
+                }
+            }
+        }
+
+        return $pieces;
     }
 }

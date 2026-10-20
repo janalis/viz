@@ -46,6 +46,10 @@ final class DotLayers
     public array $loops = [];
     /** @var list<int> each cluster's parent, -1 at the top level */
     public array $parents = [];
+    /** @var array<string, array<int, int>> merged chains' trunks, each its virtual node by rank, by the node they leave or reach and the way they run */
+    private array $trunks = [];
+    /** @var array<string, int> each stretch between neighbouring ranks, by its ends */
+    private array $stretches = [];
 
     /**
      * @param list<int> $ranks each real node's rank
@@ -54,6 +58,7 @@ final class DotLayers
      * @param list<int> $parents each cluster's parent, -1 for none
      * @param list<array{0: int, 1: int, 2: int, 3: float, 4: float, 5?: float, 6?: float}> $edges tail, head, weight, label width, label height, and where across its tail and its head it ends, in authored order
      * @param float $spread how far apart edges sharing a chain run: each widens its virtual nodes by as much
+     * @param Concentration $concentration whether edges merge their chains, as dot's `concentrate`
      */
     public function __construct(
         array $ranks,
@@ -62,6 +67,7 @@ final class DotLayers
         array $parents,
         array $edges,
         private readonly float $spread = 0.0,
+        private readonly Concentration $concentration = Concentration::Apart,
     ) {
         $this->parents = $parents;
         foreach ($ranks as $node => $rank) {
@@ -84,10 +90,11 @@ final class DotLayers
             $down = $ranks[$tail] < $ranks[$head];
             [$top, $bottom] = $down ? [$tail, $head] : [$head, $tail];
             $ports = $down ? [$edge[5] ?? 0.0, $edge[6] ?? 0.0] : [$edge[6] ?? 0.0, $edge[5] ?? 0.0];
-            $path =
-                $labelWidth > 0 || $labelHeight > 0
-                    ? $this->chain($top, $bottom, $weight, $ports, [$labelWidth, $labelHeight, $index])
-                    : $this->shared($chains, $top, $bottom, $weight, $ports);
+            $path = match (true) {
+                $labelWidth > 0 || $labelHeight > 0 => $this->chain($top, $bottom, $weight, $ports, [$labelWidth, $labelHeight, $index]),
+                Concentration::Merged === $this->concentration && [0.0, 0.0] === $ports => $this->merged($top, $bottom, $weight, $down ? 'down' : 'up'),
+                default => $this->shared($chains, $top, $bottom, $weight, $ports),
+            };
             $this->paths[$index] = $ranks[$tail] < $ranks[$head] ? $path : \array_reverse($path);
         }
     }
@@ -144,25 +151,85 @@ final class DotLayers
         }
         $path[] = $bottom;
         for ($index = 1, $count = \count($path); $index < $count; ++$index) {
-            $tail = $path[$index - 1];
-            $head = $path[$index];
-            $virtual = (int) (self::REAL !== $this->kind[$tail]) + (int) (self::REAL !== $this->kind[$head]);
-            // Crossing two virtual stretches costs more than crossing at a node: long edges stay straight.
-            $this->edges[] = [
-                $tail,
-                $head,
-                $weight,
-                match ($virtual) {
-                    2 => 8,
-                    1 => 2,
-                    default => 1,
-                },
-                1 === $index ? $ports[0] : 0.0,
-                ($count - 1) === $index ? $ports[1] : 0.0,
-            ];
+            $this->link($path[$index - 1], $path[$index], $weight, 1 === $index ? $ports[0] : 0.0, ($count - 1) === $index ? $ports[1] : 0.0);
         }
 
         return $path;
+    }
+
+    /**
+     * A chain merged with the others leaving its top the same way, as far as their trunk
+     * reaches, then with the others reaching its bottom the same way, as far up as theirs
+     * does; new virtual nodes between extend both trunks. A stretch already made only weighs more.
+     *
+     * @param string $way which way the edge runs, down the ranks or up: only edges running one way merge
+     * @return list<int> the path, top to bottom
+     */
+    private function merged(int $top, int $bottom, int $weight, string $way): array
+    {
+        $out = $this->trunks['out:'.$top.':'.$way] ?? [];
+        $in = $this->trunks['in:'.$bottom.':'.$way] ?? [];
+        $owner = $this->common($this->cluster[$top], $this->cluster[$bottom]);
+        $path = [$top];
+        $made = [];
+        $leaving = true;
+        for ($rank = $this->rank[$top] + 1; $rank < $this->rank[$bottom]; ++$rank) {
+            // The trunk from the top is followed while it lasts; the one to the bottom reaches up unbroken.
+            $leaving = $leaving && \array_key_exists($rank, $out);
+            $node = $leaving ? $out[$rank] : $in[$rank] ?? null;
+            if (null === $node) {
+                $node = $this->add($rank, self::VIRTUAL, 1.0, 1.0, 1.0, $owner);
+                $made[$node] = true;
+            }
+            $path[] = $node;
+        }
+        $path[] = $bottom;
+        foreach (\array_slice($path, offset: 1, length: -1) as $node) {
+            if (!\array_key_exists($node, $made) && !\in_array($node, $out, strict: true)) {
+                break;
+            }
+            $this->trunks['out:'.$top.':'.$way][$this->rank[$node]] ??= $node;
+        }
+        foreach (\array_reverse(\array_slice($path, offset: 1, length: -1)) as $node) {
+            if (!\array_key_exists($node, $made) && !\in_array($node, $in, strict: true)) {
+                break;
+            }
+            $this->trunks['in:'.$bottom.':'.$way][$this->rank[$node]] ??= $node;
+        }
+        for ($index = 1, $count = \count($path); $index < $count; ++$index) {
+            $this->link($path[$index - 1], $path[$index], $weight, 0.0, 0.0);
+        }
+
+        return $path;
+    }
+
+    /**
+     * The stretch between two nodes on neighbouring ranks: made, or, where a merged chain made
+     * it already, weighing more.
+     */
+    private function link(int $tail, int $head, int $weight, float $tailPort, float $headPort): void
+    {
+        $key = $tail.'>'.$head;
+        if (Concentration::Merged === $this->concentration && \array_key_exists($key, $this->stretches)) {
+            $this->edges[$this->stretches[$key]][2] += $weight;
+
+            return;
+        }
+        $this->stretches[$key] = \count($this->edges);
+        $virtual = (int) (self::REAL !== $this->kind[$tail]) + (int) (self::REAL !== $this->kind[$head]);
+        // Crossing two virtual stretches costs more than crossing at a node: long edges stay straight.
+        $this->edges[] = [
+            $tail,
+            $head,
+            $weight,
+            match ($virtual) {
+                2 => 8,
+                1 => 2,
+                default => 1,
+            },
+            $tailPort,
+            $headPort,
+        ];
     }
 
     private function add(int $rank, int $kind, float $left, float $right, float $height, int $cluster): int

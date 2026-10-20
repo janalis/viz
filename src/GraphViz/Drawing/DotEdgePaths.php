@@ -60,6 +60,38 @@ final class DotEdgePaths
     }
 
     /**
+     * The parts of its path an edge draws, each clipped where it reaches the edge's ends, and
+     * whether it starts at the tail and ends at the head: the whole path, or, where edges merge,
+     * the stretches no edge before drew; none for an edge they drew wholly.
+     *
+     * @return list<array{list<array{float, float}>, bool, bool}>
+     */
+    public function pieces(int $index, DotEdge $edge, string $splines): array
+    {
+        $parts = $this->placement->pieces[$index] ?? null;
+        if (null === $parts) {
+            return [[$this->path($index, $edge, $splines), true, true]];
+        }
+        $tail = $this->placement->endpoints[$edge->tail];
+        $head = $this->placement->endpoints[$edge->head];
+
+        return \array_map(fn (array $part): array => [
+            $this->clip(
+                match (true) {
+                    \in_array($splines, ['line', 'false'], strict: true) => [$part[1][0], $part[1][\count($part[1]) - 1]],
+                    'polyline' === $splines => $part[1],
+                    default => $part[0],
+                },
+                $edge,
+                $tail,
+                $head,
+            ),
+            $part[2],
+            $part[3],
+        ], $parts);
+    }
+
+    /**
      * Where edges sharing a `samehead` at their head, or a `sametail` at their tail, meet: on
      * the node's outline, toward where their ends would fall on their own, on average.
      *

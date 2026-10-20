@@ -18,7 +18,6 @@ final class DotFeatureGateTest extends TestCase
     {
         yield 'layout' => ['graph { layout=neato }', 'the neato layout'];
         yield 'ortho' => ['graph { splines=ortho }', 'orthogonal splines'];
-        yield 'concentrate' => ['graph { concentrate=true }', 'concentrated edges'];
         yield 'compress' => ['graph { ratio=compress }', 'ratio=compress'];
         yield 'html' => ['graph { a -- b [taillabel=<b>] }', 'HTML in taillabel'];
         yield 'image' => ['graph { a [image="x.png"] }', 'images'];
@@ -40,7 +39,7 @@ final class DotFeatureGateTest extends TestCase
     public function testWhatTheNativeDrawingHandlesPasses(): void
     {
         DotFeatureGate::check(Work::run(new DotParser()->parse(
-            'digraph { layout=dot; rotate=90; landscape=true; orientation=land; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; b [style=wedged fillcolor="red;0.3:blue"]; c [style=radial fillcolor="white:red" pos="1,1" pin=true]; a -> b [color="blue:red;0.5"] }',
+            'digraph { layout=dot; concentrate=true; rotate=90; landscape=true; orientation=land; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; b [style=wedged fillcolor="red;0.3:blue"]; c [style=radial fillcolor="white:red" pos="1,1" pin=true]; a -> b [color="blue:red;0.5"] }',
         )));
 
         $this->addToAssertionCount(1);
