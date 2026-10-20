@@ -65,9 +65,12 @@ final class ConverterTest extends TestCase
         $mermaid = new Converter()->convert("@startuml\nclass A\nA <|-- B\n@enduml", SourceFormat::PlantUml, SourceFormat::Mermaid);
         $this->assertStringContainsString('A <|-- B', $mermaid);
 
-        $this->expectExceptionObject(new UnsupportedConversion('PlantUML cannot be read here: The native PlantUML renderer does not draw activity diagrams'));
+        $activity = new Converter()->convert("@startuml\nstart\n:act;\nstop\n@enduml", SourceFormat::PlantUml, SourceFormat::PlantUml);
+        $this->assertStringContainsString(":act;\nstop", $activity);
 
-        new Converter()->read("@startuml\nstart\n:act;\nstop\n@enduml", SourceFormat::PlantUml);
+        $this->expectExceptionObject(new UnsupportedConversion('PlantUML cannot be read here: The native PlantUML renderer does not draw the legacy activity syntax'));
+
+        new Converter()->read("@startuml\n(*) --> A\n@enduml", SourceFormat::PlantUml);
     }
 
     public function testAMermaidFamilyWithoutASharedModelDoesNotConvert(): void

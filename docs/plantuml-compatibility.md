@@ -30,7 +30,7 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | Description (component, deployment, use case) | yes, below |
 | State | yes, below |
 | Sequence | read natively into the shared model and drawn natively by a port of teoz, below |
-| Activity | not yet: drawn by PlantUML |
+| Activity | yes, below |
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
@@ -80,3 +80,15 @@ A diagram PlantUML fails to draw is left to it too: a second note beside a messa
 | `activate`, `deactivate`, `destroy`, `create`, `X++`, `X--`, `return`, `autoactivate`; groups (`alt`, `else`, `opt`, `loop`, `par`, `break`, `critical`, `group … [label]`), `&` before a group | Parallel notes (`& note`) |
 | Notes left, right and over one or two participants, across, `hnote`, `rnote`, on a row with `/`, on messages; dividers, delays, space, `ref over`; `autonumber` with its start, step, format, `stop`, `resume` and `inc` | |
 
+### Activity diagrams
+
+Activity diagrams in the new syntax are read natively — with PlantUML's own rules for which step an arrow, a colour, a label or a note belongs to, for `kill`, `detach` and `break`, refusing what PlantUML refuses — into the shared activity model, and drawn natively by a port of PlantUML's tile layout (`PlantUML\Ftile`). Each step is a tile of PlantUML's size, steps are 35 apart with the arrow between them, and decisions, loops and forks place their branches and draw their arrows as PlantUML's tiles do. Arrows meeting end to start are merged before they are drawn, and the whole is then compressed across and down — every gap longer than 10 between what is drawn shrinks to 10 — and set in the document's frame as PlantUML sets it. Heights follow PlantUML's within a few points; text is measured in the bundled monospace font, so diagrams come out somewhat wider.
+
+| Drawn natively | Left to PlantUML |
+| --- | --- |
+| Actions over one or several lines, with `<<input>>`, `<<output>>`, `<<procedure>>`, `<<load>>`, `<<save>>`, `<<continuous>>`, `<<task>>`, `<<object>>`, `<<objectsignal>>`, `<<acceptevent>>`, `<<timeevent>>` and `<<#colour>>`; `start`, `stop`, `end`, connectors `(A)`, `kill`, `detach` | Swimlanes, `goto` and `label`, URLs, emoji and sprite stereotypes, the legacy syntax (`(*)`, `-->`) |
+| `if`, `elseif`, `else`, `endif` with tests, labels and colours, laid out side by side, down one side when a branch is empty or only stops, or across for else-ifs; `skinparam conditionStyle` | `switch`; `skinparam conditionEndStyle hline`; `!pragma useVerticalIf` |
+| `while` with its labels, `backward`, `break`, and a stop or end drawn on its way out; `repeat` with a starting action, `backward`, `break`, and its test's labels | Arrows of several colours (`-[#red;#blue]->`) |
+| `fork`, `fork again`, `end fork` with its label, `end merge`; `split`, `split again`, `end split` | |
+| `partition`, `group`, `rectangle` and `card` with their titles and colours; notes beside steps, floating, over several lines, beside decisions, loops and forks | `package`; deprecated forms PlantUML warns of |
+| Arrows with labels, colours and `dashed`, `dotted`, `bold`, `hidden` | |

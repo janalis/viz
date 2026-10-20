@@ -1,0 +1,233 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Janalis\Viz\Tests\PlantUML\Ftile;
+
+use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\PlantUmlPipeline;
+use Janalis\Viz\Render\Work;
+use Janalis\Viz\Source\Unsupported;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+
+final class ActivityDrawingTest extends TestCase
+{
+    /** The frame's margin around the diagram, in points. */
+    private const float MARGIN = 10.0;
+
+    public function testAStartAndAStopStandAsPlantUmlSetsThem(): void
+    {
+        $drawing = self::draw("start\nstop");
+        $marks = self::points($drawing);
+        // As the jar: the start's centre at 19, 15 from the frame, the stop's 41 below, the arrow 20 long between them.
+        $this->assertEqualsWithDelta([19.0, 15.0], self::centre($marks[0]), 1e-9);
+        $this->assertEqualsWithDelta([19.0, 56.0], self::centre($marks[1]), 1e-9);
+        $line = \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind))[0];
+        $this->assertEqualsWithDelta([[19.0, 25.0], [19.0, 45.0]], $line->points, 1e-9);
+        $this->assertEqualsWithDelta(63.0, $drawing->width / Units::POINT, 1e-9);
+        $this->assertEqualsWithDelta(96.0, $drawing->height / Units::POINT, 1e-9);
+    }
+
+    /** @return iterable<string, array{string, list<string>}> */
+    public static function diagrams(): iterable
+    {
+        yield 'actions' => [":Hello world;\n:This is defined on\nseveral **lines**;", ['Hello world', 'several lines']];
+        yield 'a decision' => [
+            "start\nif (Graphviz installed?) then (yes)\n  :process all\\ndiagrams;\nelse (no)\n  :process only\n  __sequence__ diagrams;\nendif\nstop",
+            ['Graphviz installed?', 'yes', 'no', 'diagrams', 'sequence diagrams'],
+        ];
+        yield 'elseifs' => [
+            "start\nif (condition A) then (yes)\n  :Text 1;\nelseif (condition B) then (yes)\n  :Text 2;\n  stop\n(no) elseif (condition C) then (yes)\n  :Text 3;\n  -> out;\nelse (nothing)\n  :Text else;\n  -> gone;\nendif\n-[#red]->\nstop",
+            ['condition A', 'condition C', 'no', 'out', 'gone', 'Text else'],
+        ];
+        yield 'elseifs none leaving' => ["if (a) then\n  stop\nelseif (b) then\n  stop\nelse\n  :c;\nendif", ['a', 'b', 'c']];
+        yield 'elseifs none leaving at all' => ["if (a) then\n  stop\nelseif (b) then\n  stop\nelse\n  stop\nendif", ['a', 'b']];
+        yield 'a decision without else' => ["start\nif (condition?) then\n  :action;\nendif\nstop", ['condition?', 'action']];
+        yield 'a decision whose else stops' => ["start\nif (condition?) then (yes)\n  :action;\nelse (no)\n  stop\nendif\n:after;\nstop", ['yes', 'no', 'after']];
+        yield 'a decision whose then stops' => ["start\nif (condition?) then (yes)\n  stop\nelse (no)\n  :action;\nendif\nstop", ['yes', 'no', 'action']];
+        yield 'a decision with an empty then' => ["start\nif (condition?) then (yes)\nelse (no)\n  :action;\nendif\nstop", ['condition?', 'action']];
+        yield 'a decision with an empty then and an else stopping' => ["if (c?) then (yes)\nelse (no)\n  stop\nendif\n:x;", ['c?', 'x']];
+        yield 'a decision whose stopping then is alone' => ["if (c?) then (yes)\n  stop\nendif\n:x;", ['c?', 'x']];
+        yield 'a decision with a branch that never leaves' => ["if (c?) then\n  :a;\n  kill\nelse\n  :b;\nendif\n:x;", ['a', 'b', 'x']];
+        yield 'a decision whose else leaves alone' => ["if (c?) then\n  :a;\n  detach\nelse\n  :b;\n  -[#blue]->\nendif\n:x;", ['a', 'b']];
+        yield 'a decision with no branch leaving' => ["if (c?) then\n  :a;\n  detach\nelse\n  :b;\n  detach\nendif", ['a', 'b']];
+        yield 'a decision with long labels' => [
+            "if (c?) then (a very long label for the first branch)\n  :a;\nelse (a very long label\\non two lines\\nand three)\n  :b;\nendif",
+            ['a very long label for the first branch', 'and three'],
+        ];
+        yield 'a decision with notes' => ["if (c?) then\n  :a;\nelse\n  :b;\nendif\nnote left: a long note on the left\nnote right: right\nnote right: again", ['a long note on the left', 'right']];
+        yield 'a decision down with a note' => ["if (c?) then\n  :a;\nendif\nnote left: a long note on the left", ['a long note on the left']];
+        yield 'a decision with colours' => ["if (c?) then (yes)\n  -[#blue]->\n  :a;\nelse (no)\n  :b;\n  -[#green]-> out;\nendif <<#pink>>\n-[#gray,bold]->\n:c;", ['out', 'c']];
+        yield 'a decision coloured' => ["if (c?) then (yes) <<#pink>>\n  :a;\nelse\n  :b;\nendif", ['c?']];
+        yield 'nested decisions' => ["start\nif (a) then\n  :b;\nelse\n  :c;\n  if (d) then\n    :e;\n  endif\nendif\nstop", ['a', 'b', 'c', 'd', 'e']];
+        yield 'a repeat' => ["start\nrepeat\n  :read data;\nrepeat while (more data?) is (yes) not (no)\nstop", ['read data', 'more data?', 'yes', 'no']];
+        yield 'a repeat with a start label' => ["start\nrepeat :foo as starting label;\n  :read data;\n-> back;\nrepeat while (more data?) is (yes)\n->no;\nstop", ['foo as starting label', 'no']];
+        yield 'a repeat backward' => [
+            "start\nrepeat\n  :read data;\nbackward:This is backward;\nnote right: on the way back\nrepeat while (more data?)\nstop",
+            ['This is backward', 'on the way back'],
+        ];
+        yield 'a repeat backward labelled' => ["repeat\n  :a;\nbackward:back;\n-> again;\nrepeat while (more?)\n:b;", ['back', 'more?']];
+        yield 'a repeat ending the diagram' => ["start\nrepeat\n  :a;\nrepeat while", ['a']];
+        yield 'a repeat with breaks' => [
+            "start\nrepeat\n  :Test something;\n  if (wrong?) then (no)\n    :OK;\n    break\n  endif\n  if (worse?) then (no)\n    break\n  endif\n  :Alert;\nrepeat while (again?) is (yes) not (no)\n:Alert success;\nstop",
+            ['Test something', 'Alert success'],
+        ];
+        yield 'a repeat killed' => ["repeat\n  :a;\nrepeat while (b?)\nkill", ['a']];
+        yield 'a repeat with an arrow in' => ["repeat\n  -> into;\n  :a;\nrepeat while (b?)", ['into']];
+        yield 'a repeat in a decision' => ["if (x) then\n  repeat\n    :a;\n  repeat while (b?)\nelse\n  :c;\nendif", ['a', 'c']];
+        yield 'a while' => ["start\nwhile (data available?)\n  :read data;\nendwhile\nstop", ['data available?', 'read data']];
+        yield 'a while labelled' => ["while (check filesize ?) is (not empty)\n  :read file;\n  -> back;\nendwhile (empty)\n:close file;", ['not empty', 'empty', 'back']];
+        yield 'a while backward' => ["start\nwhile (data available?)\n  :read data;\nbackward:This is backward;\nendwhile\nstop", ['This is backward']];
+        yield 'a while backward labelled' => ["while (a?)\n  :b;\n-> d;\nbackward:c;\n-> e;\nendwhile\n:f;", ['c', 'f']];
+        yield 'a while empty' => ["while (a?)\nendwhile\n:b;", ['a?', 'b']];
+        yield 'a while with a break' => ["start\nwhile (Big loop?)\n  :a;\n  if (exit?) then (yes)\n    break\n  endif\n  :b;\nendwhile\n:after;\nstop", ['Big loop?', 'after']];
+        yield 'a while killed' => ["while (a?)\n  :b;\nendwhile\nkill", ['b']];
+        yield 'a while without a way back' => ["while (a?)\n  :b;\n  detach\nendwhile\n:c;", ['b', 'c']];
+        yield 'a while with a note' => ["while (a?)\n  :b;\nendwhile\nnote right: n", ['n']];
+        yield 'a while closed by a stop' => ["start\nwhile (a?)\n  :b;\nendwhile\nstop", ['b']];
+        yield 'a fork' => ["start\nfork\n  :action 1;\nfork again\n  -> in;\n  :action 2;\n  -> out;\nend fork {and}\nstop", ['action 1', 'action 2', 'in', 'out', '{and}']];
+        yield 'a fork coloured' => ["fork <<#red>>\n  :a;\nfork again\n  :b;\n  detach\nend fork\nnote right: n\nnote left: o", ['a', 'b', 'n', 'o']];
+        yield 'a fork with a note' => ["fork\n  :a;\nfork again\n  :b;\nend fork\nnote right: n", ['n']];
+        yield 'a fork merged' => [
+            "start\nfork\n  :action 1;\nfork again\n  :action 2;\nfork again\n  :a much wider action;\nfork again\n  :x;\n  detach\nend merge\nstop",
+            ['action 1', 'a much wider action'],
+        ];
+        yield 'a fork merged into the middle' => ["fork\n  :a;\nend merge\n:b;", ['a', 'b']];
+        yield 'a split' => ["start\nsplit\n   :A;\nsplit again\n   :B;\nsplit again\n   -[hidden]->\n   :C;\n   detach\nend split\n:D;\nstop", ['A', 'B', 'C', 'D']];
+        yield 'a split hidden' => ["split\n   -[hidden]->\n   :A;\nsplit again\n   -[hidden]->\n   :B;\nend split", ['A', 'B']];
+        yield 'a split never leaving' => ["split\n   :A;\n   kill\nsplit again\n   :B;\n   kill\nend split", ['A', 'B']];
+        yield 'notes' => [
+            "start\n:foo1;\nfloating note left: This is a note\n:foo2;\nnote right\n  This note is on several\n  //lines// and can\n  contain <b>HTML</b>\nend note\nnote left #pink: another\nstop",
+            ['This is a note', 'another'],
+        ];
+        yield 'a note alone' => ["note right: first\n:a;", ['first', 'a']];
+        yield 'a floating note alone' => ["floating note right: first\n:a;", ['first', 'a']];
+        yield 'partitions' => ["start\npartition Initialization {\n    :read config file;\n}\npartition \"\" {\n    :x;\n}\nstop", ['Initialization', 'read config file']];
+        yield 'groups' => [
+            "group Group {\n  :Activity;\n}\ncard Card {\n  :Activity;\n}\nrectangle Rect {\n  :Activity;\n  note right: n\n}\npartition P #pink {\n  :x;\n  note left: m\n}",
+            ['Group', 'Card', 'Rect', 'n', 'm'],
+        ];
+        yield 'a group drawing past its width' => [
+            "partition a {\n  :b;\n  -> a very long label that reaches far beyond the action;\n  :c;\n}",
+            ['a very long label that reaches far beyond the action'],
+        ];
+        yield 'arrow labels' => [
+            ":foo1;\n-> You can put text on arrows;\n:foo2;\n-[#green,dashed]-> The text can\n  also be on several lines;\n:foo3;\n-[#black,dotted]->\n:foo4;\n-[#gray,bold]->\n:foo5;",
+            ['You can put text on arrows', 'also be on several lines'],
+        ];
+        yield 'connectors' => ["start\n:Some activity;\n(A)\ndetach\n(A)\n:Other activity;\n(B)\nkill", ['A', 'B', 'Other activity']];
+        yield 'box styles' => [
+            "start\n:input; <<input>>\n:output; <<output>>\n:procedure; <<procedure>>\n:load; <<load>>\n:save; <<save>>\n:continuous; <<continuous>>\n:task; <<task>>\n:object; <<object>>\n:objectsignal; <<objectsignal>>\n:acceptevent; <<acceptevent>>\n:timeevent; <<timeevent>>\nend",
+            ['procedure', 'timeevent'],
+        ];
+        yield 'colours' => ["start <<#blue>>\n:colored; <<#pink>>\n:grey; <<#AAAAAA>>\nstop <<#green>>", ['colored', 'grey']];
+        yield 'aligned right' => ["<style>\nactivity {\n  HorizontalAlignment right\n}\n</style>\n:a;\n:a longer one;", ['a', 'a longer one']];
+        yield 'aligned centre' => ["<style>\nactivity {\n  HorizontalAlignment center\n}\n</style>\n:a;\n:a longer one;", ['a', 'a longer one']];
+        yield 'a label after a loop' => ["while (a?)\n  :b;\nendwhile\n-> after;\n:c;\nhide footbox", ['after', 'c']];
+        yield 'a group with a note' => ["partition p {\n  note right: n\n  :a;\n}\npartition q {\n  note left: m\n  :b;\n  -[#red]->\n  :c;\n  kill\n}", ['n', 'm']];
+        yield 'a while with notes' => ["while (a?)\n  :b;\nendwhile\nnote right: n\nnote left: m", ['n', 'm']];
+        yield 'a while with a decision' => ["while (a?)\n  if (b) then\n    :c;\n  endif\n  (A)\n  fork\n    :d;\n  end fork\n  partition p {\n    :e;\n  }\n  end\nendwhile\nstop", ['c', 'd', 'e']];
+        yield 'a while breaking in a partition' => ["while (a?)\n  partition p {\n    :x;\n    break\n  }\nendwhile\nstop", ['x']];
+        yield 'loops breaking from decisions' => [
+            "while (a?)\n  if (b) then\n    :x;\n    break\n  else\n    :y;\n  endif\n  if (c) then\n    :z;\n  else\n    :w;\n    break\n  endif\n  if (d) then\n    :u;\n    break\n  elseif (e) then\n    :v;\n  else\n    :t;\n    break\n  endif\nendwhile\n:after;",
+            ['x', 'w', 'u', 'after'],
+        ];
+        yield 'a decision with two branches leaving none' => ["if (a) then\n  :x;\n  break\nelse\n  :y;\n  break\nendif", ['x', 'y']];
+        yield 'elseifs never leaving' => ["if (a) then\n  :x;\n  detach\nelseif (b) then\n  :y;\n  detach\nelse\n  :z;\n  detach\nendif\n:w;", ['x', 'y', 'z', 'w']];
+        yield 'a loop breaking from a decision before a stop' => ["while (a?)\n  if (b) then\n    break\n  endif\nendwhile\nstop", ['a?']];
+        yield 'a test left empty' => ["if () then\n  :a;\nelse\n  :b;\nendif", ['a', 'b']];
+        yield 'a repeat killed early' => ["repeat\n  :a;\n  note right: n\n  kill\nrepeat while (b?)", ['a', 'n']];
+        yield 'colours of lines and text' => [':a; <<##red>> <<###blue>>', ['a']];
+        yield 'an empty diagram ending with an arrow' => ["if (a) then\nelse\n-> out;\nendif", ['a']];
+    }
+
+    /** @param list<string> $texts */
+    #[DataProvider('diagrams')]
+    public function testEveryFeatureDraws(string $lines, array $texts): void
+    {
+        $shown = \array_map(static fn (Mark $mark): string => \trim((string) $mark->text), self::draw($lines)->marks);
+
+        foreach ($texts as $text) {
+            $this->assertContains($text, $shown);
+        }
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function conditionStyles(): iterable
+    {
+        foreach (['diamond', 'InsideDiamond', 'inside'] as $style) {
+            yield $style => [
+                "skinparam conditionStyle {$style}\nif (a) then\n  :b;\nelse\n  :c;\nendif\nif (d) then\n  :e;\nendif\nwhile (f?)\n  :g;\nendwhile\nrepeat\n  :h;\nrepeat while (i?) is (yes) not (no)",
+            ];
+        }
+    }
+
+    #[DataProvider('conditionStyles')]
+    public function testEveryConditionStyleDraws(string $lines): void
+    {
+        $shown = \array_map(static fn (Mark $mark): string => \trim((string) $mark->text), self::draw($lines)->marks);
+
+        $this->assertContains('a', $shown);
+        $this->assertContains('f?', $shown);
+    }
+
+    public function testDecisionsClosedByALineAreLeftToPlantUml(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw decisions closed by a line'));
+
+        self::draw("skinparam conditionEndStyle hline\nif (a) then\n  :b;\nendif");
+    }
+
+    public function testElseIfsDownAreLeftToPlantUml(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw else-ifs down'));
+
+        self::draw("!pragma useVerticalIf on\nif (a) then\n  :b;\nelseif (c) then\n  :d;\nendif");
+    }
+
+    public function testPackagesAreLeftToPlantUml(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw activity packages'));
+
+        self::draw("package P {\n  :a;\n}");
+    }
+
+    public function testArrowsOfSeveralColoursAreLeftToPlantUml(): void
+    {
+        $this->expectException(Unsupported::class);
+
+        self::draw(":a;\n-[#red;#blue]->\n:b;");
+    }
+
+    private static function draw(string $lines): Drawing
+    {
+        return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+    }
+
+    /**
+     * The drawing's marks back in points from its frame's margin.
+     *
+     * @return list<Mark>
+     */
+    private static function points(Drawing $drawing): array
+    {
+        return \array_map(static fn (Mark $mark): Mark => new Mark(
+            $mark->kind,
+            \array_map(static fn (array $point): array => [($point[0] / Units::POINT) - self::MARGIN, ($point[1] / Units::POINT) - self::MARGIN], $mark->points),
+            $mark->text,
+        ), $drawing->marks);
+    }
+
+    /** @return array{float, float} the middle of a mark's points */
+    private static function centre(Mark $mark): array
+    {
+        $xs = \array_column($mark->points, 0);
+        $ys = \array_column($mark->points, 1);
+
+        return [(\min($xs) + \max($xs)) / 2, (\min($ys) + \max($ys)) / 2];
+    }
+}

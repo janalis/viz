@@ -20,7 +20,7 @@ final readonly class PlantUmlReader implements Reader
     #[\Override]
     public function families(): array
     {
-        return [Family::Sequence, Family::Classes, Family::State, Family::UseCase, Family::Graph];
+        return [Family::Sequence, Family::Classes, Family::State, Family::UseCase, Family::Activity, Family::Graph];
     }
 
     /** @throws UnsupportedConversion when the source is not one the native renderer reads */

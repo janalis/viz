@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML;
 
 use Janalis\Viz\Draw\Pipeline;
+use Janalis\Viz\PlantUML\Activities\ActivityFamily;
 use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
@@ -33,7 +34,13 @@ final readonly class PlantUmlPipeline implements Pipeline
     /** The pipeline with every family drawn natively. */
     public static function native(): self
     {
-        return new self(['sequence' => new SequenceFamily(), 'class' => new ClassFamily(), 'description' => new DescriptionFamily(), 'state' => new StateFamily()]);
+        return new self([
+            'sequence' => new SequenceFamily(),
+            'class' => new ClassFamily(),
+            'description' => new DescriptionFamily(),
+            'state' => new StateFamily(),
+            'activity3' => new ActivityFamily(),
+        ]);
     }
 
     #[\Override]

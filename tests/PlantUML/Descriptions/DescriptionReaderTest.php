@@ -185,7 +185,7 @@ final class DescriptionReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
-        yield 'lone name' => ["node N\nfoo", 'The native PlantUML renderer does not draw a lone name: foo'];
+        yield 'lone name' => ["node N\nfoo", 'PlantUML does not read a lone name: foo'];
         yield 'port' => ["node N\nport P", 'The native PlantUML renderer does not draw port elements'];
         yield 'multiline other' => ["node N\nportin P [\nx\n]", 'The native PlantUML renderer does not draw portin elements'];
         yield 'middle circle' => ["node N\nN --0-- M", 'The native PlantUML renderer does not draw: N --0-- M'];

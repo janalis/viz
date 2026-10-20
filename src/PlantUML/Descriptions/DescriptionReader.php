@@ -119,7 +119,8 @@ final class DescriptionReader
         $symbol = $command->get('SYMBOL');
         $first = '()' === $symbol ? 'interface' : self::shortForm($code, $display);
         if (null === $symbol && null === $first) {
-            throw new Unsupported('The native PlantUML renderer does not draw a lone name: '.$command->line());
+            // As PlantUML, a lone name is no element: the description diagram fails, and the next kind is tried.
+            throw new PlantUmlRefusal('PlantUML does not read a lone name: '.$command->line());
         }
         $business = \str_ends_with((string) $symbol, '/') || \str_ends_with($display ?? $code, ')/') || \str_ends_with($display ?? $code, ':/');
         $symbol = \rtrim(\strtolower($first ?? (string) $symbol), characters: '/');
