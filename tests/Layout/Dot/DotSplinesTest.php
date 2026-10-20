@@ -76,6 +76,19 @@ final class DotSplinesTest extends TestCase
         }
     }
 
+    public function testAnEdgeTurnsRoundTheCornerOfAClusterBetweenRanks(): void
+    {
+        // s's edge to e comes down right of the cluster, then turns under it to e, below and left.
+        $placement = self::place('digraph { node [shape=box]; s -> p -> c -> l -> d -> e; s -> g -> l; g -> d; l -> f -> e; subgraph cluster_n { l; d } s -> e }');
+        $cluster = $placement->graph->clusters[0];
+        $spline = $placement->splines[10];
+
+        $this->assertLessThan($cluster->x1, $placement->endpoints['e']->x, 'e stands left of the cluster\'s right side');
+        foreach ($spline as [$x, $y]) {
+            $this->assertFalse($x > ($cluster->x0 + 0.5) && $x < ($cluster->x1 - 0.5) && $y > ($cluster->y0 + 0.5) && $y < ($cluster->y1 - 0.5), 'clear of the cluster');
+        }
+    }
+
     public function testACurveThatCannotFitIsSplitAtItsSharpestCorner(): void
     {
         // A wide neighbour forces the path round a corner, then straight on down.

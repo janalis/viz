@@ -109,6 +109,7 @@ final class DotSplines
         $x = $this->position->x;
         $y = $this->position->y;
         $tail = $path[0];
+        $open = $this->open($layers->cluster[$tail]) + $this->open($layers->cluster[$path[\count($path) - 1]]);
         $rank = $layers->rank[$tail];
         $boxes = [[$x[$tail] - $layers->left[$tail], $y[$rank], $x[$tail] + $layers->right[$tail], $y[$rank] + $this->half[$rank]]];
         $last = \count($path) - 1;
@@ -117,13 +118,115 @@ final class DotSplines
             $rank = $layers->rank[$node];
             [$left, $right] = $index === $last ? [$x[$node] - $layers->left[$node], $x[$node] + $layers->right[$node]] : $this->beside($node);
             $box = [$left, $y[$rank] - $this->half[$rank], $right, $index === $last ? $y[$rank] : $y[$rank] + $this->half[$rank]];
-            $above = $boxes[\count($boxes) - 1];
-            // The gap between two ranks spans the boxes above and below it.
-            $boxes[] = [\min($above[0], $box[0]), $above[3], \max($above[2], $box[2]), $box[1]];
+            \array_push($boxes, ...$this->gap($boxes[\count($boxes) - 1], $box, $open));
             $boxes[] = $box;
         }
 
         return $boxes;
+    }
+
+    /**
+     * The clusters an edge may pass through: those holding either of its ends.
+     *
+     * @return array<int, true>
+     */
+    private function open(int $cluster): array
+    {
+        $open = [];
+        for (; -1 !== $cluster; $cluster = $this->layers->parents[$cluster]) {
+            $open[$cluster] = true;
+        }
+
+        return $open;
+    }
+
+    /**
+     * The gap between two ranks, from the box above to the box below: as wide as both, but
+     * clear of the clusters the edge may not pass through where they reach into it. Cut into
+     * slabs where such a cluster starts or ends, each slab keeps the free stretch that meets
+     * the one above it, and the box below where it can.
+     *
+     * @param array{float, float, float, float} $above
+     * @param array{float, float, float, float} $below
+     * @param array<int, true> $open
+     * @return list<array{float, float, float, float}>
+     */
+    private function gap(array $above, array $below, array $open): array
+    {
+        [$left, $right] = [\min($above[0], $below[0]), \max($above[2], $below[2])];
+        [$top, $bottom] = [$above[3], $below[1]];
+        $blocks = [];
+        $cuts = [$top, $bottom];
+        foreach ($this->position->boxes as $cluster => [$x0, $y0, $x1, $y1]) {
+            if (\array_key_exists($cluster, $open) || $x1 <= $left || $x0 >= $right || $y1 <= $top || $y0 >= $bottom) {
+                continue;
+            }
+            $blocks[] = [$x0, \max($y0, $top), $x1, \min($y1, $bottom)];
+            \array_push($cuts, \max($y0, $top), \min($y1, $bottom));
+        }
+        $cuts = \array_values(\array_unique($cuts, \SORT_REGULAR));
+        \sort($cuts);
+        $boxes = [];
+        $previous = [$above[0], $above[2]];
+        for ($index = 1, $count = \count($cuts); $index < $count; ++$index) {
+            [$from, $to] = [$cuts[$index - 1], $cuts[$index]];
+            $free = [[$left, $right]];
+            foreach ($blocks as [$x0, $y0, $x1, $y1]) {
+                if ($y0 >= $to || $y1 <= $from) {
+                    continue;
+                }
+                $free = self::without($free, $x0, $x1);
+            }
+            $previous = self::meeting($free, $previous, [$below[0], $below[2]]);
+            $boxes[] = [$previous[0], $from, $previous[1], $to];
+        }
+
+        return $boxes;
+    }
+
+    /**
+     * Stretches across with one taken out.
+     *
+     * @param list<array{float, float}> $stretches
+     * @return list<array{float, float}>
+     */
+    private static function without(array $stretches, float $from, float $to): array
+    {
+        $kept = [];
+        foreach ($stretches as [$start, $end]) {
+            if ($start < $from) {
+                $kept[] = [$start, \min($end, $from)];
+            }
+            if ($end > $to) {
+                $kept[] = [\max($start, $to), $end];
+            }
+        }
+
+        return $kept;
+    }
+
+    /**
+     * Of the free stretches, the one meeting the stretch above most, then the one below.
+     *
+     * @param list<array{float, float}> $free
+     * @param array{float, float} $above
+     * @param array{float, float} $below
+     * @return array{float, float}
+     */
+    private static function meeting(array $free, array $above, array $below): array
+    {
+        $best = $above;
+        $score = -\INF;
+        foreach ($free as $stretch) {
+            $meets = \min($stretch[1], $above[1]) - \max($stretch[0], $above[0]);
+            $reaches = \min($stretch[1], $below[1]) - \max($stretch[0], $below[0]);
+            $value = ($meets > 0 ? 1e6 : 0.0) + ($reaches > 0 ? 1e3 : 0.0) + $meets;
+            if ($value > $score) {
+                [$best, $score] = [$stretch, $value];
+            }
+        }
+
+        return $best;
     }
 
     /**
