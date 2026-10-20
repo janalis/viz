@@ -173,6 +173,7 @@ final class DotDrawingTest extends TestCase
         $right = self::texts($drawing)[1]->points[0][0];
         $this->assertEqualsWithDelta($right, $edge->points[0][0], 1.0, 'the edge leaves the right field');
         $this->assertEqualsWithDelta(\max(\array_column($a->points, 1)), $edge->points[0][1], 0.01, 'from its bottom');
+        $this->assertEqualsWithDelta($edge->points[0][0], $edge->points[1][0], 0.2, 'downward, its spline bent to the port');
 
         $compass = self::draw(
             'digraph { rankdir=LR; a [shape=record, label="<x> x|<y> y"]; a:y:e -> b:w; a:x -> c [tailport="nowhere"]; d:n -> e:ne; f:s -> g:se; h:sw -> i:nw; j -> k [tailport=c]; }',

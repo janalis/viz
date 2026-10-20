@@ -168,10 +168,10 @@ final class DotDrawing
         $head = $this->placement->endpoints[$edge->head];
         $route = $this->placement->routes[$index] ?? null;
         $spline = $this->placement->splines[$index] ?? null;
-        // Only a loop has no route; an edge between ranks has its spline, unless a port moves its ends.
+        // Only a loop has no route; an edge between ranks has its spline, bent to any port.
         $points = match (true) {
             null === $route => self::loop($tail),
-            null !== $spline && '' === $edge->attribute('tailport') && '' === $edge->attribute('headport') => $spline,
+            null !== $spline => $this->bent($spline, $edge),
             default => Route::smooth($this->ported($route, $edge)),
         };
         $points = $this->clip($points, $edge, $tail, $head);
@@ -441,6 +441,36 @@ final class DotDrawing
             [$right + ($reach / 2), $node->y + ($node->h / 2)],
             [$node->x, $node->y + ($node->h / 4)],
         ]);
+    }
+
+    /**
+     * A spline bent to start and end at its edge's ports: each end moved to its port, the move
+     * easing out along the curve, so it still leaves and reaches its ends the way it did.
+     *
+     * @param list<array{float, float}> $points
+     * @return list<array{float, float}>
+     */
+    private function bent(array $points, DotEdge $edge): array
+    {
+        $last = \count($points) - 1;
+        $tail = $this->anchor($edge->tail, $edge->attribute('tailport'))[0] ?? $points[0];
+        $head = $this->anchor($edge->head, $edge->attribute('headport'))[0] ?? $points[$last];
+        $moves = [[$tail[0] - $points[0][0], $tail[1] - $points[0][1]], [$head[0] - $points[$last][0], $head[1] - $points[$last][1]]];
+        if ([[0.0, 0.0], [0.0, 0.0]] === $moves) {
+            return $points;
+        }
+        $lengths = [0.0];
+        for ($index = 1; $index <= $last; ++$index) {
+            $lengths[] = $lengths[$index - 1] + \hypot($points[$index][0] - $points[$index - 1][0], $points[$index][1] - $points[$index - 1][1]);
+        }
+        $total = \max($lengths[$last], 1e-9);
+        foreach ($points as $index => [$x, $y]) {
+            $along = $lengths[$index] / $total;
+            $toHead = $along * $along * (3 - (2 * $along));
+            $points[$index] = [$x + ($moves[0][0] * (1 - $toHead)) + ($moves[1][0] * $toHead), $y + ($moves[0][1] * (1 - $toHead)) + ($moves[1][1] * $toHead)];
+        }
+
+        return $points;
     }
 
     /**
