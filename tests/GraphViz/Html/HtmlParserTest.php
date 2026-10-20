@@ -174,6 +174,39 @@ final class HtmlParserTest extends TestCase
         );
     }
 
+    /** @return iterable<string, array{string, float, float}> */
+    public static function placements(): iterable
+    {
+        // A 100 by 60 cell, its border and padding 3 in from each side.
+        $width = 2 * Units::cell(14.0);
+        $height = Units::line(14.0);
+        yield 'centre' => ['', 0.0, 0.25 * $height];
+        yield 'left, top' => ['ALIGN="Left" VALIGN="TOP"', -47 + ($width / 2), -27 + (0.75 * $height)];
+        yield 'right, bottom' => ['ALIGN="RIGHT" VALIGN="Bottom"', 47 - ($width / 2), 27 - (0.25 * $height)];
+    }
+
+    #[DataProvider('placements')]
+    public function testACellPlacesItsContentInsideItsBorderAndPadding(string $align, float $x, float $y): void
+    {
+        $label = self::parse('<TABLE BORDER="0" CELLSPACING="0" CELLPADDING="2" CELLBORDER="1"><TR><TD WIDTH="100" HEIGHT="60" '.$align.'>ab</TD></TR></TABLE>');
+        $text = \array_values(\array_filter($label->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind))[0];
+
+        $this->assertSame([100.0, 60.0], $label->size());
+        $this->assertEqualsWithDelta([$x, $y], $text->points[0], 1e-9);
+    }
+
+    public function testBalignSetsTheLinesOfACellAndItsColourItsBorder(): void
+    {
+        $line = Units::cell(14.0);
+        foreach (['Left' => -1, 'RIGHT' => 1, 'centre' => 0] as $balign => $side) {
+            $label = self::parse('<TABLE BORDER="0" CELLSPACING="0" CELLPADDING="0" CELLBORDER="1"><TR><TD COLOR="red" BALIGN="'.$balign.'">abc<BR/>a</TD></TR></TABLE>');
+            $marks = $label->marks(0.0, 0.0);
+            $texts = \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
+            $this->assertEqualsWithDelta($side * $line, $texts[1]->points[0][0], 1e-9, $balign.': the short line set as BALIGN asks');
+            $this->assertSame('#ff0000', $marks[0]->stroke, 'the cell\'s colour');
+        }
+    }
+
     /** @return iterable<string, array{string, string}> */
     public static function refusals(): iterable
     {

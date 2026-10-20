@@ -9,6 +9,8 @@ use Janalis\Viz\GraphViz\Drawing\DotNodes;
 use Janalis\Viz\GraphViz\Language\DotParser;
 use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\Layout\Dot\DotEngine;
+use Janalis\Viz\Layout\Dot\DotLayers;
+use Janalis\Viz\Layout\Dot\DotPosition;
 use Janalis\Viz\Layout\Dot\DotSplines;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Render\Work;
@@ -105,6 +107,38 @@ final class DotSplinesTest extends TestCase
                 $this->assertFalse(\abs($x - $node->x) < (($node->w / 2) - 0.5) && \abs($y - $node->y) < (($node->h / 2) - 0.5), 'clear of '.$name);
             }
         }
+    }
+
+    public function testTheShortestPathTurnsAtTheCornerItCannotCut(): void
+    {
+        // a over c, two ranks down; their virtual node at a's x, b wide beside it, from 10.
+        $layers = new DotLayers([0, 1, 2], [[20.0, 10.0], [40.0, 10.0], [20.0, 10.0]], [-1, -1, -1], [], [[0, 2, 1, 0.0, 0.0]]);
+        $layers->ranks[1] = [3, 1];
+        $position = new DotPosition($layers, [], 10.0, 40.0);
+        $position->x = [0.0, 30.0, 40.0, 0.0];
+        $position->y = [0.0, 50.0, 100.0];
+        $position->width = 60.0;
+        $router = new DotSplines($layers, $position, 10.0);
+
+        // The room beside the virtual node ends 5 short of b: the path turns at its lower corner.
+        [$spline, $corners] = $router->route([0, 3, 2]);
+        $this->assertEqualsWithDelta([[0.0, 0.0], [5.0, 55.0], [40.0, 100.0]], $corners, 1e-9);
+        $this->assertSame([[0.0, 0.0], [40.0, 100.0]], [$spline[0], $spline[\count($spline) - 1]]);
+        foreach ($spline as [$x, $y]) {
+            $this->assertFalse($x > 5.01 && $y > 44.99 && $y < 55.01, 'clear of b\'s room');
+        }
+        $this->assertSame(
+            [[40.0, 100.0], [5.0, 55.0], [0.0, 0.0]],
+            \array_map(static fn (array $point): array => [\round($point[0], precision: 9) + 0.0, \round($point[1], precision: 9) + 0.0], $router->route([2, 3, 0])[1]),
+            'up the ranks, the same path back',
+        );
+
+        // Spread: the ends no further than 0.8 of the narrower half width, 8; the middle nearly all 20.
+        [, $spread] = $router->route([0, 3, 2], offset: 20.0);
+        $along = \hypot(5.0, y: 55.0) / (\hypot(5.0, y: 55.0) + \hypot(35.0, y: 45.0));
+        $this->assertEqualsWithDelta([[8.0, 0.0], [5.0 + 8.0 + (12.0 * \sin(\M_PI * $along)), 55.0], [48.0, 100.0]], $spread, 1e-9);
+        [, $near] = $router->route([0, 3, 2], offset: 2.0);
+        $this->assertEqualsWithDelta([[2.0, 0.0], [7.0, 55.0], [42.0, 100.0]], $near, 1e-9, 'a small spread runs its whole length');
     }
 
     /**
