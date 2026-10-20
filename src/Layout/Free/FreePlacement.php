@@ -6,13 +6,14 @@ namespace Janalis\Viz\Layout\Free;
 
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\Placement;
+use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 
 /**
  * A placement for layouts that set each node where they please, as neato and twopi do: the
  * connected parts side by side, each from the left with its boxes aligned at their tops,
- * inside the padding; edges straight between centres, their labels midway; no clusters.
+ * inside the padding; edges straight between centres, their labels midway; clusters where the layout boxed them.
  */
 final class FreePlacement
 {
@@ -60,8 +61,11 @@ final class FreePlacement
         return [$left, $top, $right, $bottom];
     }
 
-    /** @param array<int, array{float, float}> $positions */
-    public static function of(LayoutGraph $graph, array $positions): Placement
+    /**
+     * @param array<int, array{float, float}> $positions each node's centre, inside the padding to come
+     * @param list<GraphCluster> $clusters cluster boxes, padded already
+     */
+    public static function of(LayoutGraph $graph, array $positions, array $clusters = []): Placement
     {
         $padding = $graph->spacing->padding;
         $nodes = [];
@@ -88,6 +92,10 @@ final class FreePlacement
             }
         }
 
-        return new Placement(new GraphLayout($width, $height, $nodes, [], []), $endpoints, ['' => $graph->direction], $routes, $labels);
+        foreach ($clusters as $cluster) {
+            [$width, $height] = [\max($width, $cluster->x1 + $padding), \max($height, $cluster->y1 + $padding)];
+        }
+
+        return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels);
     }
 }

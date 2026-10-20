@@ -16,6 +16,7 @@ use Janalis\Viz\GraphViz\Model\DotSubgraph;
 use Janalis\Viz\Layout\Circo\CircoEngine;
 use Janalis\Viz\Layout\Dot\DotEngine;
 use Janalis\Viz\Layout\Engine\LayoutEngine;
+use Janalis\Viz\Layout\Fdp\FdpEngine;
 use Janalis\Viz\Layout\Neato\NeatoEngine;
 use Janalis\Viz\Layout\Twopi\TwopiEngine;
 
@@ -25,7 +26,7 @@ use Janalis\Viz\Layout\Twopi\TwopiEngine;
  */
 final readonly class DotPipeline implements Pipeline
 {
-    /** The layout the graph asks for: neato by distances along edges, twopi on rings, circo on circles, any other left here dot. */
+    /** The layout the graph asks for: neato by distances along edges, twopi on rings, circo on circles, fdp cluster by cluster, any other left here dot. */
     private static function engine(DotGraph $graph): LayoutEngine
     {
         $root = $graph->attribute('root');
@@ -37,6 +38,7 @@ final readonly class DotPipeline implements Pipeline
         return match (\strtolower($graph->attribute('layout'))) {
             'neato' => new NeatoEngine(),
             'circo' => new CircoEngine(self::points($graph->attribute('mindist'), 72.0)),
+            'fdp' => new FdpEngine(self::points($graph->attribute('K'), 21.6)),
             'twopi' => new TwopiEngine(self::points($gap, 72.0), '' === $root ? null : $root),
             default => new DotEngine(),
         };
