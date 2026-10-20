@@ -23,7 +23,7 @@ final class DotFeatureGateTest extends TestCase
         yield 'rotate' => ['graph { rotate=90 }', 'rotated drawings'];
         yield 'landscape' => ['graph { landscape=true }', 'rotated drawings'];
         yield 'orientation' => ['graph { orientation=land }', 'rotated drawings'];
-        yield 'html' => ['graph { a [label=<b>] }', 'HTML labels'];
+        yield 'html' => ['graph { a -- b [taillabel=<b>] }', 'HTML in taillabel'];
         yield 'image' => ['graph { a [image="x.png"] }', 'images'];
         yield 'shapefile' => ['graph { a [shapefile="x.png"] }', 'images'];
         yield 'pos' => ['graph { a [pos="1,1"] }', 'pinned positions'];

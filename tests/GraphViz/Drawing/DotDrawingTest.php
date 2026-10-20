@@ -183,6 +183,18 @@ final class DotDrawingTest extends TestCase
         $this->assertSame(['a'], \array_map(static fn (Mark $mark): string => $mark->text, self::texts($named)), 'as dot, a bad record label shows the name');
     }
 
+    public function testHtmlLabelsDrawWhereverLabelsGo(): void
+    {
+        $drawing = self::draw(
+            'digraph { label=<<B>graph</B>>; subgraph cluster_c { label=<<I>cluster</I>>; a } a [shape=plaintext, label=<<TABLE><TR><TD PORT="p">x</TD><TD>y</TD></TR></TABLE>>]; b [shape=record, label=<<U>html</U>>]; a:p -> b [label=<<S>edge</S>>]; }',
+        );
+
+        $this->assertEqualsCanonicalizing(['graph', 'cluster', 'x', 'y', 'html', 'edge'], \array_map(static fn (Mark $mark): string => $mark->text, self::texts($drawing)));
+        [$edge] = self::kinds($drawing, MarkKind::Polyline);
+        $at = static fn (string $text): float => \array_values(\array_filter(self::texts($drawing), static fn (Mark $mark): bool => $text === $mark->text))[0]->points[0][0];
+        $this->assertLessThan(\abs($edge->points[0][0] - $at('y')), \abs($edge->points[0][0] - $at('x')), 'the edge leaves the cell its port names');
+    }
+
     public function testTheGraphLabelSitsBelowAndSizeScales(): void
     {
         $plain = self::draw('digraph { a -> b; }');

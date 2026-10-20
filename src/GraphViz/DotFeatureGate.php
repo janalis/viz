@@ -9,7 +9,7 @@ use Janalis\Viz\Source\Unsupported;
 
 /**
  * What the native dot drawing leaves to the `dot` command: other layout engines, HTML
- * labels, images, orthogonal splines, merged edges, pinned positions,
+ * outside labels, images, orthogonal splines, merged edges, pinned positions,
  * rotation, compression, and colour lists and gradient styles.
  */
 final class DotFeatureGate
@@ -65,8 +65,9 @@ final class DotFeatureGate
      */
     private static function object(array $attributes, array $html): ?string
     {
-        if ([] !== $html) {
-            return 'HTML labels';
+        $outside = \array_diff(\array_keys($html), ['label']);
+        if ([] !== $outside) {
+            return 'HTML in '.\implode(', ', $outside);
         }
         $styles = \array_map(static fn (string $style): string => \strtolower(\trim($style)), \explode(',', $attributes['style'] ?? ''));
         $colors = \array_filter([$attributes['color'] ?? '', $attributes['fillcolor'] ?? ''], static fn (string $color): bool => \str_contains($color, ':'));

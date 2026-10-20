@@ -17,7 +17,6 @@ use Janalis\Viz\Layout\Dot\DotLayers;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
-use Janalis\Viz\Text\DisplayWidth;
 
 /**
  * A laid-out DOT graph as a display list, drawn the way dot draws it: clusters, then edges
@@ -211,7 +210,7 @@ final class DotDrawing
         $record = $this->record($placed->name);
         if (null === $record) {
             // As dot, a record whose label is not a record's shows its name.
-            $text = DotNodes::isRecord($node) ? DotText::parse($node->name, []) : DotNodes::text($this->graph, $node);
+            $text = DotNodes::isRecord($node) && !\array_key_exists('label', $node->html) ? DotText::parse($node->name, []) : DotNodes::text($this->graph, $node);
             $this->text($text, $placed->x, $placed->y);
 
             return;
@@ -225,26 +224,10 @@ final class DotDrawing
         }
     }
 
-    /** Text lines centred on a point, each line set left, centred or right within the block. */
-    private function text(DotText $text, float $x, float $y): void
+    /** A label centred on a point. */
+    private function text(DotLabel $label, float $x, float $y): void
     {
-        [$width, $height] = $text->size();
-        $line = Units::line($text->fontSize);
-        $cell = Units::cell($text->fontSize);
-        foreach ($text->lines as $index => [$content, $justify]) {
-            $shown = DisplayWidth::of($content) * $cell;
-            $centre = match ($justify) {
-                Justify::Left => $x - ($width / 2) + ($shown / 2),
-                Justify::Right => $x + ($width / 2) - ($shown / 2),
-                Justify::Center => $x,
-            };
-            // The baseline sits a quarter line below each line's middle.
-            $baseline = $y - ($height / 2) + (($index + 0.75) * $line);
-            if ('' === \trim($content)) {
-                continue;
-            }
-            $this->marks[] = new Mark(MarkKind::Text, [[$centre, $baseline]], $content, stroke: $text->color, font: $text->face, fontScale: Units::fontScale($text->fontSize) / Units::POINT);
-        }
+        \array_push($this->marks, ...$label->marks($x, $y));
     }
 
     /** A record node's fields, read once however many edges reach it; null for any other node. */
@@ -318,7 +301,9 @@ final class DotDrawing
     }
 
     /**
-     * Where a port puts an edge's end, and the box it is clipped at, a field's.
+     * Where a port puts an edge's end, and the box it is clipped at: a record field's, which
+     * draws no fill to hide it. An HTML cell's port aims the end at the cell and clips it at the
+     * node's outline, so no cell drawn over the edge hides its arrowhead.
      *
      * @return array{?array{float, float}, ?array{float, float, float, float}}
      */
@@ -330,7 +315,7 @@ final class DotDrawing
         $placed = $this->placement->endpoints[$name];
         $parts = \explode(':', $port);
         $record = $this->record($name);
-        $field = $record?->port($parts[0], self::box($placed));
+        $field = $record?->port($parts[0], self::box($placed)) ?? DotNodes::text($this->graph, $this->graph->nodes[$name])->ports($placed->x, $placed->y)[$parts[0]] ?? null;
         $compass = null === $field ? $parts[0] : $parts[1] ?? 'c';
         $box = $field ?? self::box($placed);
         [$left, $top, $right, $bottom] = $box;
@@ -347,7 +332,7 @@ final class DotDrawing
             default => null === $field ? null : [$x, $y],
         };
 
-        return [$point, $field];
+        return [$point, null === $record ? null : $field];
     }
 
     /**

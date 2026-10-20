@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\GraphViz\Drawing;
 
+use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Text\DisplayWidth;
 use Janalis\Viz\Text\FontFace;
@@ -13,7 +15,7 @@ use Janalis\Viz\Text\FontFace;
  * cluster's, `\E` the edge's, `\T` and `\H` its tail's and head's), its lines split where
  * `\n`, `\l` or `\r` end them, centred, left or right, and its size in the bundled font.
  */
-final readonly class DotText
+final readonly class DotText implements DotLabel
 {
     /** @param list<array{string, Justify}> $lines */
     public function __construct(
@@ -76,12 +78,14 @@ final readonly class DotText
         };
     }
 
+    #[\Override]
     public function empty(): bool
     {
         return 1 === \count($this->lines) && '' === $this->lines[0][0];
     }
 
     /** @return array{float, float} width and height in points */
+    #[\Override]
     public function size(): array
     {
         if ($this->empty()) {
@@ -90,5 +94,37 @@ final readonly class DotText
         $cells = \max(\array_map(static fn (array $line): int => DisplayWidth::of($line[0]), $this->lines));
 
         return [$cells * Units::cell($this->fontSize), \count($this->lines) * Units::line($this->fontSize)];
+    }
+
+    /** Lines centred on a point, each set left, centred or right within the block. */
+    #[\Override]
+    public function marks(float $x, float $y): array
+    {
+        [$width, $height] = $this->size();
+        $line = Units::line($this->fontSize);
+        $cell = Units::cell($this->fontSize);
+        $marks = [];
+        foreach ($this->lines as $index => [$content, $justify]) {
+            if ('' === \trim($content)) {
+                continue;
+            }
+            $shown = DisplayWidth::of($content) * $cell;
+            $centre = match ($justify) {
+                Justify::Left => $x - ($width / 2) + ($shown / 2),
+                Justify::Right => $x + ($width / 2) - ($shown / 2),
+                Justify::Center => $x,
+            };
+            // The baseline sits a quarter line below each line's middle.
+            $baseline = $y - ($height / 2) + (($index + 0.75) * $line);
+            $marks[] = new Mark(MarkKind::Text, [[$centre, $baseline]], $content, stroke: $this->color, font: $this->face, fontScale: Units::fontScale($this->fontSize) / Units::POINT);
+        }
+
+        return $marks;
+    }
+
+    #[\Override]
+    public function ports(float $x, float $y): array
+    {
+        return [];
     }
 }

@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Janalis\Viz\GraphViz\Drawing;
 
 use Janalis\Viz\GraphViz\DotLayoutInput;
+use Janalis\Viz\GraphViz\Html\HtmlFont;
+use Janalis\Viz\GraphViz\Html\HtmlParser;
 use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\GraphViz\Model\DotNode;
 use Janalis\Viz\GraphViz\Model\DotSubgraph;
+use Janalis\Viz\Text\FontFace;
 
 /**
  * What DOT attributes make of nodes, edges and clusters to draw them: their label text, the
@@ -16,56 +19,32 @@ use Janalis\Viz\GraphViz\Model\DotSubgraph;
  */
 final class DotNodes
 {
-    public static function text(DotGraph $graph, DotNode $node): DotText
+    public static function text(DotGraph $graph, DotNode $node): DotLabel
     {
-        return DotText::parse(
-            $node->attribute('label', '\N'),
-            ['N' => $node->name, 'G' => $graph->name, 'L' => ''],
-            self::fontSize($node->attribute('fontsize')),
-            $node->attribute('fontname'),
-            DotColors::resolve($node->attribute('fontcolor'), '#000000'),
-        );
+        return self::label($node, '\\N', ['N' => $node->name, 'G' => $graph->name, 'L' => '']);
     }
 
-    public static function edgeText(DotGraph $graph, DotEdge $edge): DotText
+    public static function edgeText(DotGraph $graph, DotEdge $edge): DotLabel
     {
         $operator = $graph->directed ? '->' : '--';
 
-        return DotText::parse(
-            $edge->attribute('label'),
-            ['E' => $edge->tail.$operator.$edge->head, 'T' => $edge->tail, 'H' => $edge->head, 'G' => $graph->name, 'L' => ''],
-            self::fontSize($edge->attribute('fontsize')),
-            $edge->attribute('fontname'),
-            DotColors::resolve($edge->attribute('fontcolor'), '#000000'),
-        );
+        return self::label($edge, '', ['E' => $edge->tail.$operator.$edge->head, 'T' => $edge->tail, 'H' => $edge->head, 'G' => $graph->name, 'L' => '']);
     }
 
-    public static function clusterText(DotSubgraph $cluster): DotText
+    public static function clusterText(DotSubgraph $cluster): DotLabel
     {
-        return DotText::parse(
-            $cluster->attribute('label'),
-            ['G' => $cluster->name, 'L' => ''],
-            self::fontSize($cluster->attribute('fontsize')),
-            $cluster->attribute('fontname'),
-            DotColors::resolve($cluster->attribute('fontcolor'), '#000000'),
-        );
+        return self::label($cluster, '', ['G' => $cluster->name, 'L' => '']);
     }
 
-    public static function graphText(DotGraph $graph): DotText
+    public static function graphText(DotGraph $graph): DotLabel
     {
-        return DotText::parse(
-            $graph->attribute('label'),
-            ['G' => $graph->name, 'L' => ''],
-            self::fontSize($graph->attribute('fontsize')),
-            $graph->attribute('fontname'),
-            DotColors::resolve($graph->attribute('fontcolor'), '#000000'),
-        );
+        return self::label($graph, '', ['G' => $graph->name, 'L' => '']);
     }
 
     /** A record node's fields, null for any other node or a label that is not a record's. */
     public static function record(DotGraph $graph, DotNode $node): ?DotRecord
     {
-        if (!self::isRecord($node)) {
+        if (!self::isRecord($node) || \array_key_exists('label', $node->html)) {
             return null;
         }
         $across = !\in_array(\strtoupper($graph->attribute('rankdir')), ['LR', 'RL'], strict: true);
@@ -87,7 +66,7 @@ final class DotNodes
     /** @return array{float, float} the size a node needs for its label, in points */
     public static function size(DotGraph $graph, DotNode $node): array
     {
-        if (self::isRecord($node)) {
+        if (self::isRecord($node) && !\array_key_exists('label', $node->html)) {
             // As dot, a record whose label is not a record's shows its name.
             [$width, $height] = self::record($graph, $node)?->size() ?? self::named($node);
             $most = DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS;
@@ -132,6 +111,28 @@ final class DotNodes
         [$width, $height] = DotText::parse($node->name, [], self::fontSize($node->attribute('fontsize')))->size();
 
         return [$width + 16.0, $height + 8.0];
+    }
+
+    /**
+     * An object's label in its font: HTML when its `label` was written as an HTML string, else text, its escapes standing for names.
+     *
+     * @param array<string, string> $names
+     */
+    private static function label(DotNode|DotEdge|DotSubgraph|DotGraph $object, string $default, array $names): DotLabel
+    {
+        $size = self::fontSize($object->attribute('fontsize'));
+        $color = DotColors::resolve($object->attribute('fontcolor'), '#000000');
+        if (!\array_key_exists('label', $object->html)) {
+            return DotText::parse($object->attribute('label', $default), $names, $size, $object->attribute('fontname'), $color);
+        }
+        $face = DotText::face($object->attribute('fontname'));
+
+        return HtmlParser::parse($object->attribute('label'), new HtmlFont(
+            $size,
+            $color,
+            \in_array($face, [FontFace::Bold, FontFace::BoldItalic], strict: true),
+            \in_array($face, [FontFace::Italic, FontFace::BoldItalic], strict: true),
+        ));
     }
 
     /** A numeric attribute's value, or a default when it is not a number. */
