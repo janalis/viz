@@ -38,10 +38,10 @@ final class DotPipelineTest extends TestCase
     public function testUnsupportedFeaturesAndSyntaxErrorsRefuse(): void
     {
         try {
-            Work::run(new DotPipeline()->drawing('digraph { layout=sfdp; a }'));
+            Work::run(new DotPipeline()->drawing('digraph { layout=nop; a }'));
             $this->fail('Expected a refusal');
         } catch (Unsupported $refusal) {
-            $this->assertSame('The native DOT renderer does not draw the sfdp layout', $refusal->getMessage());
+            $this->assertSame('The native DOT renderer does not draw the nop layout', $refusal->getMessage());
         }
         $this->expectException(DotSyntaxError::class);
 
@@ -56,6 +56,6 @@ final class DotPipelineTest extends TestCase
         $this->assertStringStartsWith('%PDF-', $renderer->render('digraph { a -> b }', Format::Pdf)->bytes);
         $this->expectException(RenderFailure::class);
 
-        $renderer->render('digraph { layout=sfdp }', Format::Svg);
+        $renderer->render('digraph { layout=nop }', Format::Svg);
     }
 }

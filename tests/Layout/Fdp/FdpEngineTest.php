@@ -65,11 +65,13 @@ final class FdpEngineTest extends TestCase
         Work::run(new FdpEngine()->place(new LayoutGraph(\array_map(static fn (int $index): LayoutNode => new LayoutNode('n'.$index, '', 1, 1), \range(0, FdpEngine::MAX_ITEMS)), [])));
     }
 
-    public function testTheDotPipelineDrawsWithFdpAndItsClusters(): void
+    public function testTheDotPipelineDrawsWithFdpAndItsClustersAndWithSfdpWithout(): void
     {
-        $drawing = Work::run(new DotPipeline()->drawing('graph { layout=fdp; K=1; subgraph cluster_x { label=X; a -- b } b -- c }'));
+        $fdp = Work::run(new DotPipeline()->drawing('graph { layout=fdp; K=1; subgraph cluster_x { label=X; a -- b } b -- c }'));
+        $sfdp = Work::run(new DotPipeline()->drawing('graph { layout=sfdp; subgraph cluster_x { label=X; a -- b } b -- c }'));
 
-        $this->assertCount(4, \array_filter($drawing->marks, static fn ($mark): bool => MarkKind::Polygon === $mark->kind), 'a cluster box and three nodes');
+        $this->assertCount(4, \array_filter($fdp->marks, static fn ($mark): bool => MarkKind::Polygon === $mark->kind), 'a cluster box and three nodes');
+        $this->assertCount(3, \array_filter($sfdp->marks, static fn ($mark): bool => MarkKind::Polygon === $mark->kind), 'three nodes, no cluster');
     }
 
     private static function holds(GraphCluster $box, Placement $placement, string $name): bool

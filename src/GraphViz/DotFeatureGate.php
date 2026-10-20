@@ -27,7 +27,7 @@ final class DotFeatureGate
         $layout = \strtolower($graph->attribute('layout', 'dot'));
 
         return match (true) {
-            !\in_array($layout, ['', 'dot', 'neato', 'twopi', 'circo', 'fdp'], strict: true) => 'the '.$layout.' layout',
+            !\in_array($layout, ['', 'dot', 'neato', 'twopi', 'circo', 'fdp', 'sfdp', 'osage', 'patchwork'], strict: true) => 'the '.$layout.' layout',
             'compress' === \strtolower($graph->attribute('ratio')) => 'ratio=compress',
             default => null,
         };

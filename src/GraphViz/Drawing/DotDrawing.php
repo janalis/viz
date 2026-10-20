@@ -61,8 +61,8 @@ final class DotDrawing
         }
         $this->clusters();
         $splines = \strtolower($this->graph->attribute('splines', 'true'));
-        // As dot, `splines=none`, or set empty, draws no edges at all.
-        $edges = \in_array($splines, ['', 'none'], strict: true) ? [] : $this->graph->edges;
+        // As dot, `splines=none`, or set empty, draws no edges, nor does patchwork, its nodes all touching.
+        $edges = \in_array($splines, ['', 'none'], strict: true) || 'patchwork' === \strtolower($this->graph->attribute('layout')) ? [] : $this->graph->edges;
         $this->paths = new DotEdgePaths($this->graph, $this->placement, $this->shapes);
         $this->meets = $this->paths->meet($edges, $splines);
         foreach ($edges as $index => $edge) {
@@ -174,7 +174,8 @@ final class DotDrawing
                 gradientSplit: $split,
             );
             $text = DotNodes::clusterText($cluster);
-            if ($text->empty()) {
+            // patchwork labels no clusters: its nodes fill them.
+            if ($text->empty() || 'patchwork' === \strtolower($this->graph->attribute('layout'))) {
                 continue;
             }
             [$width, $height] = $text->size();
