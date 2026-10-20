@@ -10,7 +10,7 @@ use Janalis\Viz\Source\Unsupported;
 /**
  * What the native dot drawing leaves to the `dot` command: other layout engines, HTML
  * outside labels, images, orthogonal splines, concentrated edges, pinned positions,
- * rotation, compression, colour lists on lines and weighted or sloped ones, and striped,
+ * rotation, compression, colour lists on node and cluster lines and weighted or sloped fills, and striped,
  * wedged or radial styles.
  */
 final class DotFeatureGate
@@ -48,7 +48,8 @@ final class DotFeatureGate
             $objects[] = [$node->attributes, $node->html];
         }
         foreach ($graph->edges as $edge) {
-            $objects[] = [$edge->attributes, $edge->html];
+            // An edge's colour list is drawn natively, as parallel or successive lines.
+            $objects[] = [\array_diff_key($edge->attributes, ['color' => true]), $edge->html];
         }
         foreach ($objects as [$attributes, $html]) {
             $reason = self::object($attributes, $html);

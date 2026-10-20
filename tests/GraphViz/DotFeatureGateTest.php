@@ -32,7 +32,7 @@ final class DotFeatureGateTest extends TestCase
         yield 'weighted gradient' => ['graph { a [style=filled fillcolor="red;0.3:blue"] }', 'colour lists'];
         yield 'node colour list' => ['graph { a [style=filled color="red:blue"] }', 'colour lists'];
         yield 'sloped gradient' => ['graph { subgraph cluster_a { bgcolor="red:blue" gradientangle=90; a } }', 'gradients at an angle'];
-        yield 'edge colour list' => ['digraph { a -> b [color="red:blue"] }', 'colour lists'];
+        yield 'cluster colour list' => ['digraph { subgraph cluster_a { color="red:blue"; a } }', 'colour lists'];
     }
 
     #[DataProvider('refused')]
@@ -46,7 +46,7 @@ final class DotFeatureGateTest extends TestCase
     public function testWhatTheNativeDrawingHandlesPasses(): void
     {
         DotFeatureGate::check(Work::run(new DotParser()->parse(
-            'digraph { layout=dot; rotate=0; orientation=portrait; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; a -> b [color=blue] }',
+            'digraph { layout=dot; rotate=0; orientation=portrait; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; a -> b [color="blue:red;0.5"] }',
         )));
 
         $this->addToAssertionCount(1);

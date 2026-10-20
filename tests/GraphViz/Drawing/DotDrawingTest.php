@@ -365,6 +365,30 @@ final class DotDrawingTest extends TestCase
         $this->assertEqualsWithDelta($starts[4], $starts[5], 1e-6, 'x leaves for a and b from one point');
     }
 
+    public function testColourListsDrawEdgesSideBySideOrOneAfterTheOther(): void
+    {
+        $beside = self::draw('digraph { a -> b [color="red:blue:green", dir=both]; }');
+        [$red, $blue, $green] = self::kinds($beside, MarkKind::Polyline);
+        $arrows = \array_values(\array_filter(self::kinds($beside, MarkKind::Polygon), static fn (Mark $mark): bool => 'none' !== $mark->fill));
+
+        $this->assertSame(['#ff0000', '#0000ff', '#00ff00'], [$red->stroke, $blue->stroke, $green->stroke]);
+        $this->assertEqualsWithDelta(2 * Units::POINT, $blue->points[3][0] - $red->points[3][0], 1e-6, '2 points apart, the first on the left');
+        $this->assertEqualsWithDelta(2 * Units::POINT, $green->points[3][0] - $blue->points[3][0], 1e-6);
+        $this->assertSame(['#ff0000', '#00ff00'], \array_map(static fn (Mark $mark): string => $mark->fill, $arrows), 'the head in the first colour, the tail in the last');
+
+        $along = self::draw('digraph { a -> b [color="red;0.25:blue:green;0.25", dir=both]; c -> d [color="red;0.7:blue;0.7"] }');
+        $lines = self::kinds($along, MarkKind::Polyline);
+        $this->assertSame(['#ff0000', '#0000ff', '#00ff00', '#ff0000', '#0000ff'], \array_map(static fn (Mark $mark): string => $mark->stroke, $lines));
+        $this->assertEqualsWithDelta($lines[0]->points[\count($lines[0]->points) - 1], $lines[1]->points[0], 1e-9, 'one after the other');
+        $length = static fn (Mark $mark): float => \array_sum(\array_map(
+            static fn (array $a, array $b): float => \hypot($b[0] - $a[0], $b[1] - $a[1]),
+            \array_slice($mark->points, offset: 0, length: -1),
+            \array_slice($mark->points, offset: 1),
+        ));
+        $this->assertEqualsWithDelta($length($lines[1]), 2 * $length($lines[0]), 1e-6, 'the unweighted colour takes what is left');
+        $this->assertEqualsWithDelta($length($lines[4]), (0.3 / 0.7) * $length($lines[3]), 1e-6, 'weights past the whole are cut short');
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));
