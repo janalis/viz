@@ -120,6 +120,33 @@ final class HtmlParserTest extends TestCase
         $this->assertGreaterThan(($ports['c'][1] + $ports['c'][3]) / 2, $z->points[0][1], 'and at the bottom');
     }
 
+    public function testRowsAndColumnsRuleEveryCellAndSidesPickTheBorderDrawn(): void
+    {
+        $table = '<TABLE %s><TR><TD PORT="a">a</TD><TD ROWSPAN="2" PORT="b">b</TD><TD>c</TD></TR><TR><TD>d</TD><TD PORT="e" %s>e</TD></TR></TABLE>';
+        $label = self::parse(\sprintf($table, 'ROWS="*" COLUMNS="*" CELLSPACING="4" SIDES="TB"', 'SIDES="lb" BGCOLOR="red"'));
+        $ports = self::parse(\sprintf($table, 'CELLSPACING="4"', ''))->ports(0.0, 0.0);
+        [$width, $height] = $label->size();
+        [$left, $top] = [(-$width / 2) + 0.5, (-$height / 2) + 0.5];
+        $lines = \array_values(\array_filter($label->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind));
+        $middle = $ports['a'][3] + 2;
+        [$first, $second] = [$ports['a'][2] + 2, $ports['b'][2] + 2];
+
+        $this->assertSame(
+            [
+                [[$left, $top], [-$left, $top]],
+                [[-$left, -$top], [$left, -$top]],
+                [[$ports['e'][2] - 0.5, $ports['e'][3] - 0.5], [$ports['e'][0] + 0.5, $ports['e'][3] - 0.5], [$ports['e'][0] + 0.5, $ports['e'][1] + 0.5]],
+                [[$first, $top], [$first, $middle]],
+                [[$left, $middle], [$first, $middle]],
+                [[$second, $top], [$second, -$top]],
+                [[$second, $middle], [-$left, $middle]],
+                [[$first, $middle], [$first, -$top]],
+            ],
+            \array_map(static fn (Mark $mark): array => $mark->points, $lines),
+            'the table\'s top and bottom, the left and bottom of e in one line, and a rule right of and below each inner cell',
+        );
+    }
+
     /** @return iterable<string, array{string, string}> */
     public static function refusals(): iterable
     {

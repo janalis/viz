@@ -81,11 +81,11 @@ final class HtmlTable implements DotLabel
     {
         [$width, $height] = $this->size();
         $box = [$x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2)];
-        $marks = self::frame($box, $this->border, DotColors::resolve($this->attributes['bgcolor'] ?? '', 'none'), $this->color);
+        $marks = self::frame($box, $this->border, DotColors::resolve($this->attributes['bgcolor'] ?? '', 'none'), $this->color, $this->attributes['sides'] ?? '');
         foreach ($this->cells as $index => $cell) {
             $cellBox = $this->box($index, $box);
             $color = DotColors::resolve($cell->attributes['color'] ?? '', $this->color);
-            \array_push($marks, ...self::frame($cellBox, $cell->border, DotColors::resolve($cell->attributes['bgcolor'] ?? '', 'none'), $color));
+            \array_push($marks, ...self::frame($cellBox, $cell->border, DotColors::resolve($cell->attributes['bgcolor'] ?? '', 'none'), $color, $cell->attributes['sides'] ?? ''));
             [$contentX, $contentY] = self::placed($cell, $cellBox);
             $content = $cell->content instanceof HtmlText ? $cell->content->justified(self::justify($cell->attributes['balign'] ?? '')) : $cell->content;
             \array_push($marks, ...$content->marks($contentX, $contentY));
@@ -201,30 +201,44 @@ final class HtmlTable implements DotLabel
     }
 
     /**
-     * The `<HR/>` and `<VR/>` rules, each down the middle of the spacing it stands in.
+     * The rules between cells, each down the middle of the spacing it stands in: right of a cell
+     * a `<VR/>` follows, or of every cell when `COLUMNS="*"`; below a cell whose last row an
+     * `<HR/>` follows, or below every cell when `ROWS="*"`. A rule runs along its cell and half
+     * the spacing past it, or to the table's border at its edge; none runs along the border.
      *
      * @param array{float, float, float, float} $table
      * @return list<Mark>
      */
     private function rules(array $table): array
     {
-        [$left, $top, $right] = $table;
+        $inset = $this->border / 2;
+        [$first, $top, $last, $bottom] = [$table[0] + $inset, $table[1] + $inset, $table[2] - $inset, $table[3] - $inset];
+        $half = $this->spacing / 2;
+        $everyColumn = '*' === ($this->attributes['columns'] ?? '');
+        $everyRow = '*' === ($this->attributes['rows'] ?? '');
         $marks = [];
-        foreach (\array_keys($this->ruledRows) as $row) {
-            $y = $top + $this->offset($this->heights, $row + 1) - ($this->spacing / 2);
-            $marks[] = new Mark(MarkKind::Polyline, [[$left + $this->border, $y], [$right - $this->border, $y]], stroke: $this->color, strokeWidth: 1.0);
-        }
         foreach ($this->cells as $index => $cell) {
             [$row, $column, $place] = $this->at[$index];
-            if (!\array_key_exists($place, $this->ruledCells[$row] ?? [])) {
-                continue;
-            }
-            $x = $left + $this->offset($this->widths, $column + $cell->colspan) - ($this->spacing / 2);
             $box = $this->box($index, $table);
-            $marks[] = new Mark(MarkKind::Polyline, [[$x, $box[1]], [$x, $box[3]]], stroke: $this->color, strokeWidth: 1.0);
+            $after = $column + $cell->colspan;
+            $below = $row + $cell->rowspan;
+            if ($after < \count($this->widths) && ($everyColumn || \array_key_exists($place, $this->ruledCells[$row] ?? []))) {
+                $x = $box[2] + $half;
+                $marks[] = $this->rule([[$x, 0 === $row ? $top : $box[1] - $half], [$x, $below < \count($this->heights) ? $box[3] + $half : $bottom]]);
+            }
+            if ($below < \count($this->heights) && ($everyRow || \array_key_exists($below - 1, $this->ruledRows))) {
+                $y = $box[3] + $half;
+                $marks[] = $this->rule([[0 === $column ? $first : $box[0] - $half, $y], [$after < \count($this->widths) ? $box[2] + $half : $last, $y]]);
+            }
         }
 
         return $marks;
+    }
+
+    /** @param list<array{float, float}> $points */
+    private function rule(array $points): Mark
+    {
+        return new Mark(MarkKind::Polyline, $points, stroke: $this->color, strokeWidth: 1.0);
     }
 
     /**
@@ -262,25 +276,38 @@ final class HtmlTable implements DotLabel
     }
 
     /**
-     * A box's fill and its border, drawn inside it.
+     * A box's fill and its border, drawn inside it: all around, or along the sides `SIDES`
+     * names — `L`, `T`, `R` and `B` — each run of adjacent sides one line.
      *
      * @param array{float, float, float, float} $box
      * @return list<Mark>
      */
-    private static function frame(array $box, float $border, string $fill, string $color): array
+    private static function frame(array $box, float $border, string $fill, string $color, string $sides): array
     {
         if ($border <= 0 && 'none' === $fill) {
             return [];
         }
         $inset = $border / 2;
         [$left, $top, $right, $bottom] = [$box[0] + $inset, $box[1] + $inset, $box[2] - $inset, $box[3] - $inset];
+        $corners = [[$left, $top], [$right, $top], [$right, $bottom], [$left, $bottom]];
+        // Each side runs from its corner to the next: top, right, bottom, left.
+        $drawn = '' === $sides ? [true, true, true, true] : \array_map(static fn (string $side): bool => \str_contains(\strtolower($sides), $side), ['t', 'r', 'b', 'l']);
+        $whole = $border > 0 && !\in_array(false, $drawn, strict: true);
+        $marks = $whole || 'none' !== $fill ? [new Mark(MarkKind::Polygon, $corners, stroke: $whole ? $color : 'none', fill: $fill, strokeWidth: \max($border, 0.01))] : [];
+        if ($whole || $border <= 0) {
+            return $marks;
+        }
+        foreach ($drawn as $side => $on) {
+            if (!$on || $drawn[($side + 3) % 4]) {
+                continue;
+            }
+            $run = [$corners[$side]];
+            for ($next = $side; $drawn[$next]; $next = ($next + 1) % 4) {
+                $run[] = $corners[($next + 1) % 4];
+            }
+            $marks[] = new Mark(MarkKind::Polyline, $run, stroke: $color, strokeWidth: $border);
+        }
 
-        return [new Mark(
-            MarkKind::Polygon,
-            [[$left, $top], [$right, $top], [$right, $bottom], [$left, $bottom]],
-            stroke: $border > 0 ? $color : 'none',
-            fill: $fill,
-            strokeWidth: \max($border, 0.01),
-        )];
+        return $marks;
     }
 }

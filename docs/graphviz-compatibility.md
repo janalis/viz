@@ -65,8 +65,8 @@ External labels (`xlabel`) stand off a corner of their node, or of their edge's 
 
 HTML labels are drawn natively on nodes, edges, clusters and the graph, as the attribute docs describe them:
 - **Text:** spans in `<FONT>` (`COLOR`, `POINT-SIZE`, `FACE`, whose name sets bold and italic), `<B>`, `<I>`, `<U>`, `<O>`, `<S>`, `<SUB>` and `<SUP>`, with lines ended by `<BR/>` and its `ALIGN`.
-- **Tables:** `<TABLE>`, `<TR>` and `<TD>`, with `BORDER`, `CELLBORDER`, `CELLSPACING`, `CELLPADDING`, `BGCOLOR`, `COLOR`, `WIDTH`, `HEIGHT`, `FIXEDSIZE`, `COLSPAN`, `ROWSPAN`, `ALIGN`, `VALIGN`, `BALIGN` and `PORT`. Tables can nest, and `<HR/>` and `<VR/>` rules are drawn.
-- **Layout:** a column is as wide as its widest cell, and a spanning cell widens the columns it covers evenly. Other attributes, such as `STYLE`, `SIDES` and `GRADIENTANGLE`, are ignored.
+- **Tables:** `<TABLE>`, `<TR>` and `<TD>`, with `BORDER`, `CELLBORDER`, `CELLSPACING`, `CELLPADDING`, `BGCOLOR`, `COLOR`, `WIDTH`, `HEIGHT`, `FIXEDSIZE`, `COLSPAN`, `ROWSPAN`, `ALIGN`, `VALIGN`, `BALIGN`, `SIDES` and `PORT`. Tables can nest. Rules are drawn as `dot` draws them, cell by cell: `<HR/>` and `<VR/>`, or between every row and column with `ROWS="*"` and `COLUMNS="*"`.
+- **Layout:** a column is as wide as its widest cell, and a spanning cell widens the columns it covers evenly. Other attributes, such as `STYLE` and `GRADIENTANGLE`, are ignored.
 - **Fallback:** a malformed label, or one nested more than 32 deep, goes to `dot`.
 
 An edge's port that names a record field starts or ends it at that field's centre and clips it at the field's box. A compass point (`n`, `ne`, `e`, `se`, `s`, `sw`, `w`, `nw`) puts the end on that side of the field, or of the node. A port naming an HTML cell aims the edge at the cell, but clips it at the node's outline, so no cell drawn over it hides its arrowhead; `dot` routes such an edge to the cell's side. Ports move only the ends of an edge: unlike `dot`, the layout does not take them into account when ordering and placing nodes.
