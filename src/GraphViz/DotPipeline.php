@@ -20,6 +20,7 @@ use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\LayoutNode;
 use Janalis\Viz\Layout\Fdp\FdpEngine;
 use Janalis\Viz\Layout\Neato\NeatoEngine;
+use Janalis\Viz\Layout\Nop\NopEngine;
 use Janalis\Viz\Layout\Osage\OsageEngine;
 use Janalis\Viz\Layout\Patchwork\PatchworkEngine;
 use Janalis\Viz\Layout\Twopi\TwopiEngine;
@@ -30,7 +31,7 @@ use Janalis\Viz\Layout\Twopi\TwopiEngine;
  */
 final readonly class DotPipeline implements Pipeline
 {
-    /** The layout the graph asks for: neato by distances along edges, twopi on rings, circo on circles, fdp cluster by cluster and sfdp likewise without them, osage in grids, patchwork as a treemap, any other left here dot. */
+    /** The layout the graph asks for: neato by distances along edges, twopi on rings, circo on circles, fdp cluster by cluster and sfdp likewise without them, osage in grids, patchwork as a treemap, nop where the graph says, any other left here dot. */
     private static function engine(DotGraph $graph): LayoutEngine
     {
         $root = $graph->attribute('root');
@@ -45,6 +46,7 @@ final readonly class DotPipeline implements Pipeline
             'fdp', 'sfdp' => new FdpEngine(self::points($graph->attribute('K'), 21.6)),
             'osage' => new OsageEngine(),
             'patchwork' => new PatchworkEngine(self::areas($graph)),
+            'nop', 'nop1', 'nop2' => new NopEngine(DotPositions::nodes($graph), DotPositions::edges($graph), DotPositions::labels($graph)),
             'twopi' => new TwopiEngine(self::points($gap, 72.0), '' === $root ? null : $root),
             default => new DotEngine(),
         };

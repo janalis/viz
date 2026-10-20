@@ -108,6 +108,6 @@ final class VizTest extends TestCase
 
         $this->tool = new FakeTool('cat');
         $viz = new Viz(dot: $this->tool->path(), workingDirectory: $this->tool->directory);
-        $this->assertSame('digraph { layout=nop; a }', $viz->render('digraph { layout=nop; a }', SourceFormat::Dot, Format::Svg)->bytes);
+        $this->assertSame('digraph { layout=unknown; a }', $viz->render('digraph { layout=unknown; a }', SourceFormat::Dot, Format::Svg)->bytes);
     }
 }
