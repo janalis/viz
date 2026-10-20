@@ -135,6 +135,7 @@ final class HtmlParserTest extends TestCase
         yield 'text after a table' => ['<TABLE></TABLE>after', 'this HTML label'];
         yield 'table in a cell, unclosed' => ['<TABLE><TR><TD><TABLE></TABLE></TR></TABLE>', 'this HTML label'];
         yield 'font around a table, unclosed' => ['<B><TABLE></TABLE>', 'this HTML label'];
+        yield 'outsized grid' => ['<TABLE>'.\str_repeat('<TR><TD ROWSPAN="100" COLSPAN="100">a</TD></TR>', times: 2).'</TABLE>', 'HTML tables of more than 10000 cells'];
         yield 'deep text' => [\str_repeat('<B>', HtmlParser::MAX_DEPTH + 2).'a'.\str_repeat('</B>', HtmlParser::MAX_DEPTH + 2), 'HTML labels nested deeper than 32'];
         yield 'deep tables' => [\str_repeat('<TABLE><TR><TD>', HtmlParser::MAX_DEPTH + 1).'a'.\str_repeat('</TD></TR></TABLE>', HtmlParser::MAX_DEPTH + 1), 'HTML labels nested deeper than 32'];
     }

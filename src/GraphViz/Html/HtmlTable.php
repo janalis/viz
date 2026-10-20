@@ -19,7 +19,7 @@ use Janalis\Viz\GraphViz\Drawing\Justify;
  */
 final class HtmlTable implements DotLabel
 {
-    /** @var list<array{int, int}> each cell's row and column, in the order of `$cells` */
+    /** @var list<array{int, int, int}> each cell's row and column, and its place among its row's cells, in the order of `$cells` */
     private array $at = [];
     /** @var list<HtmlCell> */
     private array $cells = [];
@@ -46,11 +46,11 @@ final class HtmlTable implements DotLabel
         $taken = [];
         foreach ($rows as $row => $cells) {
             $column = 0;
-            foreach ($cells as $cell) {
+            foreach ($cells as $place => $cell) {
                 while (\array_key_exists($row.':'.$column, $taken)) {
                     ++$column;
                 }
-                $this->at[] = [$row, $column];
+                $this->at[] = [$row, $column, $place];
                 $this->cells[] = $cell;
                 for ($down = 0; $down < $cell->rowspan; ++$down) {
                     for ($across = 0; $across < $cell->colspan; ++$across) {
@@ -215,8 +215,8 @@ final class HtmlTable implements DotLabel
             $marks[] = new Mark(MarkKind::Polyline, [[$left + $this->border, $y], [$right - $this->border, $y]], stroke: $this->color, strokeWidth: 1.0);
         }
         foreach ($this->cells as $index => $cell) {
-            [$row, $column] = $this->at[$index];
-            if (!\array_key_exists($this->place($index), $this->ruledCells[$row] ?? [])) {
+            [$row, $column, $place] = $this->at[$index];
+            if (!\array_key_exists($place, $this->ruledCells[$row] ?? [])) {
                 continue;
             }
             $x = $left + $this->offset($this->widths, $column + $cell->colspan) - ($this->spacing / 2);
@@ -225,18 +225,6 @@ final class HtmlTable implements DotLabel
         }
 
         return $marks;
-    }
-
-    /** A cell's place among its row's cells. */
-    private function place(int $index): int
-    {
-        $row = $this->at[$index][0];
-        $place = 0;
-        for ($before = 0; $before < $index; ++$before) {
-            $place += $this->at[$before][0] === $row ? 1 : 0;
-        }
-
-        return $place;
     }
 
     /**

@@ -21,12 +21,15 @@ final class HtmlParser
     public const int MAX_DEPTH = 32;
     /** The most rows or columns a cell may span. */
     public const int MAX_SPAN = 100;
+    /** The most grid places a label's cells may cover together, their spans multiplied, so no label lays out an outsized grid. */
+    public const int MAX_AREA = 10_000;
     private const array TEXT = ['b', 'i', 'u', 'o', 's', 'sub', 'sup', 'font'];
     private const string PATTERN = '/<!--.*?-->|<\/\s*([A-Za-z]+)\s*>|<([A-Za-z]+)((?:\s+[A-Za-z-]+\s*=\s*(?:"[^"]*"|\'[^\']*\'))*)\s*(\/?)>|[^<]+|</s';
 
     /** @var list<array{string, string, array<string, string>}> each token's kind — `text`, `open`, `empty` or `close` — its element or text, and its attributes */
     private array $tokens = [];
     private int $at = 0;
+    private int $area = 0;
 
     private function __construct(string $source)
     {
@@ -196,13 +199,19 @@ final class HtmlParser
             if ($content instanceof HtmlTable) {
                 $this->close('td');
             }
+            $rowspan = self::span($attributes['rowspan'] ?? '');
+            $colspan = self::span($attributes['colspan'] ?? '');
+            $this->area += $rowspan * $colspan;
+            if ($this->area > self::MAX_AREA) {
+                throw new Unsupported('The native DOT renderer does not draw HTML tables of more than '.self::MAX_AREA.' cells');
+            }
             $cells[] = new HtmlCell(
                 $content,
                 $attributes,
                 self::number($attributes['border'] ?? $table['cellborder'] ?? '', $border),
                 self::number($attributes['cellpadding'] ?? $table['cellpadding'] ?? '', 2.0),
-                self::span($attributes['rowspan'] ?? ''),
-                self::span($attributes['colspan'] ?? ''),
+                $rowspan,
+                $colspan,
             );
         }
     }
