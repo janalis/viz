@@ -52,7 +52,7 @@ final class DotDrawing
 
     private function build(): Drawing
     {
-        $background = DotColors::resolve($this->graph->attribute('bgcolor'), 'none');
+        [$background, $gradient] = DotColors::fill($this->graph->attribute('bgcolor'), 'none', $this->graph->attribute('gradientangle'));
         foreach ($this->input->nodes as $node) {
             $endpoint = $this->placement->endpoints[$node->id];
             $this->shapes[$node->id] = DotNodes::shape($this->graph->nodes[$node->id], $endpoint->w, $endpoint->h);
@@ -70,6 +70,11 @@ final class DotDrawing
             [, $titleHeight] = $title->size();
             $this->text($title, $width / 2, $height + ($titleHeight / 2));
             $height += $titleHeight + 4;
+        }
+        if (null !== $gradient) {
+            // A gradient background is a box behind everything, a plain one the drawing's own.
+            \array_unshift($this->marks, new Mark(MarkKind::Polygon, [[0.0, 0.0], [$width, 0.0], [$width, $height], [0.0, $height]], stroke: 'none', fill: $background, gradient: $gradient));
+            $background = 'none';
         }
 
         $scale = self::scale($this->graph->attribute('size'), $width, $height) * Units::POINT;
@@ -116,9 +121,9 @@ final class DotDrawing
                 continue;
             }
             $color = DotColors::resolve($cluster->attribute('pencolor', $cluster->attribute('color')), '#000000');
-            $fill = \array_key_exists('filled', $styles)
-                ? DotColors::resolve($cluster->attribute('fillcolor', $cluster->attribute('color', $cluster->attribute('bgcolor'))), '#d3d3d3')
-                : DotColors::resolve($cluster->attribute('bgcolor'), 'none');
+            [$fill, $gradient] = \array_key_exists('filled', $styles)
+                ? DotColors::fill($cluster->attribute('fillcolor', $cluster->attribute('color', $cluster->attribute('bgcolor'))), '#d3d3d3', $cluster->attribute('gradientangle'))
+                : DotColors::fill($cluster->attribute('bgcolor'), 'none', $cluster->attribute('gradientangle'));
             $this->marks[] = new Mark(
                 MarkKind::Polygon,
                 [[$box->x0, $box->y0], [$box->x1, $box->y0], [$box->x1, $box->y1], [$box->x0, $box->y1]],
@@ -126,6 +131,7 @@ final class DotDrawing
                 fill: $fill,
                 dashed: \array_key_exists('dashed', $styles) || \array_key_exists('dotted', $styles),
                 strokeWidth: self::penWidth($cluster->attribute('penwidth'), $styles),
+                gradient: $gradient,
                 dashes: \array_key_exists('dotted', $styles) ? [1.0, 3.0] : null,
             );
             $text = DotNodes::clusterText($cluster);
@@ -207,9 +213,9 @@ final class DotDrawing
         }
         $shapeName = $node->attribute('shape', 'ellipse');
         $color = DotColors::resolve($node->attribute('color'), '#000000');
-        $fill = \array_key_exists('filled', $styles) || 'point' === $shapeName
-            ? DotColors::resolve($node->attribute('fillcolor', $node->attribute('color')), 'point' === $shapeName ? '#000000' : '#d3d3d3')
-            : 'none';
+        [$fill, $gradient] = \array_key_exists('filled', $styles) || 'point' === $shapeName
+            ? DotColors::fill($node->attribute('fillcolor', $node->attribute('color')), 'point' === $shapeName ? '#000000' : '#d3d3d3', $node->attribute('gradientangle'))
+            : ['none', null];
         $penWidth = self::penWidth($node->attribute('penwidth'), $styles);
         $dashed = \array_key_exists('dashed', $styles) || \array_key_exists('dotted', $styles);
         if (!\in_array($shapeName, DotShape::BARE, strict: true)) {
@@ -224,6 +230,7 @@ final class DotDrawing
                 fill: $fill,
                 dashed: $dashed,
                 strokeWidth: $penWidth,
+                gradient: $gradient,
                 dashes: \array_key_exists('dotted', $styles) ? [1.0, 3.0] : null,
             );
             foreach ($shape->peripheries as $ring) {

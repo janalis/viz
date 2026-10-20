@@ -163,6 +163,15 @@ final class HtmlParserTest extends TestCase
         $this->assertSame([MarkKind::Polyline, true, [1.0, 3.0]], [$marks[3]->kind, $marks[3]->dashed, $marks[3]->dashes]);
         $this->assertSame(['a', 'b'], \array_values(\array_filter(\array_map(static fn (Mark $mark): string => $mark->text, $marks))), 'what an invisible cell holds is hidden too');
         $this->assertSame([], self::parse('<TABLE STYLE="rounded,invis"><TR><TD>a</TD></TR></TABLE>')->marks(0.0, 0.0));
+        [$table, $cell] = self::parse('<TABLE BGCOLOR="red:blue"><TR><TD BGCOLOR="white:black" GRADIENTANGLE="180">a</TD></TR></TABLE>')->marks(0.0, 0.0);
+        $this->assertSame(
+            [
+                ['#ff0000', '#0000ff'],
+                ['#000000', '#ffffff'],
+            ],
+            [$table->gradient, $cell->gradient],
+            'colour lists fill with gradients across',
+        );
     }
 
     /** @return iterable<string, array{string, string}> */

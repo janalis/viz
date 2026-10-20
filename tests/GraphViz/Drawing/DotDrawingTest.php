@@ -290,6 +290,21 @@ final class DotDrawingTest extends TestCase
         $this->assertLessThan(2.0, self::draw('digraph { size="1,1"; }')->width);
     }
 
+    public function testColourListsFillWithGradientsAcross(): void
+    {
+        $drawing = self::draw(
+            'digraph { bgcolor="white:grey"; subgraph cluster_x { bgcolor="yellow:white" gradientangle=180; a [style=filled fillcolor="red:blue:green"] } b [style=filled fillcolor="red:"] }',
+        );
+
+        $this->assertNull($drawing->background, 'a gradient background is drawn as a box');
+        [$page, $cluster, $a, $b] = self::kinds($drawing, MarkKind::Polygon);
+        $this->assertSame([[0.0, 0.0], [$drawing->width, 0.0], [$drawing->width, $drawing->height], [0.0, $drawing->height]], $page->points);
+        $this->assertSame(['#ffffff', ['#ffffff', '#bebebe']], [$page->fill, $page->gradient]);
+        $this->assertSame(['#ffffff', '#ffff00'], $cluster->gradient, 'turned right to left');
+        $this->assertSame(['#ff0000', ['#ff0000', '#0000ff']], [$a->fill, $a->gradient], 'from the first two colours');
+        $this->assertSame(['#ff0000', null], [$b->fill, $b->gradient], 'one colour fills plainly');
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));

@@ -85,14 +85,14 @@ final class HtmlTable implements DotLabel
         if (self::invisible($this->attributes)) {
             return [];
         }
-        $marks = self::frame($box, $this->border, DotColors::resolve($this->attributes['bgcolor'] ?? '', 'none'), $this->color, $this->attributes);
+        $marks = self::frame($box, $this->border, $this->color, $this->attributes);
         foreach ($this->cells as $index => $cell) {
             if (self::invisible($cell->attributes)) {
                 continue;
             }
             $cellBox = $this->box($index, $box);
             $color = DotColors::resolve($cell->attributes['color'] ?? '', $this->color);
-            \array_push($marks, ...self::frame($cellBox, $cell->border, DotColors::resolve($cell->attributes['bgcolor'] ?? '', 'none'), $color, $cell->attributes));
+            \array_push($marks, ...self::frame($cellBox, $cell->border, $color, $cell->attributes));
             [$contentX, $contentY] = self::placed($cell, $cellBox);
             $content = $cell->content instanceof HtmlText ? $cell->content->justified(self::justify($cell->attributes['balign'] ?? '')) : $cell->content;
             \array_push($marks, ...$content->marks($contentX, $contentY));
@@ -313,14 +313,16 @@ final class HtmlTable implements DotLabel
     /**
      * A box's fill and its border, drawn inside it: all around, or along the sides `SIDES`
      * names — `L`, `T`, `R` and `B` — each run of adjacent sides one line. `STYLE` rounds its
-     * corners, a third of its shorter side, or dashes or dots its border.
+     * corners, a third of its shorter side, or dashes or dots its border; `BGCOLOR` fills it, a
+     * list with a gradient across, turned by `GRADIENTANGLE`.
      *
      * @param array{float, float, float, float} $box
      * @param array<string, string> $attributes the table's or the cell's
      * @return list<Mark>
      */
-    private static function frame(array $box, float $border, string $fill, string $color, array $attributes): array
+    private static function frame(array $box, float $border, string $color, array $attributes): array
     {
+        [$fill, $gradient] = DotColors::fill($attributes['bgcolor'] ?? '', 'none', $attributes['gradientangle'] ?? '');
         if ($border <= 0 && 'none' === $fill) {
             return [];
         }
@@ -338,7 +340,7 @@ final class HtmlTable implements DotLabel
         $whole = $border > 0 && !\in_array(false, $drawn, strict: true);
         $outline = $rounded ? DotDrawing::round($corners, most: \INF) : $corners;
         $marks = $whole || 'none' !== $fill
-            ? [new Mark(MarkKind::Polygon, $outline, stroke: $whole ? $color : 'none', fill: $fill, dashed: $dashed, strokeWidth: \max($border, 0.01), dashes: $dashes)]
+            ? [new Mark(MarkKind::Polygon, $outline, stroke: $whole ? $color : 'none', fill: $fill, dashed: $dashed, strokeWidth: \max($border, 0.01), gradient: $gradient, dashes: $dashes)]
             : [];
         if ($whole || $border <= 0) {
             return $marks;

@@ -31,7 +31,9 @@ final class DotFeatureGateTest extends TestCase
         yield 'samehead' => ['digraph { a -> b [samehead=h] }', 'merged edge ends'];
         yield 'sametail' => ['digraph { a -> b [sametail=t] }', 'merged edge ends'];
         yield 'striped' => ['graph { subgraph cluster_a { style=striped; a } }', 'striped, wedged or radial styles'];
-        yield 'colour list' => ['graph { a [fillcolor="red:blue"] }', 'colour lists'];
+        yield 'weighted gradient' => ['graph { a [style=filled fillcolor="red;0.3:blue"] }', 'colour lists'];
+        yield 'node colour list' => ['graph { a [style=filled color="red:blue"] }', 'colour lists'];
+        yield 'sloped gradient' => ['graph { subgraph cluster_a { bgcolor="red:blue" gradientangle=90; a } }', 'gradients at an angle'];
         yield 'edge colour list' => ['digraph { a -> b [color="red:blue"] }', 'colour lists'];
     }
 
@@ -46,7 +48,7 @@ final class DotFeatureGateTest extends TestCase
     public function testWhatTheNativeDrawingHandlesPasses(): void
     {
         DotFeatureGate::check(Work::run(new DotParser()->parse(
-            'digraph { layout=dot; rotate=0; orientation=portrait; splines=true; a [style="filled,rounded", color=red, shape=box]; a -> b [color=blue] }',
+            'digraph { layout=dot; rotate=0; orientation=portrait; splines=true; bgcolor="white:grey" gradientangle=-180; a [style="filled,rounded", color=red, fillcolor="red:blue", shape=box]; a -> b [color=blue] }',
         )));
 
         $this->addToAssertionCount(1);

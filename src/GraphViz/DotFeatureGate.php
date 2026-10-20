@@ -71,13 +71,18 @@ final class DotFeatureGate
         }
         $styles = \array_map(static fn (string $style): string => \strtolower(\trim($style)), \explode(',', $attributes['style'] ?? ''));
         $colors = \array_filter([$attributes['color'] ?? '', $attributes['fillcolor'] ?? ''], static fn (string $color): bool => \str_contains($color, ':'));
+        // A list fills with a gradient across, which is drawn natively, unless weighted or sloped.
+        $gradients = \array_filter([$attributes['fillcolor'] ?? '', $attributes['bgcolor'] ?? ''], static fn (string $color): bool => \str_contains($color, ':'));
+        $angle = $attributes['gradientangle'] ?? '';
+        $angle = \is_numeric($angle) ? \fmod((float) $angle, num2: 180.0) : 0.0;
 
         return match (true) {
             '' !== ($attributes['image'] ?? '') || '' !== ($attributes['shapefile'] ?? '') => 'images',
             '' !== ($attributes['pos'] ?? '') || 'true' === \strtolower($attributes['pin'] ?? '') => 'pinned positions',
             '' !== ($attributes['samehead'] ?? '') || '' !== ($attributes['sametail'] ?? '') => 'merged edge ends',
             [] !== \array_intersect($styles, ['striped', 'wedged', 'radial']) => 'striped, wedged or radial styles',
-            [] !== $colors => 'colour lists',
+            [] !== \array_diff($colors, [$attributes['fillcolor'] ?? '']) || \str_contains(\implode('', $gradients), ';') => 'colour lists',
+            [] !== $gradients && 0.0 !== $angle => 'gradients at an angle',
             default => null,
         };
     }
