@@ -1,0 +1,6 @@
+@startuml
+state check <<choice>>
+[*] --> check
+check --> Small : [n < 10]
+check --> Large : [n >= 10]
+@enduml

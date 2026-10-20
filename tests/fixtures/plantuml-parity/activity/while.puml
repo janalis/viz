@@ -1,0 +1,8 @@
+@startuml
+start
+while (Unread mail?) is (yes)
+  :Read one;
+  :Archive it;
+endwhile (no)
+stop
+@enduml

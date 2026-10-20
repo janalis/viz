@@ -1,0 +1,9 @@
+@startuml
+class A
+class B
+class C
+class D
+A --> B : uses
+B o-- C
+C ..> D : creates
+@enduml

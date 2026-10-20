@@ -92,3 +92,19 @@ Activity diagrams in the new syntax are read natively — with PlantUML's own ru
 | `fork`, `fork again`, `end fork` with its label, `end merge`; `split`, `split again`, `end split` | |
 | `partition`, `group`, `rectangle` and `card` with their titles and colours; notes beside steps, floating, over several lines, beside decisions, loops and forks | `package`; deprecated forms PlantUML warns of |
 | Arrows with labels, colours and `dashed`, `dotted`, `bold`, `hidden` | |
+
+## Parity
+
+`PlantUmlParityTest` grades the native drawing of each fixture in `tests/fixtures/plantuml-parity` against what PlantUML 1.2026.8 drew for it. `tools/record-plantuml-parity.php` records those goldens from the jar `tools/plantuml.lock` pins, checking its SHA-256. A fixture earns 1 when the native drawing writes the same words as PlantUML (the letters PlantUML draws as outlines in class and connector circles aside), 2 when its height is also within 5% of PlantUML's, 3 within 2%, and 4 when every word also stands within 3 points of where PlantUML writes it down the diagram, their baselines aligned on the median offset. Widths are not graded, since the bundled monospace font is wider than PlantUML's. Each fixture's grade has a floor in `manifest.php` that only rises. The `PlantUML parity (live)` workflow re-runs the pinned jar weekly and fails if PlantUML's own drawing drifts from a golden.
+
+The grades at 0.2.0, on 50 self-authored fixtures:
+
+| Family | Fixtures | Same words | and height within 5% | and within 2% | and every row within 3 pt |
+| --- | --- | --- | --- | --- | --- |
+| Activity | 18 | 18 | 18 | 18 | 18 |
+| Sequence | 8 | 8 | 8 | 2 | 2 |
+| Class | 8 | 8 | 6 | 0 | 0 |
+| State | 8 | 8 | 3 | 0 | 0 |
+| Description | 8 | 8 | 3 | 1 | 0 |
+
+Class, state and description diagrams are laid out by the native dot engine, whose ranks and spacing can differ from `dot`'s, so their heights are further from PlantUML's.

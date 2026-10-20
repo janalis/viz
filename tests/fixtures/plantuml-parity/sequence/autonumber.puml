@@ -1,0 +1,6 @@
+@startuml
+autonumber
+A -> B : one
+B -> C : two
+C -> A : three
+@enduml

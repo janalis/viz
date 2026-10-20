@@ -1,0 +1,11 @@
+@startuml
+[*] --> Player
+state Player {
+  [*] --> Stopped
+  Stopped --> Playing
+  Playing --> Paused
+  Paused --> Playing
+}
+Player --> Off
+Off --> Player[H]
+@enduml

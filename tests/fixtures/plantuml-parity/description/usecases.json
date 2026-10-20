@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 261,
+    "height": 187,
+    "words": [
+        "Clerk",
+        "Customer",
+        "Place",
+        "Refund",
+        "an",
+        "order"
+    ],
+    "baselines": [
+        [
+            "Clerk",
+            79.035
+        ],
+        [
+            "Customer",
+            79.035
+        ],
+        [
+            "Place",
+            162.411
+        ],
+        [
+            "Refund",
+            162.413
+        ],
+        [
+            "an",
+            162.411
+        ],
+        [
+            "order",
+            162.411
+        ]
+    ]
+}

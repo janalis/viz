@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 148,
+    "height": 219,
+    "words": [
+        "Check",
+        "Load",
+        "every",
+        "for",
+        "line",
+        "order",
+        "stock",
+        "the",
+        "the"
+    ],
+    "baselines": [
+        [
+            "Check",
+            130.734
+        ],
+        [
+            "Load",
+            76.602
+        ],
+        [
+            "every",
+            144.867
+        ],
+        [
+            "for",
+            144.867
+        ],
+        [
+            "line",
+            144.867
+        ],
+        [
+            "order",
+            76.602
+        ],
+        [
+            "stock",
+            130.734
+        ],
+        [
+            "the",
+            76.602
+        ],
+        [
+            "the",
+            130.734
+        ]
+    ]
+}

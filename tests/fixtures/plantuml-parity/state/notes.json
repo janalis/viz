@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 236,
+    "height": 260,
+    "words": [
+        "Closed",
+        "Open",
+        "accepting",
+        "input"
+    ],
+    "baselines": [
+        [
+            "Closed",
+            214.535
+        ],
+        [
+            "Open",
+            104.535
+        ],
+        [
+            "accepting",
+            115.908
+        ],
+        [
+            "input",
+            115.908
+        ]
+    ]
+}

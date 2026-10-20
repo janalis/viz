@@ -1,0 +1,49 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 202,
+    "height": 201,
+    "words": [
+        "Ann",
+        "Ann",
+        "Ben",
+        "Ben",
+        "agreed",
+        "answer",
+        "question",
+        "thinking"
+    ],
+    "baselines": [
+        [
+            "Ann",
+            30.535
+        ],
+        [
+            "Ann",
+            179.955
+        ],
+        [
+            "Ben",
+            30.535
+        ],
+        [
+            "Ben",
+            179.955
+        ],
+        [
+            "agreed",
+            136.678
+        ],
+        [
+            "answer",
+            101.367
+        ],
+        [
+            "question",
+            66.057
+        ],
+        [
+            "thinking",
+            72.057
+        ]
+    ]
+}

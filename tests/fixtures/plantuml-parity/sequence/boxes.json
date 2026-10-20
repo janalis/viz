@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 212,
+    "height": 190,
+    "words": [
+        "Api",
+        "Api",
+        "Db",
+        "Db",
+        "Inside",
+        "Outside",
+        "Outside",
+        "call",
+        "query"
+    ],
+    "baselines": [
+        [
+            "Api",
+            50.846
+        ],
+        [
+            "Api",
+            158.955
+        ],
+        [
+            "Db",
+            50.846
+        ],
+        [
+            "Db",
+            158.955
+        ],
+        [
+            "Inside",
+            23.568
+        ],
+        [
+            "Outside",
+            50.846
+        ],
+        [
+            "Outside",
+            158.955
+        ],
+        [
+            "call",
+            86.367
+        ],
+        [
+            "query",
+            115.678
+        ]
+    ]
+}

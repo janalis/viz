@@ -1,0 +1,8 @@
+@startuml
+folder Docs
+file Readme
+queue Jobs
+storage Disk
+Docs --> Readme
+Jobs --> Disk
+@enduml

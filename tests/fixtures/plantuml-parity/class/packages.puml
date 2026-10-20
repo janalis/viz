@@ -1,0 +1,11 @@
+@startuml
+package model {
+  class User
+  class Group
+}
+package service {
+  class Directory
+}
+Directory --> User
+Group o-- User
+@enduml

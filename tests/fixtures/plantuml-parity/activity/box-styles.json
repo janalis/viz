@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 126,
+    "height": 313,
+    "words": [
+        "Input",
+        "Output",
+        "Procedure",
+        "Save"
+    ],
+    "baselines": [
+        [
+            "Input",
+            76.602
+        ],
+        [
+            "Output",
+            130.734
+        ],
+        [
+            "Procedure",
+            184.867
+        ],
+        [
+            "Save",
+            239
+        ]
+    ]
+}

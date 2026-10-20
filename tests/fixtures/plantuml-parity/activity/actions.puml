@@ -1,0 +1,7 @@
+@startuml
+start
+:Load the order;
+:Check the stock
+for every line;
+stop
+@enduml

@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 185,
+    "height": 336,
+    "words": [
+        "Open",
+        "Read",
+        "Serve",
+        "Setup",
+        "Work",
+        "database",
+        "requests",
+        "settings",
+        "the"
+    ],
+    "baselines": [
+        [
+            "Open",
+            157.223
+        ],
+        [
+            "Read",
+            103.09
+        ],
+        [
+            "Serve",
+            249.844
+        ],
+        [
+            "Setup",
+            59.535
+        ],
+        [
+            "Work",
+            206.289
+        ],
+        [
+            "database",
+            157.223
+        ],
+        [
+            "requests",
+            249.844
+        ],
+        [
+            "settings",
+            103.09
+        ],
+        [
+            "the",
+            157.223
+        ]
+    ]
+}

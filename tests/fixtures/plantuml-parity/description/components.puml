@@ -1,0 +1,4 @@
+@startuml
+[Front end] --> [Back end]
+[Back end] --> [Database]
+@enduml

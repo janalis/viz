@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 102,
+    "height": 361,
+    "words": [
+        "Idle",
+        "Running",
+        "start",
+        "stop"
+    ],
+    "baselines": [
+        [
+            "Idle",
+            105.535
+        ],
+        [
+            "Running",
+            232.535
+        ],
+        [
+            "start",
+            180.568
+        ],
+        [
+            "stop",
+            180.568
+        ]
+    ]
+}

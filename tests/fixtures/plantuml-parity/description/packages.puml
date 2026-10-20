@@ -1,0 +1,11 @@
+@startuml
+package Core {
+  [Kernel]
+  [Scheduler]
+}
+package Drivers {
+  [Disk driver]
+}
+[Scheduler] --> [Kernel]
+[Disk driver] --> [Kernel]
+@enduml

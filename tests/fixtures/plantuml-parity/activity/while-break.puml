@@ -1,0 +1,12 @@
+@startuml
+start
+while (More pages?)
+  :Fetch a page;
+  if (Rate limited?) then (yes)
+    break
+  endif
+  :Parse it;
+endwhile
+:Save results;
+stop
+@enduml

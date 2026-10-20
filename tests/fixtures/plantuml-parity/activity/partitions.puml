@@ -1,0 +1,11 @@
+@startuml
+start
+partition Setup {
+  :Read settings;
+  :Open the database;
+}
+partition Work {
+  :Serve requests;
+}
+stop
+@enduml

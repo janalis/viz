@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 124,
+    "height": 301,
+    "words": [
+        "Queue",
+        "Report",
+        "Worker",
+        "done",
+        "picked",
+        "up"
+    ],
+    "baselines": [
+        [
+            "Queue",
+            76.602
+        ],
+        [
+            "Report",
+            227.418
+        ],
+        [
+            "Worker",
+            152.01
+        ],
+        [
+            "done",
+            185.996
+        ],
+        [
+            "picked",
+            110.588
+        ],
+        [
+            "up",
+            110.588
+        ]
+    ]
+}

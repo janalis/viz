@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 179,
+    "height": 171,
+    "words": [
+        "Disk",
+        "Docs",
+        "Jobs",
+        "Readme"
+    ],
+    "baselines": [
+        [
+            "Disk",
+            144.025
+        ],
+        [
+            "Docs",
+            47.535
+        ],
+        [
+            "Jobs",
+            38.535
+        ],
+        [
+            "Readme",
+            144.025
+        ]
+    ]
+}

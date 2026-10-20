@@ -1,0 +1,7 @@
+@startuml
+interface Reader
+interface Writer
+class File
+Reader <|.. File
+Writer <|.. File
+@enduml

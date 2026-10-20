@@ -1,0 +1,33 @@
+name: PlantUML parity (live)
+
+# Checks the recorded PlantUML goldens against the pinned jar itself, so the main jobs can
+# stay free of a JVM. Weekly, and on demand.
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: mbstring, gd, zlib, intl
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq graphviz fonts-dejavu-core
+      - run: composer install --no-interaction --no-progress
+      - run: curl -sSfL -o plantuml.jar "$(jq -r .url tools/plantuml.lock)"
+      # Refuses a jar other than the one the lock pins, then fails on drift.
+      - run: php tools/record-plantuml-parity.php plantuml.jar --check
+      - run: vendor/bin/phpunit tests/PlantUML/PlantUmlParityTest.php

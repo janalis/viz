@@ -1,0 +1,6 @@
+@startuml
+state Draft : not yet sent
+state Sent : waiting for a reply
+[*] --> Draft
+Draft --> Sent : send
+@enduml

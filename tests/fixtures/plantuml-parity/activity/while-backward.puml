@@ -1,0 +1,8 @@
+@startuml
+start
+while (Tests fail?)
+  :Fix a test;
+backward:Rerun the suite;
+endwhile
+stop
+@enduml

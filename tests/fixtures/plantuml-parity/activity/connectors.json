@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 123,
+    "height": 275,
+    "words": [
+        "First",
+        "Second",
+        "half",
+        "half"
+    ],
+    "baselines": [
+        [
+            "First",
+            76.602
+        ],
+        [
+            "Second",
+            200.734
+        ],
+        [
+            "half",
+            76.602
+        ],
+        [
+            "half",
+            200.734
+        ]
+    ]
+}

@@ -1,0 +1,8 @@
+@startuml
+start
+repeat
+  :Ask for a password;
+repeat while (Wrong?) is (yes) not (no)
+:Log in;
+stop
+@enduml

@@ -1,0 +1,9 @@
+@startuml
+start
+if (Paid?) then (yes)
+  :Ship it;
+else (no)
+  :Send a reminder;
+endif
+stop
+@enduml

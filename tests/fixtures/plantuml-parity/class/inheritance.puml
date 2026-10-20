@@ -1,0 +1,7 @@
+@startuml
+abstract class Shape
+class Circle
+class Square
+Shape <|-- Circle
+Shape <|-- Square
+@enduml

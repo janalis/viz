@@ -1,0 +1,5 @@
+@startuml
+class Repository <<service>>
+class Entity <<data>>
+Repository --> Entity
+@enduml

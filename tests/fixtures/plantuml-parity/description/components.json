@@ -1,0 +1,34 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 126,
+    "height": 280,
+    "words": [
+        "Back",
+        "Database",
+        "Front",
+        "end",
+        "end"
+    ],
+    "baselines": [
+        [
+            "Back",
+            147.015
+        ],
+        [
+            "Database",
+            253.505
+        ],
+        [
+            "Front",
+            40.535
+        ],
+        [
+            "end",
+            40.535
+        ],
+        [
+            "end",
+            147.015
+        ]
+    ]
+}

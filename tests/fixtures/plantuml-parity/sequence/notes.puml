@@ -1,0 +1,6 @@
+@startuml
+Ann -> Ben : question
+note left : thinking
+Ben -> Ann : answer
+note over Ann, Ben : agreed
+@enduml

@@ -1,0 +1,11 @@
+@startuml
+Buyer -> Shop : order
+alt in stock
+  Shop -> Buyer : confirm
+else sold out
+  Shop -> Buyer : apologise
+end
+loop every day
+  Shop -> Buyer : newsletter
+end
+@enduml

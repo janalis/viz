@@ -1,0 +1,10 @@
+@startuml
+[*] --> On
+state On {
+  [*] --> Low
+  Low --> High
+  --
+  [*] --> Quiet
+  Quiet --> Loud
+}
+@enduml

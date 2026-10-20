@@ -1,0 +1,9 @@
+@startuml
+start
+if (Empty?) then (yes)
+  stop
+else (no)
+  :Process it;
+endif
+end
+@enduml

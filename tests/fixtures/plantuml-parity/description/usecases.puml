@@ -1,0 +1,8 @@
+@startuml
+actor Customer
+actor Clerk
+usecase (Place an order)
+usecase (Refund)
+Customer --> (Place an order)
+Clerk --> (Refund)
+@enduml

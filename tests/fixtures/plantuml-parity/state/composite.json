@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 141,
+    "height": 460,
+    "words": [
+        "Active",
+        "Waiting",
+        "Working",
+        "done",
+        "job",
+        "shutdown"
+    ],
+    "baselines": [
+        [
+            "Active",
+            105.535
+        ],
+        [
+            "Waiting",
+            200.023
+        ],
+        [
+            "Working",
+            303.023
+        ],
+        [
+            "done",
+            263.057
+        ],
+        [
+            "job",
+            263.057
+        ],
+        [
+            "shutdown",
+            391.058
+        ]
+    ]
+}

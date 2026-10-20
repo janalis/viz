@@ -1,0 +1,64 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 345,
+    "height": 326,
+    "words": [
+        "Build",
+        "Build",
+        "Deploy",
+        "Run",
+        "back",
+        "end",
+        "end",
+        "front",
+        "migrations",
+        "the",
+        "the"
+    ],
+    "baselines": [
+        [
+            "Build",
+            102.602
+        ],
+        [
+            "Build",
+            137.168
+        ],
+        [
+            "Deploy",
+            251.867
+        ],
+        [
+            "Run",
+            171.734
+        ],
+        [
+            "back",
+            102.602
+        ],
+        [
+            "end",
+            102.602
+        ],
+        [
+            "end",
+            137.168
+        ],
+        [
+            "front",
+            137.168
+        ],
+        [
+            "migrations",
+            171.734
+        ],
+        [
+            "the",
+            102.602
+        ],
+        [
+            "the",
+            137.168
+        ]
+    ]
+}

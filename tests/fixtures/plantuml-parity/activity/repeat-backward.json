@@ -1,0 +1,34 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 205,
+    "height": 254,
+    "words": [
+        "Approved?",
+        "Draft",
+        "Review",
+        "Revise",
+        "no"
+    ],
+    "baselines": [
+        [
+            "Approved?",
+            184.356
+        ],
+        [
+            "Draft",
+            76.602
+        ],
+        [
+            "Review",
+            130.734
+        ],
+        [
+            "Revise",
+            125.668
+        ],
+        [
+            "no",
+            177.879
+        ]
+    ]
+}

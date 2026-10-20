@@ -1,0 +1,9 @@
+@startuml
+node Host {
+  component App
+}
+database Store
+cloud Internet
+Internet --> App
+App --> Store
+@enduml

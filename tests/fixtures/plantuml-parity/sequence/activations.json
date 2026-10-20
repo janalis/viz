@@ -1,0 +1,59 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 227,
+    "height": 219,
+    "words": [
+        "Cache",
+        "Cache",
+        "Client",
+        "Client",
+        "Server",
+        "Server",
+        "get",
+        "miss",
+        "request",
+        "response"
+    ],
+    "baselines": [
+        [
+            "Cache",
+            30.535
+        ],
+        [
+            "Cache",
+            197.266
+        ],
+        [
+            "Client",
+            30.535
+        ],
+        [
+            "Client",
+            197.266
+        ],
+        [
+            "Server",
+            30.535
+        ],
+        [
+            "Server",
+            197.266
+        ],
+        [
+            "get",
+            95.367
+        ],
+        [
+            "miss",
+            124.678
+        ],
+        [
+            "request",
+            66.057
+        ],
+        [
+            "response",
+            153.988
+        ]
+    ]
+}

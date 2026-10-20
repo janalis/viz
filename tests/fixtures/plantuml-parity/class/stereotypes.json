@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 126,
+    "height": 195,
+    "words": [
+        "Entity",
+        "Repository",
+        "«data»",
+        "«service»"
+    ],
+    "baselines": [
+        [
+            "Entity",
+            156.288
+        ],
+        [
+            "Repository",
+            39.668
+        ],
+        [
+            "«data»",
+            140.222
+        ],
+        [
+            "«service»",
+            23.602
+        ]
+    ]
+}

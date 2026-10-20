@@ -1,0 +1,10 @@
+@startuml
+left to right direction
+actor Guest
+rectangle Library {
+  usecase "Borrow a book" as UC1
+  usecase "Return a book" as UC2
+}
+Guest --> UC1
+Guest --> UC2
+@enduml

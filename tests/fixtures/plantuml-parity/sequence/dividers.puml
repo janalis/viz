@@ -1,0 +1,7 @@
+@startuml
+A -> B : start
+== Later ==
+B -> A : finish
+...
+A -> B : again
+@enduml

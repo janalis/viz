@@ -1,0 +1,9 @@
+@startuml
+actor User
+participant Web
+database Store
+User -> Web : sign in
+Web -> Store : look up
+Store --> Web : row
+Web --> User : welcome
+@enduml

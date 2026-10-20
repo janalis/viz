@@ -1,0 +1,24 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 206,
+    "height": 191,
+    "words": [
+        "East",
+        "North",
+        "South"
+    ],
+    "baselines": [
+        [
+            "East",
+            96.602
+        ],
+        [
+            "North",
+            96.602
+        ],
+        [
+            "South",
+            96.602
+        ]
+    ]
+}

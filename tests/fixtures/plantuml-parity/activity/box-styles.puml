@@ -1,0 +1,8 @@
+@startuml
+start
+:Input; <<input>>
+:Output; <<output>>
+:Procedure; <<procedure>>
+:Save; <<save>>
+stop
+@enduml

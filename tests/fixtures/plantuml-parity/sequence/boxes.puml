@@ -1,0 +1,9 @@
+@startuml
+box "Inside" #lightblue
+participant Api
+participant Db
+end box
+participant Outside
+Outside -> Api : call
+Api -> Db : query
+@enduml

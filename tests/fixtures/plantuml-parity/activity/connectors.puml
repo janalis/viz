@@ -1,0 +1,9 @@
+@startuml
+start
+:First half;
+(A)
+detach
+(A)
+:Second half;
+stop
+@enduml

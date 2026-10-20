@@ -1,0 +1,9 @@
+@startuml
+start
+:Receive a file;
+note right: Up to 10 MB
+:Scan it;
+floating note left: Antivirus
+:Store it;
+stop
+@enduml

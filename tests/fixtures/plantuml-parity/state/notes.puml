@@ -1,0 +1,5 @@
+@startuml
+[*] --> Open
+Open --> Closed
+note right of Open : accepting input
+@enduml

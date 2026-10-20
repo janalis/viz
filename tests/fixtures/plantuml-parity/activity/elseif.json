@@ -1,0 +1,49 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 265,
+    "height": 228,
+    "words": [
+        "Box",
+        "Crate",
+        "Envelope",
+        "Size?",
+        "Size?",
+        "large",
+        "medium",
+        "small"
+    ],
+    "baselines": [
+        [
+            "Box",
+            133.557
+        ],
+        [
+            "Crate",
+            130.079
+        ],
+        [
+            "Envelope",
+            133.557
+        ],
+        [
+            "Size?",
+            71.157
+        ],
+        [
+            "Size?",
+            71.157
+        ],
+        [
+            "large",
+            64.68
+        ],
+        [
+            "medium",
+            89.635
+        ],
+        [
+            "small",
+            89.635
+        ]
+    ]
+}

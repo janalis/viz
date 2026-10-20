@@ -1,0 +1,49 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 269,
+    "height": 170,
+    "words": [
+        "Borrow",
+        "Guest",
+        "Library",
+        "Return",
+        "a",
+        "a",
+        "book",
+        "book"
+    ],
+    "baselines": [
+        [
+            "Borrow",
+            128.742
+        ],
+        [
+            "Guest",
+            126.295
+        ],
+        [
+            "Library",
+            22.535
+        ],
+        [
+            "Return",
+            62.741
+        ],
+        [
+            "a",
+            62.741
+        ],
+        [
+            "a",
+            128.742
+        ],
+        [
+            "book",
+            62.741
+        ],
+        [
+            "book",
+            128.742
+        ]
+    ]
+}

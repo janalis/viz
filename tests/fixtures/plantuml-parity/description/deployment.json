@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 150,
+    "height": 288,
+    "words": [
+        "App",
+        "Host",
+        "Internet",
+        "Store"
+    ],
+    "baselines": [
+        [
+            "App",
+            145.15
+        ],
+        [
+            "Host",
+            98.15
+        ],
+        [
+            "Internet",
+            33.67
+        ],
+        [
+            "Store",
+            255.64
+        ]
+    ]
+}

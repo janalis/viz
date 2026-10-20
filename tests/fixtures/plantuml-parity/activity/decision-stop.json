@@ -1,0 +1,34 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 157,
+    "height": 197,
+    "words": [
+        "Empty?",
+        "Process",
+        "it",
+        "no",
+        "yes"
+    ],
+    "baselines": [
+        [
+            "Empty?",
+            71.157
+        ],
+        [
+            "Process",
+            125.079
+        ],
+        [
+            "it",
+            125.079
+        ],
+        [
+            "no",
+            89.635
+        ],
+        [
+            "yes",
+            64.68
+        ]
+    ]
+}

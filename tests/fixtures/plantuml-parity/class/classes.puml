@@ -1,0 +1,10 @@
+@startuml
+class Order {
+  id : int
+  total() : float
+}
+class Line {
+  quantity : int
+}
+Order *-- Line
+@enduml

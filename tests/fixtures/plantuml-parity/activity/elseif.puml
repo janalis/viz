@@ -1,0 +1,11 @@
+@startuml
+start
+if (Size?) is (small) then
+  :Envelope;
+elseif (Size?) is (medium) then
+  :Box;
+else (large)
+  :Crate;
+endif
+stop
+@enduml

@@ -1,0 +1,9 @@
+@startuml
+start
+fork
+  :Email;
+fork again
+  :Text message;
+end merge
+stop
+@enduml

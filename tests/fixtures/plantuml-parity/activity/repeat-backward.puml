@@ -1,0 +1,8 @@
+@startuml
+start
+repeat :Draft;
+  :Review;
+backward:Revise;
+repeat while (Approved?) is (no)
+stop
+@enduml

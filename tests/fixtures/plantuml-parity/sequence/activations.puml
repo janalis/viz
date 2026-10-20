@@ -1,0 +1,10 @@
+@startuml
+Client -> Server : request
+activate Server
+Server -> Cache : get
+activate Cache
+Cache --> Server : miss
+deactivate Cache
+Server --> Client : response
+deactivate Server
+@enduml

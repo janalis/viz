@@ -1,0 +1,24 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 208,
+    "height": 178,
+    "words": [
+        "File",
+        "Reader",
+        "Writer"
+    ],
+    "baselines": [
+        [
+            "File",
+            136.291
+        ],
+        [
+            "Reader",
+            28.291
+        ],
+        [
+            "Writer",
+            28.291
+        ]
+    ]
+}

@@ -1,0 +1,9 @@
+@startuml
+enum Colour {
+  RED
+  GREEN
+  BLUE
+}
+class Paint
+Paint --> Colour
+@enduml

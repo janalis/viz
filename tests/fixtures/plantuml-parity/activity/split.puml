@@ -1,0 +1,11 @@
+@startuml
+start
+split
+  :North;
+split again
+  :South;
+split again
+  :East;
+end split
+stop
+@enduml

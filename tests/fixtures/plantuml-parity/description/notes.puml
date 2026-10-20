@@ -1,0 +1,4 @@
+@startuml
+[Gateway] --> [Service]
+note right of [Service] : stateless
+@enduml

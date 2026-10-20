@@ -1,0 +1,9 @@
+@startuml
+start
+:Queue;
+-> picked up;
+:Worker;
+-[#blue,dashed]-> done;
+:Report;
+stop
+@enduml

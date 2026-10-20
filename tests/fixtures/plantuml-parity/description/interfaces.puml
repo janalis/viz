@@ -1,0 +1,6 @@
+@startuml
+component Server
+interface HTTP
+HTTP - Server
+Server --> [Logger]
+@enduml

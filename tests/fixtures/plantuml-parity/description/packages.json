@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 329,
+    "height": 224,
+    "words": [
+        "Core",
+        "Disk",
+        "Drivers",
+        "Kernel",
+        "Scheduler",
+        "driver"
+    ],
+    "baselines": [
+        [
+            "Core",
+            21.535
+        ],
+        [
+            "Disk",
+            74.535
+        ],
+        [
+            "Drivers",
+            21.535
+        ],
+        [
+            "Kernel",
+            181.025
+        ],
+        [
+            "Scheduler",
+            74.535
+        ],
+        [
+            "driver",
+            74.535
+        ]
+    ]
+}

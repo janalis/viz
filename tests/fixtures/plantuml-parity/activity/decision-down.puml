@@ -1,0 +1,8 @@
+@startuml
+start
+if (Valid?) then (yes)
+  :Store it;
+endif
+:Reply;
+stop
+@enduml

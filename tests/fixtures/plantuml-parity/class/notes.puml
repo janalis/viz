@@ -1,0 +1,6 @@
+@startuml
+class Cart
+class Item
+Cart "1" *-- "many" Item
+note right of Cart : kept in session
+@enduml
