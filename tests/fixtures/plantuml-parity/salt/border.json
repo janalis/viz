@@ -1,0 +1,59 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 187,
+    "height": 80,
+    "words": [
+        "Bottom",
+        "Centre",
+        "Left",
+        "Right",
+        "Top",
+        "button",
+        "field",
+        "line",
+        "side",
+        "status"
+    ],
+    "baselines": [
+        [
+            "Bottom",
+            72
+        ],
+        [
+            "Centre",
+            39.734
+        ],
+        [
+            "Left",
+            40.734
+        ],
+        [
+            "Right",
+            44.234
+        ],
+        [
+            "Top",
+            21.102
+        ],
+        [
+            "button",
+            21.102
+        ],
+        [
+            "field",
+            39.734
+        ],
+        [
+            "line",
+            72
+        ],
+        [
+            "side",
+            56.867
+        ],
+        [
+            "status",
+            72
+        ]
+    ]
+}

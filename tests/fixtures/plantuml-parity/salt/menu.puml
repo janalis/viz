@@ -1,0 +1,10 @@
+@startsalt
+{+
+{* File | Edit | Source | Refactor
+ Refactor | New | Open File | - | Close | Close All }
+{/ General | Fonts | Graphics | Document }
+{
+Is open?
+}
+}
+@endsalt

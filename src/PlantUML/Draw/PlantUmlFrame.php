@@ -45,6 +45,16 @@ final class PlantUmlFrame
     }
 
     /**
+     * A diagram PlantUML sets with a margin of its own all round, as a salt wireframe's 5.
+     *
+     * @param list<Mark> $marks the diagram's, in points, its top left at the origin
+     */
+    public static function inset(PlantUmlDocument $document, array $marks, float $width, float $height, float $margin): Drawing
+    {
+        return self::framed($document, $marks, $width, $height, [$margin, $margin, $margin, $margin]);
+    }
+
+    /**
      * A sequence diagram, as PlantUML sets one laid out by teoz: 5 clear of the diagram all
      * round, which its captions stand outside of, and 5 more around everything.
      *

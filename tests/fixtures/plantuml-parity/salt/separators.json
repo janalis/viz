@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 99,
+    "height": 134,
+    "words": [
+        "Another",
+        "Note",
+        "Ok",
+        "Some",
+        "Text1",
+        "field",
+        "on",
+        "text",
+        "usage"
+    ],
+    "baselines": [
+        [
+            "Another",
+            92
+        ],
+        [
+            "Note",
+            67.867
+        ],
+        [
+            "Ok",
+            120.633
+        ],
+        [
+            "Some",
+            41.734
+        ],
+        [
+            "Text1",
+            17.602
+        ],
+        [
+            "field",
+            41.734
+        ],
+        [
+            "on",
+            67.867
+        ],
+        [
+            "text",
+            92
+        ],
+        [
+            "usage",
+            67.867
+        ]
+    ]
+}

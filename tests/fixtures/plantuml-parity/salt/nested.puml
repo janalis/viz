@@ -1,0 +1,12 @@
+@startsalt
+{
+  Name  | { [one] | [two] }
+  { (X) yes | () no } | "field"
+  <<icon
+  ......XX......
+  .....XXXX.....
+  ....XXXXXX....
+  >>
+  <<icon>> | reused
+}
+@endsalt

@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 150,
+    "height": 100,
+    "words": [
+        "****",
+        "Cancel",
+        "Login",
+        "My",
+        "MyName",
+        "OK",
+        "Password",
+        "box",
+        "group"
+    ],
+    "baselines": [
+        [
+            "****",
+            49.867
+        ],
+        [
+            "Cancel",
+            72.5
+        ],
+        [
+            "Login",
+            31.734
+        ],
+        [
+            "My",
+            16.602
+        ],
+        [
+            "MyName",
+            31.734
+        ],
+        [
+            "OK",
+            72.5
+        ],
+        [
+            "Password",
+            49.867
+        ],
+        [
+            "box",
+            16.602
+        ],
+        [
+            "group",
+            16.602
+        ]
+    ]
+}

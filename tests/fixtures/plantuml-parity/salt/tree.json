@@ -1,0 +1,74 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 110,
+    "height": 182,
+    "words": [
+        "Africa",
+        "America",
+        "Berlin",
+        "Boston",
+        "Canada",
+        "Europe",
+        "Germany",
+        "Italy",
+        "Mexico",
+        "New",
+        "USA",
+        "World",
+        "York"
+    ],
+    "baselines": [
+        [
+            "Africa",
+            173.063
+        ],
+        [
+            "America",
+            31.734
+        ],
+        [
+            "Berlin",
+            158.93
+        ],
+        [
+            "Boston",
+            88.266
+        ],
+        [
+            "Canada",
+            45.867
+        ],
+        [
+            "Europe",
+            116.531
+        ],
+        [
+            "Germany",
+            144.797
+        ],
+        [
+            "Italy",
+            130.664
+        ],
+        [
+            "Mexico",
+            102.398
+        ],
+        [
+            "New",
+            74.133
+        ],
+        [
+            "USA",
+            60
+        ],
+        [
+            "World",
+            17.602
+        ],
+        [
+            "York",
+            74.133
+        ]
+    ]
+}

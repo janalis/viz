@@ -1,0 +1,7 @@
+@startsalt
+{
+  ^Choose one^
+  ^Pick^Apple^Banana^Cherry^
+  [X] after the list
+}
+@endsalt

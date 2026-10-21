@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 72,
+    "height": 129,
+    "words": [
+        "Document",
+        "Fonts",
+        "General",
+        "Graphics"
+    ],
+    "baselines": [
+        [
+            "Document",
+            107
+        ],
+        [
+            "Fonts",
+            48.734
+        ],
+        [
+            "General",
+            19.602
+        ],
+        [
+            "Graphics",
+            77.867
+        ]
+    ]
+}

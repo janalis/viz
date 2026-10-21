@@ -103,7 +103,8 @@ final readonly class PlantUmlText
         foreach ((array) \preg_split('/(<\/?size(?::[^>]*)?>)/i', $text, flags: \PREG_SPLIT_DELIM_CAPTURE) as $index => $part) {
             $part = (string) $part;
             if (0 === ($index % 2)) {
-                $width += PlantUmlMetrics::width(self::plain($part), $sizes[\count($sizes) - 1], $face);
+                // A piece of a line may hold markup it does not close, as wrapping cuts it: every marker comes out.
+                $width += PlantUmlMetrics::width(\str_replace(['**', '//', '""', '__', '~~'], replace: '', subject: self::plain($part)), $sizes[\count($sizes) - 1], $face);
                 continue;
             }
             $match = [];
@@ -162,12 +163,12 @@ final readonly class PlantUmlText
         return $balanced;
     }
 
-    /** A line without its Creole markup. */
+    /** A line without its Creole markup: a `**`, `//`, `""`, `__` or `~~` only around something, as PlantUML reads it, `****` written as it is. */
     public static function plain(string $line): string
     {
         $line = (string) \preg_replace(self::TAGS, replacement: '', subject: $line);
 
-        return \str_replace(['**', '//', '""', '__', '~~'], replace: '', subject: $line);
+        return (string) \preg_replace('/(\*\*|\/\/|""|__|~~)(.+?)\1/u', replacement: '$2', subject: $line);
     }
 
     public function empty(): bool

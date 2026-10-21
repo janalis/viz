@@ -1,0 +1,12 @@
+@startsalt
+{+
+N= | [Top button]
+W= | {
+  Left
+  side
+}
+E= | [Right]
+C= | "Centre field"
+S= | Bottom status line
+}
+@endsalt

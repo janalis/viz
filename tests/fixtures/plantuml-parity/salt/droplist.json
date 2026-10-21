@@ -1,0 +1,69 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 109,
+    "height": 85,
+    "words": [
+        "Apple",
+        "Apple",
+        "Banana",
+        "Banana",
+        "Cherry",
+        "Cherry",
+        "Choose",
+        "Pick",
+        "after",
+        "list",
+        "one",
+        "the"
+    ],
+    "baselines": [
+        [
+            "Apple",
+            54.867
+        ],
+        [
+            "Apple",
+            54.867
+        ],
+        [
+            "Banana",
+            69
+        ],
+        [
+            "Banana",
+            69
+        ],
+        [
+            "Cherry",
+            83.133
+        ],
+        [
+            "Cherry",
+            83.133
+        ],
+        [
+            "Choose",
+            19.602
+        ],
+        [
+            "Pick",
+            39.734
+        ],
+        [
+            "after",
+            57.867
+        ],
+        [
+            "list",
+            57.867
+        ],
+        [
+            "one",
+            19.602
+        ],
+        [
+            "the",
+            57.867
+        ]
+    ]
+}

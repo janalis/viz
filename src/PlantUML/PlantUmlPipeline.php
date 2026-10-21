@@ -20,6 +20,7 @@ use Janalis\Viz\PlantUML\LegacyActivities\LegacyActivityFamily;
 use Janalis\Viz\PlantUML\MindMaps\MindMapFamily;
 use Janalis\Viz\PlantUML\NwDiag\NwFamily;
 use Janalis\Viz\PlantUML\Packet\PacketFamily;
+use Janalis\Viz\PlantUML\Salt\SaltFamily;
 use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
 use Janalis\Viz\PlantUML\Wbs\WbsFamily;
@@ -49,6 +50,7 @@ final readonly class PlantUmlPipeline implements Pipeline
         'packetdiag' => ['packet' => 'packet'],
         'nwdiag' => ['nw' => 'network'],
         'wire' => ['wire' => 'wire'],
+        'salt' => ['salt' => 'salt'],
     ];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
@@ -75,6 +77,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'packet' => new PacketFamily(),
             'nw' => new NwFamily(),
             'wire' => new WireFamily(),
+            'salt' => new SaltFamily(),
         ]);
     }
 
@@ -115,7 +118,8 @@ final readonly class PlantUmlPipeline implements Pipeline
             }
         }
 
-        $claimed = PlantUmlKinds::claimed($document);
+        // Only a `@startuml` block can hold the kinds PlantUML's later factories read.
+        $claimed = 'uml' === $document->kind ? PlantUmlKinds::claimed($document) : null;
 
         throw new Unsupported(match (true) {
             null !== $claimed => 'The native PlantUML renderer does not draw '.$claimed,

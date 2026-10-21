@@ -1,0 +1,11 @@
+@startsalt
+{
+{T#
++Region        | Population    | Age
++ World        | 7.13 billion  | 30
+++ America     | 964 million   | 30
++++ Canada     | 35 million    | 30
+++ Europe      | 740 million   | 30
+}
+}
+@endsalt
