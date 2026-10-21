@@ -1,0 +1,6 @@
+@startwbs
+*[#SkyBlue] this is the partner workpackage
+**[#pink] this is my workpackage
+** this is another workpackage
+***[#lightgreen] a leaf
+@endwbs

@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 245,
+    "height": 242,
+    "words": [
+        "America",
+        "Canada",
+        "England",
+        "Europe",
+        "Germany",
+        "Mexico",
+        "Spain",
+        "USA",
+        "World"
+    ],
+    "baselines": [
+        [
+            "America",
+            115.734
+        ],
+        [
+            "Canada",
+            155.867
+        ],
+        [
+            "England",
+            155.867
+        ],
+        [
+            "Europe",
+            115.734
+        ],
+        [
+            "Germany",
+            187
+        ],
+        [
+            "Mexico",
+            187
+        ],
+        [
+            "Spain",
+            218.133
+        ],
+        [
+            "USA",
+            218.133
+        ],
+        [
+            "World",
+            41.602
+        ]
+    ]
+}

@@ -1,0 +1,17 @@
+@startwbs
+<style>
+wbsDiagram {
+  node {
+    Width auto
+  }
+}
+</style>
+* Root
+** A
+*** a much longer leaf label
+*** b
+** Branch with a long name
+***_ boxless
+***_ x
+** C
+@endwbs

@@ -15,6 +15,7 @@ use Janalis\Viz\PlantUML\LegacyActivities\LegacyActivityFamily;
 use Janalis\Viz\PlantUML\MindMaps\MindMapFamily;
 use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
+use Janalis\Viz\PlantUML\Wbs\WbsFamily;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -29,7 +30,7 @@ final readonly class PlantUmlPipeline implements Pipeline
     public const array FACTORIES = ['sequence' => 'sequence', 'class' => 'class', 'activity' => 'legacy activity', 'description' => 'description', 'state' => 'state', 'activity3' => 'activity'];
 
     /** The factories for each kind of block, as `@start…` names it, the uml ones above. */
-    public const array KINDS = ['uml' => self::FACTORIES, 'mindmap' => ['mindMap' => 'mind map']];
+    public const array KINDS = ['uml' => self::FACTORIES, 'mindmap' => ['mindMap' => 'mind map'], 'wbs' => ['wBS' => 'work breakdown structure']];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
     public function __construct(
@@ -47,6 +48,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'state' => new StateFamily(),
             'activity3' => new ActivityFamily(),
             'mindMap' => new MindMapFamily(),
+            'wBS' => new WbsFamily(),
         ]);
     }
 

@@ -1,0 +1,9 @@
+@startwbs
+* Test
+**(b) A topic
+***(c1) common
+**(c2) Another topic
+***(c3)[#pink] third
+b -> c2
+c1 -> c3 #red
+@endwbs

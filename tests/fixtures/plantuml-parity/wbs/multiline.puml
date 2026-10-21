@@ -1,0 +1,10 @@
+@startwbs
+* <&flag> Debian
+** <&globe> Ubuntu
+***:Linux Mint
+on two lines;
+*** Kubuntu
+** <&cog> LMDE
+**:SolydXK
+with <b>bold</b>;
+@endwbs

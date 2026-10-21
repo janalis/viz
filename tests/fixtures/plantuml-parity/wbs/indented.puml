@@ -1,0 +1,7 @@
+@startwbs
+* Root
+ * One
+  * Deep
+	* Two
+**_ Three
+@endwbs

@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 279,
+    "height": 198,
+    "words": [
+        "A",
+        "Another",
+        "Test",
+        "common",
+        "third",
+        "topic",
+        "topic"
+    ],
+    "baselines": [
+        [
+            "A",
+            115.734
+        ],
+        [
+            "Another",
+            115.734
+        ],
+        [
+            "Test",
+            41.602
+        ],
+        [
+            "common",
+            164.867
+        ],
+        [
+            "third",
+            164.867
+        ],
+        [
+            "topic",
+            115.734
+        ],
+        [
+            "topic",
+            115.734
+        ]
+    ]
+}

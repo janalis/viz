@@ -1,0 +1,5 @@
+@startwbs
+* A rather long root label for a single child
+** child
+*** grandchild
+@endwbs

@@ -1,0 +1,64 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 298,
+    "height": 198,
+    "words": [
+        "A",
+        "a",
+        "child",
+        "child",
+        "for",
+        "grandchild",
+        "label",
+        "long",
+        "rather",
+        "root",
+        "single"
+    ],
+    "baselines": [
+        [
+            "A",
+            41.602
+        ],
+        [
+            "a",
+            41.602
+        ],
+        [
+            "child",
+            41.602
+        ],
+        [
+            "child",
+            115.734
+        ],
+        [
+            "for",
+            41.602
+        ],
+        [
+            "grandchild",
+            164.867
+        ],
+        [
+            "label",
+            41.602
+        ],
+        [
+            "long",
+            41.602
+        ],
+        [
+            "rather",
+            41.602
+        ],
+        [
+            "root",
+            41.602
+        ],
+        [
+            "single",
+            41.602
+        ]
+    ]
+}

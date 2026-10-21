@@ -1,0 +1,26 @@
+@startwbs
+<style>
+wbsDiagram {
+  .pink {
+      BackgroundColor pink
+  }
+  .your_style_name {
+      BackgroundColor SkyBlue
+  }
+  arrow {
+    LineColor green
+  }
+  :depth(1) {
+    RoundCorner 15
+  }
+  leafNode {
+    FontStyle italic
+  }
+}
+</style>
+* this is the partner workpackage <<pink>>
+** this is my workpackage <<pink>>
+** this is another workpackage
+*** a leaf <<your_style_name>>
+*** another leaf
+@endwbs
