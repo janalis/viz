@@ -66,7 +66,7 @@ final class ClassDrawing
         $portions = new ClassPortions($this->classes->visibility);
         $icons = $this->classes->document->param('classattributeiconsize', '10');
         foreach ($this->classes->groups as $group) {
-            $title = new PlantUmlText(['' === $group->display ? $group->id : $group->display], 14.0);
+            $title = new PlantUmlText(ClassReader::split('' === $group->display ? $group->id : $group->display), 14.0);
             if ('together' === $group->type) {
                 $svek->together($group->id, $group->parent);
                 continue;
@@ -168,7 +168,7 @@ final class ClassDrawing
     private function package(ClassGroup $group, float $x0, float $y0, float $x1, float $y1): void
     {
         $style = $this->classes->document->styles->style(['root', 'element', 'group', 'package'], null === $group->stereotype ? [] : ClassReader::stereotypes($group->stereotype));
-        $title = PlantUmlText::styled(['' === $group->display ? $group->id : $group->display], $this->classes->document->styles->style(['root', 'element', 'package', 'title']));
+        $title = PlantUmlText::styled(ClassReader::split('' === $group->display ? $group->id : $group->display), $this->classes->document->styles->style(['root', 'element', 'package', 'title']));
         [$width, $height] = $title->size();
         $tab = $height + 6;
         $line = $style->color('LineColor', '#000000');

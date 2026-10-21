@@ -48,7 +48,7 @@ final class PlantUmlPreprocessor
      *
      * @return non-empty-list<string>
      */
-    private static function broken(string $line): array
+    public static function broken(string $line): array
     {
         if (!\str_contains($line, TimBuiltins::BREAKLINE)) {
             return [$line];

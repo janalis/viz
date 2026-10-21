@@ -87,7 +87,7 @@ final class LegacyActivityDrawing
     {
         $stereotypes = null === $group->stereotype ? [] : [\trim($group->stereotype, characters: '<> ')];
 
-        return PlantUmlText::styled([$group->display], $this->diagram->document->styles->style(['root', 'element', 'activityDiagram', 'package', 'title'], $stereotypes));
+        return PlantUmlText::styled(ClassReader::split($group->display), $this->diagram->document->styles->style(['root', 'element', 'activityDiagram', 'package', 'title'], $stereotypes));
     }
 
     private function label(int $index): LinkLabel

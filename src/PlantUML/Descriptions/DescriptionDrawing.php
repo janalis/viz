@@ -16,6 +16,7 @@ use Janalis\Viz\PlantUML\Draw\LinkPainter;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
+use Janalis\Viz\PlantUML\Draw\StackedText;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Svek\Svek;
 
@@ -104,15 +105,27 @@ final class DescriptionDrawing
         return $svek;
     }
 
-    private function title(DescriptionGroup $group): PlantUmlText
+    /** A group's title: its stereotypes in their style, as PlantUML draws them above its name. */
+    private function title(DescriptionGroup $group): StackedText
     {
-        return PlantUmlText::styled(['' === $group->display ? $group->id : $group->display], $this->diagram->document->styles->style([
-            'root',
-            'element',
-            'componentDiagram',
-            'package',
-            'title',
-        ], $group->stereotypes));
+        $styles = $this->diagram->document->styles;
+        $texts = [];
+        if ([] !== $group->stereotypes) {
+            $style = $styles->style(['root', 'element', 'componentDiagram', $group->symbol, 'stereotype'], $group->stereotypes);
+            $texts[] = PlantUmlText::styled(\array_map(static fn (string $stereotype): string => '«'.$stereotype.'»', $group->stereotypes), $style);
+        }
+        $texts[] = PlantUmlText::styled(
+            ClassReader::split('' === $group->display ? $group->id : $group->display),
+            $styles->style([
+                'root',
+                'element',
+                'componentDiagram',
+                'package',
+                'title',
+            ], $group->stereotypes),
+        );
+
+        return new StackedText($texts);
     }
 
     private function label(int $index): LinkLabel

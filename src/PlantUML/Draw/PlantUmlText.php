@@ -219,7 +219,8 @@ final readonly class PlantUmlText
     {
         $plain = self::plain($text);
         $shown = DisplayWidth::of($plain) * Units::cell($size);
-        if ('' === \trim($plain)) {
+        // As PlantUML, which writes no text of a transparent colour.
+        if ('' === \trim($plain) || 'none' === $this->color) {
             return [[], $shown];
         }
         $depth = self::heading($line)[0];

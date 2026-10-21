@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Preprocessor;
 
+use Janalis\Viz\PlantUML\Language\PlantUmlStdlib;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -72,7 +73,8 @@ final class TimContext
             TimLineType::Return === $kind && $inFunction => null,
             TimLineType::Plain === $kind => $inFunction ? $this->substitutedLines($memory, $line) : $this->plain($memory, $line),
             TimLineType::Theme === $kind => $this->theme($memory, TimEater::trimmed($line)),
-            \in_array($kind, [TimLineType::Include, TimLineType::IncludeDef, TimLineType::Import], strict: true) => throw new Unsupported(
+            TimLineType::Include === $kind => $this->include($memory, TimEater::trimmed($line)),
+            \in_array($kind, [TimLineType::IncludeDef, TimLineType::Import], strict: true) => throw new Unsupported(
                 'The native PlantUML renderer leaves '.\explode(' ', \trim($line), limit: 2)[0].' to PlantUML',
             ),
             default => $this->directive($memory, $line, $kind, $type),
@@ -298,6 +300,33 @@ final class TimContext
         $theme = TimThemes::read($this->substituted($memory, $name) ?? '');
         $this->execute($memory, $theme->lines, null);
         $this->themeMetadata = $theme->metadata;
+    }
+
+    /**
+     * `!include <library/file>`: a file of PlantUML's standard library, its YAML header left
+     * out, carried out here; a file or a URL is left to PlantUML.
+     */
+    private function include(TimMemory $memory, string $line): void
+    {
+        $eater = new TimEater($line);
+        $eater->skipSpaces();
+        $eater->expect('!include');
+        // As PlantUML: `url`, `_many` or `_once` right after, before any space.
+        $suffix = match ($eater->peek()) {
+            'u' => 'url',
+            '_' => 'm' === $eater->peekNext() ? '_many' : '_once',
+            default => '',
+        };
+        $eater->expect($suffix);
+        $eater->skipSpaces();
+        $what = $this->substituted($memory, $eater->rest()) ?? '';
+        $bang = \strrpos($what, needle: '!');
+        $what = false === $bang ? $what : \substr($what, offset: 0, length: $bang);
+        if (!\str_starts_with($what, '<') || !\str_ends_with($what, '>')) {
+            throw new Unsupported('The native PlantUML renderer leaves !include of a file or a URL to PlantUML: '.$line);
+        }
+        $lines = PlantUmlStdlib::lines(\substr($what, offset: 1, length: -1)) ?? throw new TimError('cannot include '.$what, $line);
+        $this->execute($memory, TimThemes::withoutHeader($lines)[0], null);
     }
 
     /** `!assert test : message`. */

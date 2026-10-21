@@ -1,0 +1,141 @@
+{
+    "version": "1.2026.8",
+    "libraries": {
+        "adaml": {
+            "mit": false,
+            "link": null
+        },
+        "archimate": {
+            "mit": true,
+            "link": null
+        },
+        "aws": {
+            "mit": false,
+            "link": null
+        },
+        "awslib": {
+            "mit": false,
+            "link": "awslib14"
+        },
+        "awslib10": {
+            "mit": false,
+            "link": null
+        },
+        "awslib14": {
+            "mit": false,
+            "link": null
+        },
+        "awslib20": {
+            "mit": false,
+            "link": null
+        },
+        "azure": {
+            "mit": false,
+            "link": null
+        },
+        "bootstrap": {
+            "mit": false,
+            "link": "bootstrap1.13.1"
+        },
+        "bootstrap1.12.1": {
+            "mit": true,
+            "link": null
+        },
+        "bootstrap1.13.1": {
+            "mit": true,
+            "link": null
+        },
+        "c4": {
+            "mit": true,
+            "link": null
+        },
+        "classy": {
+            "mit": false,
+            "link": null
+        },
+        "classy-c4": {
+            "mit": false,
+            "link": null
+        },
+        "cloudinsight": {
+            "mit": false,
+            "link": null
+        },
+        "cloudogu": {
+            "mit": false,
+            "link": null
+        },
+        "domainstory": {
+            "mit": true,
+            "link": null
+        },
+        "edgy": {
+            "mit": false,
+            "link": null
+        },
+        "eip": {
+            "mit": false,
+            "link": null
+        },
+        "elastic": {
+            "mit": false,
+            "link": null
+        },
+        "gcp": {
+            "mit": false,
+            "link": null
+        },
+        "ibm": {
+            "mit": false,
+            "link": null
+        },
+        "k8s": {
+            "mit": false,
+            "link": null
+        },
+        "kubernetes": {
+            "mit": false,
+            "link": null
+        },
+        "logos": {
+            "mit": false,
+            "link": null
+        },
+        "material": {
+            "mit": false,
+            "link": "material2.1.19"
+        },
+        "material2": {
+            "mit": false,
+            "link": "material2.1.19"
+        },
+        "material2.1.19": {
+            "mit": false,
+            "link": null
+        },
+        "material7": {
+            "mit": false,
+            "link": "material7.4.47"
+        },
+        "material7.4.47": {
+            "mit": false,
+            "link": null
+        },
+        "office": {
+            "mit": false,
+            "link": null
+        },
+        "osa": {
+            "mit": false,
+            "link": null
+        },
+        "osa2": {
+            "mit": false,
+            "link": null
+        },
+        "tupadr3": {
+            "mit": false,
+            "link": null
+        }
+    }
+}

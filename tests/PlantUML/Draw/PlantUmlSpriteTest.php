@@ -65,7 +65,8 @@ final class PlantUmlSpriteTest extends TestCase
         yield 'two levels' => ["sprite \$s [2x2/2] {\n00\n}", 'PlantUML allows sprites of 4, 8 or 16 gray levels only'];
         yield 'no hex digit' => ["sprite \$s {\n0G\n}", 'The PlantUML sprite has a pixel that is no hex digit: 0G'];
         yield 'not deflated' => ['sprite $s [2x2/16z] ABCD', 'The PlantUML sprite cannot be decoded'];
-        yield 'from the standard library' => ['sprite $s #c4#c4_context:person', 'The native PlantUML renderer leaves sprite to PlantUML'];
+        yield 'of a library not under MIT' => ['sprite $s #logos#php', 'The native PlantUML renderer leaves the standard library logos to PlantUML'];
+        yield 'of SVG' => ['sprite $s <svg viewBox="0 0 1 1"></svg>', 'The native PlantUML renderer leaves sprite to PlantUML'];
     }
 
     #[DataProvider('refused')]

@@ -30,8 +30,22 @@ final readonly class TimThemes
         $text = \str_replace("\r\n", replace: "\n", subject: (string) \file_get_contents(self::DIRECTORY.'/themes/puml-theme-'.$name.'.puml'));
         // As a reader reads lines: none after the last new line.
         $lines = \explode("\n", \str_ends_with($text, needle: "\n") ? \substr($text, offset: 0, length: -1) : $text);
+        [$lines, $metadata] = self::withoutHeader($lines);
+
+        return new self($lines, $metadata);
+    }
+
+    /**
+     * Lines without the YAML header PlantUML reads before them, between two `---` lines, and
+     * the header's `name: value` lines as metadata.
+     *
+     * @param list<string> $lines
+     * @return array{list<string>, JsonValue}
+     */
+    public static function withoutHeader(array $lines): array
+    {
         $metadata = [];
-        if ('---' === $lines[0]) {
+        if ('---' === ($lines[0] ?? '')) {
             $end = (int) \array_search('---', \array_slice($lines, offset: 1), strict: true) + 1;
             foreach (\array_slice($lines, offset: 1, length: $end - 1) as $entry) {
                 $match = [];
@@ -41,7 +55,7 @@ final readonly class TimThemes
             $lines = \array_slice($lines, $end + 1);
         }
 
-        return new self($lines, JsonValue::object($metadata));
+        return [$lines, JsonValue::object($metadata)];
     }
 
     /** @return list<string> every theme PlantUML bundles, by name */

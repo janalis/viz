@@ -49,7 +49,7 @@ final class PlantUmlSourceTest extends TestCase
         yield 'unclosed' => ["@startuml\na -> b", 'The PlantUML source has no @startuml … @enduml block'];
         yield 'two blocks' => ["@startuml\n@enduml\n@startuml\n@enduml", 'The PlantUML source has several diagrams'];
         yield 'other kind' => ["@startmindmap\n* a\n@endmindmap", 'The native PlantUML renderer does not draw @startmindmap diagrams'];
-        yield 'include' => ["@startuml\n!include foo.puml\n@enduml", 'The native PlantUML renderer leaves !include to PlantUML'];
+        yield 'include' => ["@startuml\n!include foo.puml\n@enduml", 'The native PlantUML renderer leaves !include of a file or a URL to PlantUML: !include foo.puml'];
         yield 'function' => ["@startuml\n%date()\n@enduml", 'The native PlantUML renderer leaves %date() to PlantUML'];
         yield 'a directive the diagram reads' => ["@startuml\n!assume transparent\n@enduml", 'The native PlantUML renderer leaves !assume to PlantUML'];
     }

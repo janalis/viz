@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Dynamic>
+!include <archimate/Archimate>
+LAYOUT_WITH_LEGEND()
+Person(a, "Admin", "the admin", $sprite="person2")
+Container_Boundary(b, "Boundary") {
+  Container(c, "API", "PHP", "Serves")
+  ContainerDb(d, "DB", "Postgres")
+}
+Rel(a, c, "Calls", "HTTPS")
+Rel_R(c, d, "Reads")
+@enduml

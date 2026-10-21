@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Container>
+Person(user, "Customer", "Buys things")
+System_Boundary(shop, "Shop") {
+  Container(web, "Web", "PHP", "Serves pages")
+  ContainerDb(db, "Database", "Postgres", "Keeps orders")
+}
+System_Ext(pay, "Payments", "Takes money")
+Rel(user, web, "Browses", "HTTPS")
+Rel(web, db, "Reads and writes")
+Rel(web, pay, "Charges")
+@enduml

@@ -90,8 +90,8 @@ final class PlantUmlDocumentReader
 
     /**
      * `sprite $name { … }` of 16 gray levels, `sprite $name [WxH/8] { … }` of 8 or 4, on one line
-     * or up to `}`, and `sprite $name [WxH/16z] data` compressed; a sprite of colours, of SVG or
-     * of the standard library is left to PlantUML.
+     * or up to `}`, `sprite $name [WxH/16z] data` compressed, and `sprite $name #library#sprite`
+     * of the standard library; a sprite of colours or of SVG is left to PlantUML.
      */
     private function sprite(string $line): bool
     {
@@ -100,6 +100,12 @@ final class PlantUmlDocumentReader
         if (1 === \preg_match('/^sprite\s+'.$name.'\s*(?:\[(\d+)x(\d+)\/(?:(\d+)(z)?|(color))\])?\s*\{$/u', $line, $match)) {
             $rows = \array_values(\array_filter(\array_map(\trim(...), $this->until('/^end\s?sprite|\}$/i')), static fn (string $row): bool => '' !== $row));
             $this->styles = $this->styles->withSprite($match[1], self::sprited($match, $rows));
+
+            return true;
+        }
+        if (1 === \preg_match('/^sprite\s+\$([-\p{L}\p{N}_]+)\s*#([^#]+)#(\S+)$/u', $line, $match)) {
+            $sprite = PlantUmlStdlib::sprite($match[2], $match[3]);
+            $this->styles = null === $sprite ? $this->styles : $this->styles->withSprite($match[1], $sprite);
 
             return true;
         }

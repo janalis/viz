@@ -91,6 +91,7 @@ return [
     'description/actors-left-to-right' => 4,
     'description/big' => 4,
     'description/boundary' => 4,
+    'description/c4-container' => 3,
     'description/collections' => 4,
     'description/colors' => 4,
     'description/components' => 4,

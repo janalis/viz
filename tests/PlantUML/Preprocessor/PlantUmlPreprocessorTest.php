@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\PlantUML\Preprocessor;
 
+use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
 use Janalis\Viz\PlantUML\Preprocessor\PlantUmlPreprocessor;
 use Janalis\Viz\PlantUML\Preprocessor\TimContext;
@@ -26,7 +27,19 @@ final class PlantUmlPreprocessorTest extends TestCase
     {
         $lines = \explode("\n", \rtrim((string) \file_get_contents($fixture), characters: "\n"));
 
-        $this->assertSame((string) \file_get_contents(\substr($fixture, offset: 0, length: -5).'.preproc'), \implode("\n", TimContext::process($lines))."\n");
+        // As PlantUML gives them out, its break lines split.
+        $result = \array_merge(...\array_map(PlantUmlPreprocessor::broken(...), TimContext::process($lines)));
+
+        $this->assertSame((string) \file_get_contents(\substr($fixture, offset: 0, length: -5).'.preproc'), \implode("\n", $result)."\n");
+    }
+
+    public function testALibraryFileIsIncludedWithoutItsHeaderAndASpriteOfItIsKnownOrNot(): void
+    {
+        $source = PlantUmlSource::parse("@startuml\n!include <C4/C4.puml>!sub\nsprite \$known #c4#c4_context:person\nsprite \$unknown #c4#nope\nclass A\n@enduml");
+        $document = PlantUmlDocument::read($source);
+
+        $this->assertContains('skinparam defaultTextAlignment center', $source->lines);
+        $this->assertSame(['known'], \array_keys($document->styles->style(['root'])->sprites));
     }
 
     public function testWhatFunctionsWriteIsMadeTextTheDiagramsRead(): void
@@ -101,6 +114,9 @@ final class PlantUmlPreprocessorTest extends TestCase
         yield 'a function invoked' => ["!function \$f() return 1\n%invoke_procedure(\"\$f\")", "PlantUML's preprocessor stops: Fatal parsing error"];
         yield 'too large a number' => ['!$x = 99999999999', "PlantUML's preprocessor stops: Fatal parsing error"];
         yield 'an integer past Java\'s' => ['!$x = %intval("9999999999")', "PlantUML's preprocessor stops: Cannot convert 9999999999 to integer."];
+        yield 'a library PlantUML lacks' => ['!include <nope/file>', "PlantUML's preprocessor stops: cannot include <nope/file> — !include <nope/file>"];
+        yield 'a file a library lacks' => ['!include_once <C4/nope>', "PlantUML's preprocessor stops: cannot include <C4/nope> — !include_once <C4/nope>"];
+        yield 'no library' => ['!include <C4>', "PlantUML's preprocessor stops: cannot include <C4> — !include <C4>"];
         yield 'no colour' => ['!$a = %darken("nope", 1)', "PlantUML's preprocessor stops: No such color"];
     }
 
@@ -117,7 +133,11 @@ final class PlantUmlPreprocessorTest extends TestCase
     {
         yield 'a theme not under MIT' => ['!theme amiga', 'The native PlantUML renderer leaves the theme amiga to PlantUML'];
         yield 'a theme from elsewhere' => ['!theme cerulean from themes', 'The native PlantUML renderer leaves !theme … from to PlantUML: !theme cerulean from themes'];
-        yield 'include' => ['!include foo.puml', 'The native PlantUML renderer leaves !include to PlantUML'];
+        yield 'include' => ['!include foo.puml', 'The native PlantUML renderer leaves !include of a file or a URL to PlantUML: !include foo.puml'];
+        yield 'a file named with a u' => ['!include utils.puml', 'The native PlantUML renderer leaves !include of a file or a URL to PlantUML: !include utils.puml'];
+        yield 'include of a URL' => ['!includeurl https://example.com/a.puml', 'The native PlantUML renderer leaves !include of a file or a URL to PlantUML: !includeurl https://example.com/a.puml'];
+        yield 'a library not under MIT' => ['!include <aws/common>', 'The native PlantUML renderer leaves the standard library aws to PlantUML'];
+        yield 'a library linking to one not under MIT' => ['!include_many <awslib/AWSCommon>', 'The native PlantUML renderer leaves the standard library awslib14 to PlantUML'];
         yield 'include of a sub of a file' => ['!includesub foo.puml!PART', 'The native PlantUML renderer leaves !includesub of a file to PlantUML: !includesub foo.puml!PART'];
         yield 'the clock' => ['%date()', 'The native PlantUML renderer leaves %date() to PlantUML'];
         yield 'an option' => ['!option handwritten true', 'The native PlantUML renderer leaves !option to PlantUML: !option handwritten true'];

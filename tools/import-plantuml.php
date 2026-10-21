@@ -10,7 +10,10 @@ declare(strict_types=1);
 // resources/plantuml/skinparams.json from FromSkinparamToStyle's table, and
 // resources/plantuml/commands.json from the factories' command lists. It copies the themes
 // whose own header licenses them under MIT to resources/plantuml/themes/, and lists every
-// bundled theme's name in resources/plantuml/themes.json, `mit` naming those copied.
+// bundled theme's name in resources/plantuml/themes.json, `mit` naming those copied. Of the
+// standard library, it exports with tools/PlantUmlStdlib.java the libraries whose info
+// licenses them under MIT to resources/plantuml/stdlib/<library>.json, and indexes every
+// library in resources/plantuml/stdlib.json: whether it is exported, or which it links to.
 
 $sources = \rtrim($argv[1] ?? '', '/');
 $version = $argv[2] ?? '';
@@ -111,3 +114,23 @@ foreach ($commands as $factory => $list) {
 }
 \file_put_contents($target.'/commands.json', \json_encode(['version' => $version, 'families' => $families], \JSON_UNESCAPED_SLASHES)."\n");
 \fwrite(\STDOUT, \sprintf("Imported the commands of %d diagram families\n", \count($families)));
+
+$run(\sprintf('javac -cp %s -d %s %s', \escapeshellarg($jar), \escapeshellarg($classes), \escapeshellarg(__DIR__.'/PlantUmlStdlib.java')));
+$libraries = \array_map(static fn (string $path): string => \basename(\dirname($path)), \glob($sources.'/stdlib/*/info.spm') ?: []);
+$stdlib = static fn (string $arguments): array => (array) \json_decode($run(\sprintf('java -cp %s PlantUmlStdlib %s', \escapeshellarg($jar.\PATH_SEPARATOR.$classes), $arguments)), associative: true, flags: \JSON_THROW_ON_ERROR);
+$index = [];
+foreach ($stdlib('--info '.\implode(' ', \array_map(\escapeshellarg(...), $libraries))) as $library => $exported) {
+    $info = [];
+    \preg_match_all('/^(\w+)=(.*)$/m', (string) $exported['info'], $info, \PREG_SET_ORDER);
+    $fields = \array_column($info, 2, 1);
+    $link = $fields['link'] ?? null;
+    $index[$library] = ['mit' => null === $link && \str_starts_with((string) ($fields['license'] ?? ''), 'MIT'), 'link' => $link];
+}
+\ksort($index);
+@\mkdir($target.'/stdlib', 0o755, true);
+$mit = \array_keys(\array_filter($index, static fn (array $library): bool => $library['mit']));
+foreach ($stdlib(\implode(' ', \array_map(\escapeshellarg(...), $mit))) as $library => $exported) {
+    \file_put_contents($target.'/stdlib/'.$library.'.json', \json_encode($exported, \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE | \JSON_PRETTY_PRINT)."\n");
+}
+\file_put_contents($target.'/stdlib.json', \json_encode(['version' => $version, 'libraries' => $index], \JSON_UNESCAPED_SLASHES | \JSON_PRETTY_PRINT)."\n");
+\fwrite(\STDOUT, \sprintf("Imported %d of the %d standard libraries\n", \count($mit), \count($index)));

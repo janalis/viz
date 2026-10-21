@@ -4,7 +4,10 @@ resources/plantuml/plantuml.skin and rose.skin are copied from PlantUML 1.2026.8
 distribution, and resources/plantuml/skinparams.json is generated from its
 FromSkinparamToStyle table by tools/import-plantuml.php. resources/plantuml/themes holds
 the themes of that distribution whose own header licenses them under MIT, copied as they
-are, each naming its author. The native PlantUML code under
+are, each naming its author. resources/plantuml/stdlib holds the libraries of that
+distribution's standard library whose own info licenses them under MIT — archimate,
+bootstrap, C4 (C4-PlantUML, by Ricardo Niepel, kirchsth and contributors) and domainstory —
+exported by tools/import-plantuml.php with tools/PlantUmlStdlib.java. The native PlantUML code under
 src/PlantUML follows that distribution's sources.
 
 The MIT License (MIT)
