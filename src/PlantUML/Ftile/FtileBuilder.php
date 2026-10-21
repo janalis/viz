@@ -159,7 +159,7 @@ final readonly class FtileBuilder
             $tiles[] = self::labelled($case->tile, $positives[$index], $specials[$index]);
         }
         $tile = new FtileSwitch($tiles, $diamond1, $diamond2, $positives);
-        $result = new FtileDecorate($tile, connections: [new Arrows(new SwitchArrows($tile, $this->factory->arrow, $positives, $specials)->snakes())]);
+        $result = new FtileSpanning(new FtileDecorate($tile, connections: [new Links(new SwitchArrows($tile, $this->factory->arrow, $positives, $specials, $this->lanes[$switch] ?? null)->links())]));
         $breaks = [];
         foreach ($cases as $case) {
             \array_push($breaks, ...$case->tile->weldings());

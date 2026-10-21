@@ -237,7 +237,7 @@ final class ActivityDrawingTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function acrossSwimlanes(): iterable
     {
-        yield 'a switch across swimlanes' => ["|A|\nswitch (a)\ncase (b)\n  |B|\n  :c;\nendswitch"];
+        yield 'a group across swimlanes' => ["|A|\npartition p {\n  |B|\n  :c;\n}"];
     }
 
     #[DataProvider('acrossSwimlanes')]
@@ -253,6 +253,13 @@ final class ActivityDrawingTest extends TestCase
         $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a decision closed by a line across swimlanes'));
 
         self::draw("skinparam conditionEndStyle hline\n|A|\nif (a) then\n  :b;\nelse\n  |B|\n  :c;\nendif");
+    }
+
+    public function testAWideSwitchHoldingStepsOfOtherSwimlanesInOneOfItsOwnIsLeftToPlantUml(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a wide switch holding steps of other swimlanes'));
+
+        self::draw("|A|\nswitch (a test much wider than its case)\ncase (b)\n  |B|\n  while (c)\n    |C|\n    :d;\n  endwhile\nendswitch");
     }
 
     public function testWhatStandsOutsideAnySwimlaneIsLeftToPlantUml(): void

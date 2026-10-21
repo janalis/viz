@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Ftile;
 
+use Janalis\Viz\Source\Unsupported;
+
 /**
  * A `switch`, as PlantUML lays it out: its test's diamond on top, its cases side by side 20
  * apart under it — spread under the diamond when it is wider than the cases between the first
@@ -75,12 +77,37 @@ final class FtileSwitch extends AbstractFtile
     public function draw(Canvas $canvas): void
     {
         $this->diamond1->draw($canvas->moved(...$this->diamond1At()));
+        /** @var list<string> $lanes */
+        $lanes = $this->big ? \array_values(\array_unique([...(null === $canvas->lane() ? [] : [$canvas->lane()]), ...FtileLane::all($this)])) : [];
         foreach ($this->tiles as $index => $tile) {
             $tile->draw($canvas->moved(...$this->tileAt($index)));
+            $step = self::single($tile);
+            if (null === $step || $step->lane === $canvas->lane() || [] === $lanes) {
+                continue;
+            }
+            // As PlantUML, which draws the cases of a wide test past its swimlanes' filter: a case of a single step again in each other swimlane of the switch.
+            if (\count(FtileLane::all($step)) > 1) {
+                throw new Unsupported('The native PlantUML renderer does not draw a wide switch holding steps of other swimlanes');
+            }
+            foreach (\array_diff($lanes, [$step->lane]) as $lane) {
+                $tile->draw($canvas->pinned($lane)->moved(...$this->tileAt($index)));
+            }
         }
         if ($this->geometry()->hasOut()) {
             $this->diamond2->draw($canvas->moved(...$this->diamond2At()));
         }
+    }
+
+    /** The step a case holds, when it holds a single one. */
+    private static function single(Ftile $tile): ?FtileLane
+    {
+        $children = $tile->children();
+
+        return match (true) {
+            $tile instanceof FtileLane => $tile,
+            1 === \count($children) => self::single($children[0]),
+            default => null,
+        };
     }
 
     /** @return array{float, float} where a case stands */

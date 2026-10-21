@@ -1,0 +1,25 @@
+@startuml
+|A|
+start
+switch (kind?)
+case (a)
+  :one;
+case (b)
+  |B|
+  :two;
+  |A|
+case (c)
+  :three;
+case (d)
+  |B|
+  :four;
+endswitch
+|A|
+:after;
+switch (alone?)
+case (x)
+  |B|
+  :five;
+endswitch
+stop
+@enduml

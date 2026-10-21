@@ -23,7 +23,21 @@ final class Canvas
         private readonly ?string $lane = null,
         /** Whether the tiles it draws may stand in other swimlanes, as a step whose arrows bend across them allows. */
         private readonly bool $spanning = false,
+        /** Whether the first step it draws stands in its swimlane whatever its own, as PlantUML draws past its filter. */
+        private readonly bool $pinned = false,
     ) {}
+
+    /**
+     * The canvas drawing a step in a swimlane whatever its own, a step of steps of their own swimlanes left to PlantUML.
+     *
+     * @throws Unsupported once there are no swimlanes
+     */
+    public function pinned(string $lane): self
+    {
+        $lanes = $this->lanes ?? throw new Unsupported('The native PlantUML renderer has no swimlane to draw in');
+
+        return new self($this->store, $this->base() + $lanes->offset($lane), $this->dy, $lanes, $lane, pinned: true);
+    }
 
     public static function create(?LaneView $lanes = null): self
     {
@@ -33,7 +47,7 @@ final class Canvas
     /** The canvas moved by a distance. */
     public function moved(float $dx, float $dy): self
     {
-        return new self($this->store, $this->dx + $dx, $this->dy + $dy, $this->lanes, $this->lane, $this->spanning);
+        return new self($this->store, $this->dx + $dx, $this->dy + $dy, $this->lanes, $this->lane, $this->spanning, $this->pinned);
     }
 
     /** The swimlane it draws in, if any. */
@@ -58,6 +72,9 @@ final class Canvas
         $lanes = $this->lanes;
         if (null === $lanes || $lane === $this->lane) {
             return $this;
+        }
+        if ($this->pinned) {
+            return new self($this->store, $this->dx, $this->dy, $lanes, $this->lane, $this->spanning, pinned: false);
         }
         if (null !== $this->lane && !$this->spanning) {
             throw new Unsupported('The native PlantUML renderer does not draw a step holding steps of another swimlane');

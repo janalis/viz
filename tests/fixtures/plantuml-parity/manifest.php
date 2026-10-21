@@ -39,6 +39,7 @@ return [
     'activity/swimlanes-if' => 4,
     'activity/swimlanes-repeat' => 4,
     'activity/swimlanes-same' => 4,
+    'activity/swimlanes-switch' => 4,
     'activity/swimlanes-titles' => 4,
     'activity/swimlanes-while' => 4,
     'activity/swimlanes' => 4,

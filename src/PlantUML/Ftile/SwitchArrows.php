@@ -22,64 +22,137 @@ final readonly class SwitchArrows
         private Rainbow $arrow,
         private array $positives,
         private array $specials,
+        /** The switch's own swimlane. */
+        private ?string $lane = null,
     ) {}
 
-    /** @return list<Snake> */
-    public function snakes(): array
+    /**
+     * Each arrow, the swimlanes it leaves and reaches, and its route across them — none where
+     * PlantUML draws none.
+     *
+     * @return list<array{Snake, ?string, ?string, \Closure(float, float): list<Snake|Shape>}>
+     */
+    public function links(): array
     {
+        $none = static fn (): array => [];
         if (1 === \count($this->switch->tiles)) {
-            return $this->one();
+            return $this->one($none);
         }
         $last = \count($this->switch->tiles) - 1;
-        $snakes = [$this->across(0), $this->across($last)];
-        for ($i = 1; $i < $last; ++$i) {
-            $snakes[] = $this->top($i);
+        $links = [];
+        foreach ($this->switch->tiles as $index => $tile) {
+            $snake = 0 === $index || $last === $index ? $this->across($index) : $this->top($index);
+            $links[] = [$snake, null, FtileLane::in($tile), $this->crossIn($index)];
         }
 
-        return [...$snakes, ...$this->outgoing()];
+        return [...$links, ...$this->outgoing($none)];
     }
 
-    /** @return list<Snake> into the one case, and out of it when it goes on */
-    private function one(): array
+    /**
+     * Into the one case, and out of it when it goes on — neither across swimlanes, as PlantUML.
+     *
+     * @param \Closure(): list<Snake> $none
+     * @return list<array{Snake, ?string, ?string, \Closure(float, float): list<Snake|Shape>}>
+     */
+    private function one(\Closure $none): array
     {
         $tile = $this->switch->tiles[0];
         [, $y1] = $this->onDiamond1($this->switch->diamond1->geometry()->out());
         [$x2, $y2] = $this->in(0);
-        $snakes = [Snake::through($this->arrow, Snake::arrow('D'), [[$x2, $y1], [$x2, $y2]])->withLabel($this->positives[0])];
+        $links = [[Snake::through($this->arrow, Snake::arrow('D'), [[$x2, $y1], [$x2, $y2]])->withLabel($this->positives[0]), null, FtileLane::in($tile), $none]];
         if ($tile->geometry()->hasOut()) {
             [, $y1] = $this->out(0);
             [$x2, $y2] = $this->onDiamond2($this->switch->diamond2->geometry()->in());
-            $snakes[] = Snake::through($this->arrow, Snake::arrow('D'), [[$x2, $y1], [$x2, $y2]]);
+            $links[] = [Snake::through($this->arrow, Snake::arrow('D'), [[$x2, $y1], [$x2, $y2]]), FtileLane::out($tile), null, $none];
         }
 
-        return $snakes;
+        return $links;
     }
 
-    /** @return list<Snake> out of the cases that go on */
-    private function outgoing(): array
+    /**
+     * Out of the cases that go on: the first and the last of those in the switch's swimlane
+     * across to the diamond below, those between down to it, and those standing elsewhere bent
+     * across into its side — as PlantUML, none when no case of its swimlane goes on.
+     *
+     * @param \Closure(): list<Snake> $none
+     * @return list<array{Snake, ?string, ?string, \Closure(float, float): list<Snake|Shape>}>
+     */
+    private function outgoing(\Closure $none): array
     {
         $tiles = $this->switch->tiles;
         $outs = \array_keys(\array_filter($tiles, static fn (Ftile $tile): bool => $tile->geometry()->hasOut()));
-        if ([] === $outs) {
+        $here = \array_values(\array_filter($outs, fn (int $index): bool => !$this->elsewhere(FtileLane::in($tiles[$index]))));
+        if ([] === $here) {
             return [];
         }
-        $last = \max($outs);
-        $first = \min($outs) < (\count($tiles) - 1) ? \min($outs) : \count($tiles);
-        $snakes = [];
+        $last = \max($here);
+        $first = \min($here) < (\count($tiles) - 1) ? \min($here) : \count($tiles);
+        $links = [];
         if ($first < \count($tiles)) {
-            $snakes[] = $this->toDiamond2($first);
+            $links[] = [$this->toDiamond2($first), FtileLane::out($tiles[$first]), null, $none];
         }
         if ($last > 0) {
-            $snakes[] = $this->toDiamond2($last);
+            $links[] = [$this->toDiamond2($last), FtileLane::out($tiles[$last]), null, $none];
         }
         foreach ($outs as $index) {
-            if ($index <= $first || $index >= $last) {
-                continue;
+            if ($index > $first && $index < $last) {
+                $links[] = [$this->bottom($index), FtileLane::out($tiles[$index]), null, $none];
             }
-            $snakes[] = $this->bottom($index);
+            if ($this->elsewhere(FtileLane::out($tiles[$index]))) {
+                $links[] = [$this->toDiamond2($index), FtileLane::out($tiles[$index]), null, $this->crossOut($index)];
+            }
         }
 
-        return $snakes;
+        return $links;
+    }
+
+    /** Whether a case's swimlane is not the switch's. */
+    private function elsewhere(?string $lane): bool
+    {
+        return null !== $lane && null !== $this->lane && $lane !== $this->lane;
+    }
+
+    /**
+     * As PlantUML, into a case in another swimlane: from the side of the test's diamond facing it, across and down.
+     *
+     * @return \Closure(float, float): list<Snake|Shape>
+     */
+    private function crossIn(int $index): \Closure
+    {
+        $diamond = $this->switch->diamond1->geometry();
+        [$x1, $y1] = $this->onDiamond1($diamond->out());
+        [$x2, $y2] = $this->in($index);
+        $arrow = $this->arrow;
+        $label = $this->positives[$index];
+
+        return static function (float $t1, float $t2) use ($x1, $y1, $x2, $y2, $diamond, $arrow, $label): array {
+            [$ax, $bx] = [$x1 + $t1, $x2 + $t2];
+            $y = $y1 - ($diamond->height / 2);
+            $start = $ax > $bx ? $ax - ($diamond->width / 2) : $ax + ($diamond->width / 2);
+
+            return [Snake::through($arrow, Snake::arrow('D'), [[$start, $y], [$bx, $y], [$bx, $y2]])->withLabel($label)];
+        };
+    }
+
+    /**
+     * As PlantUML, out of a case in another swimlane: down, then across into the side of the diamond below facing it.
+     *
+     * @return \Closure(float, float): list<Snake|Shape>
+     */
+    private function crossOut(int $index): \Closure
+    {
+        $diamond = $this->switch->diamond2->geometry();
+        [$x1, $y1] = $this->out($index);
+        [$x2, $y2] = $this->onDiamond2($diamond->in());
+        $arrow = $this->arrow;
+
+        return static function (float $t1, float $t2) use ($x1, $y1, $x2, $y2, $diamond, $arrow): array {
+            [$ax, $bx] = [$x1 + $t1, $x2 + $t2];
+            $y = $y2 + ($diamond->height / 2);
+            $left = $ax > $bx;
+
+            return [Snake::through($arrow, Snake::arrow($left ? 'L' : 'R'), [[$ax, $y1], [$ax, $y], [$left ? $bx + ($diamond->width / 2) : $bx - ($diamond->width / 2), $y]])];
+        };
     }
 
     /** From a side of the test's diamond across and down into the first or the last case, round under the diamond when the last is left of it. */
