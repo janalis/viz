@@ -12,7 +12,6 @@ use Janalis\Viz\PlantUML\Draw\Shadow;
 use Janalis\Viz\PlantUML\States\StateBox;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
-use Janalis\Viz\Text\FontFace;
 
 /**
  * An element drawn with its PlantUML symbol, in points: a box shaped by its symbol with its
@@ -75,7 +74,8 @@ final readonly class DescriptionBox
     {
         $style = $sheet->style(['root', 'element', 'componentDiagram', $element->symbol], $element->stereotypes);
         $text = PlantUmlText::styled($element->display, $style);
-        $stereotypes = [] === $element->stereotypes ? null : new PlantUmlText(\array_map(static fn (string $label): string => '«'.$label.'»', $element->stereotypes), 12.0, FontFace::Italic);
+        $stereoStyle = $sheet->style(['root', 'element', 'componentDiagram', $element->symbol, 'stereotype'], $element->stereotypes);
+        $stereotypes = [] === $element->stereotypes ? null : PlantUmlText::styled(\array_map(static fn (string $label): string => '«'.$label.'»', $element->stereotypes), $stereoStyle);
         [$textWidth, $textHeight] = $text->size();
         [$stereoWidth, $stereoHeight] = null === $stereotypes ? [0.0, 0.0] : $stereotypes->size();
         $labelWidth = \max($textWidth, $stereoWidth);

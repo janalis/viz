@@ -1,0 +1,3 @@
+@startuml
+rectangle "= Big\n== Medium\n=== Small\n==== Deep\nplain" as r
+@enduml

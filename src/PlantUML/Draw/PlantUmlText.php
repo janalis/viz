@@ -13,8 +13,8 @@ use Janalis\Viz\Text\FontFace;
 
 /**
  * PlantUML text in the bundled font, in points: lines of Creole with their markup taken out —
- * a line wholly bold or italic drawn so — measured, and set as text marks left, centred or
- * right within a width.
+ * a line wholly bold or italic drawn so, a heading — one to three = before it — bigger and bold —
+ * measured, and set as text marks left, centred or right within a width.
  */
 final readonly class PlantUmlText
 {
@@ -59,9 +59,40 @@ final readonly class PlantUmlText
         if ($this->empty()) {
             return [0.0, 0.0];
         }
-        $widest = \max(\array_map(static fn (string $line): int => DisplayWidth::of(self::plain($line)), $this->lines));
+        $widest = \max(\array_map(fn (string $line): float => DisplayWidth::of(self::plain(self::heading($line)[1])) * Units::cell($this->lineSize($line)), $this->lines));
+        $height = \array_sum(\array_map(fn (string $line): float => self::lineHeight($this->lineSize($line)), $this->lines));
 
-        return [$widest * Units::cell($this->size), \count($this->lines) * $this->line()];
+        return [$widest, $height];
+    }
+
+    /**
+     * As PlantUML's Creole reads a heading, `=` signs and text: its depth from 0, and its text;
+     * -1 and the line itself for any other, a section title (`==title==`) among them.
+     *
+     * @return array{int, string}
+     */
+    private static function heading(string $line): array
+    {
+        $match = [];
+        if (1 !== \preg_match('/^(=+)(.+)$/', $line, $match) || 1 === \preg_match('/^==[^=]*==$|^===*==$/', $line)) {
+            return [-1, $line];
+        }
+
+        return [\strlen($match[1]) - 1, \trim($match[2])];
+    }
+
+    /** A line's font size: a heading's bigger, as PlantUML makes it. */
+    private function lineSize(string $line): float
+    {
+        return (
+            $this->size
+            + match (self::heading($line)[0]) {
+                0 => 4.0,
+                1 => 2.0,
+                2 => 1.0,
+                default => 0.0,
+            }
+        );
     }
 
     public function line(): float
@@ -84,12 +115,17 @@ final readonly class PlantUmlText
     public function marks(float $x, float $y, float $width, string $align = 'center'): array
     {
         $marks = [];
-        foreach ($this->lines as $index => $line) {
-            $plain = self::plain($line);
+        $top = $y;
+        foreach ($this->lines as $line) {
+            [$depth, $text] = self::heading($line);
+            $size = $this->lineSize($line);
+            $plain = self::plain($text);
+            $lineTop = $top;
+            $top += self::lineHeight($size);
             if ('' === \trim($plain)) {
                 continue;
             }
-            $shown = DisplayWidth::of($plain) * Units::cell($this->size);
+            $shown = DisplayWidth::of($plain) * Units::cell($size);
             $left = match ($align) {
                 'left' => $x,
                 'right' => $x + $width - $shown,
@@ -97,11 +133,15 @@ final readonly class PlantUmlText
             };
             $marks[] = new Mark(
                 MarkKind::Text,
-                [[$left + ($shown / 2), $y + (($index + 0.75) * $this->line())]],
+                [[$left + ($shown / 2), $lineTop + (0.75 * self::lineHeight($size))]],
                 $plain,
                 stroke: $this->color,
-                font: self::face($line, $this->face),
-                fontScale: Units::fontScale($this->size) / Units::POINT,
+                font: self::face(match (true) {
+                    $depth < 0 => $text,
+                    $depth < 3 => '**'.$text.'**',
+                    default => '//'.$text.'//',
+                }, $this->face),
+                fontScale: Units::fontScale($size) / Units::POINT,
             );
         }
 

@@ -31,6 +31,14 @@ final class SkinParamTest extends TestCase
         $this->assertSame([['arrow||-1|', 'LineColor', '7']], self::read('arrowColor', 'dashed'));
         $this->assertSame([['arrow|a,b|-1|', 'LineColor', 'red']], self::read('arrowColor<<a & b>>', 'red'));
         $this->assertSame([['arrow||-1|', 'LineColor', 'red']], self::read('arrowColor<<>>', 'red'));
+        $this->assertSame([['arrow|a|-1|', 'LineColor', 'red']], self::read('arrow<<a>>Color', 'red'), 'a stereotype within the key, as a block of a stereotype writes it');
+        $this->assertSame(
+            [
+                ['arrow|a|-1|', 'LineColor', 'red'],
+                ['arrow|b|-1|', 'LineColor', 'red'],
+            ],
+            self::read('arrowColor<<a>><<b>>', 'red'),
+        );
     }
 
     public function testCompoundValuesSetLineAndTextToo(): void

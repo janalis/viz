@@ -1,0 +1,15 @@
+@startuml
+skinparam rectangle<<person>> {
+  StereotypeFontColor #FFFFFF
+  FontColor #FFFFFF
+  BackgroundColor #08427B
+  BorderColor #073B6F
+}
+skinparam rectangle<<system>> {
+  FontColor #FFFFFF
+  BackgroundColor #1168BD
+}
+rectangle "User" <<person>> as u
+rectangle "Shop" <<system>> as s
+u --> s : browses
+@enduml

@@ -18,10 +18,14 @@ final class SkinParam
     public static function declarations(string $key, string $value, array $table): array
     {
         $stereotypes = [];
-        if (\str_contains($key, '<<')) {
-            $parts = \array_values(\array_filter(\explode('<', (string) \preg_replace('/[<>]+/', replacement: '<', subject: $key)), static fn (string $part): bool => '' !== \trim($part)));
-            $key = $parts[0] ?? '';
-            $stereotypes = \array_values(\array_filter(\array_map(\trim(...), \explode('&', $parts[1] ?? '')), static fn (string $stereotype): bool => '' !== $stereotype));
+        $groups = [];
+        // As PlantUML's `cleanForKey`: each `<<…>>`, wherever it stands, taken out, and a key for each.
+        if ((int) \preg_match_all('/<<(.*?)>>/', $key, $groups) >= 1) {
+            $key = (string) \preg_replace('/<<(.*?)>>/', replacement: '', subject: $key);
+            if (\count($groups[1]) > 1) {
+                return \array_values(\array_merge(...\array_map(static fn (string $stereotype): array => self::declarations($key.'<<'.$stereotype.'>>', $value, $table), $groups[1])));
+            }
+            $stereotypes = \array_values(\array_filter(\array_map(\trim(...), \explode('&', $groups[1][0])), static fn (string $stereotype): bool => '' !== $stereotype));
         }
         $lower = \strtolower($key);
         $value = self::spelled($lower, $value);
