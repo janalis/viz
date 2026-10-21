@@ -1,0 +1,9 @@
+@startchen
+entity OWNER {
+}
+entity BANK {
+}
+entity COMPANY {
+}
+OWNER ->- U { BANK, COMPANY }
+@endchen

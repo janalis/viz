@@ -1,0 +1,29 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 202,
+    "height": 299,
+    "words": [
+        "BANK",
+        "COMPANY",
+        "OWNER",
+        "U"
+    ],
+    "baselines": [
+        [
+            "BANK",
+            273.025
+        ],
+        [
+            "COMPANY",
+            273.025
+        ],
+        [
+            "OWNER",
+            30.535
+        ],
+        [
+            "U",
+            121.281
+        ]
+    ]
+}

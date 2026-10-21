@@ -1,0 +1,13 @@
+@startchen
+entity PERSON {
+  Id <<key>>
+  Name
+}
+entity CAR {
+  Plate <<key>>
+}
+relationship OWNS {
+}
+PERSON -1- OWNS
+OWNS =N= CAR
+@endchen

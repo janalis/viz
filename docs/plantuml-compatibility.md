@@ -8,7 +8,7 @@ Whatever the native renderer refuses is drawn by the `plantuml` command when `Vi
 
 | Read natively | Left to PlantUML |
 | --- | --- |
-| One `@startuml` … `@enduml` block, `@startmindmap` … `@endmindmap`, `@startwbs` … `@endwbs`, `@startjson` … `@endjson` or `@startyaml` … `@endyaml` (`\` may stand for `@`); lines ending in a backslash joined; `'` and `/'` … `'/` comments; `!pragma` | Several blocks; `@start` kinds other than `uml`, `mindmap`, `wbs`, `json` and `yaml` |
+| One `@startuml` … `@enduml` block, `@startmindmap` … `@endmindmap`, `@startwbs` … `@endwbs`, `@startjson` … `@endjson`, `@startyaml` … `@endyaml` or `@startchen` … `@endchen` (`\` may stand for `@`); lines ending in a backslash joined; `'` and `/'` … `'/` comments; `!pragma` | Several blocks; `@start` kinds other than `uml`, `mindmap`, `wbs`, `json`, `yaml` and `chen` |
 | The preprocessor, ported from PlantUML's (`PlantUML\Preprocessor`): variables (`!$a = …`, `?=`, `!local`, `!global`) holding numbers, strings and JSON, read in lines with `.field`, `[index]` and `##`; expressions; `!if`, `!elseif`, `!else`, `!ifdef`, `!ifndef`; `!while`, `!foreach`; `!procedure` and `!function`, `unquoted` and `final`, with defaults and named arguments; legacy `!define`, `!definelong`, `!undef`; `!startsub` and `!includesub` of a block of the source; `!assert`, `!log`; the built-in functions, colours computed in Java's floats as PlantUML computes them; `!theme` with the 31 themes PlantUML bundles under MIT, copied into `resources/plantuml/themes`, and `!theme … from <library/folder>` of the libraries below; `!include <library/file>` of the standard library's libraries under MIT — archimate, bootstrap, C4, domainstory — exported into `resources/plantuml/stdlib` | `!include` of a file or a URL, or of another library; `!includesub` of a file, `!import`; `!theme` with the other bundled themes, or `from` a folder or a URL; `!option` (as `sketchy`'s `handwritten`); the functions that read the clock, chance, the environment, files or the standard library (`%date`, `%now`, `%random`, `%getenv`, `%load_json`, …), `%reverse_hsluv_color` |
 
 Where PlantUML's preprocessor stops on an error, the diagram is left to PlantUML, which draws the error. `PlantUmlPreprocessorTest` compares the native preprocessor's output with what PlantUML 1.2026.8's `-preproc` gives out for each fixture of `tests/fixtures/plantuml-preprocessor`, recorded by `tools/record-plantuml-preprocessor.php`.
@@ -25,7 +25,7 @@ Styles cascade as PlantUML's do: a declaration applies to an element when the el
 
 ## Diagrams
 
-PlantUML tries its diagram factories in order — sequence, class, the legacy activity syntax, description, state, then the new activity syntax — and the first whose commands take every line reads the diagram. The native renderer does the same with the commands of each factory, exported from the MIT jar by `tools/PlantUmlCommands.java` into `resources/plantuml/commands.json`, so it picks the factory PlantUML picks. A factory without a native family leaves its diagrams to PlantUML. A `@startmindmap` block is read by PlantUML's mind map factory alone, a `@startwbs` block by its WBS factory; `@startjson` and `@startyaml` blocks are read whole, as data, with no commands. Kinds of diagram PlantUML reads after these (salt, network, timing, Gantt, ditaa, formulas, embedded DOT, its information pages), and other `@start` kinds (`@startgantt`, `@startregex`, …), are left to it too.
+PlantUML tries its diagram factories in order — sequence, class, the legacy activity syntax, description, state, then the new activity syntax — and the first whose commands take every line reads the diagram. The native renderer does the same with the commands of each factory, exported from the MIT jar by `tools/PlantUmlCommands.java` into `resources/plantuml/commands.json`, so it picks the factory PlantUML picks. A factory without a native family leaves its diagrams to PlantUML. A `@startmindmap` block is read by PlantUML's mind map factory alone, a `@startwbs` block by its WBS factory, a `@startchen` block by its Chen EER factory; `@startjson` and `@startyaml` blocks are read whole, as data, with no commands. Kinds of diagram PlantUML reads after these (salt, network, timing, Gantt, ditaa, formulas, embedded DOT, its information pages), and other `@start` kinds (`@startgantt`, `@startregex`, …), are left to it too.
 
 | Diagram | Native |
 | --- | --- |
@@ -38,6 +38,7 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | Mind map | yes, below |
 | Work breakdown structure | yes, below |
 | JSON and YAML | yes, below |
+| Chen EER | yes, below |
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
@@ -146,11 +147,22 @@ As with mind maps, styles PlantUML gives an element through its ancestors' are n
 
 Each edge is drawn as a curve from its row to the middle of the table it reaches, which PlantUML routes with dot's splines. Where several placements cost dot the same, as children under an array of two rows, the native dot engine may choose another than PlantUML's smetana, which moves those tables.
 
+### Chen EER diagrams
+
+`@startchen` blocks are read natively with PlantUML's rules (`PlantUML\ChenEer`) — attributes inside the block of the entity, relationship or attribute that owns them, each linked to it from above, a rank away; associations and subclass links two ranks long — laid out by svek's graph as the other svek diagrams are, and drawn as PlantUML's `EntityImageChen…` images draw them: entities in boxes, relationships in diamonds twice as wide as tall, attributes in the ellipse PlantUML fits around their names, the subclass circle 25 across, links stopping at those outlines. The shared `Graph` model is lowered from them for conversion.
+
+| Drawn natively | Left to PlantUML |
+| --- | --- |
+| `entity` and `relationship` blocks, `"Shown" as NAME`, stereotypes and `#colour`; attributes, nested with `{`, `"Shown" as Name`, `#colour` | |
+| `<<weak>>` entities and `<<identifying>>` relationships doubled; `<<key>>` attributes underlined, `<<multi>>` doubled, `<<derived>>` dashed | |
+| `A -1- B`, `A =(1,N)= B` with its cardinality, `=` bold, `#colour`; `A ->- B` and `A -<- B` with the subset sign across their middle; `A ->- d { B, C }`, `o` and `U` through a circle | |
+| `left to right direction`; `chenEerDiagram` styles of `chenEntity`, `chenRelationship`, `chenAttribute`, `circle`, their `title`, and `arrow` | |
+
 ## Parity
 
 `PlantUmlParityTest` grades the native drawing of each fixture in `tests/fixtures/plantuml-parity` against what PlantUML 1.2026.8 drew for it. `tools/record-plantuml-parity.php` records those goldens from the jar `tools/plantuml.lock` pins, checking its SHA-256. A fixture earns 1 when the native drawing writes the same words as PlantUML (the letters PlantUML draws as outlines in class and connector circles aside), 2 when its height is also within 5% of PlantUML's, 3 within 2%, and 4 when every word also stands within 3 points of where PlantUML writes it down the diagram, their baselines aligned on the median offset. Widths are not graded, since the bundled monospace font is wider than PlantUML's. Each fixture's grade has a floor in `manifest.php` that only rises. The `PlantUML parity (live)` workflow re-runs the pinned jar weekly and fails if PlantUML's own drawing drifts from a golden.
 
-The grades at 0.2.0, on 201 self-authored fixtures:
+The grades at 0.2.0, on 208 self-authored fixtures:
 
 | Family | Fixtures | Same words | and height within 5% | and within 2% | and every row within 3 pt |
 | --- | --- | --- | --- | --- | --- |
@@ -163,6 +175,7 @@ The grades at 0.2.0, on 201 self-authored fixtures:
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |
 | JSON and YAML | 14 | 14 | 14 | 10 | 9 |
+| Chen EER | 7 | 7 | 6 | 6 | 4 |
 
 Shadows, which `skin rose` casts under every element, are drawn as a darkened copy of the shape rather than PlantUML's blurred one; they take the room PlantUML gives them.
 

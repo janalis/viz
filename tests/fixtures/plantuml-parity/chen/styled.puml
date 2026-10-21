@@ -1,0 +1,30 @@
+@startchen
+<style>
+chenEerDiagram {
+  chenEntity {
+    BackGroundColor #FFE0B2
+    LineColor #E65100
+  }
+  chenRelationship {
+    BackGroundColor #E1F5FE
+  }
+  chenAttribute {
+    FontSize 12
+  }
+  arrow {
+    LineColor #455A64
+  }
+}
+</style>
+title Styled
+entity A {
+  x
+  y
+}
+relationship R {
+}
+entity B {
+}
+A -1- R
+R -N- B
+@endchen

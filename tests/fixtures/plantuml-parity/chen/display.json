@@ -1,0 +1,64 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 822,
+    "height": 145,
+    "words": [
+        "(1,N)",
+        "COURSE",
+        "Grade",
+        "M",
+        "Student",
+        "Student",
+        "Title",
+        "id",
+        "part",
+        "record",
+        "takes"
+    ],
+    "baselines": [
+        [
+            "(1,N)",
+            82.295
+        ],
+        [
+            "COURSE",
+            57.955
+        ],
+        [
+            "Grade",
+            121.535
+        ],
+        [
+            "M",
+            64.295
+        ],
+        [
+            "Student",
+            57.535
+        ],
+        [
+            "Student",
+            89.955
+        ],
+        [
+            "Title",
+            25.535
+        ],
+        [
+            "id",
+            57.535
+        ],
+        [
+            "part",
+            89.951
+        ],
+        [
+            "record",
+            89.955
+        ],
+        [
+            "takes",
+            89.951
+        ]
+    ]
+}

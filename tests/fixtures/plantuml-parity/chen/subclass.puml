@@ -1,0 +1,15 @@
+@startchen
+entity PERSON {
+}
+entity EMPLOYEE {
+}
+entity STUDENT {
+}
+entity TEACHER {
+}
+entity INTERN {
+}
+PERSON ->- EMPLOYEE
+PERSON =>= d { STUDENT, TEACHER }
+EMPLOYEE -<- INTERN
+@endchen

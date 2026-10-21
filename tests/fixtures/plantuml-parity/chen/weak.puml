@@ -1,0 +1,13 @@
+@startchen
+entity PARENT {
+  Id <<key>>
+}
+entity CHILD <<weak>> {
+  Number <<key>>
+  Phones <<multi>>
+}
+relationship HAS <<identifying>> {
+}
+PARENT -1- HAS
+HAS =N= CHILD
+@endchen

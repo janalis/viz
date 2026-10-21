@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 323,
+    "height": 431,
+    "words": [
+        "EMPLOYEE",
+        "INTERN",
+        "PERSON",
+        "STUDENT",
+        "TEACHER",
+        "d"
+    ],
+    "baselines": [
+        [
+            "EMPLOYEE",
+            212.025
+        ],
+        [
+            "INTERN",
+            404.995
+        ],
+        [
+            "PERSON",
+            30.535
+        ],
+        [
+            "STUDENT",
+            308.505
+        ],
+        [
+            "TEACHER",
+            308.505
+        ],
+        [
+            "d",
+            121.281
+        ]
+    ]
+}

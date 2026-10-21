@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML;
 
 use Janalis\Viz\Draw\Pipeline;
 use Janalis\Viz\PlantUML\Activities\ActivityFamily;
+use Janalis\Viz\PlantUML\ChenEer\ChenFamily;
 use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
 use Janalis\Viz\PlantUML\Json\JsonReader;
@@ -31,7 +32,7 @@ final readonly class PlantUmlPipeline implements Pipeline
     public const array FACTORIES = ['sequence' => 'sequence', 'class' => 'class', 'activity' => 'legacy activity', 'description' => 'description', 'state' => 'state', 'activity3' => 'activity'];
 
     /** The factories for each kind of block, as `@start…` names it, the uml ones above. */
-    public const array KINDS = ['uml' => self::FACTORIES, 'mindmap' => ['mindMap' => 'mind map'], 'wbs' => ['wBS' => 'work breakdown structure']];
+    public const array KINDS = ['uml' => self::FACTORIES, 'mindmap' => ['mindMap' => 'mind map'], 'wbs' => ['wBS' => 'work breakdown structure'], 'chen' => ['chenEer' => 'Chen EER']];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
     public function __construct(
@@ -50,6 +51,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'activity3' => new ActivityFamily(),
             'mindMap' => new MindMapFamily(),
             'wBS' => new WbsFamily(),
+            'chenEer' => new ChenFamily(),
         ]);
     }
 

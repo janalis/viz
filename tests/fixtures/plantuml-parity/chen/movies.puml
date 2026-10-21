@@ -1,0 +1,26 @@
+@startchen
+entity DIRECTOR {
+  Number <<key>>
+  Name {
+    Fname
+    Lname
+  }
+  Born : DATE
+  Died
+  Age <<derived>>
+}
+
+entity CUSTOMER {
+}
+
+entity MOVIE {
+  Code
+}
+
+relationship RENTED_TO {
+  Date
+}
+
+RENTED_TO -1- CUSTOMER
+RENTED_TO -N- MOVIE
+@endchen

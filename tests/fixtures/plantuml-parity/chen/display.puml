@@ -1,0 +1,14 @@
+@startchen
+left to right direction
+entity "Student record" as STU #lightblue {
+  "Student id" as SID <<key>>
+  Grade #red
+}
+relationship "takes part" as TP {
+}
+entity COURSE {
+  Title
+}
+STU -(1,N)- TP
+TP -M- COURSE #blue
+@endchen

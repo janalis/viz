@@ -23,8 +23,11 @@ use Janalis\Viz\PlantUML\Style\Style;
  */
 final class LinkPainter
 {
-    /** @return list<Mark> */
-    public static function marks(PlantUmlLink $link, Placement $placement, int $edge, LinkLabel $label, Style $style, string $background): array
+    /**
+     * @param array<string, string> $shapes `oval` or `diamond` by node name, for a node its line stops at the outline of
+     * @return list<Mark>
+     */
+    public static function marks(PlantUmlLink $link, Placement $placement, int $edge, LinkLabel $label, Style $style, string $background, array $shapes = []): array
     {
         if ($link->hidden) {
             return [];
@@ -32,7 +35,7 @@ final class LinkPainter
         $from = $placement->endpoints[$link->from];
         $to = $placement->endpoints[$link->to];
         $route = $placement->routes[$edge] ?? [[$from->x, $from->y], [$to->x, $to->y]];
-        $points = BoxClip::clipped(Route::smooth($route), $from, $to);
+        $points = BoxClip::clipped(Route::smooth($route), $from, $to, $shapes);
         // As dot sees the line, before the ends make room for their marks: where the end labels stand.
         $whole = $points;
         $color = ClassColors::back($link->color) ?? $style->color('LineColor', '#181818');
