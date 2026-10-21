@@ -45,6 +45,19 @@ final readonly class PlantUmlCommand
         return null;
     }
 
+    /**
+     * The command with only the captures that took something, as a Ubrex command records them: a
+     * name's first capture is then the first of its alternatives that matched.
+     */
+    public function taken(): self
+    {
+        return new self(
+            $this->name,
+            \array_map(static fn (array $captures): array => \array_values(\array_filter($captures, static fn (?string $capture): bool => null !== $capture)), $this->groups),
+            $this->lines,
+        );
+    }
+
     /** The first line, trimmed. */
     public function line(): string
     {

@@ -68,9 +68,12 @@ final class ConverterTest extends TestCase
         $activity = new Converter()->convert("@startuml\nstart\n:act;\nstop\n@enduml", SourceFormat::PlantUml, SourceFormat::PlantUml);
         $this->assertStringContainsString(":act;\nstop", $activity);
 
-        $this->expectExceptionObject(new UnsupportedConversion('PlantUML cannot be read here: The native PlantUML renderer does not draw the legacy activity syntax'));
+        $legacy = new Converter()->convert("@startuml\n(*) --> A\n@enduml", SourceFormat::PlantUml, SourceFormat::Mermaid);
+        $this->assertStringContainsString('start', $legacy);
 
-        new Converter()->read("@startuml\n(*) --> A\n@enduml", SourceFormat::PlantUml);
+        $this->expectExceptionObject(new UnsupportedConversion('PlantUML cannot be read here: The native PlantUML renderer does not draw salt wireframes'));
+
+        new Converter()->read("@startuml\nsalt\n@enduml", SourceFormat::PlantUml);
     }
 
     public function testAMermaidFamilyWithoutASharedModelDoesNotConvert(): void

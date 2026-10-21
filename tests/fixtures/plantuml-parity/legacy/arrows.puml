@@ -1,0 +1,19 @@
+@startuml
+(*) --> "check input"
+If "input is verbose" then
+--> [Yes] "turn on verbosity"
+--> "run command"
+else
+--> "run command"
+Endif
+-->[dotted] (*)
+"run command" -up-> "check input"
+"run command" .> "log" #pink
+note left: logs
+"log" --> ===B1===
+===B1=== --> "send"
+===B1=== --> "store"
+"send" --> ===B2===
+"store" --> ===B2===
+===B2=== --> (*)
+@enduml

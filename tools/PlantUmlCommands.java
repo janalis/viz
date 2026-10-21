@@ -68,6 +68,15 @@ public class PlantUmlCommands {
             }
         }
         final StringBuilder json = new StringBuilder("{\"class\":").append(quote(command.getClass().getName()));
+        if (start != null && isUbrex(start)) {
+            final List<String> slots = new ArrayList<>();
+            final String regex = "^" + ubrex(challenge(start), slots, true) + "$";
+            json.append(",\"start\":").append(quote(regex)).append(",\"slots\":[");
+            for (int slot = 0; slot < slots.size(); slot++)
+                json.append(slot == 0 ? "" : ",").append(quote(slots.get(slot)));
+            // As Ubrex records them, only the groups that took something: a name's first is its first that matched.
+            return json.append("],\"end\":null,\"ubrex\":true}").toString();
+        }
         json.append(",\"start\":").append(start == null ? "null" : quote(transform(pattern(start))));
         json.append(",\"slots\":");
         if (start != null && start.getClass().getName().startsWith("net.sourceforge.plantuml.regex.Regex")) {
@@ -82,6 +91,158 @@ public class PlantUmlCommands {
         }
         json.append(",\"end\":").append(end == null ? "null" : quote(transform(pattern(end))));
         return json.append("}").toString();
+    }
+
+    private static boolean isUbrex(Object pattern) {
+        for (Class<?> type = pattern.getClass(); type != null; type = type.getSuperclass()) {
+            if (type.getName().startsWith("com.plantuml.ubrex"))
+                return true;
+            for (Class<?> face : type.getInterfaces())
+                if (face.getName().startsWith("com.plantuml.ubrex"))
+                    return true;
+        }
+        return false;
+    }
+
+    /** The tree of challenges a Ubrex expression matches with. */
+    private static Object challenge(Object pattern) throws Exception {
+        try {
+            final Method method = pattern.getClass().getMethod("getChallenge");
+            method.setAccessible(true);
+            return method.invoke(pattern);
+        } catch (NoSuchMethodException e) {
+            for (Field field : pattern.getClass().getDeclaredFields()) {
+                field.setAccessible(true);
+                final Object value = field.get(pattern);
+                if (value != null && value.getClass().getName().startsWith("com.plantuml.ubrex"))
+                    return value;
+            }
+            throw new IllegalStateException("No challenge in " + pattern.getClass());
+        }
+    }
+
+    private static Object field(Object object, String name) throws Exception {
+        for (Class<?> type = object.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                final Field field = type.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(object);
+            } catch (NoSuchFieldException e) {
+                // a superclass's
+            }
+        }
+        throw new IllegalStateException("No " + name + " in " + object.getClass());
+    }
+
+    /**
+     * A Ubrex challenge as a PCRE pattern matching the same: Ubrex never backtracks, so its
+     * repetitions are possessive and its alternatives atomic; each named group a capturing one,
+     * its name added to the slots — none inside a lookahead.
+     */
+    private static String ubrex(Object challenge, List<String> slots, boolean capture) throws Exception {
+        final String type = challenge.getClass().getSimpleName();
+        switch (type) {
+        case "CompositeList": {
+            final StringBuilder result = new StringBuilder();
+            for (Object child : (List<?>) field(challenge, "challenges"))
+                result.append(ubrex(child, slots, capture));
+            return result.toString();
+        }
+        case "CompositeNamed": {
+            final StringBuilder result = new StringBuilder();
+            for (Object child : (List<?>) field(challenge, "challenges"))
+                result.append(ubrex(child, slots, capture));
+            if (!capture)
+                return "(?:" + result + ")";
+            slots.add((String) field(challenge, "name"));
+            return "(" + result + ")";
+        }
+        case "ChallengeSingleChar":
+            return literal((Character) field(challenge, "ch"));
+        case "ChallengeCharClass": {
+            final Object charClass = field(challenge, "charClass");
+            final String raw = classOf(String.valueOf(field(charClass, "charClassRaw")));
+            final boolean negative = String.valueOf(field(charClass, "type")).equals("NEGATIVE");
+            return negative ? "[^" + raw + "]" : "[" + raw + "]";
+        }
+        case "ChallengeCharSet": {
+            final StringBuilder set = new StringBuilder();
+            final Object chars = field(challenge, "charSet");
+            final Method contains = chars.getClass().getMethod("contains", char.class);
+            contains.setAccessible(true);
+            for (char c = 32; c < 128; c++)
+                if ((Boolean) contains.invoke(chars, c))
+                    set.append(literal(c));
+            for (Object raw : (java.util.Set<?>) field(challenge, "charClasses"))
+                set.append(classOf(String.valueOf(raw)));
+            return ((Boolean) field(challenge, "reversed") ? "[^" : "[") + set + "]";
+        }
+        case "ChallengeOneOrMore":
+            return "(?:" + ubrex(field(challenge, "origin"), slots, capture) + ")++";
+        case "ChallengeZeroOrMore":
+            return "(?:" + ubrex(field(challenge, "origin"), slots, capture) + ")*+";
+        case "ChallengeOptional":
+            return "(?:" + ubrex(field(challenge, "origin"), slots, capture) + ")?+";
+        case "ChallengeAlternative": {
+            final StringBuilder result = new StringBuilder("(?>");
+            boolean first = true;
+            for (Object alternative : (java.util.Collection<?>) field(challenge, "alternatives")) {
+                result.append(first ? "" : "|").append(ubrex(alternative, slots, capture));
+                first = false;
+            }
+            return result.append(")").toString();
+        }
+        case "ChallengeLazzyOneOrMore":
+            return "(?>(?:" + ubrex(field(challenge, "origin"), slots, capture) + ")+?(?=" + ubrex(field(challenge, "stopCondition"), slots, false) + "))";
+        case "ChallengeOneOrMoreUpToOldVersion":
+            return "(?>(?:" + ubrex(field(challenge, "origin"), slots, capture) + ")+?(?=" + ubrex(field(challenge, "end"), slots, false) + "))";
+        case "ChallengeUpTo":
+            return "(?>(?s:.)*?(?=" + ubrex(field(challenge, "origin"), slots, false) + "))";
+        case "ChallengeRepetition": {
+            // Ubrex takes every repeat, then checks their count: none never matches, nor more than the most.
+            final Object repetition = field(challenge, "repetition");
+            final java.util.TreeSet<?> values = (java.util.TreeSet<?>) field(repetition, "values");
+            final int from = ((java.util.concurrent.atomic.AtomicInteger) field(repetition, "minInclusive")).get();
+            final String origin = ubrex(field(challenge, "origin"), slots, capture);
+            final int low = Math.max(1, values.isEmpty() ? from : (Integer) values.first());
+            if (values.isEmpty() || (Integer) values.last() + 1 >= from && from != Integer.MAX_VALUE)
+                return "(?:" + origin + "){" + low + ",}+";
+            if ((Integer) values.last() - (Integer) values.first() + 1 != values.size() || from != Integer.MAX_VALUE)
+                throw new IllegalStateException("Ubrex repetition not translated: " + values + " " + from);
+            return "(?:" + origin + "){" + low + "," + values.last() + "}+(?!" + ubrex(field(challenge, "origin"), new ArrayList<>(), false) + ")";
+        }
+        case "ChallengeEndOfText":
+            return "\\z";
+        case "ChallengeLookAhead": {
+            final boolean positive = String.valueOf(field(challenge, "ahead")).equals("LOOK_AHEAD_POSITIVE");
+            return (positive ? "(?=" : "(?!") + ubrex(field(challenge, "origin"), slots, false) + ")";
+        }
+        default:
+            throw new IllegalStateException("Ubrex challenge not translated: " + type);
+        }
+    }
+
+    private static String classOf(String raw) {
+        switch (raw) {
+        case "ANY": return "\\s\\S";
+        case "SPACE": return " ";
+        case "GUILLEMET": return "\"\\x{201c}\\x{201d}";
+        case "WORD": return "a-zA-Z0-9_";
+        case "DIGIT": return "0-9_";
+        case "ALPHA_NUMERIC": return "\\p{L}\\p{Nd}";
+        case "LETTER": return "\\p{L}";
+        default: throw new IllegalStateException("Ubrex class not translated: " + raw);
+        }
+    }
+
+    private static String literal(char c) {
+        if (Character.isLetterOrDigit(c) && c < 128)
+            return String.valueOf(c);
+        if (c < 128 && c > 32)
+            return "\\" + c;
+        if (c == ' ')
+            return " ";
+        return String.format("\\x{%04x}", (int) c);
     }
 
     private static Object lazy(Object value) throws Exception {

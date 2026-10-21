@@ -11,6 +11,7 @@ use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
+use Janalis\Viz\PlantUML\LegacyActivities\LegacyActivityFamily;
 use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
 use Janalis\Viz\Source\Unsupported;
@@ -24,7 +25,7 @@ use Janalis\Viz\Source\Unsupported;
 final readonly class PlantUmlPipeline implements Pipeline
 {
     /** PlantUML's factories, in the order it tries them, by the name of their commands, and what their diagrams are called. */
-    public const array FACTORIES = ['sequence' => 'sequence', 'class' => 'class', 'description' => 'description', 'state' => 'state', 'activity3' => 'activity'];
+    public const array FACTORIES = ['sequence' => 'sequence', 'class' => 'class', 'activity' => 'legacy activity', 'description' => 'description', 'state' => 'state', 'activity3' => 'activity'];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
     public function __construct(
@@ -37,6 +38,7 @@ final readonly class PlantUmlPipeline implements Pipeline
         return new self([
             'sequence' => new SequenceFamily(),
             'class' => new ClassFamily(),
+            'activity' => new LegacyActivityFamily(),
             'description' => new DescriptionFamily(),
             'state' => new StateFamily(),
             'activity3' => new ActivityFamily(),
@@ -58,9 +60,6 @@ final readonly class PlantUmlPipeline implements Pipeline
         $document = PlantUmlDocument::read(PlantUmlSource::parse($source));
         $refusal = null;
         foreach (self::FACTORIES as $factory => $name) {
-            if ('description' === $factory && PlantUmlKinds::legacyActivity($document)) {
-                throw new Unsupported('The native PlantUML renderer does not draw the legacy activity syntax');
-            }
             $commands = PlantUmlCommands::family($factory)->match($document->lines);
             if (null === $commands) {
                 continue;

@@ -1,0 +1,13 @@
+@startuml
+partition Conductor {
+  (*) --> "Climbs on Platform"
+  --> === S1 ===
+  --> Bows
+}
+partition Audience #LightSkyBlue {
+  === S1 === --> Applauds
+}
+Bows --> "Plays\nmusic"
+note right: a note
+"Plays\nmusic" -left-> [end] (*)
+@enduml

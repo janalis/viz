@@ -31,6 +31,7 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | State | yes, below |
 | Sequence | read natively into the shared model and drawn natively by a port of teoz, below |
 | Activity | yes, below |
+| Activity, legacy syntax | yes, below |
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
@@ -86,13 +87,23 @@ Activity diagrams in the new syntax are read natively — with PlantUML's own ru
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| Actions over one or several lines, with `<<input>>`, `<<output>>`, `<<procedure>>`, `<<load>>`, `<<save>>`, `<<continuous>>`, `<<task>>`, `<<object>>`, `<<objectsignal>>`, `<<acceptevent>>`, `<<timeevent>>` and `<<#colour>>`; `start`, `stop`, `end`, connectors `(A)`, `kill`, `detach` | `goto` and `label`, URLs, emoji and sprite stereotypes, the legacy syntax (`(*)`, `-->`) |
+| Actions over one or several lines, with `<<input>>`, `<<output>>`, `<<procedure>>`, `<<load>>`, `<<save>>`, `<<continuous>>`, `<<task>>`, `<<object>>`, `<<objectsignal>>`, `<<acceptevent>>`, `<<timeevent>>` and `<<#colour>>`; `start`, `stop`, `end`, connectors `(A)`, `kill`, `detach` | `goto` and `label`, URLs, emoji and sprite stereotypes |
 | `if`, `elseif`, `else`, `endif` with tests, labels and colours, laid out side by side, down one side when a branch is empty or only stops, or across for else-ifs — down under `!pragma useVerticalIf on`; `skinparam conditionStyle`, `skinparam conditionEndStyle hline`; `switch`, `case`, `endswitch` with their labels, colours and notes | |
 | `while` with its labels, `backward`, `break`, and a stop or end drawn on its way out; `repeat` with a starting action, `backward`, `break`, and its test's labels | |
 | `fork`, `fork again`, `end fork` with its label, `end merge`; `split`, `split again`, `end split` | |
 | `partition`, `group`, `rectangle`, `card` and `package` with their titles and colours; notes beside steps, floating, over several lines, beside decisions, loops and forks | Deprecated forms PlantUML warns of |
 | Arrows with labels, colours and `dashed`, `dotted`, `bold`, `hidden`; of several colours side by side (`-[#red;#blue]->`), `skinparam colorArrowSeparationSpace` apart | |
 | Swimlanes, `|Lane|`, `|#colour|Lane| title` and `swimlane Lane as title`, with `skinparam swimlaneWidth`; steps in their swimlanes, decisions, else-ifs, loops, switches, forks and groups with steps in others, arrows between them bent across | |
+
+### Legacy activity diagrams
+
+The legacy syntax (`(*) --> "A"`) is read natively with PlantUML's rules — a link without a first entity starts from the last one, `if` starts a branch that links after it leave from until `else` returns to it, an arrow's length and direction as PlantUML's `manageArrowForCuca` sets them, a left or up arrow laid out reversed — and laid out as svek lays it out: each entity a box of its image's size, notes among them, partitions as clusters, 20 between nodes and 40 between ranks at least.
+
+| Drawn natively | Left to PlantUML |
+| --- | --- |
+| Activities over one or several lines, with `as`, stereotypes and colours; `(*)` start and end, synchronization bars `===B===`; `if`, `else`, `endif` with tests and `as` | Inner activities (`{`), URLs, links to partitions, `hide` and `show` |
+| Arrows with labels, dashes, directions, `-*->` and `[hidden]`; `left to right direction`, `skinparam nodesep` and `ranksep` | |
+| `partition` with colours and stereotypes, nested, `in` a partition; notes beside the last activity, over several lines, pointing at it as svek draws them, and on links | |
 
 ## Parity
 

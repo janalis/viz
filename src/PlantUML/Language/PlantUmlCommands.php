@@ -13,10 +13,10 @@ namespace Janalis\Viz\PlantUML\Language;
  */
 final class PlantUmlCommands
 {
-    /** @var ?array<string, list<array{class: string, start: ?string, slots: ?list<?string>, end: ?string}>> */
+    /** @var ?array<string, list<array{class: string, start: ?string, slots: ?list<?string>, end: ?string, ubrex?: bool}>> */
     private static ?array $families = null;
 
-    /** @param list<array{class: string, start: ?string, slots: ?list<?string>, end: ?string}> $commands */
+    /** @param list<array{class: string, start: ?string, slots: ?list<?string>, end: ?string, ubrex?: bool}> $commands */
     private function __construct(
         private readonly array $commands,
     ) {}
@@ -25,7 +25,7 @@ final class PlantUmlCommands
     public static function family(string $family): self
     {
         if (null === self::$families) {
-            /** @var array{families: array<string, list<array{class: string, start: ?string, slots: ?list<?string>, end: ?string}>>} $table */
+            /** @var array{families: array<string, list<array{class: string, start: ?string, slots: ?list<?string>, end: ?string, ubrex?: bool}>>} $table */
             $table = \json_decode((string) \file_get_contents(__DIR__.'/../../../resources/plantuml/commands.json'), associative: true, flags: \JSON_THROW_ON_ERROR);
             self::$families = $table['families'];
         }
@@ -69,7 +69,7 @@ final class PlantUmlCommands
             if (null === $command['end']) {
                 $single = self::single($name, $command['slots'], $start, $lines, $at);
                 if (null !== $single) {
-                    return $single;
+                    return $command['ubrex'] ?? false ? $single->taken() : $single;
                 }
                 continue;
             }

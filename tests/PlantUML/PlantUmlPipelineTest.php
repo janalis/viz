@@ -58,7 +58,6 @@ final class PlantUmlPipelineTest extends TestCase
         yield 'timing time' => ['@100', 'timing diagrams'];
         yield 'gantt task' => ['[Design] lasts 5 days', 'Gantt charts'];
         yield 'gantt project' => ['Project starts 2026-01-01', 'Gantt charts'];
-        yield 'legacy activity' => ['(*) --> "First"', 'the legacy activity syntax'];
     }
 
     public function testKindsReadByPlantUmlsLaterFactoriesAreNamed(): void

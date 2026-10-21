@@ -83,6 +83,7 @@ $run(\sprintf('javac -cp %s -d %s %s', \escapeshellarg($jar), \escapeshellarg($c
 $factories = [
     'net.sourceforge.plantuml.sequencediagram.SequenceDiagramFactory',
     'net.sourceforge.plantuml.classdiagram.ClassDiagramFactory',
+    'net.sourceforge.plantuml.activitydiagram.ActivityDiagramFactory',
     'net.sourceforge.plantuml.descdiagram.DescriptionDiagramFactory',
     'net.sourceforge.plantuml.statediagram.StateDiagramFactory',
     'net.sourceforge.plantuml.activitydiagram3.ActivityDiagramFactory3',

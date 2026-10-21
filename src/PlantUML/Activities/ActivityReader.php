@@ -475,7 +475,7 @@ final class ActivityReader
      * @param list<string> $lines
      * @return list<string>
      */
-    private static function columns(array $lines): array
+    public static function columns(array $lines): array
     {
         $indents = \array_map(static fn (string $line): int => \strlen($line) - \strlen(\ltrim($line)), \array_filter($lines, static fn (string $line): bool => '' !== \trim($line)));
         $indent = [] === $indents ? 0 : \min($indents);

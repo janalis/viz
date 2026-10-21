@@ -1,0 +1,69 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 335,
+    "height": 406,
+    "words": [
+        "Applauds",
+        "Audience",
+        "Bows",
+        "Climbs",
+        "Conductor",
+        "Platform",
+        "Plays",
+        "a",
+        "end",
+        "music",
+        "note",
+        "on"
+    ],
+    "baselines": [
+        [
+            "Applauds",
+            278.732
+        ],
+        [
+            "Audience",
+            237.665
+        ],
+        [
+            "Bows",
+            278.732
+        ],
+        [
+            "Climbs",
+            123.602
+        ],
+        [
+            "Conductor",
+            21.535
+        ],
+        [
+            "Platform",
+            123.602
+        ],
+        [
+            "Plays",
+            365.862
+        ],
+        [
+            "a",
+            373.308
+        ],
+        [
+            "end",
+            363.035
+        ],
+        [
+            "music",
+            379.994
+        ],
+        [
+            "note",
+            373.308
+        ],
+        [
+            "on",
+            123.602
+        ]
+    ]
+}
