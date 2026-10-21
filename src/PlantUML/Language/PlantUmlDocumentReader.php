@@ -37,7 +37,7 @@ final class PlantUmlDocumentReader
     }
 
     /** @param array<string, string> $pragmas */
-    public function read(array $pragmas): PlantUmlDocument
+    public function read(array $pragmas, string $kind = 'uml'): PlantUmlDocument
     {
         $count = \count($this->lines);
         while ($this->at < $count) {
@@ -57,7 +57,7 @@ final class PlantUmlDocumentReader
             }
         }
 
-        return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas);
+        return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas, $kind);
     }
 
     /**

@@ -16,6 +16,9 @@ use Janalis\Viz\Source\Unsupported;
  */
 final readonly class PlantUmlSource
 {
+    /** The kinds of block read natively. */
+    public const array KINDS = ['uml', 'mindmap'];
+
     /**
      * @param list<string> $lines the block's lines between its start and end, comments dropped
      * @param array<string, string> $pragmas by lower-case name
@@ -23,6 +26,8 @@ final readonly class PlantUmlSource
     public function __construct(
         public array $lines,
         public array $pragmas = [],
+        /** The block's kind, as `@start…` names it: `uml` or `mindmap`. */
+        public string $kind = 'uml',
     ) {}
 
     /** @throws Unsupported when there is no block, several, one of another kind than uml, or what PlantUML's preprocessor is left */
@@ -55,7 +60,7 @@ final readonly class PlantUmlSource
         if (1 !== \count($kinds)) {
             throw new Unsupported([] === $kinds ? 'The PlantUML source has no @startuml … @enduml block' : 'The PlantUML source has several diagrams');
         }
-        if ('uml' !== $kinds[0]) {
+        if (!\in_array($kinds[0], self::KINDS, strict: true)) {
             throw new Unsupported('The native PlantUML renderer does not draw @start'.$kinds[0].' diagrams');
         }
 
@@ -65,7 +70,7 @@ final readonly class PlantUmlSource
             \array_pop($lines);
         }
 
-        return self::preprocessed($lines);
+        return self::preprocessed($lines, $kinds[0]);
     }
 
     /**
@@ -103,7 +108,7 @@ final readonly class PlantUmlSource
     }
 
     /** @param list<string> $lines */
-    private static function preprocessed(array $lines): self
+    private static function preprocessed(array $lines, string $kind): self
     {
         $kept = [];
         $pragmas = [];
@@ -124,6 +129,6 @@ final readonly class PlantUmlSource
             $kept[] = $line;
         }
 
-        return new self($kept, $pragmas);
+        return new self($kept, $pragmas, $kind);
     }
 }

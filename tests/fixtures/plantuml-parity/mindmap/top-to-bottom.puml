@@ -1,0 +1,10 @@
+@startmindmap
+top to bottom direction
+* Root
+** Child one
+*** Leaf
+** Child two
+left side
+** Above
+*** Further up
+@endmindmap

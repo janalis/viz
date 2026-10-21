@@ -12,6 +12,7 @@ use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
 use Janalis\Viz\PlantUML\LegacyActivities\LegacyActivityFamily;
+use Janalis\Viz\PlantUML\MindMaps\MindMapFamily;
 use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
 use Janalis\Viz\Source\Unsupported;
@@ -26,6 +27,9 @@ final readonly class PlantUmlPipeline implements Pipeline
 {
     /** PlantUML's factories, in the order it tries them, by the name of their commands, and what their diagrams are called. */
     public const array FACTORIES = ['sequence' => 'sequence', 'class' => 'class', 'activity' => 'legacy activity', 'description' => 'description', 'state' => 'state', 'activity3' => 'activity'];
+
+    /** The factories for each kind of block, as `@start…` names it, the uml ones above. */
+    public const array KINDS = ['uml' => self::FACTORIES, 'mindmap' => ['mindMap' => 'mind map']];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
     public function __construct(
@@ -42,6 +46,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'description' => new DescriptionFamily(),
             'state' => new StateFamily(),
             'activity3' => new ActivityFamily(),
+            'mindMap' => new MindMapFamily(),
         ]);
     }
 
@@ -59,7 +64,7 @@ final readonly class PlantUmlPipeline implements Pipeline
     {
         $document = PlantUmlDocument::read(PlantUmlSource::parse($source));
         $refusal = null;
-        foreach (self::FACTORIES as $factory => $name) {
+        foreach (self::KINDS[$document->kind] ?? [] as $factory => $name) {
             $commands = PlantUmlCommands::family($factory)->match($document->lines);
             if (null === $commands) {
                 continue;

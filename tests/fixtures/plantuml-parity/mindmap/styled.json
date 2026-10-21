@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 472,
+    "height": 162,
+    "words": [
+        "Debian",
+        "Kubuntu",
+        "Linux",
+        "Linux",
+        "Mint",
+        "NixOS",
+        "Ubuntu"
+    ],
+    "baselines": [
+        [
+            "Debian",
+            100.023
+        ],
+        [
+            "Kubuntu",
+            128.268
+        ],
+        [
+            "Linux",
+            71.779
+        ],
+        [
+            "Linux",
+            85.901
+        ],
+        [
+            "Mint",
+            71.779
+        ],
+        [
+            "NixOS",
+            43.535
+        ],
+        [
+            "Ubuntu",
+            100.023
+        ]
+    ]
+}

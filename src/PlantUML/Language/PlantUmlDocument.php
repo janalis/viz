@@ -31,6 +31,8 @@ final readonly class PlantUmlDocument
         public array $captions = [],
         public float $scale = 1.0,
         public array $pragmas = [],
+        /** The block's kind, as `@start…` names it. */
+        public string $kind = 'uml',
     ) {}
 
     /** @throws Unsupported on a shared command left to PlantUML */
@@ -38,7 +40,7 @@ final readonly class PlantUmlDocument
     {
         $reader = new PlantUmlDocumentReader($source->lines);
 
-        return $reader->read($source->pragmas);
+        return $reader->read($source->pragmas, $source->kind);
     }
 
     public function param(string $name, string $default = ''): string

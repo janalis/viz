@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 294,
+    "height": 190,
+    "words": [
+        "first",
+        "fourth",
+        "one",
+        "root",
+        "second",
+        "the",
+        "third"
+    ],
+    "baselines": [
+        [
+            "first",
+            71.779
+        ],
+        [
+            "fourth",
+            156.512
+        ],
+        [
+            "one",
+            156.512
+        ],
+        [
+            "root",
+            100.023
+        ],
+        [
+            "second",
+            43.535
+        ],
+        [
+            "the",
+            156.512
+        ],
+        [
+            "third",
+            100.023
+        ]
+    ]
+}

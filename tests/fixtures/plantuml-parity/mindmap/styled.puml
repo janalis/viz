@@ -1,0 +1,24 @@
+@startmindmap
+<style>
+mindmapDiagram {
+  node {
+    BackgroundColor lightGreen
+  }
+  :depth(1) {
+    BackGroundColor white
+  }
+  .rose {
+    BackgroundColor #FFBBCC
+  }
+  arrow {
+    LineColor red
+  }
+}
+</style>
+* Linux
+** NixOS
+** Debian
+*** Ubuntu <<rose>>
+**** Linux Mint
+**** Kubuntu
+@endmindmap

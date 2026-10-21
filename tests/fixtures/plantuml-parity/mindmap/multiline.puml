@@ -1,0 +1,12 @@
+@startmindmap
+* Class Templates
+**:Example 1
+template of a class
+with a method
+;
+**:Example 2
+'a comment
+on two lines; <<rose>>
+***[#lightblue]_:boxless
+over two lines;
+@endmindmap

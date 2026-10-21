@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 240,
+    "height": 303,
+    "words": [
+        "Above",
+        "Child",
+        "Child",
+        "Further",
+        "Leaf",
+        "Root",
+        "one",
+        "two",
+        "up"
+    ],
+    "baselines": [
+        [
+            "Above",
+            95.023
+        ],
+        [
+            "Child",
+            218
+        ],
+        [
+            "Child",
+            218
+        ],
+        [
+            "Further",
+            33.535
+        ],
+        [
+            "Leaf",
+            279.488
+        ],
+        [
+            "Root",
+            156.512
+        ],
+        [
+            "one",
+            218
+        ],
+        [
+            "two",
+            218
+        ],
+        [
+            "up",
+            33.535
+        ]
+    ]
+}

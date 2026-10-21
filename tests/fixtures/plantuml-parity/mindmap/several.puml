@@ -1,0 +1,9 @@
+@startmindmap
+title Two maps
+* First
+** a
+** b
+* Second
+** c
+-- d
+@endmindmap
