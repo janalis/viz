@@ -45,10 +45,117 @@ final readonly class PlantUmlText
         public string $background = '#ffffff',
     ) {}
 
-    /** @param list<string> $lines */
+    /**
+     * Text in a style: its font, colour and background, wrapped at its `MaximumWidth` — as
+     * `skinparam wrapWidth` sets it — where PlantUML wraps.
+     *
+     * @param list<string> $lines
+     */
     public static function styled(array $lines, Style $style, ?FontFace $face = null): self
     {
-        return new self($lines, $style->fontSize(), $face ?? $style->face(), $style->color('FontColor', '#000000'), $style->sprites, $style->color('BackGroundColor', '#ffffff'));
+        $text = new self($lines, $style->fontSize(), $face ?? $style->face(), $style->color('FontColor', '#000000'), $style->sprites, $style->color('BackGroundColor', '#ffffff'));
+        $maximum = $style->number('MaximumWidth');
+
+        return $maximum > 0 ? new self($text->wrapped($maximum), $text->size, $text->face, $text->color, $text->sprites, $text->background) : $text;
+    }
+
+    /**
+     * The lines wrapped as PlantUML's `Fission` wraps them: a word goes on the next line when
+     * it would take its line past the width, as PlantUML measures it, and a word alone stays
+     * however wide; a heading's lines stay headings, and markup open at a break is closed
+     * there and opened again after it.
+     *
+     * @return list<string>
+     */
+    private function wrapped(float $maximum): array
+    {
+        $wrapped = [];
+        foreach ($this->lines as $line) {
+            [$depth, $text] = self::heading($line);
+            $marker = $depth < 0 ? '' : \str_repeat('=', times: $depth + 1).' ';
+            $face = self::face($depth < 0 ? $text : '**'.$text.'**', $this->face);
+            $size = $this->fontSize($line);
+            $pieces = [];
+            foreach (\explode(' ', $text) as $word) {
+                $last = \array_key_last($pieces);
+                $candidate = null === $last ? $word : $pieces[$last].' '.$word;
+                if (null !== $last && self::measured($candidate, $size, $face) > $maximum) {
+                    $pieces[] = $word;
+                    continue;
+                }
+                $pieces[null === $last ? 0 : $last] = $candidate;
+            }
+            \array_push($wrapped, ...\array_map(static fn (string $piece): string => $marker.$piece, self::balanced($pieces)));
+        }
+
+        return $wrapped;
+    }
+
+    /** A stretch of Creole as PlantUML measures it, each part at the size its `<size:…>` gives it. */
+    private static function measured(string $text, float $size, FontFace $face): float
+    {
+        $width = 0.0;
+        $sizes = [$size];
+        foreach ((array) \preg_split('/(<\/?size(?::[^>]*)?>)/i', $text, flags: \PREG_SPLIT_DELIM_CAPTURE) as $index => $part) {
+            $part = (string) $part;
+            if (0 === ($index % 2)) {
+                $width += PlantUmlMetrics::width(self::plain($part), $sizes[\count($sizes) - 1], $face);
+                continue;
+            }
+            $match = [];
+            if (1 === \preg_match('/^<size:\s*([0-9.]+)\s*>$/i', $part, $match) && \is_numeric($match[1])) {
+                $sizes[] = (float) $match[1];
+                continue;
+            }
+            if (\count($sizes) > 1) {
+                \array_pop($sizes);
+            }
+        }
+
+        return $width;
+    }
+
+    /**
+     * Pieces of a line with the markup open at the end of each closed there and opened again
+     * at the start of the next.
+     *
+     * @param list<string> $pieces
+     * @return list<string>
+     */
+    private static function balanced(array $pieces): array
+    {
+        /** @var list<string> $openers each markup open, as it opens */
+        $openers = [];
+        /** @var list<string> $closers and as it closes */
+        $closers = [];
+        $balanced = [];
+        foreach ($pieces as $piece) {
+            /** @var list<string> $openers */
+            $piece = \implode('', $openers).$piece;
+            $openers = [];
+            $closers = [];
+            $marks = [];
+            \preg_match_all('/\*\*|\/\/|__|""|~~|<(\/?)(b|i|u|s|w|strike|sub|sup|color|back|size|font)\b[^>]*>/i', $piece, $marks, \PREG_SET_ORDER);
+            /** @var list<array<int, string>> $marks */
+            foreach ($marks as $mark) {
+                $tag = \strtolower($mark[2] ?? '');
+                $close = '' === $tag ? $mark[0] : '</'.$tag.'>';
+                $index = \array_search($close, $closers, strict: true);
+                if (false !== $index && ('' === $tag || '/' === $mark[1])) {
+                    $openers = [...\array_slice($openers, offset: 0, length: $index), ...\array_slice($openers, $index + 1)];
+                    $closers = [...\array_slice($closers, offset: 0, length: $index), ...\array_slice($closers, $index + 1)];
+                    continue;
+                }
+                if ('/' !== ($mark[1] ?? '')) {
+                    $openers[] = $mark[0];
+                    $closers[] = $close;
+                }
+            }
+            /** @var list<string> $closers */
+            $balanced[] = $piece.\implode('', \array_reverse($closers));
+        }
+
+        return $balanced;
     }
 
     /** A line without its Creole markup. */

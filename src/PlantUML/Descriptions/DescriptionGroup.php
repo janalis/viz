@@ -10,6 +10,8 @@ final class DescriptionGroup
     /** @var list<string> */
     public array $stereotypes = [];
     public ?string $color = null;
+    /** Whether its stereotypes are written, as `hide stereotype` leaves them. */
+    public bool $stereotypeShown = true;
 
     public function __construct(
         public readonly string $id,

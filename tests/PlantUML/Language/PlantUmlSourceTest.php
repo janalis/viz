@@ -36,6 +36,11 @@ final class PlantUmlSourceTest extends TestCase
         $this->assertSame(['layout' => 'smetana', 'teoz' => ''], $source->pragmas);
     }
 
+    public function testByteOrderMarksAndEnDashesAreReadAsPlantUmlReadsThem(): void
+    {
+        $this->assertSame(['a -> b', 'c'], PlantUmlSource::parse("\u{FEFF}@startuml\na \u{2013}> b\n\u{FEFF}c\n@enduml")->lines);
+    }
+
     public function testBackslashStartsAndATrailingJoinAreRead(): void
     {
         $this->assertSame(['a'], PlantUmlSource::parse("\\startuml\r\na\r\n\\enduml")->lines);

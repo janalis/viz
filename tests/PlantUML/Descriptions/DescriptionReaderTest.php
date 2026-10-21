@@ -202,12 +202,25 @@ final class DescriptionReaderTest extends TestCase
         self::read($lines);
     }
 
+    public function testStereotypesAreHiddenAndShownAsTheLastRuleForEachSays(): void
+    {
+        $diagram = self::read(
+            "hide stereotype\nrectangle A <<s>>\nrectangle G <<g>> {\nrectangle B <<t>>\n}\nrectangle C <<u>>\nshow <<u>> stereotype\nshow B stereotype\nhide class stereotypes\nhide circle\nshow \"A\" stereotype\nhide <<s>> stereotype",
+        );
+
+        $this->assertSame(['A' => false, 'B' => true, 'C' => true], \array_map(static fn ($element): bool => $element->stereotypeShown, $diagram->elements));
+        $this->assertFalse($diagram->groups['G']->stereotypeShown);
+    }
+
     public function testWhatPlantUmlFailsOnIsRefused(): void
     {
         foreach ([
             "node A\ndatabase A" => 'This element (A) is already defined',
             "note left : x\nnode A" => 'The PlantUML note has no element to stand beside: note left : x',
             "node A\nnote on link : x" => 'The PlantUML note has no link to stand on: note on link : x',
+            "node A\nhide B stereotype" => 'No such element B',
+            "a --> b\nrectangle \"B\" as b" => 'This element (b) is already defined',
+            "node N\na --> b\nrectangle b [\nB\n]" => 'This element (b) is already defined',
         ] as $lines => $message) {
             try {
                 self::read($lines);

@@ -67,6 +67,8 @@ final class DescriptionReader
     private array $links = [];
     /** @var list<PlantUmlNote> */
     private array $notes = [];
+    /** @var list<array{bool, ?string}> each `hide` or `show` of stereotypes: whether it shows them, and of what, null for all */
+    private array $stereotypeRules = [];
     private Direction $direction = Direction::TopBottom;
     private ?string $last = null;
 
@@ -99,6 +101,7 @@ final class DescriptionReader
     {
         match ($command->name) {
             'CommandNope', 'CommandFootboxIgnored', 'CommandHideEmptyDescription' => null,
+            'CommandHideShowByGender' => $this->hideOrShow($command),
             'CommandRankDir' => $this->direction = \str_starts_with(\strtolower($command->line()), 'left') ? Direction::LeftRight : Direction::TopBottom,
             'CommandCreateElementFull' => $this->element($command),
             'CommandCreateElementMultilines' => $this->multiline($command),
@@ -128,6 +131,7 @@ final class DescriptionReader
             throw new Unsupported('The native PlantUML renderer does not draw '.$symbol.' elements');
         }
         $code = \str_starts_with($code, '()') ? \trim(\substr($code, offset: 2)) : $code;
+        self::undeclared($this->elements[self::bare($code)] ?? null);
         $element = $this->get(self::bare($code), null === $display ? null : self::bare($display));
         if ('unknown' !== $element->symbol && $element->symbol !== $symbol) {
             throw new PlantUmlRefusal('This element ('.$element->id.') is already defined');
@@ -137,6 +141,14 @@ final class DescriptionReader
         $element->stereotypes = ClassReader::stereotypes((string) $command->lazy('STEREOTYPE'));
         $element->color = $command->get('COLOR') ?? $command->get('COLOR2') ?? $element->color;
         $this->last = $element->id;
+    }
+
+    /** As PlantUML, an element a link made of a bare name cannot be declared after. */
+    private static function undeclared(?DescriptionElement $element): void
+    {
+        if (null !== $element && 'unknown' === $element->symbol) {
+            throw new PlantUmlRefusal('This element ('.$element->id.') is already defined');
+        }
     }
 
     /** `rectangle R [` … `]` and `component C "` … `"`: an element whose text runs over several lines. */
@@ -149,6 +161,7 @@ final class DescriptionReader
         $lines = [\trim((string) $command->get('DESC')), ...\array_map(\trim(...), \array_slice($command->lines, offset: 1))];
         $last = \count($lines) - 1;
         $lines[$last] = \rtrim($lines[$last], characters: ']"');
+        self::undeclared($this->elements[(string) $command->get('CODE')] ?? null);
         $element = $this->get((string) $command->get('CODE'));
         $element->symbol = $symbol;
         $element->display = \array_values(\array_filter($lines, static fn (string $line): bool => '' !== $line));
@@ -272,13 +285,56 @@ final class DescriptionReader
     }
 
     /** Names only links used become actors in a diagram with actors or use cases, interfaces otherwise, as PlantUML settles them. */
+    /**
+     * `hide stereotype`, `show <<s>> stereotype`, `hide name stereotype`: kept, in order, to apply
+     * to every element and group once read; hiding anything else a description diagram does not
+     * draw does nothing, as in PlantUML.
+     */
+    private function hideOrShow(PlantUmlCommand $command): void
+    {
+        $match = [];
+        \preg_match('/^(hide|show)\s+(.*?)\s*(?:empty\s+)?(\w+)$/i', $command->line(), $match);
+        if (!\str_starts_with(\strtolower($match[3]), 'stereotype')) {
+            return;
+        }
+        $gender = '' === $match[2] ? null : $match[2];
+        if (
+            null !== $gender
+            && !\str_starts_with($gender, '<<')
+            && !\in_array(
+                \strtolower($gender),
+                ['class', 'object', 'interface', 'enum', 'abstract', 'annotation', 'protocol', 'struct', 'exception', 'metaclass', 'stereotype', 'record', 'dataclass'],
+                strict: true,
+            )
+            && !\array_key_exists(self::bare($gender), $this->elements + $this->groups)
+        ) {
+            throw new PlantUmlRefusal('No such element '.self::bare($gender));
+        }
+        $this->stereotypeRules[] = ['show' === \strtolower($match[1]), $gender];
+    }
+
     private function settle(): void
     {
+        foreach ([...$this->elements, ...$this->groups] as $entity) {
+            foreach ($this->stereotypeRules as [$show, $gender]) {
+                $entity->stereotypeShown = self::is($entity, $gender) ? $show : $entity->stereotypeShown;
+            }
+        }
         $usecase = [] !== \array_filter($this->elements, static fn (DescriptionElement $element): bool => \in_array($element->symbol, ['actor', 'usecase'], strict: true));
         $default = $usecase ? 'actor' : 'interface';
         foreach ($this->elements as $element) {
             $element->symbol = 'unknown' === $element->symbol ? $default : $element->symbol;
         }
+    }
+
+    /** Whether a `hide` or `show` means an element or group: all, those of a stereotype, or one by name; never a class's kind. */
+    private static function is(DescriptionElement|DescriptionGroup $entity, ?string $gender): bool
+    {
+        return match (true) {
+            null === $gender => true,
+            \str_starts_with($gender, '<<') => \implode('', \array_map(static fn (string $stereotype): string => '<<'.$stereotype.'>>', $entity->stereotypes)) === $gender,
+            default => self::bare($gender) === $entity->id,
+        };
     }
 
     private function get(string $id, ?string $display = null): DescriptionElement

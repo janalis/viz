@@ -27,6 +27,43 @@ final class PlantUmlTextTest extends TestCase
         $this->assertEqualsWithDelta([6 * Units::cell(12.0), 5 * PlantUmlText::lineHeight(12.0)], $text->size(), 1e-9);
     }
 
+    public function testTextWrapsAtItsStylesMaximumWidthAsPlantUmlWraps(): void
+    {
+        $style = new Style(['MaximumWidth' => '100', 'FontSize' => '14']);
+
+        $this->assertSame(
+            [
+                'A customer of',
+                'the bank, with',
+                'personal bank',
+                'accounts.',
+                '== Personal',
+                '== Banking',
+                '== Customer',
+                '**bold across a**',
+                '**break** and',
+                'Supercalifragilisticexpialidocious',
+                '<size:12>small and long</size>',
+                '<size:12>text</size>',
+                '<size:9>a</size> <size>b</size>',
+            ],
+            PlantUmlText::styled([
+                'A customer of the bank, with personal bank accounts.',
+                '== Personal Banking Customer',
+                '**bold across a break** and',
+                'Supercalifragilisticexpialidocious',
+                '<size:12>small and long text</size>',
+                '<size:9>a</size> <size>b</size>',
+            ], $style)->lines,
+        );
+        $this->assertSame(['short'], PlantUmlText::styled(['short'], new Style(['MaximumWidth' => '0']))->lines);
+        $this->assertSame(
+            ['As PlantUML', 'wraps: the', 'same words', 'on each line'],
+            PlantUmlText::styled(['As PlantUML wraps: the same words on each line'], $style)->lines,
+            'as the jar wraps it at 100',
+        );
+    }
+
     public function testLinesSetLeftCentredOrRight(): void
     {
         $text = new PlantUmlText(['ab'], 12.0, FontFace::BoldItalic);

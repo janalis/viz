@@ -39,10 +39,9 @@ final class PlantUmlStdlib
             if (\strtolower($name) !== $file) {
                 continue;
             }
-            $text = \str_replace("\r\n", replace: "\n", subject: $text);
 
             // As a reader reads lines: none after the last new line.
-            return \explode("\n", \str_ends_with($text, needle: "\n") ? \substr($text, offset: 0, length: -1) : $text);
+            return PlantUmlSource::read(\str_ends_with($text, needle: "\n") ? \substr($text, offset: 0, length: -1) : $text);
         }
 
         return null;

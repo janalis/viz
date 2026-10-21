@@ -68,12 +68,25 @@ final readonly class PlantUmlSource
         return self::preprocessed($lines);
     }
 
+    /**
+     * A text's lines, as PlantUML's reader reads them: a byte-order mark taken from the start of
+     * each, and an en dash made a hyphen.
+     *
+     * @return list<string>
+     */
+    public static function read(string $text): array
+    {
+        $lines = \explode("\n", \str_replace(["\r\n", "\r"], replace: "\n", subject: $text));
+
+        return \array_map(static fn (string $line): string => \str_replace("\u{2013}", replace: '-', subject: \str_starts_with($line, "\u{FEFF}") ? \substr($line, offset: 3) : $line), $lines);
+    }
+
     /** @return list<string> the source's lines, each ending in a single backslash joined to the next */
     private static function joined(string $source): array
     {
         $lines = [];
         $pending = null;
-        foreach (\explode("\n", \str_replace(["\r\n", "\r"], replace: "\n", subject: $source)) as $line) {
+        foreach (self::read($source) as $line) {
             $line = null === $pending ? $line : $pending.$line;
             $pending = null;
             if (\str_ends_with($line, '\\') && !\str_ends_with($line, '\\\\')) {

@@ -14,6 +14,8 @@ final class DescriptionElement
     /** @var list<string> */
     public array $stereotypes = [];
     public ?string $color = null;
+    /** Whether its stereotypes are written, as `hide stereotype` leaves them. */
+    public bool $stereotypeShown = true;
 
     /** @param list<string> $display its text, a line each */
     public function __construct(

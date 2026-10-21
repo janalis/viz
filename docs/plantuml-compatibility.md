@@ -17,7 +17,7 @@ Where PlantUML's preprocessor stops on an error, the diagram is left to PlantUML
 
 | Read natively | Left to PlantUML |
 | --- | --- |
-| `skinparam name value`, `skinparam [prefix] { … }` with nested blocks and `<<stereotype>>`s; `<style>` sheets on one line or several, a `document` or `root` margin standing for the diagram's own; `skinparam dpi`, scaling as PlantUML does against 96; `!assume transparent`, which does nothing; `sprite` of 16, 8 or 4 gray levels, packed or compressed, or of those libraries (`#c4#…`), and `<$name>` in text; `skin rose`; `title`, `caption`, `header`, `footer`, `legend` on one line or several, with their alignments; `scale n` and `scale a/b` | Sprites of colours, of SVG or of the standard library; `mainframe`; `newpage`; `rotate`; `page`; `minwidth`; `skinparamlocked`; `scale` to a width or height; other skins |
+| `skinparam name value`, `skinparam [prefix] { … }` with nested blocks and `<<stereotype>>`s; `<style>` sheets on one line or several, a `document` or `root` margin standing for the diagram's own; `skinparam dpi`, scaling as PlantUML does against 96; `!assume transparent`, which does nothing; `skinparam wrapWidth`, text wrapped where PlantUML wraps it, measured in its font's advances; `sprite` of 16, 8 or 4 gray levels, packed or compressed, or of those libraries (`#c4#…`), and `<$name>` in text; `skin rose`; `title`, `caption`, `header`, `footer`, `legend` on one line or several, with their alignments; `scale n` and `scale a/b` | Sprites of colours, of SVG or of the standard library; `mainframe`; `newpage`; `rotate`; `page`; `minwidth`; `skinparamlocked`; `scale` to a width or height; other skins |
 
 ## Styles
 
@@ -67,8 +67,8 @@ Component, deployment and use case diagrams are laid out as svek lays them out, 
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| `actor`, `usecase` (and their business forms with `/`), `component`, `interface`, `node`, `database`, `cloud`, `folder`, `file`, `artifact`, `card`, `rectangle`, `agent`, `frame`, `package`, `queue`, `stack`, `storage`, `collections`, `hexagon`, `label`, `action`, `process`, `person`, `boundary`, `control`, `entity`, `circle`; the short forms `[component]`, `(use case)`, `:actor:`, `() interface`; text over several lines in `[ … ]` or `as " … "`; stereotypes and colours | Ports, archimate, maps and JSON, sprites as symbols; a lone name on its own line, which PlantUML answers with its welcome page |
-| Containers of any of those symbols, nested, and `together` | Links to a container |
+| `actor`, `usecase` (and their business forms with `/`), `component`, `interface`, `node`, `database`, `cloud`, `folder`, `file`, `artifact`, `card`, `rectangle`, `agent`, `frame`, `package`, `queue`, `stack`, `storage`, `collections`, `hexagon`, `label`, `action`, `process`, `person`, `boundary`, `control`, `entity`, `circle`; the short forms `[component]`, `(use case)`, `:actor:`, `() interface`; text over several lines in `[ … ]` or `as " … "`; stereotypes and colours, `hide`/`show` of stereotypes | Ports, archimate, maps and JSON, sprites as symbols; a lone name on its own line, which PlantUML answers with its welcome page |
+| Containers of any of those symbols, nested, and `together`, their stereotypes above their title | Links to a container |
 | Links with their marks, directions, styles, labels and `<<stereotypes>>`; notes beside elements, floating and linked like elements, and on links | Middle circles on links |
 
 ### Sequence diagrams
