@@ -1,0 +1,32 @@
+@startuml
+|A|
+start
+:one;
+if (right?) then (yes)
+  |B|
+  :two;
+endif
+|B|
+:three;
+if (left?) then (yes)
+  |A|
+  :four;
+endif
+|A|
+if (stop?) then (yes)
+  :five;
+else (no)
+  |B|
+  stop
+endif
+:six;
+|A|
+if (go?) then (yes)
+  |B|
+  :seven;
+else (no)
+  stop
+endif
+:eight;
+stop
+@enduml

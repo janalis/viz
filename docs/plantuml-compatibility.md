@@ -86,13 +86,13 @@ Activity diagrams in the new syntax are read natively — with PlantUML's own ru
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| Actions over one or several lines, with `<<input>>`, `<<output>>`, `<<procedure>>`, `<<load>>`, `<<save>>`, `<<continuous>>`, `<<task>>`, `<<object>>`, `<<objectsignal>>`, `<<acceptevent>>`, `<<timeevent>>` and `<<#colour>>`; `start`, `stop`, `end`, connectors `(A)`, `kill`, `detach` | A decision, loop, switch, fork or group holding steps of another swimlane; `goto` and `label`, URLs, emoji and sprite stereotypes, the legacy syntax (`(*)`, `-->`) |
+| Actions over one or several lines, with `<<input>>`, `<<output>>`, `<<procedure>>`, `<<load>>`, `<<save>>`, `<<continuous>>`, `<<task>>`, `<<object>>`, `<<objectsignal>>`, `<<acceptevent>>`, `<<timeevent>>` and `<<#colour>>`; `start`, `stop`, `end`, connectors `(A)`, `kill`, `detach` | A loop, switch, fork or group holding steps of another swimlane; `goto` and `label`, URLs, emoji and sprite stereotypes, the legacy syntax (`(*)`, `-->`) |
 | `if`, `elseif`, `else`, `endif` with tests, labels and colours, laid out side by side, down one side when a branch is empty or only stops, or across for else-ifs — down under `!pragma useVerticalIf on`; `skinparam conditionStyle`, `skinparam conditionEndStyle hline`; `switch`, `case`, `endswitch` with their labels, colours and notes | |
 | `while` with its labels, `backward`, `break`, and a stop or end drawn on its way out; `repeat` with a starting action, `backward`, `break`, and its test's labels | |
 | `fork`, `fork again`, `end fork` with its label, `end merge`; `split`, `split again`, `end split` | |
 | `partition`, `group`, `rectangle` and `card` with their titles and colours; notes beside steps, floating, over several lines, beside decisions, loops and forks | `package`; deprecated forms PlantUML warns of |
 | Arrows with labels, colours and `dashed`, `dotted`, `bold`, `hidden`; of several colours side by side (`-[#red;#blue]->`), `skinparam colorArrowSeparationSpace` apart | |
-| Swimlanes, `|Lane|`, `|#colour|Lane| title` and `swimlane Lane as title`, with `skinparam swimlaneWidth`; steps in their swimlanes, arrows between them bent across | |
+| Swimlanes, `|Lane|`, `|#colour|Lane| title` and `swimlane Lane as title`, with `skinparam swimlaneWidth`; steps in their swimlanes, decisions with branches in others, arrows between them bent across | |
 
 ## Parity
 

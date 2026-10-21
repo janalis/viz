@@ -25,6 +25,12 @@ final readonly class ConditionalBuilder
         /** The test's diamond's background. */
         private string $back,
         private array $notes,
+        /** How many swimlanes the decision stands in. */
+        private int $lanes = 1,
+        /** The decision's swimlane, and every swimlane's place from the left. */
+        private ?string $lane = null,
+        /** @var array<string, int> */
+        private array $order = [],
     ) {
         $this->tile1 = FtileMarged::minimum($branch1->tile, 30.0);
         $this->tile2 = FtileMarged::minimum($branch2->tile, 30.0);
@@ -51,7 +57,10 @@ final readonly class ConditionalBuilder
     /** The branch with steps under the test, the other the way round it or across to its stop. */
     private function down(BranchTile $then, BranchTile $other): Ftile
     {
-        $diamond1 = $this->test()->with(south: $this->positive($then), east: $this->positive($other));
+        $left = !$other->onlySingleStopOrSpot() && $this->leftOf($then->tile);
+        $diamond1 = $left
+            ? $this->test()->with(south: $this->positive($then), west: $this->positive($other))
+            : $this->test()->with(south: $this->positive($then), east: $this->positive($other));
         $diamond2 = $this->closing($other)?->with(north: $this->out($then)) ?? $this->noDiamond();
         $note = 1 === \count($this->notes) ? $this->factory->looseNote($this->notes[0]) : null;
         $tile = FtileMarged::horizontal(FtileMarged::minimum($then->tile, 30.0), 10.0, 10.0);
@@ -59,7 +68,23 @@ final readonly class ConditionalBuilder
             return new FtileIfDown($diamond1, $diamond2, $tile, $this->factory->arrow, $other->out() ?? $this->factory->arrow, $other->tile, $note);
         }
 
-        return new FtileIfDown($diamond1, $diamond2, $tile, $this->factory->arrow, $other->out() ?? $this->factory->arrow, note: $note, end: $this->factory->end);
+        return new FtileIfDown($diamond1, $diamond2, $tile, $this->factory->arrow, $other->out() ?? $this->factory->arrow, note: $note, end: $this->factory->end, left: $left);
+    }
+
+    /** As PlantUML, whether the decision's swimlane stands left of every other swimlane of a branch's steps. */
+    private function leftOf(Ftile $branch): bool
+    {
+        $lanes = FtileLane::all($branch);
+        if (null === $this->lane || [] === \array_diff($lanes, [$this->lane])) {
+            return false;
+        }
+        foreach ($lanes as $lane) {
+            if (($this->order[$lane] ?? 0) < ($this->order[$this->lane] ?? 0)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** Both branches side by side, arrows into each from the test's corners and out of each into the closing diamond. */
@@ -81,6 +106,7 @@ final readonly class ConditionalBuilder
             $left,
             $right,
             $this->factory->end,
+            $this->lanes,
         );
         $result = FtileMarged::horizontal($tile, $tile->marginForLabel1($label1), $tile->marginForLabel2($label2));
 

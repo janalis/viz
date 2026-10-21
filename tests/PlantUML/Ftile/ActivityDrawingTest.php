@@ -233,7 +233,7 @@ final class ActivityDrawingTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function acrossSwimlanes(): iterable
     {
-        yield 'a decision across swimlanes' => ["|A|\nif (a) then\n  |B|\n  :b;\nendif"];
+        yield 'a loop across swimlanes' => ["|A|\nwhile (a)\n  |B|\n  :b;\nendwhile"];
         yield 'a stop after a loop in another swimlane' => ["|A|\nwhile (a)\n  :b;\nendwhile\n|B|\nstop"];
     }
 
@@ -243,6 +243,13 @@ final class ActivityDrawingTest extends TestCase
         $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a step holding steps of another swimlane'));
 
         self::draw($lines);
+    }
+
+    public function testDecisionsClosedByALineAcrossSwimlanesAreLeftToPlantUml(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a decision closed by a line across swimlanes'));
+
+        self::draw("skinparam conditionEndStyle hline\n|A|\nif (a) then\n  :b;\nelse\n  |B|\n  :c;\nendif");
     }
 
     public function testWhatStandsOutsideAnySwimlaneIsLeftToPlantUml(): void

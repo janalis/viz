@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Ftile;
 
 use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\PlantUML\Activities\Lane;
 use Janalis\Viz\PlantUML\Activities\PlantUmlActivity;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Teoz\Rose\Pen;
@@ -35,7 +36,8 @@ final class ActivityDrawing
         $factory = new FtileFactory($activity->document);
         // As PlantUML, a single swimlane is no swimlane at all.
         $laned = \count($activity->lanes) > 1;
-        $root = new FtileBuilder($factory, $laned ? $activity->laneOf : null)->list($activity->root);
+        $order = \array_flip(\array_map(static fn (Lane $lane): string => $lane->name, $activity->lanes));
+        $root = new FtileBuilder($factory, $laned ? $activity->laneOf : null, $order)->list($activity->root);
         yield null;
         $shapes = Compression::down(Compression::across(
             $laned ? SwimlaneDrawing::shapes($root, $activity->lanes, $factory->styles, $factory->pen(), $activity->document->param('swimlanewidth')) : self::alone($root, $factory->pen()),

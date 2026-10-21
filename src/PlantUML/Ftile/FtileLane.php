@@ -32,10 +32,33 @@ final readonly class FtileLane implements Ftile
         $children = $tile->children();
 
         return match (true) {
-            $tile instanceof self => $tile->lane,
+            $tile instanceof self => self::exit($tile->tile) ?? $tile->lane,
             [] === $children => null,
             default => self::out($children[\count($children) - 1]),
         };
+    }
+
+    /** The swimlane a step's tile says the flow leaves it in, through the tiles wrapping it. */
+    private static function exit(Ftile $tile): ?string
+    {
+        $children = $tile->children();
+
+        return match (true) {
+            $tile instanceof LaneExit => $tile->exitLane(),
+            1 === \count($children) && !$tile instanceof self => self::exit($children[0]),
+            default => null,
+        };
+    }
+
+    /** @return list<string> the swimlanes of the steps a tile holds */
+    public static function all(Ftile $tile): array
+    {
+        $lanes = $tile instanceof self ? [$tile->lane] : [];
+        foreach ($tile->children() as $child) {
+            \array_push($lanes, ...self::all($child));
+        }
+
+        return \array_values(\array_unique($lanes));
     }
 
     #[\Override]

@@ -9,7 +9,7 @@ namespace Janalis\Viz\PlantUML\Ftile;
  * under it, then the diamond closing it, the other way round the branch on the right — or,
  * when that way only stops, an arrow across to its stop. A single note stands left of the test.
  */
-final class FtileIfDown extends AbstractFtile
+final class FtileIfDown extends AbstractFtile implements LaneExit
 {
     private const float HALF = FtileDiamond::HALF;
 
@@ -26,6 +26,8 @@ final class FtileIfDown extends AbstractFtile
         private readonly ?Ftile $stop = null,
         private readonly ?Opale $note = null,
         private readonly ConditionEnd $end = ConditionEnd::Diamond,
+        /** Whether the other way goes round the branch's left, as when the test's swimlane is left of the branch's. */
+        private readonly bool $left = false,
     ) {
         $this->diamond2 = null === $stop ? $diamond2 : new FtileEmpty();
     }
@@ -44,6 +46,21 @@ final class FtileIfDown extends AbstractFtile
         $result = new Geometry($width, $height, $left, $diamond1->inY + $noteHeight, $height);
 
         return !$then->hasOut() && null !== $this->stop ? $result->withoutOut() : $result;
+    }
+
+    /** As PlantUML, once the other way stops, the flow leaves in the branch's swimlane. */
+    #[\Override]
+    public function exitLane(): ?string
+    {
+        return null === $this->stop ? null : FtileLane::out($this->then);
+    }
+
+    /** As PlantUML, a stop in a swimlane neither the test's nor the branch's is drawn in none. */
+    private function drawsStop(?string $lane): bool
+    {
+        $stop = null === $this->stop ? null : FtileLane::in($this->stop);
+
+        return null === $stop || $stop === $lane || \in_array($stop, FtileLane::all($this->then), strict: true);
     }
 
     #[\Override]
@@ -71,28 +88,62 @@ final class FtileIfDown extends AbstractFtile
             $canvas->add(...$note->shapes($this->diamond1At()[0] - $note->size()[0], 0.0));
         }
         foreach ($this->children() as $tile) {
+            if ($tile === $this->stop && !$this->drawsStop($canvas->lane())) {
+                continue;
+            }
             [$dx, $dy] = $this->translateFor($tile);
-            $tile->draw($canvas->moved($dx, $dy));
+            $tile->draw($canvas->spanning()->moved($dx, $dy));
         }
         $then = $this->then->geometry();
-        [$x1, $y1] = $this->at($this->diamond1, $this->diamond1->geometry()->out());
-        [$x2, $y2] = $this->at($this->then, $then->in());
-        $canvas->snake(Snake::through($this->arrow->over($this->then->inLink()->color), Snake::arrow('D'), [[$x1, $y1], [$x2, $y2]]));
+        $p1 = $this->at($this->diamond1, $this->diamond1->geometry()->out());
+        $p2 = $this->at($this->then, $then->in());
+        self::down($canvas, Snake::through($this->arrow->over($this->then->inLink()->color), Snake::arrow('D'), [$p1, $p2]), null, FtileLane::in($this->then), $p2);
         $this->drawElse($canvas);
         if ($then->hasOut()) {
-            [$x1, $y1] = $this->at($this->then, $then->out());
-            [$x2, $y2] = $this->at($this->diamond2, ConditionEnd::Hline === $this->end ? self::middleRight($this->diamond2->geometry()) : $this->diamond2->geometry()->in());
-            $canvas->snake(Snake::through($this->arrow->over($this->then->outLink()->color), Snake::arrow('D'), [[$x1, $y1], [$x2, $y2]]));
+            $p1 = $this->at($this->then, $then->out());
+            $p2 = $this->at($this->diamond2, $this->diamond2->geometry()->in());
+            $end = ConditionEnd::Hline === $this->end ? $this->at($this->diamond2, self::middleRight($this->diamond2->geometry())) : $p2;
+            // As PlantUML, the room closing it when the other way stops stands in no swimlane: the arrow stays in the branch's.
+            $to = null === $this->stop ? null : FtileLane::out($this->then);
+            self::down($canvas, Snake::through($this->arrow->over($this->then->outLink()->color), Snake::arrow('D'), [$p1, $end]), FtileLane::out($this->then), $to, $p2);
         }
+    }
+
+    /**
+     * An arrow down between the test and the branch, across swimlanes down to halfway, across, then down to where it ends there.
+     *
+     * @param array{float, float} $end
+     */
+    private static function down(Canvas $canvas, Snake $snake, ?string $from, ?string $to, array $end): void
+    {
+        $canvas->link($snake, $from, $to, static function (float $t1, float $t2) use ($snake, $end): array {
+            [$x1, $y1] = $snake->worm->first();
+            [$x2, $y2] = [$end[0] + $t2, $end[1]];
+            $middle = ($y1 + $y2) / 2.0;
+
+            return [$snake->along([[$x1 + $t1, $y1], [$x1 + $t1, $middle], [$x2, $middle], [$x2, $y2]])];
+        });
     }
 
     /** The other way: across to the stop, or round the branch's right to the closing diamond or the way out. */
     private function drawElse(Canvas $canvas): void
     {
         [$x1, $y1] = $this->at($this->diamond1, self::middleRight($this->diamond1->geometry()));
-        if (null !== $this->stop) {
-            [$x2, $y2] = $this->at($this->stop, [0.0, $this->stop->geometry()->height / 2]);
-            $canvas->snake(Snake::through($this->elseColor, Snake::arrow('R'), [[$x1, $y1], [$x2, $y2]]));
+        $stop = $this->stop;
+        if (null !== $stop) {
+            [$x2, $y2] = $this->at($stop, [0.0, $stop->geometry()->height / 2]);
+            // As PlantUML, the arrow to a stop in another swimlane is not drawn.
+            $canvas->link(
+                Snake::through($this->elseColor, Snake::arrow('R'), [[$x1, $y1], [$x2, $y2]]),
+                null,
+                FtileLane::in($stop),
+                static fn (): array => [],
+            );
+
+            return;
+        }
+        if ($this->left && $this->then->geometry()->hasOut() && ConditionEnd::Diamond === $this->end) {
+            $this->drawElseLeft($canvas);
 
             return;
         }
@@ -111,6 +162,18 @@ final class FtileIfDown extends AbstractFtile
         }
         $canvas->add(Shape::empty($x2, $y2 - self::HALF, 5.0, self::HALF));
         $canvas->snake(Snake::through($this->elseColor, Snake::arrow('L'), [[$x1, $y1], [$xmax, $y1], [$xmax, $y2], [$x2, $y2]])->emphasizing('D'));
+    }
+
+    /** The other way round the branch's left, from the test's left corner to the closing diamond's. */
+    private function drawElseLeft(Canvas $canvas): void
+    {
+        $diamond1 = $this->diamond1->geometry();
+        $diamond2 = $this->diamond2->geometry();
+        [$x1, $y1] = $this->at($this->diamond1, [0.0, $diamond1->inY + (((float) $diamond1->outY - $diamond1->inY) / 2)]);
+        [$x2, $y2] = $this->at($this->diamond2, [0.0, $diamond2->inY + (((float) $diamond2->outY - $diamond2->inY) / 2)]);
+        $xmin = \min($x1 - self::HALF, $this->thenAt()[0]);
+        $canvas->add(Shape::empty($x2, $y2 - self::HALF, 5.0, self::HALF));
+        $canvas->snake(Snake::through($this->elseColor, Snake::arrow('R'), [[$x1, $y1], [$xmin, $y1], [$xmin, $y2], [$x2, $y2]])->emphasizing('D'));
     }
 
     /**

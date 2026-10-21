@@ -27,10 +27,14 @@ use Janalis\Viz\Source\Unsupported;
 /** An activity diagram's steps as tiles, each made as PlantUML's instructions make theirs. */
 final readonly class FtileBuilder
 {
-    /** @param ?\WeakMap<Instruction, string> $lanes the swimlane each step was written in, when it has several */
+    /**
+     * @param ?\WeakMap<Instruction, string> $lanes the swimlane each step was written in, when it has several
+     * @param array<string, int> $order each swimlane's place from the left
+     */
     public function __construct(
         private FtileFactory $factory,
         private ?\WeakMap $lanes = null,
+        private array $order = [],
     ) {}
 
     /** Steps one under the other, the arrow out of the last as written at the end of their block. */
@@ -121,7 +125,7 @@ final readonly class FtileBuilder
         $diamond = $this->factory->styles->diamond($if->stereogroup);
         $back = PlantUmlColor::parse((string) $if->thens[0]->color) ?? $diamond->color('BackGroundColor', '#f1f1f1');
         $result = 1 === \count($thens)
-            ? new ConditionalBuilder($this->factory, $thens[0], $elseTile, $back, $if->notes)->build()
+            ? new ConditionalBuilder($this->factory, $thens[0], $elseTile, $back, $if->notes, $this->laneCount($if, $thens[0]->tile, $elseTile->tile), $this->lanes[$if] ?? null, $this->order)->build()
             : $this->long($if, $thens, $elseTile, $back);
         $breaks = [];
         foreach ([...$thens, $elseTile] as $branch) {
@@ -176,6 +180,17 @@ final readonly class FtileBuilder
         $missing += \max(0.0, $outWidth - $right - $missing);
 
         return FtileMarged::horizontal(FtileMarged::vertical($tile, $inHeight, $outHeight), 0.0, $missing);
+    }
+
+    /** How many swimlanes a step stands in: its own, and those of the steps it holds. */
+    private function laneCount(Instruction $instruction, Ftile ...$tiles): int
+    {
+        $lanes = null === $this->lanes ? [] : [$this->lanes[$instruction] ?? ''];
+        foreach ($tiles as $tile) {
+            \array_push($lanes, ...FtileLane::all($tile));
+        }
+
+        return \count(\array_unique($lanes));
     }
 
     private function branch(Branch $branch): BranchTile
