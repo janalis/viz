@@ -294,8 +294,15 @@ final class TimContext
     private function theme(TimMemory $memory, string $line): void
     {
         $name = self::after($line, '!theme')->rest();
-        if (false !== \stripos($name, needle: ' from ')) {
-            throw new Unsupported('The native PlantUML renderer leaves !theme … from to PlantUML: '.$line);
+        $from = \stripos($name, needle: ' from ');
+        if (false !== $from) {
+            $library = $this->substituted($memory, \trim(\substr($name, $from + 6))) ?? '';
+            $name = $this->substituted($memory, \trim(\substr($name, offset: 0, length: $from))) ?? '';
+            $theme = TimThemes::fromLibrary($name, $library) ?? throw new TimError('Cannot load theme '.$name.' in '.$library, $line);
+            $this->execute($memory, $theme->lines, null);
+            $this->themeMetadata = $theme->metadata;
+
+            return;
         }
         $theme = TimThemes::read($this->substituted($memory, $name) ?? '');
         $this->execute($memory, $theme->lines, null);

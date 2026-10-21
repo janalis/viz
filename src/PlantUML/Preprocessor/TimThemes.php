@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Preprocessor;
 
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
+use Janalis\Viz\PlantUML\Language\PlantUmlStdlib;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -31,6 +32,26 @@ final readonly class TimThemes
         $text = \str_replace("\r\n", replace: "\n", subject: (string) \file_get_contents(self::DIRECTORY.'/themes/puml-theme-'.$name.'.puml'));
         // As a reader reads lines: none after the last new line.
         $lines = PlantUmlSource::read(\str_ends_with($text, needle: "\n") ? \substr($text, offset: 0, length: -1) : $text);
+        [$lines, $metadata] = self::withoutHeader($lines);
+
+        return new self($lines, $metadata);
+    }
+
+    /**
+     * `!theme name from <library/folder>`: a theme of the standard library; null for none. A
+     * theme from a folder or a URL is left to PlantUML.
+     *
+     * @throws Unsupported for a theme not from the standard library, or from a library not exported
+     */
+    public static function fromLibrary(string $name, string $from): ?self
+    {
+        if (!\str_starts_with($from, '<') || !\str_ends_with($from, '>')) {
+            throw new Unsupported('The native PlantUML renderer leaves themes from a folder or a URL to PlantUML: '.$from);
+        }
+        $lines = PlantUmlStdlib::lines(\substr($from, offset: 1, length: -1).'/puml-theme-'.$name);
+        if (null === $lines) {
+            return null;
+        }
         [$lines, $metadata] = self::withoutHeader($lines);
 
         return new self($lines, $metadata);

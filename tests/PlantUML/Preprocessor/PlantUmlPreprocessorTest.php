@@ -117,6 +117,7 @@ final class PlantUmlPreprocessorTest extends TestCase
         yield 'a library PlantUML lacks' => ['!include <nope/file>', "PlantUML's preprocessor stops: cannot include <nope/file> — !include <nope/file>"];
         yield 'a file a library lacks' => ['!include_once <C4/nope>', "PlantUML's preprocessor stops: cannot include <C4/nope> — !include_once <C4/nope>"];
         yield 'no library' => ['!include <C4>', "PlantUML's preprocessor stops: cannot include <C4> — !include <C4>"];
+        yield 'a theme a library lacks' => ['!theme nope from <C4/themes>', "PlantUML's preprocessor stops: Cannot load theme nope in <C4/themes> — !theme nope from <C4/themes>"];
         yield 'no colour' => ['!$a = %darken("nope", 1)', "PlantUML's preprocessor stops: No such color"];
     }
 
@@ -132,7 +133,8 @@ final class PlantUmlPreprocessorTest extends TestCase
     public static function leftToPlantUml(): iterable
     {
         yield 'a theme not under MIT' => ['!theme amiga', 'The native PlantUML renderer leaves the theme amiga to PlantUML'];
-        yield 'a theme from elsewhere' => ['!theme cerulean from themes', 'The native PlantUML renderer leaves !theme … from to PlantUML: !theme cerulean from themes'];
+        yield 'a theme from a folder' => ['!theme cerulean from themes', 'The native PlantUML renderer leaves themes from a folder or a URL to PlantUML: themes'];
+        yield 'a theme from a library not under MIT' => ['!theme x from <aws/themes>', 'The native PlantUML renderer leaves the standard library aws to PlantUML'];
         yield 'include' => ['!include foo.puml', 'The native PlantUML renderer leaves !include of a file or a URL to PlantUML: !include foo.puml'];
         yield 'a file named with a u' => ['!include utils.puml', 'The native PlantUML renderer leaves !include of a file or a URL to PlantUML: !include utils.puml'];
         yield 'include of a URL' => ['!includeurl https://example.com/a.puml', 'The native PlantUML renderer leaves !include of a file or a URL to PlantUML: !includeurl https://example.com/a.puml'];
