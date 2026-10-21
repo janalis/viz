@@ -1,0 +1,35 @@
+@startuml
+!$x = "X"
+!$xy = "XY"
+a##$x##b $xy## c ##$x abc$x _$x 9$x \n$x
+!log message $x
+!dump_memory
+!option nothing_known 1
+!option also unknown(
+!assert 1 == 1 : "fine"
+!assert %true()
+!$c ?= 1
+!$c ?= 2
+c $c
+!if 1
+    !$deep = "d"
+!endif
+deep $deep
+   indented $x
+!$n = 3
+!while $n > 0
+!if $n == 2
+two
+!else
+n $n
+!endif
+!$n = $n - 1
+!endwhile
+!$z = 0
+!while $z > 0
+!while 1
+never
+!endwhile
+!endwhile
+done
+@enduml

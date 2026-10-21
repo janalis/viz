@@ -1,0 +1,14 @@
+@startuml
+' full line
+  ' indented comment
+/' long
+   still
+'/
+/' one line '/
+A /' trailing '/
+/' leading '/ B
+C /'''x'''/ D
+E /'''a-b'''/ F /'''c'''/ G
+!$a = 1 /' not a comment '/
+v $a
+@enduml

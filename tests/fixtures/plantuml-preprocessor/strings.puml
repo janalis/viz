@@ -1,0 +1,10 @@
+@startuml
+A : %splitstr("abc", "") %splitstr("", ",") %substr("abc", 5) %substr("abcdef", 1, 99) %chr(-1) %ord("") %hex2dec("zz") %hex2dec("-ff") %dec2hex(-1)
+B : %size(%string(12)) %boolval("FALSE") %boolval("0") %eval("abc") %mod(-7, 3) %strpos("abc", "") %upper("é") %strlen("héllo")
+!$s = "ab"
+C : %string($s * 3) %string($s / 2) %string($s - "c") %string("b" > "a") %string("b" >= "b") %string("a" <= "b") %string("a" != "b") %string("x" && "") %string("" || "y")
+D : %string(3 >= 3) %string(2 <= 1) %string(5 != 5) %string(1 || 0) %string(0 && 1) %string(7 / -2) %string(-7 * 3)
+E : %nand(1, 1) %nor(0, 0) %nxor(1, 0) %xor(0, 0, 1) %and(1, 1, 1) %or(0, 0)
+F : %feature("other") %intval("-12") %intval("+7") %intval("007")
+G : %xargs(1) %splitstr_regex("", ",") %splitstr_regex("a,,", ",") %str2json("{bad") %string(((((((((((((((1)))))))))))))))
+@enduml

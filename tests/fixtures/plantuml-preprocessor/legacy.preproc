@@ -1,0 +1,8 @@
+@startuml
+rectangle Foo #FF0000
+one and two
+class Bar
+class x2
+RED stays
+text 
+@enduml

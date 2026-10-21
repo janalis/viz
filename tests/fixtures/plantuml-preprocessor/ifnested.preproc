@@ -1,0 +1,8 @@
+@startuml
+  yes inner
+  got y
+  i=2 j=0
+  i=2 j=1
+  i=1 j=0
+  i=1 j=1
+@enduml

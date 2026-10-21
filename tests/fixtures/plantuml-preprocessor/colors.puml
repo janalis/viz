@@ -1,0 +1,6 @@
+@startuml
+A : %lighten("F00", 10) %darken("a", 30) %darken("#11223344", 10) %lighten("AliceBlue", 50) %darken("DARKORANGE", 40)
+B : %is_dark("Navy") %is_light("#808080") %reverse_color("FFF") %hsl_color(240, 100, 25) %hsl_color(10, 20, 30, 0) %hsl_color(400, 150, -5, 100)
+C : %darken("#000000", 50) %lighten("#FFFFFF", 50) %lighten("#7F7F7F", 100) %darken("#123", 0) %hsl_color(359, 99, 99) %hsl_color(180, 0, 50)
+D : %lighten("#8B4513", 15) %darken("#FFD700", 33) %lighten("#00CED1", 7) %darken("#4B0082", 66) %is_dark("#7F7F7F") %is_dark("#808080")
+@enduml

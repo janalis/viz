@@ -30,4 +30,5 @@ jobs:
       - run: curl -sSfL -o plantuml.jar "$(jq -r .url tools/plantuml.lock)"
       # Refuses a jar other than the one the lock pins, then fails on drift.
       - run: php tools/record-plantuml-parity.php plantuml.jar --check
-      - run: vendor/bin/phpunit tests/PlantUML/PlantUmlParityTest.php
+      - run: php tools/record-plantuml-preprocessor.php plantuml.jar --check
+      - run: vendor/bin/phpunit tests/PlantUML/PlantUmlParityTest.php tests/PlantUML/Preprocessor/PlantUmlPreprocessorTest.php

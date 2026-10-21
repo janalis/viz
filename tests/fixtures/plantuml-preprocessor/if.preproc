@@ -1,0 +1,8 @@
+@startuml
+two
+else branch
+defined
+undefined y
+or works
+foo defined
+@enduml

@@ -1,0 +1,6 @@
+@startuml
+part line
+part line
+after
+y is 9
+@enduml

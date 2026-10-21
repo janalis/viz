@@ -1,0 +1,40 @@
+@startuml
+!$g = "global"
+!procedure $p($a)
+!$a = "changed"
+!$g = "set in p"
+!$fresh = "local only"
+!local $loc = 1
+!global $made = "made global"
+in p $a $g $fresh $loc
+!undef $fresh
+after undef $fresh
+!endprocedure
+$p("arg")
+out $g $made $fresh
+!function $f($x)
+!local $x = $x + 1
+!$y = %get_variable_value("$x")
+!return $y
+!endfunction
+f gives $f(1)
+!$v = 5
+!undef $v
+gone $v
+!local = 3
+!global = 4
+local $local global $global
+!procedure $q()
+!undef $g
+!endprocedure
+$q()
+g now $g
+!procedure $r($arg)
+!undef $arg
+r $arg
+!endprocedure
+$r("v")
+!undef $nothing
+!endfunction
+end
+@enduml

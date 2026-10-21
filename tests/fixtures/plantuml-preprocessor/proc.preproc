@@ -1,0 +1,12 @@
+@startuml
+Hello Bob
+second line Bob
+Hi Alice
+second line Alice
+before Hello Carl
+second line Carl after
+Yo Dan
+second line Dan
+A -> B : 8 6
+U one two | three
+@enduml

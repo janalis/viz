@@ -1,0 +1,19 @@
+@startuml
+!procedure $hello($name, $greeting = "Hello")
+$greeting $name
+second line $name
+!endprocedure
+$hello("Bob")
+$hello("Alice", "Hi")
+before $hello(Carl) after
+$hello($greeting = "Yo", $name = "Dan")
+!function $double($v)
+!return $v * 2
+!endfunction
+!function $triple($v) return $v * 3
+A -> B : $double(4) $triple(2)
+!unquoted procedure $u($a, $b)
+U $a | $b
+!endprocedure
+$u(one two, three)
+@enduml

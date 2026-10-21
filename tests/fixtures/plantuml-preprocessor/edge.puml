@@ -1,0 +1,36 @@
+@startuml
+!$a = "x"
+!$ab = "y"
+$a $ab $abc
+!function $f($x)
+!if $x > 2
+!return "big"
+!else
+!return "small"
+!endif
+!endfunction
+$f(1) $f(5) $f($f(1))
+!procedure $nested()
+!$local = 1
+inner $local
+!endprocedure
+$nested()
+!$cnt = 0
+!procedure $count()
+!$cnt = $cnt + 1
+!endprocedure
+$count()
+$count()
+count $cnt
+!function $join($a, $b="-")
+!return $a + $b + $a
+!endfunction
+$join("x") $join("x", "+")
+A -> B : %newline() %n() and end
+C -> D : %call_user_func("$join", "q") %retrieve_procedure("$nested")
+!$s = "with ""quotes"""
+!$t = 'single'
+quoted $t
+\n$a after
+multi\n$a
+@enduml

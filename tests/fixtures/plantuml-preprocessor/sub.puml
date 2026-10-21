@@ -1,0 +1,12 @@
+@startuml
+!startsub PART
+part line
+!endsub
+!includesub PART
+after
+!$x = %set_variable_value("$y", 9)
+y is $y
+!global $g = 1
+!assert $g == 1 : "ok"
+!log logged
+@enduml

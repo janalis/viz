@@ -1,0 +1,16 @@
+@startuml
+!$i = 0
+!while $i < 3
+line $i
+!$i = $i + 1
+!endwhile
+!foreach $item in ["a", "b", "c"]
+item $item
+!endfor
+!$data = {"name": "x", "list": [1, 2, {"k": "v"}], "n": 3}
+name $data.name n $data.n
+deep $data.list[2].k all $data.list
+!foreach $k in $data
+key $k
+!endfor
+@enduml

@@ -1,0 +1,17 @@
+@startuml
+U[plain words][named]
+U[only][dflt]
+U[quoted, comma][dflt]
+<a, b|c> <(p, q)|r>
+named 1/9 7/5
+calls 4/6 z/1
+U[inv][dflt]
+pre U[mid][dflt] post
+pre2 dl line arg post2 tail
+lead next line
+fin
+uf <some text>
+bang 2
+tw 6 many
+nested 8
+@enduml

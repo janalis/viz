@@ -1,0 +1,18 @@
+@startuml
+!define RED #FF0000
+!define BOX(name) rectangle name RED
+!define TWO(a, b) a and b
+!definelong LONG(x)
+class x
+class x2
+!enddefinelong
+BOX(Foo)
+TWO(one, "two")
+LONG(Bar)
+!undef RED
+RED stays
+' a comment
+/' long
+comment '/
+text /' inner '/
+@enduml

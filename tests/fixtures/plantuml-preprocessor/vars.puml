@@ -1,0 +1,21 @@
+@startuml
+!$a = 3
+!$b = "text"
+!$c ?= 5
+!$c ?= 7
+!local = 1
+foo $a $b $c
+!$d = $a + 2 * 3
+!$e = ($a + 2) * 3
+!$f = $b + $a
+!$g = 10 - 3 - 2
+!$h = 7 / 2
+!$i = -4 + 1
+!$j = "x" * 2
+A -> B : $d $e $f $g $h $i $j
+!$k = $a < 4 && $b == "text"
+!$l = $a > 4 || 0
+!$m = "abc" < "abd"
+B -> A : $k $l $m
+x$a $a##y z##$a
+@enduml

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Style;
 
-use Janalis\Viz\Color\CssColorNames;
-
 /**
  * PlantUML colours as hex: `#` optional, one hex digit for a grey, three or six digits, eight
  * with an alpha that is dropped, or a colour name; `transparent` and `background` are none.
@@ -32,7 +30,7 @@ final class PlantUmlColor
     {
         $value = \ltrim($value, characters: '#');
         if (1 !== \preg_match('/^[0-9a-f]+$/i', $value)) {
-            return CssColorNames::NAMES[\strtolower($value)] ?? null;
+            return PlantUmlColorNames::NAMES[\strtolower($value)] ?? null;
         }
 
         return match (\strlen($value)) {
@@ -40,7 +38,7 @@ final class PlantUmlColor
             3 => '#'.\strtolower($value[0].$value[0].$value[1].$value[1].$value[2].$value[2]),
             6 => '#'.\strtolower($value),
             8 => '#'.\strtolower(\substr($value, offset: 0, length: 6)),
-            default => CssColorNames::NAMES[\strtolower($value)] ?? null,
+            default => PlantUmlColorNames::NAMES[\strtolower($value)] ?? null,
         };
     }
 }

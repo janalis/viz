@@ -1,0 +1,13 @@
+@startuml
+A : %strlen("hello") %upper("abc") %lower("ABC") %substr("abcdef", 2) %substr("abcdef", 1, 2)
+B : %strpos("hello", "l") %strpos("hello", "z") %intval("42") %string(5) %dec2hex(255) %hex2dec("ff") %chr(65) %ord("A")
+C : %not(0) %and(1, 1, 0) %or(0, 1) %xor(1, 1) %boolval("true") %mod(7, 3) %eval("2 + 3")
+!$arr = [1, 2]
+!$obj = {"a":1,"b":2}
+D : %size("abc") %size($arr) %splitstr("a,b;c", ",;") %splitstr_regex("a1b22c", "[0-9]+")
+E : %darken("#FF0000", 20) %lighten("#336699", 30) %is_dark("#000") %is_light("white") %reverse_color("#123456")
+F : %hsl_color(120, 50, 50) %hsl_color(0, 100, 50, 50) %darken("red", 10) %lighten("Application", 5)
+G : %variable_exists("$nope") %function_exists("%strlen") %get_json_type("x") %get_json_type(3) %version()
+H : %str2json('{"a":1}') %json_add($arr, 3) %json_set($obj, "a", 5) %json_remove($obj, "a") %json_merge($arr, $arr)
+I : %get_json_keys($obj) %json_key_exists($obj, "a") %json_set($obj, %str2json('{"c":{"d":1}}')) %feature("theme") %percent() %dollar()
+@enduml

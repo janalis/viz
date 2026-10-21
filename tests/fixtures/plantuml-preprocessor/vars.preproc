@@ -1,0 +1,6 @@
+@startuml
+foo 3 text 5
+A -> B : 9 15 text3 5 3 -3 x*2
+B -> A : 1 0 1
+x3 3y z3
+@enduml

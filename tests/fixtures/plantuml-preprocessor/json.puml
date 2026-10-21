@@ -1,0 +1,36 @@
+@startuml
+!$d = {"name": "x", "list": [1, -2.5e3, {"k": "v\n\"q\" A"}], "t": true, "f": false, "z": null, "o": {"in": 0.5}}
+!$multi = {
+  "a": 1,
+  "b": [2,
+    3]
+}
+!$arr = [{"a": 1}, {"b": 2}, 3]
+!$empty = []
+A : $d.name $d.list[1] $d.o.in $d.o $multi.b $multi
+B : %get_json_keys($d) %get_json_keys($arr) %get_json_type($d) %get_json_type($arr) %get_json_type($d.t) %get_json_type($d.z)
+C : %json_key_exists($d, "name") %json_key_exists($d, "nope") %json_key_exists($arr, "a") %json_key_exists($d, 3)
+D : %json_add($d.o, "k", 2) %json_merge($d.o, $multi) %json_merge($arr, $d.o)
+E : %json_remove($arr, 0) %json_remove($arr, 9) %json_remove($arr, "x") %json_remove($d.o, "in")
+F : %json_set($arr, 1, "s") %json_set($arr, 7, "s") %json_set($arr, "x", "s") %json_set($d.o, $d.o) %json_set($d.o, "in", $arr)
+G : %size($d) %size(3) %size($d.t)
+!foreach $x in $empty
+!foreach $y in $arr
+never $y
+!endfor
+!endfor
+!foreach $x in $d.o
+key $x
+!endfor
+!foreach $i in [1, 2]
+item $i
+!endfor
+!$idx = 1
+H : $d.list[$idx] $arr[0].a $d.missing end $d.o[in]
+!$num = %str2json("1")
+I : %json_remove($num, 0) %json_set($num, 1, 2) %json_add($num, 1)
+!$esc = {"k": "a\\b\r\tc"}
+J : $esc $d.list[%strlen("[]")].k
+!$nm = $d.name
+K : $nm
+@enduml

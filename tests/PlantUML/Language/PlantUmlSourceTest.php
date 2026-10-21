@@ -48,9 +48,9 @@ final class PlantUmlSourceTest extends TestCase
         yield 'unclosed' => ["@startuml\na -> b", 'The PlantUML source has no @startuml … @enduml block'];
         yield 'two blocks' => ["@startuml\n@enduml\n@startuml\n@enduml", 'The PlantUML source has several diagrams'];
         yield 'other kind' => ["@startmindmap\n* a\n@endmindmap", 'The native PlantUML renderer does not draw @startmindmap diagrams'];
-        yield 'include' => ["@startuml\n!include foo.puml\n@enduml", 'The native PlantUML renderer leaves the preprocessor to PlantUML: !include'];
-        yield 'function' => ["@startuml\n%date()\n@enduml", 'The native PlantUML renderer leaves the preprocessor to PlantUML: %date()'];
-        yield 'variable' => ["@startuml\n\$x = 1\n@enduml", 'The native PlantUML renderer leaves the preprocessor to PlantUML: $x'];
+        yield 'include' => ["@startuml\n!include foo.puml\n@enduml", 'The native PlantUML renderer leaves !include to PlantUML'];
+        yield 'function' => ["@startuml\n%date()\n@enduml", 'The native PlantUML renderer leaves %date() to PlantUML'];
+        yield 'a directive the diagram reads' => ["@startuml\n!assume transparent\n@enduml", 'The native PlantUML renderer leaves !assume to PlantUML'];
     }
 
     #[DataProvider('refused')]

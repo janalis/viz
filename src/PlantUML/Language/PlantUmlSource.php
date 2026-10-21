@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Language;
 
+use Janalis\Viz\PlantUML\Preprocessor\PlantUmlPreprocessor;
 use Janalis\Viz\Source\Unsupported;
 
 /**
  * A PlantUML source as PlantUML reads it before any diagram does: a line ending in one
  * backslash joined to the next, the one `@startuml` … `@enduml` block (`\` may stand for
- * `@`), its comments dropped — lines starting with `'`, and `/'` … `'/` within a line or over
- * several — and the preprocessor's directives taken: `!pragma`s are kept, and any other
- * directive, which only PlantUML's own preprocessor expands, is left to it.
+ * `@`) run through PlantUML's preprocessor — comments dropped, variables, functions and
+ * procedures carried out — and its `!pragma`s kept. A directive the preprocessor leaves to
+ * the diagram, other than `!pragma`, is left to PlantUML.
  */
 final readonly class PlantUmlSource
 {
@@ -24,7 +25,7 @@ final readonly class PlantUmlSource
         public array $pragmas = [],
     ) {}
 
-    /** @throws Unsupported when there is no block, several, one of another kind than uml, or a preprocessor directive */
+    /** @throws Unsupported when there is no block, several, one of another kind than uml, or what PlantUML's preprocessor is left */
     public static function parse(string $source): self
     {
         $kinds = [];
@@ -36,13 +37,14 @@ final readonly class PlantUmlSource
             $trimmed = \ltrim($line);
             $match = [];
             if (1 === \preg_match('/^[@\\\\]start(\w*)/i', $trimmed, $match)) {
-                [$open, $kind, $body] = [true, \strtolower($match[1]), []];
+                [$open, $kind, $body] = [true, \strtolower($match[1]), [$line]];
                 continue;
             }
             if (!$open) {
                 continue;
             }
             if (1 === \preg_match('/^[@\\\\]end/i', $trimmed)) {
+                $body[] = $line;
                 $kinds[] = $kind;
                 $bodies[] = $body;
                 $open = false;
@@ -57,7 +59,13 @@ final readonly class PlantUmlSource
             throw new Unsupported('The native PlantUML renderer does not draw @start'.$kinds[0].' diagrams');
         }
 
-        return self::preprocessed(self::uncommented($bodies[0]));
+        $lines = PlantUmlPreprocessor::lines($bodies[0]);
+        \array_shift($lines);
+        if (1 === \preg_match('/^\s*[@\\\\]end/i', $lines[\count($lines) - 1] ?? '')) {
+            \array_pop($lines);
+        }
+
+        return self::preprocessed($lines);
     }
 
     /** @return list<string> the source's lines, each ending in a single backslash joined to the next */
@@ -81,48 +89,6 @@ final readonly class PlantUmlSource
         return $lines;
     }
 
-    /**
-     * @param list<string> $lines
-     * @return list<string>
-     */
-    private static function uncommented(array $lines): array
-    {
-        $kept = [];
-        $long = false;
-        foreach ($lines as $line) {
-            $trimmed = \trim(\str_replace("\t", replace: ' ', subject: $line));
-            if ($long) {
-                $long = !\str_ends_with($trimmed, "'/");
-                continue;
-            }
-            if (\str_starts_with($trimmed, "'") || (\str_starts_with($trimmed, "/'") && \str_ends_with($trimmed, "'/"))) {
-                continue;
-            }
-            if (\str_starts_with($trimmed, "/'") && !\str_contains($trimmed, "'/")) {
-                $long = true;
-                continue;
-            }
-            $kept[] = self::inner($line, $trimmed);
-        }
-
-        return $kept;
-    }
-
-    /** A line without the comment that opens or closes it. */
-    private static function inner(string $line, string $trimmed): string
-    {
-        $open = \strpos($line, needle: "/'");
-        $close = \strpos($line, needle: "'/");
-        if (\str_starts_with($trimmed, "/'") && false !== $close) {
-            return \substr($line, $close + 2);
-        }
-        if (\str_ends_with($trimmed, "'/") && false !== $open) {
-            return \substr($line, offset: 0, length: (int) \strrpos($line, needle: "/'"));
-        }
-
-        return $line;
-    }
-
     /** @param list<string> $lines */
     private static function preprocessed(array $lines): self
     {
@@ -135,8 +101,8 @@ final readonly class PlantUmlSource
                 $pragmas[\strtolower($match[1])] = \trim($match[2] ?? '');
                 continue;
             }
-            if (\str_starts_with($trimmed, '!') || 1 === \preg_match('/^%\w+\(|\$\w+\s*=/', $trimmed)) {
-                throw new Unsupported('The native PlantUML renderer leaves the preprocessor to PlantUML: '.\explode(separator: ' ', string: $trimmed, limit: 2)[0]);
+            if (\str_starts_with($trimmed, '!')) {
+                throw new Unsupported('The native PlantUML renderer leaves '.\explode(separator: ' ', string: $trimmed, limit: 2)[0].' to PlantUML');
             }
             $kept[] = $line;
         }

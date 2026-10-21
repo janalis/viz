@@ -1,0 +1,29 @@
+@startuml
+!$a = 1
+!if $a == 1
+  !if $a == 2
+  never
+  !elseif $a == 1
+  yes inner
+  !endif
+!else
+  !if 1
+  never2
+  !endif
+!endif
+!$list = ["x", "y"]
+!foreach $e in $list
+  !if $e == "y"
+  got y
+  !endif
+!endfor
+!$i = 2
+!while $i > 0
+  !$j = 0
+  !while $j < 2
+  i=$i j=$j
+  !$j = $j + 1
+  !endwhile
+  !$i = $i - 1
+!endwhile
+@enduml

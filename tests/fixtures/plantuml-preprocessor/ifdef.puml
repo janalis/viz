@@ -1,0 +1,30 @@
+@startuml
+!$a = 1
+!function $fn() return 1
+!ifdef $a && $fn
+one
+!endif
+!ifdef !$nope
+two
+!endif
+!ifdef ($nope || $a) & !($nope)
+three
+!endif
+!ifdef $nope | $nope2
+never
+!else
+four
+!endif
+!ifndef $fn
+never
+!endif
+!if 0
+!ifdef $a
+never
+!endif
+!elseif 1
+five
+!elseif 1
+never
+!endif
+@enduml

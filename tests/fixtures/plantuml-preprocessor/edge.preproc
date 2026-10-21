@@ -1,0 +1,12 @@
+@startuml
+x y $abc
+small big big
+inner 1
+count 2
+x-x x+x
+A -> B :   and end
+C -> D : q-q inner 1
+quoted single
+\nx after
+multi\nx
+@enduml

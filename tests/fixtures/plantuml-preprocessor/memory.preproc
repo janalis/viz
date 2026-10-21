@@ -1,0 +1,11 @@
+@startuml
+in p changed set in p local only 1
+after undef $fresh
+out set in p made global $fresh
+f gives 2
+gone $v
+3 $3 4 $4
+g now $g
+r $arg
+end
+@enduml

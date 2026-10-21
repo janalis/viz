@@ -1,0 +1,13 @@
+@startuml
+line 0
+line 1
+line 2
+item a
+item b
+item c
+name x n 3
+deep v all [1,2,{"k":"v"}]
+key name
+key list
+key n
+@enduml

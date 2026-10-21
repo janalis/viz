@@ -1,0 +1,47 @@
+@startuml
+!unquoted procedure $u($a, $b="dflt")
+U[$a][$b]
+!endprocedure
+$u(plain words, $b = "named")
+$u(only)
+$u("quoted, comma")
+!define LEG(x, y) <x|y>
+LEG("a, b", c) LEG((p, q), r)
+!function $f($a, $b = 2 + 3)
+!return $a + "/" + $b
+!endfunction
+!$r = "unused"
+named $f($b = 9, $a = 1) $f(7)
+!$h = %call_user_func("$f", 4, 6)
+!$k = %call_user_func("$f", $b = 1, "z")
+calls $h $k
+%invoke_procedure("$u", "inv")
+pre $u(mid) post
+!definelong DL(x)
+dl line x
+!enddefinelong
+pre2 DL(arg) post2
+!procedure $quiet()
+!endprocedure
+lead $quiet() tail
+next line
+!final procedure $fin()
+fin
+!endprocedure
+$fin()
+!unquoted function $uf($w)
+!return "<" + $w + ">"
+!endfunction
+uf $uf(some text)
+!function $bang($x) !return $x + 1
+bang $bang(1)
+!function $twice($x)
+!if $x > 10
+!return "many"
+!endif
+!return $x * 2
+!endfunction
+tw $twice(3) $twice(30)
+!$nested = %call_user_func("$twice", %call_user_func("$twice", 2))
+nested $nested
+@enduml
