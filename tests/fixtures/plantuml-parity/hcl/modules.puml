@@ -1,0 +1,11 @@
+@starthcl
+# two blocks, each under its name
+variable "region" {
+  default = "eu-west-1"
+  type = "string"
+}
+provider "aws" {
+  region = var("region")
+  zones = ["a", "b", "c"]
+}
+@endhcl

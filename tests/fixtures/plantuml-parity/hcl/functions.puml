@@ -1,0 +1,10 @@
+@starthcl
+title Functions
+locals {
+  joined = join(",", ["x", "y"])
+  now = timestamp()
+  nested = {
+    inner = "value"
+  }
+}
+@endhcl

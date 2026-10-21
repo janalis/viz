@@ -1,0 +1,84 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 551,
+    "height": 161,
+    "words": [
+        "\"aws\"",
+        "\"region\"",
+        "a",
+        "b",
+        "c",
+        "default",
+        "eu-west-1",
+        "provider",
+        "region",
+        "region",
+        "string",
+        "type",
+        "var()",
+        "variable",
+        "zones"
+    ],
+    "baselines": [
+        [
+            "\"aws\"",
+            75.023
+        ],
+        [
+            "\"region\"",
+            54.535
+        ],
+        [
+            "a",
+            103.303
+        ],
+        [
+            "b",
+            123.791
+        ],
+        [
+            "c",
+            144.279
+        ],
+        [
+            "default",
+            25.535
+        ],
+        [
+            "eu-west-1",
+            25.535
+        ],
+        [
+            "provider",
+            75.023
+        ],
+        [
+            "region",
+            64.791
+        ],
+        [
+            "region",
+            84.535
+        ],
+        [
+            "string",
+            46.023
+        ],
+        [
+            "type",
+            46.023
+        ],
+        [
+            "var()",
+            64.791
+        ],
+        [
+            "variable",
+            54.535
+        ],
+        [
+            "zones",
+            105.023
+        ]
+    ]
+}

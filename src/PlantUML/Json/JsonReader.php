@@ -12,8 +12,8 @@ use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Source\Unsupported;
 
 /**
- * A `@startjson` or `@startyaml` block read as PlantUML's `JsonDiagramFactory` and
- * `YamlDiagramFactory` read one, its lines split as its `StyleExtractor` splits them:
+ * A `@startjson`, `@startyaml` or `@starthcl` block read as PlantUML's `JsonDiagramFactory`,
+ * `YamlDiagramFactory` and `HclDiagramFactory` read one, its lines split as its `StyleExtractor` splits them:
  * `<style>` sheets anywhere; before the data, `title`, `scale`, `skin` and `skinparam` —
  * all but `handwritten` ignored — and `hide`, `!assume` and `!pragma`, ignored too; then
  * `#highlight` lines, and the data, `#` lines left out of JSON.
@@ -21,7 +21,7 @@ use Janalis\Viz\Source\Unsupported;
 final class JsonReader
 {
     /** The kinds of block read so, and the style of their diagram. */
-    public const array KINDS = ['json' => 'jsonDiagram', 'yaml' => 'yamlDiagram'];
+    public const array KINDS = ['json' => 'jsonDiagram', 'yaml' => 'yamlDiagram', 'hcl' => 'yamlDiagram'];
 
     /** @throws Unsupported when PlantUML fails on the data, or on what the native renderer leaves to it */
     public static function read(PlantUmlSource $source): PlantUmlJson
@@ -48,7 +48,8 @@ final class JsonReader
             $before = [] === $data;
             $match = [];
             match (true) {
-                $before && 1 === \preg_match('/^(?:!assume|!pragma|hide) /', $trimmed) => null,
+                // As PlantUML, which takes an HCL title out but never sets it.
+                $before && (1 === \preg_match('/^(?:!assume|!pragma|hide) /', $trimmed) || ('hcl' === $source->kind && \str_starts_with($trimmed, 'title '))) => null,
                 $before && \str_starts_with($trimmed, 'title ') => $captions['title'] = new PlantUmlCaption(\explode('\n', \trim(\substr($trimmed, offset: 6)))),
                 $before && 1 === \preg_match('/^scale\s+([0-9.]+)(?:\s*\/\s*([0-9.]+))?$/', $trimmed, $match) => $scale = self::scale($match),
                 $before && \str_starts_with($trimmed, 'scale ') => throw new Unsupported('The native PlantUML renderer leaves scaling to a size to PlantUML'),
@@ -60,7 +61,8 @@ final class JsonReader
         $highlights = [];
         $kept = [];
         foreach ($data as $line) {
-            $highlight = JsonHighlight::of($line);
+            // HCL has no highlights: its `#` lines are comments, left out by its parser.
+            $highlight = 'hcl' === $source->kind ? null : JsonHighlight::of($line);
             if (null !== $highlight) {
                 $highlights[] = $highlight;
                 continue;
@@ -73,7 +75,11 @@ final class JsonReader
         }
         $document = new PlantUmlDocument($kept, $styles, [], $captions, $scale, $source->pragmas, $source->kind);
         try {
-            $root = 'json' === $source->kind ? JsonParser::parse(\implode("\n", $kept)) : YamlParser::parse($kept);
+            $root = match ($source->kind) {
+                'json' => JsonParser::parse(\implode("\n", $kept)),
+                'hcl' => HclParser::parse($kept),
+                default => YamlParser::parse($kept),
+            };
         } catch (PlantUmlRefusal $refused) {
             throw new Unsupported('PlantUML does not read this '.\strtoupper($source->kind).' data: '.$refused->getMessage(), previous: $refused);
         }
