@@ -1,0 +1,11 @@
+@startgantt
+printscale weekly
+Project starts 2020-01-06
+saturday are closed
+sunday are closed
+[Spec] requires 2 weeks
+[Implement] requires 4 weeks
+[Implement] starts at [Spec]'s end
+[Validate] requires 10 days
+[Validate] starts at [Implement]'s end
+@endgantt

@@ -1,0 +1,12 @@
+@startgantt
+Project starts 2021-02-01
+2021-02-08 to 2021-02-10 are named [Sprint 2]
+2021-02-15 is colored in salmon
+friday are colored in lightgray
+today is 2021-02-04 and is colored in #AAF
+[Plan] requires 5 days
+[Do] requires 7 days
+[Do] starts at [Plan]'s end
+[Do] pauses on 2021-02-09
+separator just at [Do]'s end
+@endgantt

@@ -50,6 +50,8 @@ public class PlantUmlCommands {
     }
 
     private static String describe(Object command) throws Exception {
+        if (command.getClass().getSimpleName().equals("NaturalGanttCommand"))
+            return natural(command);
         Object start = null;
         Object end = null;
         for (Class<?> type = command.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
@@ -94,6 +96,49 @@ public class PlantUmlCommands {
         }
         json.append(",\"end\":").append(end == null ? "null" : quote(transform(pattern(end))));
         return json.append("}").toString();
+    }
+
+    /**
+     * A Gantt sentence, as PlantUML's NaturalGanttCommand reads one: its subject's pattern, and
+     * each verb phrase's verb, the words it skips, and its complement, in the order they are
+     * tried, each named by the action that carries it out. It has no starting pattern, so
+     * lines are not matched against it as against the other commands.
+     */
+    private static String natural(Object command) throws Exception {
+        final Object subject = field(command, "subject");
+        final List<String> slots = new ArrayList<>();
+        final StringBuilder json = new StringBuilder("{\"class\":").append(quote(command.getClass().getName()));
+        json.append(",\"start\":null,\"slots\":null,\"end\":null,\"subject\":").append(quote(subject.getClass().getSimpleName()));
+        final Object subjectPattern = subject.getClass().getMethod("toUnicodeBracketedExpressionSubject").invoke(subject);
+        json.append(",\"pattern\":").append(quote(ubrex(challenge(subjectPattern), slots, true)));
+        json.append(",\"captures\":").append(names(slots)).append(",\"verbs\":[");
+        final Method phrases = subject.getClass().getMethod("getVerbPhrases");
+        phrases.setAccessible(true);
+        boolean first = true;
+        for (Object phrase : (java.util.Collection<?>) phrases.invoke(subject)) {
+            final Object verb = field(phrase, "verb");
+            final Object ignored = field(phrase, "ignored");
+            final Object complement = field(phrase, "complement");
+            final Method verbPattern = verb.getClass().getMethod("toUnicodeBracketedExpression");
+            final Method complementPattern = complement.getClass().getMethod("toUnicodeBracketedExpressionComplement");
+            complementPattern.setAccessible(true);
+            final List<String> complementSlots = new ArrayList<>();
+            json.append(first ? "" : ",").append("{\"action\":").append(quote(phrase.getClass().getName().replaceAll("^.*\\.", "")));
+            json.append(",\"verb\":").append(quote(ubrex(challenge(verbPattern.invoke(verb)), new ArrayList<>(), false)));
+            json.append(",\"ignored\":").append(ignored == null ? "null" : quote(ubrex(challenge(ignored), new ArrayList<>(), false)));
+            json.append(",\"complement\":").append(quote(ubrex(challenge(complementPattern.invoke(complement)), complementSlots, true)));
+            json.append(",\"captures\":").append(names(complementSlots));
+            json.append(",\"kind\":").append(quote(complement.getClass().getSimpleName())).append("}");
+            first = false;
+        }
+        return json.append("]}").toString();
+    }
+
+    private static String names(List<String> slots) {
+        final StringBuilder json = new StringBuilder("[");
+        for (int slot = 0; slot < slots.size(); slot++)
+            json.append(slot == 0 ? "" : ",").append(quote(slots.get(slot)));
+        return json.append("]").toString();
     }
 
     private static boolean isUbrex(Object pattern) {
@@ -152,13 +197,13 @@ public class PlantUmlCommands {
             return result.toString();
         }
         case "CompositeNamed": {
+            // A group is numbered by where it opens, before the groups inside it.
+            if (capture)
+                slots.add((String) field(challenge, "name"));
             final StringBuilder result = new StringBuilder();
             for (Object child : (List<?>) field(challenge, "challenges"))
                 result.append(ubrex(child, slots, capture));
-            if (!capture)
-                return "(?:" + result + ")";
-            slots.add((String) field(challenge, "name"));
-            return "(" + result + ")";
+            return capture ? "(" + result + ")" : "(?:" + result + ")";
         }
         case "ChallengeSingleChar":
             return literal((Character) field(challenge, "ch"));

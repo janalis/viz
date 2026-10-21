@@ -1,0 +1,7 @@
+@startgantt
+printscale yearly zoom 2
+Project starts 2019-03-01
+[Long run] requires 400 days
+[Follow up] requires 300 days
+[Follow up] starts at [Long run]'s end
+@endgantt

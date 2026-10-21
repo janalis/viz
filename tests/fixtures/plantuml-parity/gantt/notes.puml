@@ -1,0 +1,11 @@
+@startgantt
+[Kickoff] requires 3 days
+note bottom
+  remember the
+  coffee
+end note
+[Work] requires 5 days
+[Work] starts at [Kickoff]'s end
+[Wrap] requires 2 days
+[Wrap] starts 1 day after [Work]'s end
+@endgantt

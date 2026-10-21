@@ -1,0 +1,10 @@
+@startgantt
+Project starts 2022-03-07
+saturday are closed
+sunday are closed
+[Task1] on {Alice} requires 4 days
+[Task2] on {Bob:50%} requires 3 days
+[Task3] on {Alice} {Bob} requires 2 days
+[Task3] starts at [Task1]'s end
+{Bob} is off on 2022-03-09
+@endgantt

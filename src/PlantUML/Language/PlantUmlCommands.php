@@ -56,6 +56,27 @@ final class PlantUmlCommands
         return $matched;
     }
 
+    /**
+     * The command a line, and those it takes after it, match; null when none does.
+     *
+     * @param list<string> $lines
+     */
+    public function next(array $lines, int $at): ?PlantUmlCommand
+    {
+        return $this->candidate($lines, $at);
+    }
+
+    /**
+     * A family's commands that no pattern matches, as PlantUML lists them with what they read
+     * otherwise, such as the sentences of a Gantt chart.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function unpatterned(): array
+    {
+        return \array_values(\array_filter($this->commands, static fn (array $command): bool => null === $command['start']));
+    }
+
     /** @param list<string> $lines */
     private function candidate(array $lines, int $at): ?PlantUmlCommand
     {

@@ -1,0 +1,7 @@
+@startgantt
+Project starts 2020-02-03
+[Start] requires 3 days
+[Middle] starts D+2 and ends D+8
+[End] occurs from [Start] to [Middle]
+[Fixed] starts 2020-02-05 and ends 2020-02-12
+@endgantt

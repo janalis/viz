@@ -12,6 +12,7 @@ use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
 use Janalis\Viz\PlantUML\Ebnf\EbnfFamily;
 use Janalis\Viz\PlantUML\Ebnf\RegexFamily;
+use Janalis\Viz\PlantUML\Gantt\GanttReader;
 use Janalis\Viz\PlantUML\Json\JsonReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
@@ -109,6 +110,14 @@ final readonly class PlantUmlPipeline implements Pipeline
             return JsonReader::read($parsed);
         }
         $document = PlantUmlDocument::read($parsed);
+        // A Gantt chart's sentences are read by its subjects and verbs, not matched as commands.
+        if ('gantt' === $document->kind) {
+            try {
+                return GanttReader::read($document);
+            } catch (PlantUmlRefusal $refused) {
+                throw new Unsupported($refused->getMessage(), previous: $refused);
+            }
+        }
         $refusal = null;
         foreach (self::KINDS[$document->kind] ?? [] as $factory => $name) {
             $commands = PlantUmlCommands::family($factory)->match($document->lines);

@@ -1,0 +1,13 @@
+@startgantt
+Project starts 2022-06-01
+hide footbox
+show column task
+hide column duration
+[Alpha] as [A] requires 3 days
+[Beta] as [B] requires 2 days
+[A] -> [B]
+[Gamma] requires 4 days
+[Gamma] is displayed as Gamma task
+[B] -[#green,dotted]-> [Gamma]
+[Old] requires 2 days and is deleted
+@endgantt

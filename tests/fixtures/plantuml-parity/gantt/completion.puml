@@ -1,0 +1,10 @@
+@startgantt
+Project starts 2023-01-02
+[Design] requires 6 days and is 50% complete
+[Code] requires 8 days and is colored in Lightblue/Blue
+[Code] starts 2 days after [Design]'s end
+[Test] requires 4 days and is 0% complete
+[Test] starts at [Code]'s end with red dashed link
+[Release] happens at [Test]'s end
+[Ship] happens 2023-01-27
+@endgantt

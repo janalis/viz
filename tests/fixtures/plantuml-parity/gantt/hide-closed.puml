@@ -1,0 +1,9 @@
+@startgantt
+Project starts 2021-05-03
+saturday are closed
+sunday are closed
+hide closed
+[First] requires 4 days
+[Second] requires 6 days
+[Second] starts at [First]'s end
+@endgantt

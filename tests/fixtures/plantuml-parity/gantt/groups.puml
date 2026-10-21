@@ -1,0 +1,14 @@
+@startgantt
+Project starts 2024-04-01
+-- Phase one --
+group [Analysis]
+[Interviews] lasts 3 days
+then [Report] lasts 2 days
+end group
+-- Phase two --
+[Build] lasts 5 days
+[Build] starts at [Report]'s end
+[Deploy] lasts 1 day
+[Deploy] displays on same row as [Build]
+[Deploy] starts at [Build]'s end
+@endgantt

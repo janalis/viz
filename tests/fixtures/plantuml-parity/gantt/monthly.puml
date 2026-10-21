@@ -1,0 +1,8 @@
+@startgantt
+printscale monthly
+Project starts 2020-11-02
+[Research] requires 45 days
+[Prototype] requires 60 days
+[Prototype] starts at [Research]'s end
+[Launch] happens at [Prototype]'s end
+@endgantt

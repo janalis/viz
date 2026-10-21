@@ -1,0 +1,7 @@
+@startgantt
+printscale quarterly
+Project starts 2021-01-04
+[Phase A] requires 100 days
+[Phase B] requires 150 days
+[Phase B] starts at [Phase A]'s end
+@endgantt

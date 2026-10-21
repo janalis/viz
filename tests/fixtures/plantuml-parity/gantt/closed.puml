@@ -1,0 +1,9 @@
+@startgantt
+Project starts 2021-01-04
+saturday are closed
+sunday are closed
+2021-01-11 is closed
+[Design] requires 7 days
+then [Build] requires 5 days
+[Review] happens at [Build]'s end
+@endgantt
