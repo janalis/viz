@@ -16,6 +16,8 @@ final class TimContext
     public readonly TimFunctions $functions;
     /** @var array<string, list<string>> the `!startsub` blocks, by name */
     public array $subs = [];
+    /** The metadata of the theme run last, from its header. */
+    public JsonValue $themeMetadata;
     /** @var list<string> the lines given out */
     private array $result = [];
     /** What came before a procedure called in a line, put before the first line it gives out. */
@@ -24,6 +26,7 @@ final class TimContext
     private function __construct()
     {
         $this->functions = new TimFunctions();
+        $this->themeMetadata = JsonValue::object([]);
         foreach (TimBuiltins::all() as $builtin) {
             $this->functions->add($builtin);
         }
@@ -68,7 +71,8 @@ final class TimContext
         match (true) {
             TimLineType::Return === $kind && $inFunction => null,
             TimLineType::Plain === $kind => $inFunction ? $this->substitutedLines($memory, $line) : $this->plain($memory, $line),
-            \in_array($kind, [TimLineType::Theme, TimLineType::Include, TimLineType::IncludeDef, TimLineType::Import], strict: true) => throw new Unsupported(
+            TimLineType::Theme === $kind => $this->theme($memory, TimEater::trimmed($line)),
+            \in_array($kind, [TimLineType::Include, TimLineType::IncludeDef, TimLineType::Import], strict: true) => throw new Unsupported(
                 'The native PlantUML renderer leaves '.\explode(' ', \trim($line), limit: 2)[0].' to PlantUML',
             ),
             default => $this->directive($memory, $line, $kind, $type),
@@ -279,6 +283,21 @@ final class TimContext
         } catch (\InvalidArgumentException $error) {
             throw new TimError('Fatal parsing error', $expression, previous: $error);
         }
+    }
+
+    /**
+     * `!theme name`: a theme PlantUML bundles under MIT, its header's metadata kept and its
+     * lines carried out here; any other, and one `from` elsewhere, is left to PlantUML.
+     */
+    private function theme(TimMemory $memory, string $line): void
+    {
+        $name = self::after($line, '!theme')->rest();
+        if (false !== \stripos($name, needle: ' from ')) {
+            throw new Unsupported('The native PlantUML renderer leaves !theme … from to PlantUML: '.$line);
+        }
+        $theme = TimThemes::read($this->substituted($memory, $name) ?? '');
+        $this->execute($memory, $theme->lines, null);
+        $this->themeMetadata = $theme->metadata;
     }
 
     /** `!assert test : message`. */

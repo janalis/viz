@@ -19,10 +19,19 @@ final readonly class Style
         return $this->values[$property] ?? $default;
     }
 
-    /** A colour as hex, 'none' for transparent, or the default when unset or unknown. */
+    /**
+     * A colour as hex, 'none' for transparent, or the default when unset; one PlantUML does not
+     * know is white, as its `getColorOrWhite` makes it.
+     */
     public function color(string $property, string $default = 'none'): string
     {
-        return PlantUmlColor::parse($this->value($property)) ?? $default;
+        $value = \trim($this->value($property));
+        $color = PlantUmlColor::parse($value);
+        if (null !== $color) {
+            return $color;
+        }
+
+        return '' === $value || 1 === \preg_match('/^#?(?:automatic$|\?)/i', $value) ? $default : '#ffffff';
     }
 
     public function number(string $property, float $default = 0.0): float

@@ -101,6 +101,10 @@ final readonly class PlantUmlSource
                 $pragmas[\strtolower($match[1])] = \trim($match[2] ?? '');
                 continue;
             }
+            // PlantUML's `!assume transparent` does nothing any more.
+            if (1 === \preg_match('/^!assume\s+transparent\s+(?:dark|light)$/i', $trimmed)) {
+                continue;
+            }
             if (\str_starts_with($trimmed, '!')) {
                 throw new Unsupported('The native PlantUML renderer leaves '.\explode(separator: ' ', string: $trimmed, limit: 2)[0].' to PlantUML');
             }

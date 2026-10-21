@@ -59,7 +59,8 @@ final class TimBuiltins
             $text('%filedate', value: ''),
             $text('%filename', value: ''),
             $text('%filename_no_extension', value: ''),
-            self::of('%get_current_theme', 0, [0, 0], static fn (): TimValue => TimValue::ofJson(JsonValue::object([]))),
+            self::of('%get_current_theme', 0, [0, 0], static fn (TimContext $c): TimValue => TimValue::ofJson($c->themeMetadata)),
+            self::of('%get_all_theme', 0, [0, 0], static fn (): TimValue => TimValue::ofJson(JsonValue::array(\array_map(JsonValue::string(...), TimThemes::names())))),
             self::of('%feature', 1, [1, 1], static fn (TimContext $c, TimMemory $m, array $v): TimValue => TimValue::int(
                 \in_array(\strtolower($v[0]->text()), ['style', 'theme'], strict: true) ? 1 : 0,
             )),
@@ -370,7 +371,6 @@ final class TimBuiltins
             $left('%load_json', arity: 3, least: 1, most: 3),
             $left('%get_all_stdlib', arity: 1, least: 0, most: 1),
             $left('%get_stdlib', arity: 1, least: 0, most: 2),
-            $left('%get_all_theme', arity: 0, least: 0, most: 0),
             $left('%reverse_hsluv_color', arity: 1, least: 1, most: 1),
         ];
     }

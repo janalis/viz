@@ -27,6 +27,7 @@ final class PlantUmlSourceTest extends TestCase
             path \\
             !pragma layout smetana
             !PRAGMA teoz
+            !assume transparent dark
             @enduml
             after
             PUML);

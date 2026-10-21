@@ -128,11 +128,13 @@ final class PlantUmlFrame
 
     /**
      * @param list<Mark> $marks
-     * @param array{float, float, float, float} $margins top, right, bottom and left, around everything
+     * @param array{float, float, float, float} $margins top, right, bottom and left, around everything, unless the document's style sets them
      */
     private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, array $margins): Drawing
     {
-        [$top, $right, $bottom, $left] = $margins;
+        // A margin the document's style sets, as a theme's `root` does, stands for the diagram's own.
+        $style = $document->styles->style(['root', 'document']);
+        [$top, $right, $bottom, $left] = '' === \trim($style->value('Margin')) ? $margins : $style->sides('Margin');
         $blocks = [];
         foreach (['header', 'title'] as $kind) {
             $blocks[] = self::block($document, $kind);
@@ -157,7 +159,7 @@ final class PlantUmlFrame
             }
             $y += $blockHeight;
         }
-        $scale = Units::POINT * $document->scale;
+        $scale = Units::POINT * $document->scaleFactor();
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
 
         return new Drawing(

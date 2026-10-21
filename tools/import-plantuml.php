@@ -8,7 +8,9 @@ declare(strict_types=1);
 //   php tools/import-plantuml.php <unzipped sources> <version> <plantuml-mit jar>
 // It copies skin/plantuml.skin and skin/rose.skin to resources/plantuml/, writes
 // resources/plantuml/skinparams.json from FromSkinparamToStyle's table, and
-// resources/plantuml/commands.json from the factories' command lists.
+// resources/plantuml/commands.json from the factories' command lists. It copies the themes
+// whose own header licenses them under MIT to resources/plantuml/themes/, and lists every
+// bundled theme's name in resources/plantuml/themes.json, `mit` naming those copied.
 
 $sources = \rtrim($argv[1] ?? '', '/');
 $version = $argv[2] ?? '';
@@ -23,6 +25,20 @@ $target = __DIR__.'/../resources/plantuml';
 foreach (['plantuml', 'rose'] as $skin) {
     \copy($sources.'/skin/'.$skin.'.skin', $target.'/'.$skin.'.skin');
 }
+@\mkdir($target.'/themes', 0o755, true);
+$themes = ['all' => [], 'mit' => []];
+foreach (\glob($sources.'/themes/puml-theme-*.puml') ?: [] as $theme) {
+    $name = \substr(\basename($theme, '.puml'), \strlen('puml-theme-'));
+    $themes['all'][] = $name;
+    if (1 !== \preg_match('/^---\n(?:.*\n)*?license:\s*MIT\s*\n(?:.*\n)*?---\n/', (string) \file_get_contents($theme))) {
+        continue;
+    }
+    $themes['mit'][] = $name;
+    \copy($theme, $target.'/themes/'.\basename($theme));
+}
+\sort($themes['all']);
+\sort($themes['mit']);
+\file_put_contents($target.'/themes.json', \json_encode(['version' => $version, ...$themes], \JSON_UNESCAPED_SLASHES)."\n");
 
 $java = (string) \file_get_contents($table);
 $static = \substr($java, (int) \strpos($java, 'static {'));

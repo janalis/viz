@@ -1,0 +1,7 @@
+@startuml
+!theme materia
+!$t = %get_current_theme()
+name $t.name by $t.author
+all %get_all_theme()
+class A
+@enduml

@@ -1,0 +1,10 @@
+@startuml
+!theme cerulean
+skinparam defaultFontName SansSerif
+class Order {
+  +id : int
+  +total() : float
+}
+class Item
+Order "1" --> "*" Item : has
+@enduml

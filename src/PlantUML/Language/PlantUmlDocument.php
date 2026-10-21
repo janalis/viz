@@ -46,6 +46,15 @@ final readonly class PlantUmlDocument
         return $this->params[\strtolower($name)] ?? $default;
     }
 
+    /** What the drawing is scaled by, as PlantUML's exporter scales it: `scale`, and `skinparam dpi` against 96. */
+    public function scaleFactor(): float
+    {
+        $dpi = \trim($this->param('dpi'));
+        $dpi = 1 === \preg_match('/^[+-]?\d{1,9}$/', $dpi) && (int) $dpi > 0 ? (int) $dpi : 96;
+
+        return ($this->scale * $dpi) / 96;
+    }
+
     /** The text after a keyword such as `title`, quoted or not; null when the line holds none. */
     public static function text(string $rest): ?string
     {

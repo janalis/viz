@@ -13,12 +13,22 @@ final class StyleTest extends TestCase
 {
     public function testValuesReadAsPlantUmlReadsThem(): void
     {
-        $style = new Style(['FontSize' => '0', 'LineThickness' => ' 1.5 ', 'LineColor' => 'nope', 'FontStyle' => 'Bold Italic', 'Padding' => '4 8', 'Margin' => '1 2 3', 'LineStyle' => '7;7']);
+        $style = new Style([
+            'FontSize' => '0',
+            'LineThickness' => ' 1.5 ',
+            'LineColor' => 'nope',
+            'FontColor' => 'automatic',
+            'FontStyle' => 'Bold Italic',
+            'Padding' => '4 8',
+            'Margin' => '1 2 3',
+            'LineStyle' => '7;7',
+        ]);
 
         $this->assertSame(1.0, $style->fontSize());
         $this->assertSame(1.5, $style->number('LineThickness'));
         $this->assertSame(2.0, $style->number('Missing', 2.0));
-        $this->assertSame('#123456', $style->color('LineColor', '#123456'));
+        $this->assertSame('#ffffff', $style->color('LineColor', '#123456'), 'a colour PlantUML does not know is white');
+        $this->assertSame('#123456', $style->color('FontColor', '#123456'));
         $this->assertSame('none', $style->color('BackGroundColor'));
         $this->assertSame('x', $style->value('Missing', 'x'));
         $this->assertSame(FontFace::BoldItalic, $style->face());

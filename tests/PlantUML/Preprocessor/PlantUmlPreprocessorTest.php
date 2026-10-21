@@ -115,13 +115,14 @@ final class PlantUmlPreprocessorTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function leftToPlantUml(): iterable
     {
-        yield 'theme' => ['!theme cerulean', 'The native PlantUML renderer leaves !theme to PlantUML'];
+        yield 'a theme not under MIT' => ['!theme amiga', 'The native PlantUML renderer leaves the theme amiga to PlantUML'];
+        yield 'a theme from elsewhere' => ['!theme cerulean from themes', 'The native PlantUML renderer leaves !theme … from to PlantUML: !theme cerulean from themes'];
         yield 'include' => ['!include foo.puml', 'The native PlantUML renderer leaves !include to PlantUML'];
         yield 'include of a sub of a file' => ['!includesub foo.puml!PART', 'The native PlantUML renderer leaves !includesub of a file to PlantUML: !includesub foo.puml!PART'];
         yield 'the clock' => ['%date()', 'The native PlantUML renderer leaves %date() to PlantUML'];
         yield 'an option' => ['!option handwritten true', 'The native PlantUML renderer leaves !option to PlantUML: !option handwritten true'];
         yield 'a gradient darkened' => ['!$a = %darken("red/blue", 10)', 'The native PlantUML renderer leaves colour functions of red/blue to PlantUML'];
-        yield 'a directive for the diagram' => ['!assume transparent dark', 'The native PlantUML renderer leaves !assume to PlantUML'];
+        yield 'a directive for the diagram' => ['!assume opaque', 'The native PlantUML renderer leaves !assume to PlantUML'];
     }
 
     #[DataProvider('leftToPlantUml')]

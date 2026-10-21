@@ -1,0 +1,9 @@
+@startuml
+!theme materia
+skinparam defaultFontName SansSerif
+participant Alice
+actor Bob
+Alice -> Bob : hello
+Bob --> Alice : back
+note over Alice : a note
+@enduml
