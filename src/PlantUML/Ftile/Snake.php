@@ -290,7 +290,7 @@ final readonly class Snake
      * @param list<array{float, float}> $outline
      * @param array{float, float} $at
      */
-    private static function head(array $outline, array $at, string $color): Shape
+    public static function head(array $outline, array $at, string $color): Shape
     {
         $points = \array_map(static fn (array $point): array => [$at[0] + $point[0], $at[1] + $point[1]], $outline);
 

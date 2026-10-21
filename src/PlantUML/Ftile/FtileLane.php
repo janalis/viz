@@ -50,6 +50,26 @@ final readonly class FtileLane implements Ftile
         };
     }
 
+    /**
+     * As PlantUML's swimlanes, whether one stands left of every other of a set holding more than it.
+     *
+     * @param list<string> $others
+     * @param array<string, int> $order each swimlane's place from the left
+     */
+    public static function leftOfAll(?string $lane, array $others, array $order): bool
+    {
+        if (null === $lane || [] === \array_diff($others, [$lane])) {
+            return false;
+        }
+        foreach ($others as $other) {
+            if (($order[$other] ?? 0) < ($order[$lane] ?? 0)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /** @return list<string> the swimlanes of the steps a tile holds */
     public static function all(Ftile $tile): array
     {

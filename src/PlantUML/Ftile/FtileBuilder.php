@@ -80,7 +80,7 @@ final readonly class FtileBuilder
             $instruction instanceof InstructionSimple => $this->simple($instruction),
             $instruction instanceof InstructionTerminal => $this->noted($this->factory->circle($instruction->kind, $instruction->stereogroup), $instruction->notes),
             $instruction instanceof InstructionSpot => $this->spot($instruction),
-            $instruction instanceof InstructionBreak => new FtileBreak(),
+            $instruction instanceof InstructionBreak => new FtileBreak($this->lanes[$instruction] ?? null),
             $instruction instanceof InstructionIf => $this->decision($instruction),
             $instruction instanceof InstructionSwitch => $this->switch($instruction),
             $instruction instanceof InstructionWhile => $this->loop($instruction),
@@ -316,12 +316,29 @@ final readonly class FtileBuilder
                 : new Label($repeat->test, 'inside' === $factory->condition ? $style : $factory->styles->arrow());
         $yes = $factory->label($repeat->yes);
         $out = $factory->label($repeat->out);
+        $lane = $this->lanes[$repeat] ?? null;
+        $laneOut = $repeat->laneOut ?? $lane;
+        $laneBackward = $repeat->laneBackward ?? $lane;
+        // As PlantUML, the label on the way back stands west of the test when the backward action's swimlane is left of the test's.
+        $westward = null !== $repeat->backward && null !== $this->lanes && ($this->order[(string) $laneBackward] ?? 0) < ($this->order[(string) $laneOut] ?? 0);
         [$diamond2, $besides] = match ($factory->condition) {
             'empty' => [$factory->diamond('empty', $color2)->with(east: $test), $test],
             'square' => [$factory->diamond('square', $color2, $test)->with(south: $out, east: $yes), new EmptyBlock()],
-            default => [$repeat->lastOfParent() && $isNull ? new FtileEmpty() : $factory->diamond('inside', $color2, $test)->with(south: $out, east: $yes), new EmptyBlock()],
+            default => [
+                $repeat->lastOfParent() && $isNull ? new FtileEmpty() : $factory->diamond('inside', $color2, $test)->with(south: $out, east: $westward ? null : $yes, west: $westward ? $yes : null),
+                new EmptyBlock(),
+            ],
         };
         $backward = null === $repeat->backward ? null : $this->noted($factory->activity($repeat->backward, $repeat->backwardStereogroup), $repeat->backwardNotes);
+        if (null !== $this->lanes) {
+            $diamond2 = new FtileLane($diamond2, (string) $laneOut);
+            $backward = null === $backward ? null : new FtileLane($backward, (string) $laneBackward);
+        }
+        $way = match (true) {
+            $lane !== $laneOut => 'across',
+            FtileLane::leftOfAll($lane, FtileLane::all($block), $this->order) => 'left',
+            default => 'right',
+        };
         $tile = new FtileRepeat(
             $block,
             $entry,
@@ -336,6 +353,7 @@ final readonly class FtileBuilder
             $factory->arrow->over($repeat->endLink->color),
             $factory->label($repeat->endLink->display),
             $backward,
+            $way,
         );
         $result = $this->repeatBreaks($tile, $block->weldings(), $color2);
 

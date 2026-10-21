@@ -1,0 +1,20 @@
+@startuml
+|A|
+start
+while (more?) is (yes)
+  |B|
+  :work;
+endwhile (no)
+|A|
+:after;
+while (again?)
+  :here;
+  |B|
+  :there;
+  if (done?) then
+    break
+  endif
+endwhile
+|B|
+stop
+@enduml

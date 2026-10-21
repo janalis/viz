@@ -165,6 +165,10 @@ final class ActivityDrawingTest extends TestCase
             "start\nswitch (test?) <<#pink>>\ncase (A)\n  :one;\ncase (B)\n  -> b in;\n  :two;\ncase (C)\n  stop\ncase (D)\n  :four;\n  -> out;\nendswitch <<#gold>>\nstop",
             ['test?', 'A', 'b in', 'one', 'out'],
         ];
+        yield 'loops across swimlanes' => [
+            "|A|\nwhile (a)\n  |B|\n  :b;\nbackward :c;\nendwhile\n|A|\nwhile (d)\nendwhile\nwhile (e)\n  |B|\n  :f;\nendwhile\n|A|\nstop\nwhile (g)\n  :h;\nendwhile\n|B|\nstop",
+            ['b', 'c', 'f', 'h'],
+        ];
         yield 'a switch with notes' => ["switch (a)\nnote left: n\ncase (b)\n  :c;\nendswitch\nswitch (d)\nnote left: m\nnote right: o\ncase (e)\n  :f;\nendswitch", ['n', 'm', 'o']];
         yield 'a switch with a wide test' => ["switch (a test wider than all of the cases taken together?)\ncase (a)\n  :x;\ncase (b)\n  :y;\ncase (c)\n  :z;\nendswitch", ['x', 'y', 'z']];
         yield 'a switch of one case with a wide test' => ["switch (a test wider than its one case?)\ncase (a)\n  :x;\nendswitch <<#gold>>\n:after;", ['x', 'after']];
@@ -233,8 +237,7 @@ final class ActivityDrawingTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function acrossSwimlanes(): iterable
     {
-        yield 'a loop across swimlanes' => ["|A|\nwhile (a)\n  |B|\n  :b;\nendwhile"];
-        yield 'a stop after a loop in another swimlane' => ["|A|\nwhile (a)\n  :b;\nendwhile\n|B|\nstop"];
+        yield 'a fork across swimlanes' => ["|A|\nfork\n  |B|\n  :b;\nend fork"];
     }
 
     #[DataProvider('acrossSwimlanes')]

@@ -337,6 +337,7 @@ final class ActivityReader
         $repeat = $this->current instanceof InstructionRepeat ? $this->current : throw new PlantUmlRefusal('Cannot find repeat');
         $back = new LinkRendering($command->get('XCOLOR'), self::display($command->get('LABEL')));
         $repeat->test(self::display($command->lazy('TEST')), self::display($command->lazy('WHEN')), self::display($command->lazy('OUT')), $this->take(), $back, $command->get('STEREOGROUP'));
+        $repeat->laneOut = $this->lane?->name;
         $this->current = $repeat->parent;
     }
 
@@ -349,6 +350,9 @@ final class ActivityReader
             throw new PlantUmlRefusal('Cannot find repeat');
         }
         $this->current->backward($label, $command->get('STEREOGROUP'), $in, $out);
+        if ($this->current instanceof InstructionRepeat) {
+            $this->current->laneBackward = $this->lane?->name;
+        }
     }
 
     private function fork(PlantUmlCommand $command): void

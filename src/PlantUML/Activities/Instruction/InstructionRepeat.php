@@ -32,6 +32,10 @@ final class InstructionRepeat implements Container
     /** The arrow out of its body, as written before `repeat while`. */
     public LinkRendering $endLink;
     public ?string $stereogroup2 = null;
+    /** The swimlane `repeat while` was written in, where its test stands. */
+    public ?string $laneOut = null;
+    /** The swimlane its `backward` was written in. */
+    public ?string $laneBackward = null;
 
     /** @param ?list<string> $startLabel */
     public function __construct(

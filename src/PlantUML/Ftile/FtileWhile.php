@@ -62,8 +62,11 @@ final class FtileWhile extends AbstractFtile
     public function draw(Canvas $canvas): void
     {
         foreach ($this->children() as $tile) {
+            if ($tile === $this->special && !$this->drawsSpecial($canvas->lane())) {
+                continue;
+            }
             [$dx, $dy] = $this->translateFor($tile);
-            $tile->draw($canvas->moved($dx, $dy));
+            $tile->draw($canvas->spanning()->moved($dx, $dy));
         }
         $block = $this->block->geometry();
         if (0.0 === $block->width || 0.0 === $block->height) {
@@ -72,7 +75,17 @@ final class FtileWhile extends AbstractFtile
         if (0.0 !== $block->width && 0.0 !== $block->height) {
             [$x1, $y1] = $this->at($this->diamond, $this->diamond->geometry()->out());
             [$x2, $y2] = $this->at($this->block, $block->in());
-            $canvas->snake(Snake::through($this->arrow->over($this->block->inLink()->color), Snake::arrow('D'), [[$x1, $y1], [$x2, $y2]]));
+            $color = $this->arrow->over($this->block->inLink()->color);
+            $canvas->link(
+                Snake::through($color, Snake::arrow('D'), [[$x1, $y1], [$x2, $y2]]),
+                null,
+                FtileLane::in($this->block),
+                static function (float $t1, float $t2) use ($x1, $y1, $x2, $y2, $color): array {
+                    $middle = ($y1 + $y2) / 2.0;
+
+                    return [Snake::through($color, Snake::arrow('D'), [[$x1 + $t1, $y1], [$x1 + $t1, $middle], [$x2 + $t2, $middle], [$x2 + $t2, $y2]])->withMerge(MergeStrategy::Limited)];
+                },
+            );
             $this->drawBackFromBlock($canvas);
         }
         $this->drawOut($canvas);
@@ -88,8 +101,9 @@ final class FtileWhile extends AbstractFtile
         }
         $from = $this->at($this->block, $block->out());
         $tile = $this->backward;
+        $lane = FtileLane::out($this->block);
         if (null === $tile) {
-            $this->drawBack($canvas, $from, $this->incoming1, $this->back1);
+            $this->drawBack($canvas, $from, $this->incoming1, $this->back1, $lane);
 
             return;
         }
@@ -98,7 +112,13 @@ final class FtileWhile extends AbstractFtile
         [$x2, $y2] = $this->at($tile, [$backward->left, (float) $backward->outY]);
         $below = \max($y1, $this->bottom()) + self::HALF;
         $canvas->add(Shape::empty($x1, $below, 5.0, self::HALF));
-        $canvas->snake(Snake::through($this->incoming1, Snake::arrow('U'), [[$x1, $y1], [$x1, $below], [$x2, $below], [$x2, $y2]])->withLabel($this->back1, 'bottom'));
+        // As PlantUML, the arrow from steps in another swimlane to the backward action is not drawn.
+        $canvas->link(
+            Snake::through($this->incoming1, Snake::arrow('U'), [[$x1, $y1], [$x1, $below], [$x2, $below], [$x2, $y2]])->withLabel($this->back1, 'bottom'),
+            $lane,
+            null,
+            static fn (): array => [],
+        );
         [$x1, $y1] = $this->at($tile, [$backward->left, $backward->inY]);
         [$x2, $y2] = $this->diamondRight();
         $canvas->snake(Snake::through($this->incoming2, Snake::arrow('L'), [[$x1, $y1], [$x1, $y2], [$x2, $y2]])->withLabel($this->back2));
@@ -109,15 +129,35 @@ final class FtileWhile extends AbstractFtile
      *
      * @param array{float, float} $from
      */
-    private function drawBack(Canvas $canvas, array $from, Rainbow $color, ?TextBlock $label): void
+    private function drawBack(Canvas $canvas, array $from, Rainbow $color, ?TextBlock $label, ?string $lane = null): void
     {
         [$x1, $y1] = $from;
         [$x2, $y2] = $this->diamondRight();
         $below = \max($y1, $this->bottom()) + self::HALF;
         $right = $this->geometry()->width;
         $snake = Snake::through($color, Snake::arrow('L'), [[$x1, $y1], [$x1, $below], [$right, $below], [$right, $y2], [$x2, $y2]])->emphasizing('U');
-        $canvas->snake($snake->withLabel($label, 'bottom'));
-        $canvas->add(Shape::empty($x1, $below, 5.0, self::HALF));
+        $canvas->link($snake->withLabel($label, 'bottom'), $lane, null, static function (float $t1, float $t2) use ($x1, $y1, $x2, $y2, $right, $color): array {
+            // As PlantUML: just below the steps, across past the right of both swimlanes, up with an arrowhead midway, and in.
+            [$ax, $below, $bx] = [$x1 + $t1, $y1 + self::HALF, $x2 + $t2];
+            $xx = \max($t1, $t2) + $right;
+
+            return [
+                Snake::through($color, Snake::arrow('L'), [[$ax, $y1], [$ax, $below], [$xx, $below], [$xx, $y2], [$bx, $y2]])->withMerge(MergeStrategy::Limited),
+                Shape::empty($ax, $below, 5.0, self::HALF),
+                Snake::head(Snake::arrow('U'), [$xx, ($y1 + $y2) / 2], $color->color),
+            ];
+        });
+        if (null === $lane || $lane === $canvas->lane()) {
+            $canvas->add(Shape::empty($x1, $below, 5.0, self::HALF));
+        }
+    }
+
+    /** As PlantUML, the stop after it is drawn only in a swimlane of its own or of its steps. */
+    private function drawsSpecial(?string $lane): bool
+    {
+        $special = null === $this->special ? null : FtileLane::in($this->special);
+
+        return null === $special || $special === $lane || \in_array($special, FtileLane::all($this->block), strict: true);
     }
 
     /** From the diamond's left corner down its left side to the way out, or across to the stop after it. */
@@ -128,7 +168,13 @@ final class FtileWhile extends AbstractFtile
         $special = $this->special;
         if (null !== $special) {
             [$x2, $y2] = $this->at($special, $special->geometry()->in());
-            $canvas->snake(Snake::through($this->out, Snake::arrow('D'), [[$x1, $y1], [$x2, $y1], [$x2, $y2]]));
+            // As PlantUML, the arrow to a stop in another swimlane is not drawn.
+            $canvas->link(
+                Snake::through($this->out, Snake::arrow('D'), [[$x1, $y1], [$x2, $y1], [$x2, $y2]]),
+                null,
+                FtileLane::in($special),
+                static fn (): array => [],
+            );
 
             return;
         }
@@ -151,7 +197,14 @@ final class FtileWhile extends AbstractFtile
         $genealogy = new Genealogy($this);
         foreach ($weldings as $break) {
             [$x, $y] = $genealogy->translate($break);
-            $canvas->snake(Snake::through($this->arrow, Snake::arrow('L'), [[$x, $y], [self::HALF, $y]]));
+            // As PlantUML, drawn in the break's swimlane.
+            $lane = $break->lane;
+            $canvas->link(
+                Snake::through($this->arrow, Snake::arrow('L'), [[$x, $y], [self::HALF, $y]]),
+                $lane,
+                $lane,
+                static fn (): array => [],
+            );
         }
     }
 

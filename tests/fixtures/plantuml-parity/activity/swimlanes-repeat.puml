@@ -1,0 +1,38 @@
+@startuml
+|A|
+start
+repeat
+  |B|
+  :work;
+  |A|
+repeat while (more?) is (yes) not (no)
+:next;
+repeat
+  :here;
+  |B|
+  :there;
+repeat while (again?) is (yes)
+|A|
+repeat :entry;
+  :inside;
+  backward :back;
+repeat while (loop?)
+|B|
+repeat
+  |A|
+  :left;
+  |B|
+  backward :retry;
+repeat while (more?)
+repeat
+  :x;
+  |A|
+repeat while (back?)
+repeat
+  :y;
+  |B|
+  backward :z;
+  |A|
+repeat while (w?)
+stop
+@enduml

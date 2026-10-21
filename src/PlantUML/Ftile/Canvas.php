@@ -103,7 +103,7 @@ final class Canvas
      * for the moves across of the swimlanes it leaves and reaches — left out while the
      * swimlanes are measured.
      *
-     * @param \Closure(float, float): list<Snake> $across
+     * @param \Closure(float, float): list<Snake|Shape> $across the arrows, and the shapes beside them
      */
     public function link(Snake $snake, ?string $from, ?string $to, \Closure $across): void
     {
@@ -118,6 +118,11 @@ final class Canvas
             return;
         }
         foreach ($across($this->lanes->offset($from), $this->lanes->offset((string) $to)) as $part) {
+            if ($part instanceof Shape) {
+                $this->store->shapes[] = $part->moved($this->base(), $this->dy);
+                $this->store->shapeLanes[] = null;
+                continue;
+            }
             $this->hold($part->moved($this->base(), $this->dy), null);
         }
     }
