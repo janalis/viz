@@ -86,7 +86,16 @@ final readonly class Style
     /** @return ?list<float> a line's dash and gap lengths, or null for a solid line */
     public function dashes(): ?array
     {
-        $lengths = \array_map(\floatval(...), \array_values(\array_filter(\array_map(\trim(...), \explode(';', $this->value('LineStyle'))), \is_numeric(...))));
+        // As PlantUML reads a dash: its lengths apart by `-`, `;` or `,`.
+        $parts = \preg_split('/[-;,]/', $this->value('LineStyle'));
+        $lengths = [];
+        foreach (false === $parts ? [] : $parts as $part) {
+            $part = \trim($part);
+            if (!\is_numeric($part)) {
+                continue;
+            }
+            $lengths[] = (float) $part;
+        }
 
         return \count($lengths) < 2 || 0.0 === $lengths[0] ? null : $lengths;
     }

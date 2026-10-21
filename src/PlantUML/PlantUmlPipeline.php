@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Pipeline;
 use Janalis\Viz\PlantUML\Activities\ActivityFamily;
 use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
+use Janalis\Viz\PlantUML\Json\JsonReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
@@ -64,7 +65,12 @@ final readonly class PlantUmlPipeline implements Pipeline
     /** @throws Unsupported when no native family reads the source */
     public function diagram(string $source): PlantUmlDiagram
     {
-        $document = PlantUmlDocument::read(PlantUmlSource::parse($source));
+        $parsed = PlantUmlSource::parse($source);
+        // Data is read whole, by no commands, as PlantUML's JSON and YAML factories read it.
+        if (\array_key_exists($parsed->kind, JsonReader::KINDS)) {
+            return JsonReader::read($parsed);
+        }
+        $document = PlantUmlDocument::read($parsed);
         $refusal = null;
         foreach (self::KINDS[$document->kind] ?? [] as $factory => $name) {
             $commands = PlantUmlCommands::family($factory)->match($document->lines);

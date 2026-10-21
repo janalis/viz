@@ -17,7 +17,7 @@ use Janalis\Viz\Source\Unsupported;
 final readonly class PlantUmlSource
 {
     /** The kinds of block read natively. */
-    public const array KINDS = ['uml', 'mindmap', 'wbs'];
+    public const array KINDS = ['uml', 'mindmap', 'wbs', 'json', 'yaml'];
 
     /**
      * @param list<string> $lines the block's lines between its start and end, comments dropped
@@ -26,7 +26,7 @@ final readonly class PlantUmlSource
     public function __construct(
         public array $lines,
         public array $pragmas = [],
-        /** The block's kind, as `@start…` names it: `uml`, `mindmap` or `wbs`. */
+        /** The block's kind, as `@start…` names it: `uml`, `mindmap`, `wbs`, `json` or `yaml`. */
         public string $kind = 'uml',
     ) {}
 

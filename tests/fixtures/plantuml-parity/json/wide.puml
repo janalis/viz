@@ -1,0 +1,8 @@
+@startjson
+{
+  "one": {"a": 1, "b": 2},
+  "two": {"a": 1, "b": 2, "c": 3},
+  "three": [{"x": 1}, {"y": 2}, {"z": [1, 2]}],
+  "four": {"deep": {"deeper": {"deepest": true}}}
+}
+@endjson

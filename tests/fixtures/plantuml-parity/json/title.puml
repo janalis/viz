@@ -1,0 +1,8 @@
+@startjson
+title Some data
+{
+  "a": {"b": {"c": "deep"}},
+  "d": [ "x", "y", "z" ],
+  "e": "multi\nline"
+}
+@endjson

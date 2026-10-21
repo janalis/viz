@@ -1,0 +1,21 @@
+@startyaml
+#highlight "french-hens"
+#highlight "xmas-fifth-day" / "partridges"
+#highlight "**" / "count" <<blue>>
+<style>
+yamlDiagram {
+  highlight {
+    .blue {
+      BackGroundColor lightblue
+    }
+  }
+}
+</style>
+doe: "a deer, a female deer"
+french-hens: 3
+xmas-fifth-day:
+  calling-birds: four
+  partridges:
+    count: 1
+    location: "a pear tree"
+@endyaml

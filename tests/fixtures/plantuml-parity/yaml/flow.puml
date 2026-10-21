@@ -1,0 +1,13 @@
+@startyaml
+title Flow and blocks
+# a comment
+name: demo # trailing comment
+tags: [one, "two, three", four]
+text: |
+  first line
+  second line
+folded:
+  some text
+  on two lines
+empty:
+@endyaml

@@ -1,0 +1,37 @@
+@startjson
+<style>
+jsonDiagram {
+  node {
+    BackGroundColor Khaki
+    LineThickness 2
+    LineColor orange
+    FontColor red
+    FontSize 18
+    FontStyle bold
+    RoundCorner 0
+    separator {
+      LineThickness 0.5
+      LineColor black
+      LineStyle 1-5
+    }
+  }
+  arrow {
+    LineColor blue
+    LineThickness 2
+    LineStyle 2-4-6
+  }
+  highlight {
+    BackGroundColor red
+    FontColor white
+    FontStyle italic
+  }
+}
+</style>
+#highlight "name"
+{
+  "name": "Mark McGwire",
+  "hr":   65,
+  "avg":  0.278,
+  "stats": {"games": 160, "teams": ["A", "B"]}
+}
+@endjson

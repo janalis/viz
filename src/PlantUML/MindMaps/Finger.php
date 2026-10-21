@@ -79,7 +79,14 @@ final class Finger
             if ('none' === $color) {
                 continue;
             }
-            $marks[] = new Mark(MarkKind::Polyline, $this->line($origin, $start, $end, $middle), stroke: $color, strokeWidth: $arrow->number('LineThickness', 1.0), dashes: $arrow->dashes());
+            $marks[] = new Mark(
+                MarkKind::Polyline,
+                $this->line($origin, $start, $end, $middle),
+                stroke: $color,
+                strokeWidth: $arrow->number('LineThickness', 1.0),
+                dashed: null !== $arrow->dashes(),
+                dashes: $arrow->dashes(),
+            );
         }
 
         return $marks;

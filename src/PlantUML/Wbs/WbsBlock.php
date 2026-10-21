@@ -149,7 +149,14 @@ final class WbsBlock
             return [];
         }
 
-        return [new Mark(MarkKind::Polyline, [[\min($x1, $x2), $y1], [\max($x1, $x2), $y2]], stroke: $color, strokeWidth: $style->number('LineThickness', 1.0), dashes: $style->dashes())];
+        return [new Mark(
+            MarkKind::Polyline,
+            [[\min($x1, $x2), $y1], [\max($x1, $x2), $y2]],
+            stroke: $color,
+            strokeWidth: $style->number('LineThickness', 1.0),
+            dashed: null !== $style->dashes(),
+            dashes: $style->dashes(),
+        )];
     }
 
     /** @return array{float, float} its main box's size */
