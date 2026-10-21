@@ -142,20 +142,6 @@ final class ActivityDrawingTest extends TestCase
         yield 'a test left empty' => ["if () then\n  :a;\nelse\n  :b;\nendif", ['a', 'b']];
         yield 'a repeat killed early' => ["repeat\n  :a;\n  note right: n\n  kill\nrepeat while (b?)", ['a', 'n']];
         yield 'colours of lines and text' => [':a; <<##red>> <<###blue>>', ['a']];
-        yield 'a switch' => [
-            "start\nswitch (test?) <<#pink>>\ncase (A)\n  :one;\ncase (B)\n  -> b in;\n  :two;\ncase (C)\n  stop\ncase (D)\n  :four;\n  -> out;\nendswitch <<#gold>>\nstop",
-            ['test?', 'A', 'b in', 'one', 'out'],
-        ];
-        yield 'a switch with a wide test' => ["switch (a test wider than all of the cases taken together?)\ncase (a)\n  :x;\ncase (b)\n  :y;\ncase (c)\n  :z;\nendswitch", ['x', 'y', 'z']];
-        yield 'a switch of one case with a wide test' => ["switch (a test wider than its one case?)\ncase (a)\n  :x;\nendswitch <<#gold>>\n:after;", ['x', 'after']];
-        yield 'a switch of one case never leaving' => ["switch (a)\ncase (b)\n  stop\nendswitch", ['a', 'b']];
-        yield 'a switch never leaving' => ["switch (a)\ncase (b)\n  stop\ncase (c)\n  end\nendswitch", ['b', 'c']];
-        yield 'a switch leaving from one case between' => ["switch (a)\ncase (b)\n  stop\ncase (c)\n  :x;\ncase (d)\n  stop\nendswitch", ['x']];
-        yield 'a switch leaving from its first case' => ["switch (a)\ncase (b)\n  :x;\ncase (c)\n  stop\nendswitch", ['x']];
-        yield 'a switch with cases wide and narrow' => ["switch (a)\ncase (b)\n  :a very wide action on the left;\ncase (c)\n  :x;\ncase (d)\n  :y;\ncase (e)\n  :z;\nendswitch", ['x']];
-        yield 'a switch whose last case is left of its test' => ["switch (a)\ncase (b)\n  :wwwwwwww;\ncase (a long label on the last case)\n  :x;\nendswitch", ['a long label on the last case']];
-        yield 'a switch whose last case leaves just right of its end' => ["switch (a)\ncase (b)\n  :".\str_repeat('w', times: 24).";\ncase (a long label on the last case)\n  :x;\nendswitch", ['x']];
-        yield 'a loop breaking from a switch' => ["while (w?)\n  switch (s)\n  case (a)\n    :x;\n    break\n  case (b)\n    :y;\n  endswitch\nendwhile\n:after;", ['x', 'y', 'after']];
         yield 'decisions closed by a line' => [
             "skinparam conditionEndStyle HLINE\nif (a) then\n  :b;\nelse\n  :c;\nendif\nif (d) then\n  :e;\nendif\nwhile (f?)\n  if (g) then\n    :h;\n    break\n  else\n    :i;\n  endif\nendwhile\nif (j) then\n  :k;\n  detach\nendif\n:l;",
             ['b', 'c', 'e', 'h', 'i', 'k', 'l'],
@@ -172,8 +158,29 @@ final class ActivityDrawingTest extends TestCase
         yield 'an empty diagram ending with an arrow' => ["if (a) then\nelse\n-> out;\nendif", ['a']];
     }
 
+    /** @return iterable<string, array{string, list<string>}> */
+    public static function switches(): iterable
+    {
+        yield 'a switch' => [
+            "start\nswitch (test?) <<#pink>>\ncase (A)\n  :one;\ncase (B)\n  -> b in;\n  :two;\ncase (C)\n  stop\ncase (D)\n  :four;\n  -> out;\nendswitch <<#gold>>\nstop",
+            ['test?', 'A', 'b in', 'one', 'out'],
+        ];
+        yield 'a switch with notes' => ["switch (a)\nnote left: n\ncase (b)\n  :c;\nendswitch\nswitch (d)\nnote left: m\nnote right: o\ncase (e)\n  :f;\nendswitch", ['n', 'm', 'o']];
+        yield 'a switch with a wide test' => ["switch (a test wider than all of the cases taken together?)\ncase (a)\n  :x;\ncase (b)\n  :y;\ncase (c)\n  :z;\nendswitch", ['x', 'y', 'z']];
+        yield 'a switch of one case with a wide test' => ["switch (a test wider than its one case?)\ncase (a)\n  :x;\nendswitch <<#gold>>\n:after;", ['x', 'after']];
+        yield 'a switch of one case never leaving' => ["switch (a)\ncase (b)\n  stop\nendswitch", ['a', 'b']];
+        yield 'a switch never leaving' => ["switch (a)\ncase (b)\n  stop\ncase (c)\n  end\nendswitch", ['b', 'c']];
+        yield 'a switch leaving from one case between' => ["switch (a)\ncase (b)\n  stop\ncase (c)\n  :x;\ncase (d)\n  stop\nendswitch", ['x']];
+        yield 'a switch leaving from its first case' => ["switch (a)\ncase (b)\n  :x;\ncase (c)\n  stop\nendswitch", ['x']];
+        yield 'a switch with cases wide and narrow' => ["switch (a)\ncase (b)\n  :a very wide action on the left;\ncase (c)\n  :x;\ncase (d)\n  :y;\ncase (e)\n  :z;\nendswitch", ['x']];
+        yield 'a switch whose last case is left of its test' => ["switch (a)\ncase (b)\n  :wwwwwwww;\ncase (a long label on the last case)\n  :x;\nendswitch", ['a long label on the last case']];
+        yield 'a switch whose last case leaves just right of its end' => ["switch (a)\ncase (b)\n  :".\str_repeat('w', times: 24).";\ncase (a long label on the last case)\n  :x;\nendswitch", ['x']];
+        yield 'a loop breaking from a switch' => ["while (w?)\n  switch (s)\n  case (a)\n    :x;\n    break\n  case (b)\n    :y;\n  endswitch\nendwhile\n:after;", ['x', 'y', 'after']];
+    }
+
     /** @param list<string> $texts */
     #[DataProvider('diagrams')]
+    #[DataProvider('switches')]
     public function testEveryFeatureDraws(string $lines, array $texts): void
     {
         $shown = \array_map(static fn (Mark $mark): string => \trim((string) $mark->text), self::draw($lines)->marks);
@@ -200,13 +207,6 @@ final class ActivityDrawingTest extends TestCase
 
         $this->assertContains('a', $shown);
         $this->assertContains('f?', $shown);
-    }
-
-    public function testNotesOnASwitchAreLeftToPlantUml(): void
-    {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw notes on a switch'));
-
-        self::draw("switch (a)\nnote right: n\ncase (b)\n  :c;\nendswitch");
     }
 
     public function testASwitchWithoutCasesIsLeftToPlantUml(): void

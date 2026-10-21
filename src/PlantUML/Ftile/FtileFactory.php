@@ -114,13 +114,9 @@ final readonly class FtileFactory
      *
      * @param non-empty-list<PositionedNote> $notes
      */
-    public function withNotes(Ftile $tile, array $notes): Ftile
+    public function withNotes(Ftile $tile, array $notes): FtileWithNote
     {
-        if (1 === \count($notes)) {
-            return FtileWithNote::one($tile, $this->note($notes[0]), $notes[0]->position);
-        }
-
-        return $this->stacked($tile, $notes);
+        return 1 === \count($notes) ? FtileWithNote::one($tile, $this->note($notes[0]), $notes[0]->position) : $this->stacked($tile, $notes);
     }
 
     /**
@@ -175,7 +171,7 @@ final readonly class FtileFactory
     }
 
     /** @param non-empty-list<PositionedNote> $notes */
-    private function stacked(Ftile $tile, array $notes): Ftile
+    private function stacked(Ftile $tile, array $notes): FtileWithNote
     {
         $left = [];
         $right = [];

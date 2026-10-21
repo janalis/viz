@@ -121,15 +121,13 @@ final readonly class FtileBuilder
 
     /**
      * A `switch`: each case with room for its labels in and out, between its test's diamond
-     * and the one its cases meet at, coloured by the first case's colour or the switch's.
+     * and the one its cases meet at, coloured by the first case's colour or the switch's; its
+     * own notes at its top.
      *
-     * @throws Unsupported for notes on the switch itself, which PlantUML puts at its top
+     * @throws Unsupported for a switch without cases
      */
     private function switch(InstructionSwitch $switch): Ftile
     {
-        if ([] !== $switch->notes) {
-            throw new Unsupported('The native PlantUML renderer does not draw notes on a switch');
-        }
         if ([] === $switch->cases) {
             throw new Unsupported('The native PlantUML renderer does not draw a switch without cases');
         }
@@ -150,8 +148,9 @@ final readonly class FtileBuilder
         foreach ($cases as $case) {
             \array_push($breaks, ...$case->tile->weldings());
         }
+        $result = [] === $breaks ? $result : new FtileDecorate($result, weldings: $breaks);
 
-        return [] === $breaks ? $result : new FtileDecorate($result, weldings: $breaks);
+        return [] === $switch->notes ? $result : $this->factory->withNotes($result, $switch->notes)->atTop();
     }
 
     /** A case with room above it for its label in, below it for its label out, and on its right for the wider. */

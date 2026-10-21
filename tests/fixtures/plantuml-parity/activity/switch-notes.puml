@@ -1,0 +1,22 @@
+@startuml
+start
+switch (test?)
+note right: a note on the switch
+case (A)
+  :one;
+case (B)
+  :two;
+endswitch
+switch (again?)
+note left
+  first note
+  over two lines
+end note
+note right: second
+case (C)
+  :three;
+case (D)
+  :four;
+endswitch
+stop
+@enduml

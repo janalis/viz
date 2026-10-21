@@ -36,6 +36,7 @@ return [
     'activity/styled' => 4,
     'activity/switch-free' => 4,
     'activity/switch-labels' => 4,
+    'activity/switch-notes' => 4,
     'activity/switch-one' => 4,
     'activity/switch-stop' => 4,
     'activity/switch-two' => 4,

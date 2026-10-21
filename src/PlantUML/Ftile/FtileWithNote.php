@@ -7,9 +7,9 @@ namespace Janalis\Viz\PlantUML\Ftile;
 use Janalis\Viz\PlantUML\Activities\LinkRendering;
 
 /**
- * A tile with its notes beside it, centred down its height: one note 20 away, pointing at the
- * tile unless it floats; several stacked on their side 10 apart, not pointing; or, with no
- * tile, a note alone in the flow.
+ * A tile with its notes beside it, centred down its height — or at its top, as beside a
+ * switch: one note 20 away, pointing at the tile unless it floats; several stacked on their
+ * side 10 apart, not pointing; or, with no tile, a note alone in the flow.
  */
 final class FtileWithNote extends AbstractFtile
 {
@@ -26,7 +26,14 @@ final class FtileWithNote extends AbstractFtile
         /** Whether a single note points at the tile. */
         private readonly bool $single,
         private readonly bool $out = true,
+        private readonly bool $top = false,
     ) {}
+
+    /** It with its notes at the top of its tile, as PlantUML puts a switch's. */
+    public function atTop(): self
+    {
+        return new self($this->tile, $this->left, $this->right, $this->single, $this->out, top: true);
+    }
 
     /** One note beside a tile, pointing at it unless it floats. */
     public static function one(Ftile $tile, Opale $note, string $position): self
@@ -97,13 +104,13 @@ final class FtileWithNote extends AbstractFtile
             $note = $this->left[0] ?? $this->right[0];
             [$noteWidth, $noteHeight] = $note->size();
             [] === $this->left ? $note->point('left', -self::SPACE) : $note->point('right', $noteWidth + self::SPACE);
-            $canvas->add(...$note->shapes([] === $this->left ? $width - $noteWidth : 0.0, ($height - $noteHeight) / 2));
+            $canvas->add(...$note->shapes([] === $this->left ? $width - $noteWidth : 0.0, $this->top ? 0.0 : ($height - $noteHeight) / 2));
         }
         if (!$this->single) {
             [$leftWidth, $leftHeight] = self::stack($this->left);
             [$rightWidth, $rightHeight] = self::stack($this->right);
-            $this->drawStack($canvas, $this->left, 0.0, ($height - $leftHeight) / 2, $leftWidth);
-            $this->drawStack($canvas, $this->right, $width - $rightWidth, ($height - $rightHeight) / 2, $rightWidth);
+            $this->drawStack($canvas, $this->left, 0.0, $this->top ? 0.0 : ($height - $leftHeight) / 2, $leftWidth);
+            $this->drawStack($canvas, $this->right, $width - $rightWidth, $this->top ? 0.0 : ($height - $rightHeight) / 2, $rightWidth);
         }
         [$dx, $dy] = $this->tileAt();
         $tile->draw($canvas->moved($dx, $dy));
@@ -120,7 +127,8 @@ final class FtileWithNote extends AbstractFtile
             return [$dx, ($height - $tileHeight) / 2];
         }
 
-        return [self::stack($this->left)[0], ($height - $tileHeight) / 2];
+        // As PlantUML, a single note's tile stays centred, even when the note stands at its top.
+        return [self::stack($this->left)[0], $this->top ? 0.0 : ($height - $tileHeight) / 2];
     }
 
     /** @return array{float, float} */
