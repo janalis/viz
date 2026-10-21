@@ -26,6 +26,7 @@ return [
     'activity/merge' => 4,
     'activity/nested-loops' => 4,
     'activity/notes' => 4,
+    'activity/packages' => 4,
     'activity/partitions' => 4,
     'activity/rainbow' => 4,
     'activity/repeat-backward' => 4,

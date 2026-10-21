@@ -103,6 +103,11 @@ final class FtileTest extends TestCase
         $canvas->inLane('B');
     }
 
+    public function testAnEmptyLabelDrawsNothing(): void
+    {
+        $this->assertSame([], new Label([''], new Style([]))->shapes(0.0, 0.0));
+    }
+
     public function testTilesAroundABreakFindWhereItStands(): void
     {
         $break = new FtileBreak();

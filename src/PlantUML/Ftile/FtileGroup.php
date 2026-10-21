@@ -10,7 +10,7 @@ use Janalis\Viz\PlantUML\Teoz\Rose\Pen;
 
 /**
  * A frame around steps — `partition` and `group` with their title in a tab, `rectangle`,
- * `card` — 10 clear of them either side, its title above them, wide enough for its title and
+ * `card`, `package` as a folder — 10 clear of them either side, its title above them, wide enough for its title and
  * for whatever they draw past their own width.
  */
 final class FtileGroup extends AbstractFtile
@@ -20,10 +20,10 @@ final class FtileGroup extends AbstractFtile
 
     public function __construct(
         Ftile $inner,
-        private readonly Label $title,
+        private readonly TextBlock $title,
         private readonly Style $style,
         private readonly string $back,
-        /** `partition`, `group`, `rectangle` or `card` */
+        /** `partition`, `group`, `rectangle`, `card` or `package` */
         private readonly string $type,
         private readonly Pen $arrow,
     ) {
@@ -76,6 +76,7 @@ final class FtileGroup extends AbstractFtile
                 Shape::of(ShapeKind::Line, [$pen->line(0.0, $titleHeight + 4, $width, $titleHeight + 4)]),
                 ...$this->title->shapes(($width - $titleWidth) / 2, 2.0),
             ],
+            'package' => $this->folder($pen, $width, $geometry->height),
             default => $this->frame($pen, $width, $geometry->height),
         };
         // As PlantUML, which draws a group in each swimlane it holds steps of, and only those: its frame in each.
@@ -96,13 +97,25 @@ final class FtileGroup extends AbstractFtile
     private function frame(Pen $pen, float $width, float $height): array
     {
         [$titleWidth, $titleHeight] = $this->title->size();
-        [$tab, $corner] = 0.0 === $titleWidth ? [$width / 3, 7.0] : [$titleWidth + 10, 10.0];
-        $tabHeight = 0.0 === $titleWidth ? 12.0 : $titleHeight + 3;
+        [$tab, $corner, $tabHeight] = [$titleWidth + 10, 10.0, $titleHeight + 3];
 
         return [
             new Shape(ShapeKind::Rectangle, [$pen->rectangle(0.0, 0.0, $width, $height, $this->back, $this->style->number('RoundCorner'))], 0.0, 0.0, $width, $height, ignoreX: true, ignoreY: true),
             Shape::of(ShapeKind::Path, [$pen->path([[$tab, 0.0], [$tab, $tabHeight - $corner], [$tab - $corner, $tabHeight], [0.0, $tabHeight]])], ignoreX: true),
             ...$this->title->shapes(3.0, 1.0),
+        ];
+    }
+
+    /** @return list<Shape> a folder, its title in its tab, as PlantUML's folder symbol draws it */
+    private function folder(Pen $pen, float $width, float $height): array
+    {
+        [$titleWidth, $titleHeight] = $this->title->size();
+        [$tab, $tabHeight] = [$titleWidth + 6, $titleHeight + 6];
+
+        return [
+            Shape::of(ShapeKind::Polygon, [$pen->shape([[0.0, 0.0], [$tab, 0.0], [$tab + 7, $tabHeight], [$width, $tabHeight], [$width, $height], [0.0, $height], [0.0, 0.0]], $this->back)]),
+            Shape::of(ShapeKind::Line, [$pen->line(0.0, $tabHeight, $tab + 7, $tabHeight)]),
+            ...$this->title->shapes(4.0, 2.0),
         ];
     }
 

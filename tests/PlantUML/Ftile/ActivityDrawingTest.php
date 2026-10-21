@@ -283,13 +283,6 @@ final class ActivityDrawingTest extends TestCase
         self::draw("switch (a)\nendswitch");
     }
 
-    public function testPackagesAreLeftToPlantUml(): void
-    {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw activity packages'));
-
-        self::draw("package P {\n  :a;\n}");
-    }
-
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

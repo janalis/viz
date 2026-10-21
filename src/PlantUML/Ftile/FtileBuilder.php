@@ -416,9 +416,6 @@ final readonly class FtileBuilder
 
     private function group(InstructionGroup $group): Ftile
     {
-        if ('package' === $group->type) {
-            throw new Unsupported('The native PlantUML renderer does not draw activity packages');
-        }
         $tile = $this->list($group->list);
         if (null !== $group->note) {
             $tile = FtileWithNote::several($tile, ...$this->sides($group->note));
@@ -426,7 +423,10 @@ final readonly class FtileBuilder
         $style = $this->factory->styles->style(Stereogroup::stereotypes($group->stereotype), $group->type, 'composite');
         $back = PlantUmlColor::parse((string) $group->color) ?? $style->color('BackGroundColor', 'none');
 
-        return new FtileGroup($tile, new Label($group->title, $style), $style, $back, $group->type, $this->factory->pen());
+        // As PlantUML, which writes a title left empty as a space.
+        $title = '' === \trim(\implode('', $group->title)) ? new SpaceBlock($style) : new Label($group->title, $style);
+
+        return new FtileGroup($tile, $title, $style, $back, $group->type, $this->factory->pen());
     }
 
     /** @return array{list<Opale>, list<Opale>} a note on its side */

@@ -1,0 +1,11 @@
+@startuml
+start
+package Pkg {
+  :a;
+  :b;
+}
+package "" {
+  :c;
+}
+stop
+@enduml
