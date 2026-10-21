@@ -248,6 +248,16 @@ final class ActivityDrawingTest extends TestCase
         self::draw($lines);
     }
 
+    public function testElseIfsLeavingOnlyInOtherSwimlanesCloseThere(): void
+    {
+        $shown = \array_map(
+            static fn (Mark $mark): string => \trim((string) $mark->text),
+            self::draw("|A|\nif (a) then\n  |B|\n  :b;\nelseif (c) then\n  |C|\n  :d;\nelse\n  |B|\n  :e;\nendif")->marks,
+        );
+
+        $this->assertContains('d', $shown);
+    }
+
     public function testDecisionsClosedByALineAcrossSwimlanesAreLeftToPlantUml(): void
     {
         $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a decision closed by a line across swimlanes'));

@@ -50,6 +50,12 @@ final class Canvas
         return new self($this->store, $this->dx + $dx, $this->dy + $dy, $this->lanes, $this->lane, $this->spanning, $this->pinned);
     }
 
+    /** Whether it only measures what each swimlane holds. */
+    public function measuring(): bool
+    {
+        return true === $this->lanes?->measuring;
+    }
+
     /** The swimlane it draws in, if any. */
     public function lane(): ?string
     {

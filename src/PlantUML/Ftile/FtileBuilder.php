@@ -225,6 +225,7 @@ final readonly class FtileBuilder
             $this->factory->arrow,
             $this->factory->arrow->over($if->inLink()->color),
             $this->factory->arrow->over($if->outColor->color),
+            $this->order,
         );
     }
 

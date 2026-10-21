@@ -1,0 +1,30 @@
+@startuml
+|A|
+start
+if (a?) then (yes)
+  :one;
+elseif (b?) then (yes)
+  |B|
+  :two;
+  |A|
+elseif (c?) then (yes)
+  |C|
+  :three;
+  |A|
+else (no)
+  |B|
+  :four;
+endif
+|A|
+:after;
+if (d?) then (yes)
+  |C|
+  :five;
+  |A|
+elseif (e?) then (yes)
+  :six;
+else (no)
+  :seven;
+endif
+stop
+@enduml

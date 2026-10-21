@@ -40,6 +40,8 @@ final class FtileIfLong extends AbstractFtile
         private readonly Rainbow $in,
         /** The arrow after `endif`. */
         private readonly Rainbow $after,
+        /** @var array<string, int> each swimlane's place from the left */
+        private readonly array $order = [],
     ) {
         $maxOutY = \max(\array_map(static fn (FtileDiamond $diamond): float => (float) $diamond->geometry()->outY, $diamonds));
         $aligned = [];
@@ -95,20 +97,30 @@ final class FtileIfLong extends AbstractFtile
     public function draw(Canvas $canvas): void
     {
         foreach ($this->couples as $index => $couple) {
-            $couple->draw($canvas->moved(...$this->coupleAt($index)));
+            $couple->draw($canvas->spanning()->moved(...$this->coupleAt($index)));
         }
-        $this->tile2->draw($canvas->moved(...$this->tile2At()));
+        $this->tile2->draw($canvas->spanning()->moved(...$this->tile2At()));
         $height = $this->internal()->height;
         $outs = 0;
+        $none = static fn (): array => [];
         foreach ($this->thens as $index => $branch) {
             $tile = $this->tiles[$index];
             $outs += $branch->tile->geometry()->hasOut() ? 1 : 0;
             [$x1, $y1] = $this->at($this->inCouple($index, $this->diamonds[$index]), $this->diamonds[$index]->geometry()->out());
             [$x2, $y2] = $this->at($this->translateFor($tile), $tile->geometry()->in());
-            $canvas->snake(Snake::through($branch->inColor($this->arrow), Snake::arrow('D'), [[$x1, $y1], [$x2, $y2]]));
+            $color = $branch->inColor($this->arrow);
+            $canvas->link(
+                Snake::through($color, Snake::arrow('D'), [[$x1, $y1], [$x2, $y2]]),
+                null,
+                FtileLane::in($tile),
+                static fn (float $t1, float $t2): array => [
+                    Snake::through($color, Snake::arrow('D'), [[$x1 + $t1, $y1], [$x1 + $t1, $y1 + 4], [$x2 + $t2, $y1 + 4], [$x2 + $t2, $y2]]),
+                ],
+            );
             if ($tile->geometry()->hasOut()) {
                 [$x, $y] = $this->at($this->translateFor($tile), $tile->geometry()->out());
-                $canvas->snake(Snake::through($branch->out() ?? $this->arrow, Snake::arrow('D'), [[$x, $y], [$x, $height]])->withLabel($this->outs[$index]));
+                $lane = FtileLane::out($tile);
+                $canvas->link(Snake::through($branch->out() ?? $this->arrow, Snake::arrow('D'), [[$x, $y], [$x, $height]])->withLabel($this->outs[$index]), $lane, $lane, $none);
             }
         }
         foreach ($this->thens as $index => $branch) {
@@ -122,36 +134,78 @@ final class FtileIfLong extends AbstractFtile
         $this->drawInAndElse($canvas, $outs);
     }
 
-    /** Into the first diamond, from the last into the `else` branch, out of it, and the line across. */
+    /** Into the first diamond, from the last into the `else` branch, out of it, and the line across — neither of the `else` branch's across swimlanes, as PlantUML. */
     private function drawInAndElse(Canvas $canvas, int $outs): void
     {
         $internal = $this->internal();
+        $none = static fn (): array => [];
         [$x2, $y2] = $this->at($this->inCouple(0, $this->diamonds[0]), $this->diamonds[0]->geometry()->in());
         $canvas->snake(Snake::through($this->in, Snake::arrow('D'), [[$internal->left, 0.0], [$x2, 0.0], [$x2, $y2]]));
         [$x1, $y1] = $this->diamondRight(\count($this->diamonds) - 1);
         $tile2 = $this->tile2->geometry();
         [$x2, $y2] = $this->at($this->tile2At(), $tile2->in());
-        $canvas->snake(Snake::through($this->else->inColor($this->arrow), Snake::arrow('D'), [[$x1, $y1], [$x2, $y1], [$x2, $y2]]));
+        $canvas->link(Snake::through($this->else->inColor($this->arrow), Snake::arrow('D'), [[$x1, $y1], [$x2, $y1], [$x2, $y2]]), null, FtileLane::in($this->tile2), $none);
         if ($tile2->hasOut()) {
             [$x, $y] = $this->at($this->tile2At(), $tile2->out());
             $points = [[$x, $y], [$x, $internal->height], ...(0 === $outs ? [[$internal->left, $internal->height]] : [])];
-            $canvas->snake(Snake::through($this->else->out() ?? $this->arrow, Snake::arrow('D'), $points)->withLabel($this->elseOut));
+            $lane = FtileLane::out($this->tile2);
+            $canvas->link(Snake::through($this->else->out() ?? $this->arrow, Snake::arrow('D'), $points)->withLabel($this->elseOut), $lane, $lane, $none);
         }
         if (0 === $outs) {
             return;
         }
-        $xs = [$internal->left];
+        foreach ($canvas->measuring() ? [] : $this->lines($canvas->lane()) as $lane => [$min, $max]) {
+            $snake = Snake::through($this->after, null, [[$min, $internal->height], [$max, $internal->height]])->withMerge(MergeStrategy::None);
+            '' === $lane ? $canvas->snake($snake) : $canvas->link($snake, $lane, $lane, $none);
+        }
+    }
+
+    /**
+     * The line across under the branches, as PlantUML draws it: from the leftmost way out to the
+     * rightmost — or, across swimlanes, in each swimlane between the first and the last a way out
+     * leaves in, from its own ways out to the side the others stand on.
+     *
+     * @return array<string, array{float, float}> each swimlane's stretch, by name, `''` for no swimlane
+     */
+    private function lines(?string $own): array
+    {
+        $internal = $this->internal();
+        /** @var list<array{?string, float}> $ways each way out's swimlane and place across */
+        $ways = [];
         foreach ($this->couples as $index => $couple) {
             if (!$couple->geometry()->hasOut()) {
                 continue;
             }
+            $ways[] = [FtileLane::out($couple) ?? $own, $this->coupleAt($index)[0] + $couple->geometry()->left];
+        }
+        if ($this->tile2->geometry()->hasOut()) {
+            $ways[] = [FtileLane::out($this->tile2) ?? $own, $this->tile2At()[0] + $this->tile2->geometry()->left];
+        }
+        $lanes = \array_values(\array_unique([...(null === $own ? [] : [$own]), ...FtileLane::all($this)]));
+        if (\count($lanes) < 2) {
+            $xs = [$internal->left, ...\array_map(static fn (array $way): float => $way[1], $ways)];
 
-            $xs[] = $this->coupleAt($index)[0] + $couple->geometry()->left;
+            return ['' => [\min($xs), \max($xs)]];
         }
-        if ($tile2->hasOut()) {
-            $xs[] = $this->tile2At()[0] + $tile2->left;
+        $places = \array_map(fn (array $way): int => $this->order[(string) $way[0]] ?? 0, $ways);
+        [$first, $last] = [\min($places), \max($places)];
+        $lines = [];
+        foreach ($lanes as $lane) {
+            $place = $this->order[$lane] ?? 0;
+            if ($place < $first || $place > $last) {
+                continue;
+            }
+            $xs = [$place !== $first ? 0.0 : $internal->width, $place !== $last ? $internal->width : 0.0, $internal->left];
+            foreach ($ways as [$wayLane, $x]) {
+                if ($wayLane !== $lane) {
+                    continue;
+                }
+                $xs[] = $x;
+            }
+            $lines[$lane] = [\min($xs), \max($xs)];
         }
-        $canvas->snake(Snake::through($this->after, null, [[\min($xs), $internal->height], [\max($xs), $internal->height]])->withMerge(MergeStrategy::None));
+
+        return $lines;
     }
 
     /** @return array{float, float} the middle of a diamond's left side */
