@@ -34,6 +34,17 @@ final class PlantUmlFrame
     }
 
     /**
+     * A diagram PlantUML sets with no margin of its own, as a network diagram, its captions
+     * still around it.
+     *
+     * @param list<Mark> $marks the diagram's, in points, its top left at the origin
+     */
+    public static function bare(PlantUmlDocument $document, array $marks, float $width, float $height): Drawing
+    {
+        return self::framed($document, $marks, $width, $height, [0.0, 0.0, 0.0, 0.0]);
+    }
+
+    /**
      * A sequence diagram, as PlantUML sets one laid out by teoz: 5 clear of the diagram all
      * round, which its captions stand outside of, and 5 more around everything.
      *

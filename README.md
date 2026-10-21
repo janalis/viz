@@ -4,7 +4,7 @@ Mermaid, Graphviz and PlantUML for PHP 8.5: render them to SVG, PNG or PDF, and 
 
 - **Mermaid** is drawn natively, in PHP, with no Node and no browser: 30+ diagram families, themes and the hand-drawn look, pinned to Mermaid 12.1 (see [the compatibility notes](docs/mermaid-compatibility.md)). mermaid-cli (`mmdc`) is the fallback.
 - **Graphviz** is drawn natively with dot's own method, written from its papers ([compatibility notes](docs/graphviz-compatibility.md)); `dot` is the fallback for what that leaves.
-- **PlantUML** is drawn natively for sequence, class, state, activity, component, deployment and use case diagrams, mind maps, work breakdown structures, JSON, YAML, Chen EER, EBNF, regex, board and packet diagrams, ported from its MIT distribution ([compatibility notes](docs/plantuml-compatibility.md)); `plantuml` or its `.jar` draws the rest.
+- **PlantUML** is drawn natively for sequence, class, state, activity, component, deployment and use case diagrams, mind maps, work breakdown structures, JSON, YAML, Chen EER, EBNF, regex, board, packet and network diagrams, ported from its MIT distribution ([compatibility notes](docs/plantuml-compatibility.md)); `plantuml` or its `.jar` draws the rest.
 - **Shared models** (`Janalis\Viz\Model`): a graph of nodes, edges and nested clusters, plus a model for each family the languages share. Each language can be written from them, and read into them where it has a reader.
 
 ```bash

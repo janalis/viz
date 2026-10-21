@@ -18,6 +18,7 @@ use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
 use Janalis\Viz\PlantUML\LegacyActivities\LegacyActivityFamily;
 use Janalis\Viz\PlantUML\MindMaps\MindMapFamily;
+use Janalis\Viz\PlantUML\NwDiag\NwFamily;
 use Janalis\Viz\PlantUML\Packet\PacketFamily;
 use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
@@ -45,6 +46,7 @@ final readonly class PlantUmlPipeline implements Pipeline
         'regex' => ['regex' => 'regex'],
         'board' => ['board' => 'board'],
         'packetdiag' => ['packet' => 'packet'],
+        'nwdiag' => ['nw' => 'network'],
     ];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
@@ -69,6 +71,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'regex' => new RegexFamily(),
             'board' => new BoardFamily(),
             'packet' => new PacketFamily(),
+            'nw' => new NwFamily(),
         ]);
     }
 

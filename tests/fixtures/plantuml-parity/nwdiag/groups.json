@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 260,
+    "height": 267,
+    "words": [
+        "DMZ",
+        "The",
+        "Web",
+        "database",
+        "internal",
+        "main",
+        "servers",
+        "web01",
+        "web02"
+    ],
+    "baselines": [
+        [
+            "DMZ",
+            16.602
+        ],
+        [
+            "The",
+            16.602
+        ],
+        [
+            "Web",
+            51.168
+        ],
+        [
+            "database",
+            212.699
+        ],
+        [
+            "internal",
+            149
+        ],
+        [
+            "main",
+            198.566
+        ],
+        [
+            "servers",
+            51.168
+        ],
+        [
+            "web01",
+            80.301
+        ],
+        [
+            "web02",
+            80.301
+        ]
+    ]
+}

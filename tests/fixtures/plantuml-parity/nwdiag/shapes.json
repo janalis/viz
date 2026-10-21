@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 650,
+    "height": 138,
+    "words": [
+        "Cloud",
+        "Database",
+        "Folder",
+        "Network",
+        "Queue",
+        "Server",
+        "Storage"
+    ],
+    "baselines": [
+        [
+            "Cloud",
+            75.168
+        ],
+        [
+            "Database",
+            84.668
+        ],
+        [
+            "Folder",
+            84.168
+        ],
+        [
+            "Network",
+            16.602
+        ],
+        [
+            "Queue",
+            75.168
+        ],
+        [
+            "Server",
+            80.168
+        ],
+        [
+            "Storage",
+            75.168
+        ]
+    ]
+}

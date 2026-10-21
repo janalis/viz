@@ -1,0 +1,21 @@
+@startnwdiag
+nwdiag {
+  group {
+    color = "#FFAAAA";
+    description = "Web servers";
+    web01;
+    web02;
+  }
+  network dmz {
+    color = "pink"
+    description = "The DMZ"
+    web01;
+    web02;
+  }
+  network internal {
+    width = full
+    web01;
+    db01 [description = "main\ndatabase", color = "#AAFFAA"];
+  }
+}
+@endnwdiag

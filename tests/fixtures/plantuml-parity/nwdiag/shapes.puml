@@ -1,0 +1,12 @@
+@startnwdiag
+nwdiag {
+  network Network {
+    Server [shape = node]
+    Database [shape = database]
+    Cloud [shape = cloud]
+    Storage [shape = storage]
+    Queue [shape = queue]
+    Folder [shape = folder]
+  }
+}
+@endnwdiag

@@ -68,11 +68,17 @@ final readonly class DescriptionBox
         private ?PlantUmlText $stereotypes,
         public float $width,
         public float $height,
+        /** Whether its lines are set left in their block, the block centred, as a network diagram's servers set them; each line centred otherwise. */
+        private bool $flushLeft = false,
     ) {}
 
-    public static function of(DescriptionElement $element, StyleSheet $sheet): self
+    /**
+     * @param ?Style $style the style it is drawn in, its symbol's in a component diagram by default, as a network diagram's servers take their own
+     * @param bool $flushLeft whether its lines are set left in their block, the block centred
+     */
+    public static function of(DescriptionElement $element, StyleSheet $sheet, ?Style $style = null, bool $flushLeft = false): self
     {
-        $style = $sheet->style(['root', 'element', 'componentDiagram', $element->symbol], $element->stereotypes);
+        $style ??= $sheet->style(['root', 'element', 'componentDiagram', $element->symbol], $element->stereotypes);
         $text = PlantUmlText::styled($element->display, $style);
         $stereoStyle = $sheet->style(['root', 'element', 'componentDiagram', $element->symbol, 'stereotype'], $element->stereotypes);
         $stereotypes = [] === $element->stereotypes || !$element->stereotypeShown
@@ -92,7 +98,7 @@ final readonly class DescriptionBox
             default => self::boxed($element->symbol, $labelWidth, $labelHeight),
         };
 
-        return new self($element, $style, $text, $stereotypes, $width, $height);
+        return new self($element, $style, $text, $stereotypes, $width, $height, $flushLeft);
     }
 
     /** @return array{float, float} */
@@ -180,6 +186,12 @@ final readonly class DescriptionBox
         if (null !== $this->stereotypes) {
             \array_push($marks, ...$this->stereotypes->marks($x, $y, $width));
             $y += $this->stereotypes->size()[1];
+        }
+
+        if ($this->flushLeft) {
+            $textWidth = $this->text->size()[0];
+
+            return [...$marks, ...$this->text->marks($x + (($width - $textWidth) / 2), $y, $textWidth, 'left')];
         }
 
         return [...$marks, ...$this->text->marks($x, $y, $width)];
