@@ -17,7 +17,7 @@ Where PlantUML's preprocessor stops on an error, the diagram is left to PlantUML
 
 | Read natively | Left to PlantUML |
 | --- | --- |
-| `skinparam name value`, `skinparam [prefix] { … }` with nested blocks and `<<stereotype>>`s; `<style>` sheets on one line or several, a `document` or `root` margin standing for the diagram's own; `skinparam dpi`, scaling as PlantUML does against 96; `!assume transparent`, which does nothing; `skin rose`; `title`, `caption`, `header`, `footer`, `legend` on one line or several, with their alignments; `scale n` and `scale a/b` | Sprites; `mainframe`; `newpage`; `rotate`; `page`; `minwidth`; `skinparamlocked`; `scale` to a width or height; other skins |
+| `skinparam name value`, `skinparam [prefix] { … }` with nested blocks and `<<stereotype>>`s; `<style>` sheets on one line or several, a `document` or `root` margin standing for the diagram's own; `skinparam dpi`, scaling as PlantUML does against 96; `!assume transparent`, which does nothing; `sprite` of 16, 8 or 4 gray levels, packed or compressed, and `<$name>` in text; `skin rose`; `title`, `caption`, `header`, `footer`, `legend` on one line or several, with their alignments; `scale n` and `scale a/b` | Sprites of colours, of SVG or of the standard library; `mainframe`; `newpage`; `rotate`; `page`; `minwidth`; `skinparamlocked`; `scale` to a width or height; other skins |
 
 ## Styles
 

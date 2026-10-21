@@ -369,7 +369,7 @@ final readonly class FtileBuilder
     {
         $style = $this->factory->styles->activity($stereogroup);
 
-        return new FtileBox($label, new Style(['BackGroundColor' => $back] + $style->values), Stereogroup::boxStyle($stereogroup), new LinkRendering());
+        return new FtileBox($label, new Style(['BackGroundColor' => $back] + $style->values, $style->sprites), Stereogroup::boxStyle($stereogroup), new LinkRendering());
     }
 
     /**

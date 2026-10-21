@@ -106,6 +106,7 @@ return [
     'description/packages' => 4,
     'description/rose' => 4,
     'description/skinparam' => 4,
+    'description/sprites' => 4,
     'description/stereotype-blocks' => 4,
     'description/stereotypes' => 4,
     'description/symbols' => 4,

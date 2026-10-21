@@ -202,7 +202,7 @@ final readonly class Rose
             return $style;
         }
 
-        return new Style([...$style->values, 'BackGroundColor' => $color]);
+        return new Style([...$style->values, 'BackGroundColor' => $color], $style->sprites);
     }
 
     /** @return list<string> */

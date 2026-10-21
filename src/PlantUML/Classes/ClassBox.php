@@ -96,7 +96,7 @@ final readonly class ClassBox
         $height = $header;
         $line = $name->line();
         foreach ($compartments as [$lines]) {
-            $text = new PlantUmlText(\array_map(self::text(...), $lines), $style->fontSize());
+            $text = new PlantUmlText(\array_map(self::text(...), $lines), $style->fontSize(), sprites: $style->sprites);
             [$textWidth] = $text->size();
             $width = \max($width, $textWidth + 12 + ($iconSize > 0 && $visibility ? self::RADIUS + 3 : 0.0));
             $height += 8 + (\count($lines) * $line);
@@ -116,7 +116,13 @@ final readonly class ClassBox
         $top = $y + $this->header;
         foreach ($this->compartments as [$lines, $separator, $title]) {
             \array_push($marks, ...self::separator($x, $top, $this->width, $separator, $title, $line, $stroke, $this->style));
-            $text = new PlantUmlText(\array_map(self::text(...), $lines), $this->style->fontSize(), color: $this->style->color('FontColor', '#000000'));
+            $text = new PlantUmlText(
+                \array_map(self::text(...), $lines),
+                $this->style->fontSize(),
+                color: $this->style->color('FontColor', '#000000'),
+                sprites: $this->style->sprites,
+                background: $back,
+            );
             $left = $x + 6 + ($this->icons ? self::RADIUS + 3 : 0.0);
             foreach ($lines as $index => $member) {
                 $rowTop = $top + 4 + ($index * $text->line());
@@ -205,7 +211,14 @@ final readonly class ClassBox
         if ($this->icons && \array_key_exists($visibility, self::ICONS)) {
             \array_push($marks, ...self::icon(self::ICONS[$visibility], ClassBody::method($member) ? 2 : 1, $left - self::RADIUS + 1, $top + ($text->line() / 2)));
         }
-        $row = new PlantUmlText([self::text($member)], $text->size, \str_contains(\strtolower($member), '{abstract}') ? FontFace::Italic : FontFace::Regular, $text->color);
+        $row = new PlantUmlText(
+            [self::text($member)],
+            $text->size,
+            \str_contains(\strtolower($member), '{abstract}') ? FontFace::Italic : FontFace::Regular,
+            $text->color,
+            $text->sprites,
+            $text->background,
+        );
         \array_push($marks, ...$row->marks($left, $top, 0.0, 'left'));
         if (\str_contains(\strtolower($member), '{static}') || \str_contains(\strtolower($member), '{classifier}')) {
             [$width] = $row->size();

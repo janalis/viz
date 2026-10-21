@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Style;
 
+use Janalis\Viz\PlantUML\Draw\PlantUmlSprite;
+
 /**
  * PlantUML's styles, as its style sheets cascade them: each block names the elements it
  * applies to, by style names, stereotypes and depth; an element takes every declaration
@@ -214,6 +216,9 @@ final class StyleSheet
     /** @var ?array<string, list<array{list<string>, string}>> */
     private static ?array $skinParams = null;
 
+    /** @var array<string, PlantUmlSprite> the sprites the document defines, by name */
+    private array $sprites = [];
+
     /**
      * @param array<string, array{StyleSignature, array<string, array{string, int}>}> $rules each declaration's values and their priority, by signature
      */
@@ -228,6 +233,15 @@ final class StyleSheet
         $name = 'rose' === \strtolower($name) ? 'rose' : 'plantuml';
 
         return self::$skins[$name] ??= new self()->with((string) \file_get_contents(__DIR__.'/../../../resources/plantuml/'.$name.'.skin'));
+    }
+
+    /** The sheet with a sprite defined, for the text of its styles to draw. */
+    public function withSprite(string $name, PlantUmlSprite $sprite): self
+    {
+        $sheet = clone $this;
+        $sheet->sprites[$name] = $sprite;
+
+        return $sheet;
     }
 
     /** The sheet with a style sheet's declarations after its own. */
@@ -282,7 +296,7 @@ final class StyleSheet
             }
         }
 
-        return new Style($values);
+        return new Style($values, $this->sprites);
     }
 
     private function declare(StyleSignature $signature, string $property, string $value, int $priority): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Style;
 
+use Janalis\Viz\PlantUML\Draw\PlantUmlSprite;
 use Janalis\Viz\Text\FontFace;
 
 /** An element's style: the value of each property it took from the cascade, read as PlantUML reads it. */
@@ -12,6 +13,8 @@ final readonly class Style
     /** @param array<string, string> $values by property name, as {@see StyleSheet::PROPERTIES} spells it */
     public function __construct(
         public array $values = [],
+        /** @var array<string, PlantUmlSprite> the document's sprites, by name, for its text to draw */
+        public array $sprites = [],
     ) {}
 
     public function value(string $property, string $default = ''): string

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\PlantUML;
 
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\Render\Work;
@@ -60,6 +61,10 @@ final class PlantUmlParityTest extends TestCase
         }
         $placed = [];
         foreach ($drawing->marks as $mark) {
+            // An image's mark holds its data, not words.
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
             foreach ((array) \preg_split('/\s+/u', \trim((string) $mark->text), flags: \PREG_SPLIT_NO_EMPTY) as $word) {
                 $placed[] = [\str_replace(['«', '»'], ['<<', '>>'], (string) $word), $mark->points[0][1] / Units::POINT];
             }

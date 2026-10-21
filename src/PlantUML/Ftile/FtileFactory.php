@@ -187,6 +187,6 @@ final readonly class FtileFactory
         $style = $this->styles->note();
         $color = PlantUmlColor::parse((string) $note->color);
 
-        return null === $color ? $style : new Style(['BackGroundColor' => $color] + $style->values);
+        return null === $color ? $style : new Style(['BackGroundColor' => $color] + $style->values, $style->sprites);
     }
 }

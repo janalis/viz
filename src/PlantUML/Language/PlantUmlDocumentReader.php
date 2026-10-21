@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Language;
 
+use Janalis\Viz\PlantUML\Draw\PlantUmlSprite;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Source\Unsupported;
 
@@ -42,6 +43,9 @@ final class PlantUmlDocumentReader
         while ($this->at < $count) {
             $line = $this->lines[$this->at++];
             $trimmed = \trim($line);
+            if ($this->sprite($trimmed)) {
+                continue;
+            }
             if (1 === \preg_match(self::LEFT, $trimmed)) {
                 throw new Unsupported('The native PlantUML renderer leaves '.\explode(separator: ' ', string: $trimmed, limit: 2)[0].' to PlantUML');
             }
@@ -82,6 +86,54 @@ final class PlantUmlDocumentReader
         }
 
         return true;
+    }
+
+    /**
+     * `sprite $name { … }` of 16 gray levels, `sprite $name [WxH/8] { … }` of 8 or 4, on one line
+     * or up to `}`, and `sprite $name [WxH/16z] data` compressed; a sprite of colours, of SVG or
+     * of the standard library is left to PlantUML.
+     */
+    private function sprite(string $line): bool
+    {
+        $match = [];
+        $name = '\$?([-.\p{L}\p{N}_]+)';
+        if (1 === \preg_match('/^sprite\s+'.$name.'\s*(?:\[(\d+)x(\d+)\/(?:(\d+)(z)?|(color))\])?\s*\{$/u', $line, $match)) {
+            $rows = \array_values(\array_filter(\array_map(\trim(...), $this->until('/^end\s?sprite|\}$/i')), static fn (string $row): bool => '' !== $row));
+            $this->styles = $this->styles->withSprite($match[1], self::sprited($match, $rows));
+
+            return true;
+        }
+        if (1 === \preg_match('/^sprite\s+'.$name.'\s*(?:\[(\d+)x(\d+)\/(?:(\d+)(z)|(color))\])?\s+([-_A-Za-z0-9]+)$/u', $line, $match)) {
+            $this->styles = $this->styles->withSprite($match[1], self::sprited($match, [$match[7]]));
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<array-key, string> $match the name, and width, height, levels, `z` and `color` when written
+     * @param list<string> $rows
+     */
+    private static function sprited(array $match, array $rows): PlantUmlSprite
+    {
+        if ([] === $rows || '' !== ($match[6] ?? '')) {
+            throw new Unsupported([] === $rows ? 'The PlantUML sprite '.$match[1].' has no data' : 'The native PlantUML renderer leaves sprites of colours to PlantUML');
+        }
+        if ('' === ($match[2] ?? '')) {
+            return PlantUmlSprite::gray16($rows);
+        }
+        [$width, $height, $levels] = [(int) $match[2], (int) $match[3], (int) $match[4]];
+        if (!\in_array($levels, [4, 8, 16], strict: true)) {
+            throw new Unsupported('PlantUML allows sprites of 4, 8 or 16 gray levels only');
+        }
+
+        return match (true) {
+            '' !== ($match[5] ?? '') => PlantUmlSprite::compressed($levels, $width, $height, \implode('', $rows)),
+            16 === $levels => PlantUmlSprite::gray16($rows),
+            default => PlantUmlSprite::packed($levels, $width, $height, $rows),
+        };
     }
 
     /** `<style>` sheets, on one line or up to `</style>`. */
