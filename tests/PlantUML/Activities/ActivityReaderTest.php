@@ -141,6 +141,35 @@ final class ActivityReaderTest extends TestCase
         $this->assertTrue($loop->list->all[0]->containsBreak());
     }
 
+    public function testStepsStandInTheSwimlaneWrittenBeforeThem(): void
+    {
+        $activity = self::read(<<<'PUML'
+            split
+            end split
+            |A|
+            start
+            |#pink|B| Second
+            swimlane C as Third lane
+            |B|
+            while (w?)
+              :x;
+            endwhile
+            stop
+            |#gold|A|
+            PUML);
+
+        $this->assertSame(
+            [['A', '#gold', ['A']], ['B', '#pink', [' Second']], ['C', null, ['Third lane']]],
+            \array_map(static fn ($lane): array => [$lane->name, $lane->color, $lane->title], $activity->lanes),
+            'a colour written again colours it',
+        );
+        [$split, $start, $while] = $activity->root->all;
+        $this->assertInstanceOf(InstructionWhile::class, $while);
+        $this->assertNotNull($activity->laneOf);
+        $this->assertNull($activity->laneOf[$split] ?? null, 'a split before any swimlane stands in none');
+        $this->assertSame(['A', 'B', 'B'], [$activity->laneOf[$start], $activity->laneOf[$while], $activity->laneOf[$while->special ?? $while]]);
+    }
+
     public function testLoopsHoldTheirBodiesLabelsAndBackwardActions(): void
     {
         $root = self::read(<<<'PUML'
@@ -286,6 +315,8 @@ final class ActivityReaderTest extends TestCase
         yield 'endswitch alone' => ['endswitch', 'Cannot find switch'];
         yield 'a step before the first case' => ["switch (a)\n:b;", "No 'case' in this switch"];
         yield 'kill a switch without cases' => ["switch (a)\nkill", 'kill cannot be used here'];
+        yield 'a swimlane after a step' => [":a;\n|Lane|", 'This swimlane must be defined at the start of the diagram.'];
+        yield 'a swimlane after a step in a split' => ["split\n  :a;\nend split\n|Lane|", 'This swimlane must be defined at the start of the diagram.'];
         yield 'kill a break' => ["while (a)\n  break\n  kill\nendwhile", 'kill cannot be used here'];
     }
 
@@ -310,7 +341,6 @@ final class ActivityReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function unsupported(): iterable
     {
-        yield 'swimlane' => ['|Lane|', 'The native PlantUML renderer does not draw: |Lane|'];
         yield 'deprecated colour' => ["#pink:a\nb;", 'The native PlantUML renderer does not draw what PlantUML warns of: #pink:a'];
         yield 'stereotype before' => ['<<x>> :a;', 'The native PlantUML renderer does not draw what PlantUML warns of: <<x>> :a;'];
         yield 'repeat colour' => ["#pink:repeat\nrepeat while", 'The native PlantUML renderer does not draw what PlantUML warns of: #pink:repeat'];

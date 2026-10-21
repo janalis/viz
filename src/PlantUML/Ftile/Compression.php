@@ -28,6 +28,10 @@ final readonly class Compression
     {
         $slots = [];
         foreach ($shapes as $shape) {
+            // As PlantUML, centred text takes no room across; compressed across, it is text like any other.
+            if (ShapeKind::Centered === $shape->kind) {
+                continue;
+            }
             \array_push($slots, ...self::slots($shape, $shape->ignoreX, $shape->minX, $shape->maxX));
         }
         $compression = new self(self::gaps($slots));
@@ -35,6 +39,7 @@ final readonly class Compression
 
         return \array_map(static fn (Shape $shape): Shape => match ($shape->kind) {
             ShapeKind::Rectangle, ShapeKind::Line => $shape->mapped($compression->transform(...), $identity),
+            ShapeKind::Centered => $compression->centered($shape),
             default => $shape->moved($compression->transform($shape->anchor()[0]) - $shape->anchor()[0], 0.0),
         }, $shapes);
     }
@@ -58,6 +63,16 @@ final readonly class Compression
             ShapeKind::Rectangle, ShapeKind::Line => $shape->mapped($identity, $compression->transform(...)),
             default => $shape->moved(0.0, $compression->transform($shape->anchor()[1]) - $shape->anchor()[1]),
         }, $shapes);
+    }
+
+    /** Centred text centred across its width compressed, as PlantUML's compressing graphics centre it. */
+    private function centered(Shape $shape): Shape
+    {
+        [$x] = $shape->anchor();
+        $left = $this->transform($x);
+        $room = $this->transform($x + $shape->span) - $left;
+
+        return $shape->moved($left + (($room - ($shape->maxX - $shape->minX)) / 2) - $shape->minX, 0.0);
     }
 
     /** Where a point goes, the gaps before it taken out. */

@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\Activities;
 
 use Janalis\Viz\PlantUML\Activities\Instruction\Collection;
 use Janalis\Viz\PlantUML\Activities\Instruction\Container;
+use Janalis\Viz\PlantUML\Activities\Instruction\Instruction;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionBreak;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionFork;
 use Janalis\Viz\PlantUML\Activities\Instruction\InstructionGroup;
@@ -34,12 +35,20 @@ final class ActivityReader
     private readonly InstructionList $root;
     private Container $current;
     private LinkRendering $next;
+    /** @var array<string, Lane> the swimlanes, by name, in the order declared */
+    private array $lanes = [];
+    private ?Lane $lane = null;
+    /** @var \WeakMap<Instruction, string> the swimlane each step was written in */
+    private \WeakMap $laneOf;
+    /** Whether a step came before any swimlane, which PlantUML then refuses. */
+    private bool $laneless = false;
 
     private function __construct()
     {
         $this->root = new InstructionList();
         $this->current = $this->root;
         $this->next = new LinkRendering();
+        $this->laneOf = new \WeakMap();
     }
 
     /**
@@ -63,7 +72,7 @@ final class ActivityReader
             throw $unsupported;
         }
 
-        return new PlantUmlActivity($document, $reader->root, $reader->next);
+        return new PlantUmlActivity($document, $reader->root, $reader->next, \array_values($reader->lanes), $reader->laneOf);
     }
 
     private function execute(PlantUmlCommand $command): void
@@ -75,7 +84,8 @@ final class ActivityReader
             'CommandStart3', 'CommandStop3', 'CommandEnd3' => $this->terminal(\strtolower(\substr($command->name, offset: 7, length: -1)), $command->get('STEREOGROUP')),
             'CommandCircleSpot3' => $this->add(new InstructionSpot((string) $command->get('SPOT'), $this->take(), $command->get('COLOR'))),
             'CommandKill3' => $this->current->kill() ? null : throw new PlantUmlRefusal('kill cannot be used here'),
-            'CommandBreak' => $this->current->add(new InstructionBreak($this->next)),
+            'CommandBreak' => $this->place(new InstructionBreak($this->next)),
+            'CommandSwimlane', 'CommandSwimlane2' => $this->swimlane($command),
             'CommandArrow3' => $this->arrow($command->get('COLOR'), $command->get('LABEL')),
             'CommandArrowLong3' => $this->arrowLong($command),
             'CommandIf2', 'CommandIf4' => $this->startIf($command),
@@ -127,11 +137,49 @@ final class ActivityReader
         // As PlantUML, a stop or an end right after a loop without a break is drawn on the loop's way out.
         $last = $this->current instanceof InstructionList ? $this->current->last() : null;
         if ('start' !== $kind && $last instanceof InstructionWhile && !$last->containsBreak()) {
+            $this->inLane($terminal);
             $last->special = $terminal;
 
             return;
         }
-        $this->current->add($terminal);
+        $this->place($terminal);
+    }
+
+    /** A step added where steps go now, in the swimlane it is written in. */
+    private function place(Instruction $instruction): void
+    {
+        $this->inLane($instruction);
+        $this->current->add($instruction);
+    }
+
+    /** As PlantUML, every step but a split, a note or an arrow ties the diagram to the swimlanes declared before it. */
+    private function inLane(Instruction $instruction): void
+    {
+        if (null === $this->lane) {
+            $this->laneless = $this->laneless || !$instruction instanceof InstructionFork || 'split' !== $instruction->style;
+
+            return;
+        }
+        $this->laneOf[$instruction] = $this->lane->name;
+    }
+
+    /**
+     * `|Lane|`, `|#color|Lane| title` or `swimlane Lane as title`: the swimlane the steps after it go in.
+     *
+     * @throws PlantUmlRefusal once a step came before any swimlane, as PlantUML refuses it
+     */
+    private function swimlane(PlantUmlCommand $command): void
+    {
+        if ($this->laneless) {
+            throw new PlantUmlRefusal('This swimlane must be defined at the start of the diagram.');
+        }
+        $name = (string) $command->get('SWIMLANE');
+        $this->lanes[$name] ??= new Lane($name, null, self::lines($name));
+        $lane = $this->lanes[$name];
+        $lane->color = $command->get('COLOR') ?? $lane->color;
+        $label = $command->get('LABEL');
+        $lane->title = null === $label ? $lane->title : self::lines($label);
+        $this->lane = $lane;
     }
 
     /** An arrow's colour and label, for the arrow to the next step. */
@@ -194,7 +242,7 @@ final class ActivityReader
             $color,
             $command->get('STEREOGROUP'),
         );
-        $this->current->add($if);
+        $this->place($if);
         $this->current = $if;
     }
 
@@ -237,7 +285,7 @@ final class ActivityReader
     private function startSwitch(PlantUmlCommand $command): void
     {
         $switch = new InstructionSwitch($this->current, self::nonBlank($command->get('TEST')), $this->take(), $command->get('STEREOGROUP'));
-        $this->current->add($switch);
+        $this->place($switch);
         $this->current = $switch;
     }
 
@@ -263,7 +311,7 @@ final class ActivityReader
     private function startWhile(PlantUmlCommand $command): void
     {
         $while = new InstructionWhile($this->current, self::lines((string) $command->get('TEST')), $this->next, self::display($command->get('YES')), Stereogroup::back($command->get('STEREOGROUP')));
-        $this->current->add($while);
+        $this->place($while);
         $this->current = $while;
     }
 
@@ -279,7 +327,7 @@ final class ActivityReader
     private function startRepeat(PlantUmlCommand $command): void
     {
         $repeat = new InstructionRepeat($this->current, $this->take(), self::display($command->get('LABEL')), $command->get('STEREOGROUP'));
-        $this->current->add($repeat);
+        $this->place($repeat);
         $this->current = $repeat;
         self::warned($command, 'COLOR');
     }
@@ -306,14 +354,14 @@ final class ActivityReader
     private function fork(PlantUmlCommand $command): void
     {
         $fork = new InstructionFork($this->current, $this->take(), stereogroup: $command->get('STEREOGROUP'));
-        $this->current->add($fork);
+        $this->place($fork);
         $this->current = $fork;
     }
 
     private function split(): void
     {
         $split = new InstructionFork($this->current, $this->take(), split: true);
-        $this->current->add($split);
+        $this->place($split);
         $this->current = $split;
     }
 
@@ -357,7 +405,7 @@ final class ActivityReader
             $command->get('BACK1') ?? $command->get('BACK2'),
             $command->get('STEREO'),
         );
-        $this->current->add($group);
+        $this->place($group);
         $this->current = $group;
         if ('' === (string) $command->get('BRACKET')) {
             throw new Unsupported('The native PlantUML renderer does not draw what PlantUML warns of: '.$command->line());
@@ -373,7 +421,7 @@ final class ActivityReader
 
     private function add(InstructionSimple|InstructionSpot $instruction): void
     {
-        $this->current->add($instruction);
+        $this->place($instruction);
     }
 
     /** The arrow written for the next step, now taken by it. */

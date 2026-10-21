@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\PlantUML\Ftile;
 
+use Janalis\Viz\PlantUML\Activities\LinkRendering;
 use Janalis\Viz\PlantUML\Ftile\FtileBreak;
+use Janalis\Viz\PlantUML\Ftile\FtileDecorate;
 use Janalis\Viz\PlantUML\Ftile\FtileEmpty;
 use Janalis\Viz\PlantUML\Ftile\FtileForkInner;
 use Janalis\Viz\PlantUML\Ftile\FtileGroup;
 use Janalis\Viz\PlantUML\Ftile\FtileKilled;
+use Janalis\Viz\PlantUML\Ftile\FtileLane;
 use Janalis\Viz\PlantUML\Ftile\FtileWithNote;
 use Janalis\Viz\PlantUML\Ftile\Genealogy;
 use Janalis\Viz\PlantUML\Ftile\Label;
@@ -73,6 +76,16 @@ final class FtileTest extends TestCase
         $snake = Snake::through(new Rainbow(), null, [[0.0, 0.0], [10.0, 0.0]])->emphasizing('U');
 
         $this->assertCount(1, $snake->shapes(new Pen('#000000')));
+    }
+
+    public function testATileInASwimlaneIsTheTileItHolds(): void
+    {
+        $out = new LinkRendering('#red');
+        $lane = new FtileLane(new FtileDecorate(new FtileEmpty(4.0, 2.0), out: $out), 'A');
+
+        $this->assertSame($out, $lane->outLink());
+        $this->assertSame([[0.0, 0.0], 4.0, 'A', 'A'], [$lane->translateFor($lane->tile), $lane->geometry()->width, FtileLane::in($lane), FtileLane::out($lane)]);
+        $this->assertNull(FtileLane::in(new FtileEmpty()));
     }
 
     public function testTilesAroundABreakFindWhereItStands(): void

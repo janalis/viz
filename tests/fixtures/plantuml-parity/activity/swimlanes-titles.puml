@@ -1,0 +1,21 @@
+@startuml
+skinparam swimlaneWidth 120
+swimlane Order as Order desk
+|#lightblue|Warehouse| Stock room
+|Order|
+start
+:take order;
+note right: by phone
+|Warehouse|
+:pick;
+if (in stock?) then (yes)
+  :pack;
+else (no)
+  :reorder;
+endif
+|Order|
+:invoice;
+|Delivery|
+:ship;
+stop
+@enduml

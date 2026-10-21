@@ -209,6 +209,56 @@ final class ActivityDrawingTest extends TestCase
         $this->assertContains('f?', $shown);
     }
 
+    public function testASingleSwimlaneIsNoSwimlane(): void
+    {
+        $shown = \array_map(static fn (Mark $mark): string => \trim((string) $mark->text), self::draw("|Only|\nstart\n:a;\nstop")->marks);
+
+        $this->assertNotContains('Only', $shown);
+        $this->assertContains('a', $shown);
+    }
+
+    public function testSwimlanesDrawTheirTitlesAndTheirSteps(): void
+    {
+        $shown = \array_map(
+            static fn (Mark $mark): string => \trim((string) $mark->text),
+            self::draw(
+                "skinparam swimlaneWidth 200\n|A|\nstart\n:a;\n|B|\n-> over;\n:b;\n|A|\nif (c?) then\n  :d;\nendif\nwhile (e?)\n  :f;\n  break\nendwhile\nfork\n  :g;\nfork again\n  :h;\nend fork\nstop",
+            )->marks,
+        );
+
+        $this->assertSame(['A', 'B'], \array_values(\array_intersect($shown, ['A', 'B'])));
+        $this->assertContains('over', $shown);
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function acrossSwimlanes(): iterable
+    {
+        yield 'a decision across swimlanes' => ["|A|\nif (a) then\n  |B|\n  :b;\nendif"];
+        yield 'a stop after a loop in another swimlane' => ["|A|\nwhile (a)\n  :b;\nendwhile\n|B|\nstop"];
+    }
+
+    #[DataProvider('acrossSwimlanes')]
+    public function testStepsHoldingStepsOfAnotherSwimlaneAreLeftToPlantUml(string $lines): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a step holding steps of another swimlane'));
+
+        self::draw($lines);
+    }
+
+    public function testWhatStandsOutsideAnySwimlaneIsLeftToPlantUml(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw what stands outside any swimlane'));
+
+        self::draw("note right: first\n|A|\n:a;\n|B|\n:b;");
+    }
+
+    public function testAStepOutsideAnySwimlaneIsLeftToPlantUml(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a step outside any swimlane'));
+
+        self::draw("split\nend split\n|A|\n:a;\n|B|\n:b;");
+    }
+
     public function testASwitchWithoutCasesIsLeftToPlantUml(): void
     {
         $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a switch without cases'));

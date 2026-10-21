@@ -19,6 +19,10 @@ final readonly class PlantUmlActivity implements PlantUmlDiagram
         public InstructionList $root,
         /** The arrow written after the last step, which a `repeat` without a test takes back. */
         public LinkRendering $next = new LinkRendering(),
+        /** @var list<Lane> the swimlanes, in the order declared */
+        public array $lanes = [],
+        /** @var ?\WeakMap<\Janalis\Viz\PlantUML\Activities\Instruction\Instruction, string> the swimlane each step was written in */
+        public ?\WeakMap $laneOf = null,
     ) {}
 
     #[\Override]

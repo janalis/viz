@@ -22,7 +22,15 @@ final readonly class Shape
         public bool $ignoreY = false,
         /** @var ?array{float, float} where it was drawn from, which compression moves it by; its top left when not given */
         public ?array $anchor = null,
+        /** The width centred text is centred across, from its anchor. */
+        public float $span = 0.0,
     ) {}
+
+    /** Text centred across a width from a point, once compressed, taking no room. */
+    public static function centered(self $text, float $x, float $span): self
+    {
+        return new self(ShapeKind::Centered, $text->marks, $text->minX, $text->minY, $text->maxX, $text->maxY, anchor: [$x, $text->minY], span: $span);
+    }
 
     /**
      * @param list<Mark> $marks
@@ -92,6 +100,7 @@ final readonly class Shape
             $this->ignoreX,
             $this->ignoreY,
             null === $this->anchor ? null : [$this->anchor[0] + $dx, $this->anchor[1] + $dy],
+            $this->span,
         );
     }
 

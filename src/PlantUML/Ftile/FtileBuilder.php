@@ -27,8 +27,10 @@ use Janalis\Viz\Source\Unsupported;
 /** An activity diagram's steps as tiles, each made as PlantUML's instructions make theirs. */
 final readonly class FtileBuilder
 {
+    /** @param ?\WeakMap<Instruction, string> $lanes the swimlane each step was written in, when it has several */
     public function __construct(
         private FtileFactory $factory,
+        private ?\WeakMap $lanes = null,
     ) {}
 
     /** Steps one under the other, the arrow out of the last as written at the end of their block. */
@@ -59,6 +61,16 @@ final readonly class FtileBuilder
 
     /** @throws Unsupported for a step PlantUML draws in ways not ported */
     public function tile(Instruction $instruction): Ftile
+    {
+        $tile = $this->unlaned($instruction);
+        if (null === $this->lanes) {
+            return $tile;
+        }
+
+        return new FtileLane($tile, $this->lanes[$instruction] ?? throw new Unsupported('The native PlantUML renderer does not draw a step outside any swimlane'));
+    }
+
+    private function unlaned(Instruction $instruction): Ftile
     {
         return match (true) {
             $instruction instanceof InstructionSimple => $this->simple($instruction),

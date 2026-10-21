@@ -45,6 +45,16 @@ final readonly class Snake
         return new self($worm, $color, $head);
     }
 
+    /**
+     * The same arrow through other points.
+     *
+     * @param list<array{float, float}> $points
+     */
+    public function along(array $points): self
+    {
+        return new self(self::through($this->color, $this->head, $points)->worm, $this->color, $this->head, $this->merge, $this->emphasize, $this->labels);
+    }
+
     public function withMerge(MergeStrategy $merge): self
     {
         return new self($this->worm, $this->color, $this->head, $merge, $this->emphasize, $this->labels);

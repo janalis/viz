@@ -154,7 +154,7 @@ final readonly class FtileFactory
         [$outX, $outY] = $geometry->out();
         [$inX, $inY] = $tile2->geometry()->in();
         $snake = Snake::through($this->arrow->over($tile2->inLink()->color), Snake::arrow('D'), [[$outX + $x1, $outY + $y1], [$inX + $x2, $inY + $y2]])->withLabel($label);
-        $result = new FtileDecorate($result, connections: [new Arrows([$snake])]);
+        $result = new FtileDecorate($result, connections: [new Crossing($snake, $tile1, $tile2)]);
         $maxX = $snake->maxX();
 
         return null !== $label && $result->geometry()->width < $maxX ? FtileMarged::right($result, $maxX) : $result;

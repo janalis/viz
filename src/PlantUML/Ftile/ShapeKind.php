@@ -18,4 +18,6 @@ enum ShapeKind
     case Text;
     /** Room taken, nothing drawn. */
     case Empty;
+    /** Text centred across a width once compressed across, taking no room across, as a swimlane's title. */
+    case Centered;
 }

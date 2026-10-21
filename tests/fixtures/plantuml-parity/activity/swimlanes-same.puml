@@ -1,0 +1,18 @@
+@startuml
+skinparam swimlaneWidth same
+|A|
+|Empty|
+|#pink|C|
+|A|
+start
+:one;
+-> across;
+|C|
+:two;
+while (more?)
+  :three;
+endwhile
+|A|
+:four;
+stop
+@enduml

@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 255,
+    "height": 397,
+    "words": [
+        "Swimlane1",
+        "Swimlane2",
+        "foo1",
+        "foo2",
+        "foo3",
+        "foo4",
+        "foo5"
+    ],
+    "baselines": [
+        [
+            "Swimlane1",
+            34.699
+        ],
+        [
+            "Swimlane2",
+            34.699
+        ],
+        [
+            "foo1",
+            105.098
+        ],
+        [
+            "foo2",
+            159.23
+        ],
+        [
+            "foo3",
+            213.363
+        ],
+        [
+            "foo4",
+            267.496
+        ],
+        [
+            "foo5",
+            321.629
+        ]
+    ]
+}
