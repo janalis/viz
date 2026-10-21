@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 177,
+    "height": 172,
+    "words": [
+        "README.md",
+        "Shared",
+        "helpers",
+        "lib",
+        "main.php",
+        "src",
+        "util.php"
+    ],
+    "baselines": [
+        [
+            "README.md",
+            156.107
+        ],
+        [
+            "Shared",
+            126.568
+        ],
+        [
+            "helpers",
+            126.568
+        ],
+        [
+            "lib",
+            79.297
+        ],
+        [
+            "main.php",
+            54.547
+        ],
+        [
+            "src",
+            29.797
+        ],
+        [
+            "util.php",
+            104.047
+        ]
+    ]
+}

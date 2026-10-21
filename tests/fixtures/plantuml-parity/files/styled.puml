@@ -1,0 +1,13 @@
+@startfiles
+<style>
+filesDiagram {
+  FontSize 18
+  FontColor #333366
+}
+</style>
+title Ignored
+/app/Http/Kernel.php
+/app/Models/User.php
+/app/Models/Post.php
+/composer.json
+@endfiles

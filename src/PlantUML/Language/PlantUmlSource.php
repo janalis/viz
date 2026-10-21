@@ -17,7 +17,7 @@ use Janalis\Viz\Source\Unsupported;
 final readonly class PlantUmlSource
 {
     /** The kinds of block read natively. */
-    public const array KINDS = ['uml', 'mindmap', 'wbs', 'json', 'yaml', 'chen', 'ebnf', 'regex', 'board', 'packetdiag', 'nwdiag', 'wire', 'salt', 'gantt', 'hcl', 'git', 'flow'];
+    public const array KINDS = ['uml', 'mindmap', 'wbs', 'json', 'yaml', 'chen', 'ebnf', 'regex', 'board', 'packetdiag', 'nwdiag', 'wire', 'salt', 'gantt', 'hcl', 'git', 'flow', 'files'];
 
     /**
      * @param list<string> $lines the block's lines between its start and end, comments dropped
@@ -26,7 +26,7 @@ final readonly class PlantUmlSource
     public function __construct(
         public array $lines,
         public array $pragmas = [],
-        /** The block's kind, as `@start…` names it: `uml`, `mindmap`, `wbs`, `json`, `yaml`, `chen`, `ebnf`, `regex`, `board`, `packetdiag`, `nwdiag`, `wire`, `salt`, `gantt`, `hcl`, `git` or `flow`. */
+        /** The block's kind, as `@start…` names it: `uml`, `mindmap`, `wbs`, `json`, `yaml`, `chen`, `ebnf`, `regex`, `board`, `packetdiag`, `nwdiag`, `wire`, `salt`, `gantt`, `hcl`, `git`, `flow` or `files`. */
         public string $kind = 'uml',
     ) {}
 

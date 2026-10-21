@@ -1,0 +1,44 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 185,
+    "height": 239,
+    "words": [
+        "Http",
+        "Kernel.php",
+        "Models",
+        "Post.php",
+        "User.php",
+        "app",
+        "composer.json"
+    ],
+    "baselines": [
+        [
+            "Http",
+            66.703
+        ],
+        [
+            "Kernel.php",
+            97.953
+        ],
+        [
+            "Models",
+            129.203
+        ],
+        [
+            "Post.php",
+            191.703
+        ],
+        [
+            "User.php",
+            160.453
+        ],
+        [
+            "app",
+            35.453
+        ],
+        [
+            "composer.json",
+            222.953
+        ]
+    ]
+}

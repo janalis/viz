@@ -12,6 +12,7 @@ use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
 use Janalis\Viz\PlantUML\Ebnf\EbnfFamily;
 use Janalis\Viz\PlantUML\Ebnf\RegexFamily;
+use Janalis\Viz\PlantUML\Files\FilesReader;
 use Janalis\Viz\PlantUML\Flow\FlowFamily;
 use Janalis\Viz\PlantUML\Gantt\GanttReader;
 use Janalis\Viz\PlantUML\Git\GitReader;
@@ -116,6 +117,10 @@ final readonly class PlantUmlPipeline implements Pipeline
         // A git log is read line by line as it stands, its graph's signs and all.
         if ('git' === $parsed->kind) {
             return GitReader::read($parsed);
+        }
+        // A files diagram takes the lines that start with `/` or `<note>`, and leaves the rest.
+        if ('files' === $parsed->kind) {
+            return FilesReader::read($parsed);
         }
         $document = PlantUmlDocument::read($parsed);
         // A Gantt chart's sentences are read by its subjects and verbs, not matched as commands.

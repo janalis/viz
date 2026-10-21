@@ -1,0 +1,8 @@
+@startfiles
+/src/main.php
+/src/lib/util.php
+<note>
+Shared helpers
+</note>
+/README.md
+@endfiles

@@ -1,0 +1,64 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 148,
+    "height": 214,
+    "words": [
+        "A",
+        "Generated",
+        "LICENSE",
+        "api",
+        "docs",
+        "guide.md",
+        "index.md",
+        "lines",
+        "project",
+        "two",
+        "with"
+    ],
+    "baselines": [
+        [
+            "A",
+            27.568
+        ],
+        [
+            "Generated",
+            169.189
+        ],
+        [
+            "LICENSE",
+            198.729
+        ],
+        [
+            "api",
+            121.918
+        ],
+        [
+            "docs",
+            72.418
+        ],
+        [
+            "guide.md",
+            97.168
+        ],
+        [
+            "index.md",
+            146.668
+        ],
+        [
+            "lines",
+            42.879
+        ],
+        [
+            "project",
+            27.568
+        ],
+        [
+            "two",
+            42.879
+        ],
+        [
+            "with",
+            42.879
+        ]
+    ]
+}

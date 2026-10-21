@@ -1,0 +1,13 @@
+@startfiles
+<note>
+A project
+with two lines
+</note>
+/docs/
+/docs/guide.md
+/docs/api/index.md
+<note>
+Generated
+</note>
+/LICENSE
+@endfiles
