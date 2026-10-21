@@ -1,0 +1,13 @@
+@startuml
+rectangle A
+note right of A
+|= Key |= Value |
+| one | <#lightblue> 1 |
+| two | 2 |
+end note
+legend right
+|<color:#000000>**Legend**</color> |
+|<#08427B> person |
+<#yellow>| system |
+endlegend
+@enduml

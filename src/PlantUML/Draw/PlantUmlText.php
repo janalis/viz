@@ -71,6 +71,10 @@ final readonly class PlantUmlText
     {
         $wrapped = [];
         foreach ($this->lines as $line) {
+            if (PlantUmlTable::row($line)) {
+                $wrapped[] = $line;
+                continue;
+            }
             [$depth, $text] = self::heading($line);
             $marker = $depth < 0 ? '' : \str_repeat('=', times: $depth + 1).' ';
             $face = self::face($depth < 0 ? $text : '**'.$text.'**', $this->face);
@@ -179,13 +183,39 @@ final readonly class PlantUmlText
         }
         $widest = 0.0;
         $height = 0.0;
-        foreach ($this->lines as $line) {
-            [$lineWidth, $lineHeight] = $this->lineSize($this->atoms($line), $this->fontSize($line));
-            $widest = \max($widest, $lineWidth);
-            $height += $lineHeight;
+        foreach ($this->blocks() as $block) {
+            [$blockWidth, $blockHeight] = $block instanceof PlantUmlTable ? $block->size() : $this->lineSize($this->atoms($block), $this->fontSize($block));
+            $widest = \max($widest, $blockWidth);
+            $height += $blockHeight;
         }
 
         return [$widest, $height];
+    }
+
+    /**
+     * The lines, each run of table rows in it a table, as PlantUML's Creole reads them.
+     *
+     * @return list<string|PlantUmlTable>
+     */
+    private function blocks(): array
+    {
+        $blocks = [];
+        $rows = [];
+        foreach ([...$this->lines, null] as $line) {
+            if (null !== $line && PlantUmlTable::row($line)) {
+                $rows[] = $line;
+                continue;
+            }
+            if ([] !== $rows) {
+                $blocks[] = PlantUmlTable::of($rows, $this);
+                $rows = [];
+            }
+            if (null !== $line) {
+                $blocks[] = $line;
+            }
+        }
+
+        return $blocks;
     }
 
     /**
@@ -300,7 +330,13 @@ final readonly class PlantUmlText
     {
         $marks = [];
         $top = $y;
-        foreach ($this->lines as $line) {
+        foreach ($this->blocks() as $line) {
+            if ($line instanceof PlantUmlTable) {
+                [$tableWidth, $tableHeight] = $line->size();
+                \array_push($marks, ...$line->marks('left' === $align ? $x : $x + (($width - $tableWidth) / ('right' === $align ? 1 : 2)), $top));
+                $top += $tableHeight;
+                continue;
+            }
             $size = $this->fontSize($line);
             $atoms = $this->atoms($line);
             [$shown, $height] = $this->lineSize($atoms, $size);
@@ -331,11 +367,14 @@ final readonly class PlantUmlText
             return [[], $shown];
         }
         $depth = self::heading($line)[0];
+        $match = [];
+        // A line wholly coloured, as `<color:…>` around it writes it, takes that colour.
+        $color = 1 === \preg_match('/^\s*<color:([^>]+)>.*<\/color>\s*$/i', $line, $match) ? PlantUmlColor::parse($match[1]) ?? $this->color : $this->color;
         $mark = new Mark(
             MarkKind::Text,
             [[$left + ($shown / 2), $foot - (0.25 * self::lineHeight($size))]],
             $plain,
-            stroke: $this->color,
+            stroke: $color,
             font: self::face(match (true) {
                 $depth < 0 => self::heading($line)[1],
                 $depth < 3 => '**'.$text.'**',
@@ -360,6 +399,7 @@ final readonly class PlantUmlText
     /** The face a line's own markup gives it, over the one it would have. */
     private static function face(string $line, FontFace $face): FontFace
     {
+        $line = (string) \preg_replace('/<\/?(?:color|size|font|back)(?::[^>]*)?>/i', replacement: '', subject: $line);
         $bold = FontFace::Bold === $face || FontFace::BoldItalic === $face || 1 === \preg_match('/^\s*(?:\*\*.*\*\*|<b>.*<\/b>)\s*$/i', $line);
         $italic = FontFace::Italic === $face || FontFace::BoldItalic === $face || 1 === \preg_match('/^\s*(?:\/\/.*\/\/|<i>.*<\/i>)\s*$/i', $line);
 

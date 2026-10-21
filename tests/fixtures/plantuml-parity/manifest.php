@@ -96,6 +96,7 @@ return [
     'description/colors' => 4,
     'description/components' => 4,
     'description/creole-headings' => 4,
+    'description/creole-tables' => 4,
     'description/deployment-links' => 4,
     'description/deployment' => 4,
     'description/dotted-links' => 4,

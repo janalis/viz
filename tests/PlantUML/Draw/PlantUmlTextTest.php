@@ -57,6 +57,7 @@ final class PlantUmlTextTest extends TestCase
             ], $style)->lines,
         );
         $this->assertSame(['short'], PlantUmlText::styled(['short'], new Style(['MaximumWidth' => '0']))->lines);
+        $this->assertSame(['| a table row is never wrapped however long it runs |'], PlantUmlText::styled(['| a table row is never wrapped however long it runs |'], $style)->lines);
         $this->assertSame(
             ['As PlantUML', 'wraps: the', 'same words', 'on each line'],
             PlantUmlText::styled(['As PlantUML wraps: the same words on each line'], $style)->lines,
