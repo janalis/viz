@@ -1,0 +1,84 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 1052,
+    "height": 410,
+    "words": [
+        "Browse",
+        "Buy",
+        "Buy",
+        "Cart",
+        "Categories",
+        "Checkout",
+        "Discover",
+        "Discover",
+        "Filters",
+        "Payment",
+        "Refund",
+        "Releases",
+        "Search",
+        "Sort",
+        "Wishlist"
+    ],
+    "baselines": [
+        [
+            "Browse",
+            154.023
+        ],
+        [
+            "Buy",
+            64.023
+        ],
+        [
+            "Buy",
+            64.023
+        ],
+        [
+            "Cart",
+            154.023
+        ],
+        [
+            "Categories",
+            244.023
+        ],
+        [
+            "Checkout",
+            244.023
+        ],
+        [
+            "Discover",
+            64.023
+        ],
+        [
+            "Discover",
+            64.023
+        ],
+        [
+            "Filters",
+            244.023
+        ],
+        [
+            "Payment",
+            244.023
+        ],
+        [
+            "Refund",
+            334.023
+        ],
+        [
+            "Releases",
+            33.535
+        ],
+        [
+            "Search",
+            154.023
+        ],
+        [
+            "Sort",
+            244.023
+        ],
+        [
+            "Wishlist",
+            154.023
+        ]
+    ]
+}

@@ -1,0 +1,12 @@
+@startpacketdiag
+packetdiag {
+  colwidth = 8
+  scale_direction = rtl
+  scale_interval = 2
+  same_height = true
+  0-3: Low
+  4-7: High
+  8-19: A rather long description of the field
+  20: X [height = 3]
+}
+@endpacketdiag

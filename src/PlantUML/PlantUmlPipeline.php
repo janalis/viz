@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML;
 
 use Janalis\Viz\Draw\Pipeline;
 use Janalis\Viz\PlantUML\Activities\ActivityFamily;
+use Janalis\Viz\PlantUML\Board\BoardFamily;
 use Janalis\Viz\PlantUML\ChenEer\ChenFamily;
 use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
@@ -17,6 +18,7 @@ use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
 use Janalis\Viz\PlantUML\LegacyActivities\LegacyActivityFamily;
 use Janalis\Viz\PlantUML\MindMaps\MindMapFamily;
+use Janalis\Viz\PlantUML\Packet\PacketFamily;
 use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
 use Janalis\Viz\PlantUML\Wbs\WbsFamily;
@@ -41,6 +43,8 @@ final readonly class PlantUmlPipeline implements Pipeline
         'chen' => ['chenEer' => 'Chen EER'],
         'ebnf' => ['ebnf' => 'EBNF'],
         'regex' => ['regex' => 'regex'],
+        'board' => ['board' => 'board'],
+        'packetdiag' => ['packet' => 'packet'],
     ];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
@@ -63,6 +67,8 @@ final readonly class PlantUmlPipeline implements Pipeline
             'chenEer' => new ChenFamily(),
             'ebnf' => new EbnfFamily(),
             'regex' => new RegexFamily(),
+            'board' => new BoardFamily(),
+            'packet' => new PacketFamily(),
         ]);
     }
 

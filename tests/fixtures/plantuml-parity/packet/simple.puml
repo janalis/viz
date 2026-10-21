@@ -1,0 +1,9 @@
+@startpacketdiag
+packetdiag {
+  0-7: Version
+  8-15: Type
+  16-31: Length
+  * Flags [len = 8]
+  * Payload [len = 24, height = 2]
+}
+@endpacketdiag
