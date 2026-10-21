@@ -13,6 +13,7 @@ use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\LayoutNode;
 use Janalis\Viz\Layout\Engine\Spacing;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
+use Janalis\Viz\PlantUML\Draw\PlantUmlArrow;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 
 /**
@@ -152,27 +153,9 @@ final class JsonDrawing
 
         return [
             new Mark(MarkKind::Polyline, $points, stroke: $color, strokeWidth: $width, dashed: null !== $style->dashes(), dashes: $style->dashes()),
-            new Mark(MarkKind::Polygon, self::head(self::at($curve, $end), self::at($curve, $tip)), stroke: $color, fill: $color, strokeWidth: $width),
+            new Mark(MarkKind::Polygon, PlantUmlArrow::head(self::at($curve, $end), self::at($curve, $tip)), stroke: $color, fill: $color, strokeWidth: $width),
             DescriptionBox::ellipse($spot[0] - self::SPOT, $spot[1] - self::SPOT, 2 * self::SPOT, 2 * self::SPOT, $color, $color, 1.0),
         ];
-    }
-
-    /**
-     * As PlantUML's `Arrow`: from its base to its tip, its wings 0.4 of its length to either
-     * side of its base, its back notched 0.3 of it in.
-     *
-     * @param array{float, float} $base
-     * @param array{float, float} $tip
-     * @return list<array{float, float}>
-     */
-    private static function head(array $base, array $tip): array
-    {
-        $length = \hypot($tip[0] - $base[0], $tip[1] - $base[1]);
-        $angle = \atan2($tip[0] - $base[0], $tip[1] - $base[1]);
-        $from = static fn (float $angle, float $distance): array => [$base[0] + ($distance * \sin($angle)), $base[1] + ($distance * \cos($angle))];
-        $wing = $from($angle - (\M_PI / 2), $length * 0.4);
-
-        return [$wing, $from($angle, $length * 0.3), $from($angle + (\M_PI / 2), $length * 0.4), $tip, $wing];
     }
 
     /**

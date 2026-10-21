@@ -1,0 +1,12 @@
+@startgit
+*   f00f00f (tag: v2) Merge two
+|\  
+| * e00e00e Topic two
+* | d00d00d Main work
+|/  
+*   c00c00c Merge one
+|\  
+| * b00b00b Topic one
+|/  
+* a00a00a Root
+@endgit

@@ -1,0 +1,7 @@
+@startflow
+start "Start here"
+s step "Do the\nthing"
+e side "Side"
+w step
+s last "End"
+@endflow

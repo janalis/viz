@@ -118,6 +118,7 @@ $factories = [
     'net.sourceforge.plantuml.salt.PSystemSaltFactory',
     'net.sourceforge.plantuml.timingdiagram.TimingDiagramFactory',
     'net.sourceforge.plantuml.gantt.GanttDiagramFactory',
+    'net.sourceforge.plantuml.flowdiagram.FlowDiagramFactory',
 ];
 $commands = \json_decode($run(\sprintf('java -cp %s PlantUmlCommands %s', \escapeshellarg($jar.\PATH_SEPARATOR.$classes), \implode(' ', $factories))), associative: true, flags: \JSON_THROW_ON_ERROR);
 $families = [];

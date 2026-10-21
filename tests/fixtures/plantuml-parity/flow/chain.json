@@ -1,0 +1,39 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 201,
+    "height": 211,
+    "words": [
+        "Check",
+        "Ship",
+        "Start",
+        "it",
+        "order",
+        "the"
+    ],
+    "baselines": [
+        [
+            "Check",
+            110.021
+        ],
+        [
+            "Ship",
+            180.021
+        ],
+        [
+            "Start",
+            40.021
+        ],
+        [
+            "it",
+            180.021
+        ],
+        [
+            "order",
+            110.021
+        ],
+        [
+            "the",
+            110.021
+        ]
+    ]
+}

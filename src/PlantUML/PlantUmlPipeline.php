@@ -12,7 +12,9 @@ use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
 use Janalis\Viz\PlantUML\Ebnf\EbnfFamily;
 use Janalis\Viz\PlantUML\Ebnf\RegexFamily;
+use Janalis\Viz\PlantUML\Flow\FlowFamily;
 use Janalis\Viz\PlantUML\Gantt\GanttReader;
+use Janalis\Viz\PlantUML\Git\GitReader;
 use Janalis\Viz\PlantUML\Json\JsonReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommands;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
@@ -61,6 +63,7 @@ final readonly class PlantUmlPipeline implements Pipeline
         'nwdiag' => ['nw' => 'network'],
         'wire' => ['wire' => 'wire'],
         'salt' => ['salt' => 'salt'],
+        'flow' => ['flow' => 'flow'],
     ];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
@@ -89,6 +92,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'nw' => new NwFamily(),
             'wire' => new WireFamily(),
             'salt' => new SaltFamily(),
+            'flow' => new FlowFamily(),
         ]);
     }
 
@@ -108,6 +112,10 @@ final readonly class PlantUmlPipeline implements Pipeline
         // Data is read whole, by no commands, as PlantUML's JSON and YAML factories read it.
         if (\array_key_exists($parsed->kind, JsonReader::KINDS)) {
             return JsonReader::read($parsed);
+        }
+        // A git log is read line by line as it stands, its graph's signs and all.
+        if ('git' === $parsed->kind) {
+            return GitReader::read($parsed);
         }
         $document = PlantUmlDocument::read($parsed);
         // A Gantt chart's sentences are read by its subjects and verbs, not matched as commands.

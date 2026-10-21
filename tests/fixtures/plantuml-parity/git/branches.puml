@@ -1,0 +1,9 @@
+@startgit
+*   d5e6f7a (HEAD -> master) Merge branch 'feature'
+|\  
+| * c4d5e6f (feature) Add feature
+| * b3c4d5e Start feature
+* | a2b3c4d Fix on master
+|/  
+* 91a2b3c Initial commit
+@endgit
