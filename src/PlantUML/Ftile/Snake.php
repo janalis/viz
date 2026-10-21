@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Ftile;
 
 use Janalis\Viz\PlantUML\Teoz\Rose\Pen;
+use Janalis\Viz\Source\Unsupported;
 
 /**
  * An arrow of an activity diagram, as PlantUML's snake draws it: its worm of straight steps,
@@ -116,26 +117,117 @@ final readonly class Snake
      */
     public function shapes(Pen $normal): array
     {
-        $shapes = [];
-        if ('hidden' !== $this->color->style) {
-            $pen = match ($this->color->style) {
-                'dashed' => new Pen($this->color->color, 1.5, [7.0, 7.0]),
-                'dotted' => new Pen($this->color->color, 1.5, [1.0, 3.0]),
-                'bold' => new Pen($this->color->color, 2.0),
-                default => $normal->withColor($this->color->color),
-            };
-            $shapes[] = Shape::of(ShapeKind::Line, [$pen->path($this->worm->points)]);
-            $shapes = [...$shapes, ...$this->emphasis($pen)];
-            if (null !== $this->head) {
-                $shapes[] = self::head($this->head, $this->worm->last(), $this->color->head);
-            }
+        if (\count($this->color->stripes) > 1) {
+            return $this->rainbow($normal);
         }
+        $shapes = $this->line($this->worm, $this->color, $normal, 1.5);
         foreach ($this->labels as $label) {
             [$x, $y] = $this->labelAt($label);
             \array_push($shapes, ...$label[0]->shapes($x, $y));
         }
 
         return $shapes;
+    }
+
+    /**
+     * Each colour of an arrow of several beside the one before, as PlantUML draws them, its
+     * labels moved past them.
+     *
+     * @return list<Shape>
+     * @throws Unsupported for an arrow turning in a way PlantUML has no moves for
+     */
+    private function rainbow(Pen $normal): array
+    {
+        $stripes = $this->color->stripes;
+        $mutation = WormMutation::of($this->worm, 2 + $this->color->separation);
+        if ($mutation->negative()) {
+            $stripes = \array_reverse($stripes);
+        }
+        $global = (-1.0 * (\count($stripes) - 1)) / 2.0;
+        $current = self::moveFirst($this->worm, $mutation->moves[0], $global);
+        if (\count($mutation->moves) > 2) {
+            $current = self::moveLast($current, $mutation->moves[\count($mutation->moves) - 1], $global);
+        }
+        $shapes = [];
+        foreach ($stripes as $index => $stripe) {
+            $stroke = match (true) {
+                0.0 !== $this->color->separation => 1.5,
+                (\count($stripes) - 1) === $index => 2.0,
+                default => 3.0,
+            };
+            \array_push($shapes, ...$this->line($current, $stripe, $normal, $stroke));
+            $current = $mutation->mute($current);
+        }
+        $shift = $mutation->textShift(\count($stripes));
+        foreach ($this->labels as $label) {
+            [$x, $y] = $this->labelAt($label);
+            \array_push($shapes, ...$label[0]->shapes($x + $shift, $y));
+        }
+
+        return $shapes;
+    }
+
+    /**
+     * A worm's line in one colour, its arrowhead midway and its head; nothing when hidden.
+     *
+     * @return list<Shape>
+     */
+    private function line(Worm $worm, Rainbow $color, Pen $normal, float $stroke): array
+    {
+        if ('hidden' === $color->style) {
+            return [];
+        }
+        $pen = match ($color->style) {
+            'dashed' => new Pen($color->color, $stroke, [7.0, 7.0]),
+            'dotted' => new Pen($color->color, $stroke, [1.0, 3.0]),
+            'bold' => new Pen($color->color, 2.0),
+            default => $normal->withColor($color->color),
+        };
+        $shapes = [Shape::of(ShapeKind::Line, [$pen->path($worm->points)]), ...$this->emphasis($worm, $pen, $color->color)];
+        if (null !== $this->head) {
+            $shapes[] = self::head($this->head, $worm->last(), $color->head);
+        }
+
+        return $shapes;
+    }
+
+    /**
+     * A worm with its first point moved along a move across or down, scaled, the second with it when level.
+     *
+     * @param array{float, float} $move
+     */
+    private static function moveFirst(Worm $worm, array $move, float $scale): Worm
+    {
+        [$dx, $dy] = [$move[0] * $scale, $move[1] * $scale];
+        $points = $worm->points;
+        [$x0, $y0] = $points[0];
+        [$x1, $y1] = $points[1];
+        $points[1] = [0.0 !== $dx && $x0 === $x1 ? $x1 + $dx : $x1, 0.0 !== $dy && $y0 === $y1 ? $y1 + $dy : $y1];
+        $points[0] = [$x0 + $dx, $y0 + $dy];
+        $result = new Worm();
+        $result->points = $points;
+
+        return $result;
+    }
+
+    /**
+     * A worm with its last point moved along a move across or down, scaled, the one before with it when level.
+     *
+     * @param array{float, float} $move
+     */
+    private static function moveLast(Worm $worm, array $move, float $scale): Worm
+    {
+        [$dx, $dy] = [$move[0] * $scale, $move[1] * $scale];
+        $points = $worm->points;
+        $last = \count($points) - 1;
+        [$x8, $y8] = $points[$last - 1];
+        [$x9, $y9] = $points[$last];
+        $points[$last - 1] = [0.0 !== $dx && $x8 === $x9 ? $x8 + $dx : $x8, 0.0 !== $dy && $y8 === $y9 ? $y8 + $dy : $y8];
+        $points[$last] = [$x9 + $dx, $y9 + $dy];
+        $result = new Worm();
+        $result->points = $points;
+
+        return $result;
     }
 
     /** The rightmost point it reaches, its labels included. */
@@ -165,12 +257,12 @@ final readonly class Snake
     }
 
     /** @return list<Shape> the arrowhead midway along the first step going the way it emphasises */
-    private function emphasis(Pen $pen): array
+    private function emphasis(Worm $worm, Pen $pen, string $color): array
     {
         if (null === $this->emphasize) {
             return [];
         }
-        $points = $this->worm->points;
+        $points = $worm->points;
         for ($i = 0, $count = \count($points); $i < ($count - 1); ++$i) {
             if (Worm::direction($points[$i], $points[$i + 1]) !== $this->emphasize) {
                 continue;
@@ -178,7 +270,7 @@ final readonly class Snake
             $middle = [($points[$i][0] + $points[$i + 1][0]) / 2, ($points[$i][1] + $points[$i + 1][1]) / 2];
             $outline = \array_map(static fn (array $point): array => [$middle[0] + $point[0], $middle[1] + $point[1]], self::arrow($this->emphasize));
 
-            return [Shape::of(ShapeKind::Polygon, [$pen->shape($outline, $this->color->color)], anchor: $middle)];
+            return [Shape::of(ShapeKind::Polygon, [$pen->shape($outline, $color)], anchor: $middle)];
         }
 
         return [];

@@ -5,13 +5,14 @@ declare(strict_types=1);
 // Records what PlantUML itself draws for each fixture of tests/fixtures/plantuml-parity, as
 // the goldens PlantUmlParityTest grades the native drawing against: the diagram's size in
 // points and the words it writes, each with its baseline. Run it with the jar tools/plantuml.lock pins and a JRE:
-//   php tools/record-plantuml-parity.php <plantuml-mit jar> [--check]
+//   php tools/record-plantuml-parity.php <plantuml-mit jar> [--check] [<fixtures, such as activity/switch*>]
 // It refuses a jar whose SHA-256 differs from the lock's. With --check it writes nothing and
 // fails when PlantUML's drawing drifted from a golden: other words, or a height more than 3%
 // off, which leaves room for the fonts of the machine it runs on.
 
 $jar = $argv[1] ?? '';
 $check = \in_array('--check', $argv, strict: true);
+$only = \array_values(\array_diff(\array_slice($argv, offset: 2), ['--check']))[0] ?? '*/*';
 $drift = 0;
 $lock = \json_decode((string) \file_get_contents(__DIR__.'/plantuml.lock'), true, flags: \JSON_THROW_ON_ERROR);
 if (!\is_file($jar)) {
@@ -23,7 +24,7 @@ if (\hash_file('sha256', $jar) !== $lock['sha256']) {
     exit(1);
 }
 $root = __DIR__.'/../tests/fixtures/plantuml-parity';
-foreach (\glob($root.'/*/*.puml') ?: [] as $fixture) {
+foreach (\glob($root.'/'.$only.'.puml') ?: [] as $fixture) {
     $process = \proc_open(['java', '-Djava.awt.headless=true', '-jar', $jar, '-tsvg', '-pipe'], [['file', $fixture, 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
     if (!\is_resource($process)) {
         exit(1);

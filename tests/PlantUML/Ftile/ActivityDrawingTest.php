@@ -156,6 +156,9 @@ final class ActivityDrawingTest extends TestCase
         yield 'a switch whose last case is left of its test' => ["switch (a)\ncase (b)\n  :wwwwwwww;\ncase (a long label on the last case)\n  :x;\nendswitch", ['a long label on the last case']];
         yield 'a switch whose last case leaves just right of its end' => ["switch (a)\ncase (b)\n  :".\str_repeat('w', times: 24).";\ncase (a long label on the last case)\n  :x;\nendswitch", ['x']];
         yield 'a loop breaking from a switch' => ["while (w?)\n  switch (s)\n  case (a)\n    :x;\n    break\n  case (b)\n    :y;\n  endswitch\nendwhile\n:after;", ['x', 'y', 'after']];
+        yield 'arrows of several colours' => [":a;\n-[#red;#blue]-> two;\n:b;\n-[#red;#blue,hidden]->\n:c;", ['two', 'c']];
+        yield 'an arrow of several colours turning' => ["if (a) then\n  :x;\n  -[#red;#blue]-> out;\nelse\n  :y;\nendif", ['out']];
+        yield 'arrows of several colours apart' => ["skinparam colorArrowSeparationSpace 3\n:a;\n-[#red,dotted;#blue]-> two;\n:b;", ['two']];
         yield 'an empty diagram ending with an arrow' => ["if (a) then\nelse\n-> out;\nendif", ['a']];
     }
 
@@ -222,13 +225,6 @@ final class ActivityDrawingTest extends TestCase
         $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw activity packages'));
 
         self::draw("package P {\n  :a;\n}");
-    }
-
-    public function testArrowsOfSeveralColoursAreLeftToPlantUml(): void
-    {
-        $this->expectException(Unsupported::class);
-
-        self::draw(":a;\n-[#red;#blue]->\n:b;");
     }
 
     private static function draw(string $lines): Drawing

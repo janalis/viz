@@ -29,7 +29,8 @@ final readonly class FtileFactory
     public function __construct(PlantUmlDocument $document)
     {
         $this->styles = new FtileStyles($document->styles);
-        $this->arrow = Rainbow::of($this->styles->arrow());
+        $separation = $document->param('colorarrowseparationspace', '0');
+        $this->arrow = Rainbow::of($this->styles->arrow(), \is_numeric($separation) ? (float) (int) $separation : 0.0);
         $this->condition = match (\strtolower($document->param('conditionstyle', 'inside'))) {
             'diamond' => 'empty',
             'insidediamond', 'foo1' => 'square',

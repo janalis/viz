@@ -1,0 +1,54 @@
+{
+    "plantuml": "1.2026.8",
+    "width": 169,
+    "height": 302,
+    "words": [
+        "after",
+        "colours",
+        "down",
+        "left",
+        "no",
+        "right",
+        "test?",
+        "three",
+        "yes"
+    ],
+    "baselines": [
+        [
+            "after",
+            270.143
+        ],
+        [
+            "colours",
+            110.588
+        ],
+        [
+            "down",
+            76.602
+        ],
+        [
+            "left",
+            186.01
+        ],
+        [
+            "no",
+            140.088
+        ],
+        [
+            "right",
+            186.01
+        ],
+        [
+            "test?",
+            146.565
+        ],
+        [
+            "three",
+            110.588
+        ],
+        [
+            "yes",
+            140.088
+        ]
+    ]
+}

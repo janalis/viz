@@ -26,6 +26,7 @@ return [
     'activity/nested-loops' => 4,
     'activity/notes' => 4,
     'activity/partitions' => 4,
+    'activity/rainbow' => 4,
     'activity/repeat-backward' => 4,
     'activity/repeat-break' => 4,
     'activity/repeat' => 4,

@@ -1,0 +1,15 @@
+@startuml
+start
+-[#red;#blue]->
+:down;
+-[#green;#orange;#purple]-> three colours;
+if (test?) then (yes)
+  -[#red;#blue]->
+  :left;
+else (no)
+  :right;
+  -[#red,dashed;#blue,bold]->
+endif
+-[#red;#blue;#green]->
+:after;
+@enduml
