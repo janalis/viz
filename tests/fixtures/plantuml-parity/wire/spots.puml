@@ -1,0 +1,12 @@
+@startwire
+* board [200x100]
+	print("Hello")
+	print("two\nlines")
+	* chip [40x20] #pink
+spot board
+spot board(50%, 50%) #green
+spot board.chip(100%, 100%-5)
+goto(300, 10)
+* far [60x60]
+board(100%, 80) -> far #red : red
+@endwire

@@ -1,0 +1,11 @@
+@startwire
+* source [100x120]
+--
+* sink [100x120]
+source -> sink : data
+source <- sink : ack
+source <-> sink
+source -- sink
+source => sink : bus
+source <=> sink
+@endwire

@@ -1,0 +1,8 @@
+@startwire
+* outer
+	* inner_a [60x30]
+	* inner_b [60x30]
+	--
+	* inner_c [50x80]
+* other [100x40]
+@endwire

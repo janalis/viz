@@ -1,0 +1,10 @@
+@startwire
+* top [200x40]
+move(0, 60)
+* bottom [200x40]
+top --> bottom : down
+top <-- bottom
+top ==> bottom
+top <== bottom #blue
+top(150, 100%) == bottom
+@endwire

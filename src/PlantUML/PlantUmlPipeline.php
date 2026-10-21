@@ -23,6 +23,7 @@ use Janalis\Viz\PlantUML\Packet\PacketFamily;
 use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
 use Janalis\Viz\PlantUML\Wbs\WbsFamily;
+use Janalis\Viz\PlantUML\Wire\WireFamily;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -47,6 +48,7 @@ final readonly class PlantUmlPipeline implements Pipeline
         'board' => ['board' => 'board'],
         'packetdiag' => ['packet' => 'packet'],
         'nwdiag' => ['nw' => 'network'],
+        'wire' => ['wire' => 'wire'],
     ];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
@@ -72,6 +74,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'board' => new BoardFamily(),
             'packet' => new PacketFamily(),
             'nw' => new NwFamily(),
+            'wire' => new WireFamily(),
         ]);
     }
 

@@ -1,0 +1,7 @@
+@startwire
+* first
+* second [120x50]
+* third_one [200x60] #lightblue
+--
+* fourth [80x80]
+@endwire
