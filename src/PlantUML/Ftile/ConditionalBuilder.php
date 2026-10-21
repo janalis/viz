@@ -52,14 +52,14 @@ final readonly class ConditionalBuilder
     private function down(BranchTile $then, BranchTile $other): Ftile
     {
         $diamond1 = $this->test()->with(south: $this->positive($then), east: $this->positive($other));
-        $diamond2 = $this->closing($other)?->with(north: $this->out($then)) ?? new FtileEmpty(0.0, FtileDiamond::HALF / 2);
+        $diamond2 = $this->closing($other)?->with(north: $this->out($then)) ?? $this->noDiamond();
         $note = 1 === \count($this->notes) ? $this->factory->looseNote($this->notes[0]) : null;
         $tile = FtileMarged::horizontal(FtileMarged::minimum($then->tile, 30.0), 10.0, 10.0);
         if ($other->onlySingleStopOrSpot()) {
             return new FtileIfDown($diamond1, $diamond2, $tile, $this->factory->arrow, $other->out() ?? $this->factory->arrow, $other->tile, $note);
         }
 
-        return new FtileIfDown($diamond1, $diamond2, $tile, $this->factory->arrow, $other->out() ?? $this->factory->arrow, note: $note);
+        return new FtileIfDown($diamond1, $diamond2, $tile, $this->factory->arrow, $other->out() ?? $this->factory->arrow, note: $note, end: $this->factory->end);
     }
 
     /** Both branches side by side, arrows into each from the test's corners and out of each into the closing diamond. */
@@ -68,7 +68,7 @@ final readonly class ConditionalBuilder
         $label1 = $this->positive($this->branch1);
         $label2 = $this->positive($this->branch2);
         $diamond1 = $this->test()->with(east: $label2, west: $label1);
-        $diamond2 = $this->closing($this->branch2)?->with(west: $this->out($this->branch1)) ?? new FtileEmpty(0.0, FtileDiamond::HALF / 2);
+        $diamond2 = $this->closing($this->branch2)?->with(west: $this->out($this->branch1)) ?? $this->noDiamond();
         [$left, $right] = $this->sideNotes();
         $tile = new FtileIf(
             $diamond1,
@@ -80,6 +80,7 @@ final readonly class ConditionalBuilder
             $this->factory->arrow,
             $left,
             $right,
+            $this->factory->end,
         );
         $result = FtileMarged::horizontal($tile, $tile->marginForLabel1($label1), $tile->marginForLabel2($label2));
 
@@ -112,10 +113,16 @@ final readonly class ConditionalBuilder
             : $this->factory->diamond($this->factory->condition, $this->back, $test);
     }
 
-    /** The diamond closing the decision when both branches leave, none otherwise. */
+    /** The room closing a decision without a diamond: as high as half a diamond under a line, a quarter otherwise. */
+    private function noDiamond(): FtileEmpty
+    {
+        return new FtileEmpty(0.0, ConditionEnd::Hline === $this->factory->end ? FtileDiamond::HALF : FtileDiamond::HALF / 2);
+    }
+
+    /** The diamond closing the decision when both branches leave, none otherwise or when it closes on a line. */
     private function closing(BranchTile $second): ?FtileDiamond
     {
-        if (!$this->tile1->geometry()->hasOut() || !$this->tile2->geometry()->hasOut()) {
+        if (ConditionEnd::Hline === $this->factory->end || !$this->tile1->geometry()->hasOut() || !$this->tile2->geometry()->hasOut()) {
             return null;
         }
         $color = Stereogroup::back($second->branch->specialColors) ?? $second->branch->color;

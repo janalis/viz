@@ -175,6 +175,9 @@ final readonly class FtileBuilder
     /** @param non-empty-list<BranchTile> $thens */
     private function long(InstructionIf $if, array $thens, BranchTile $else, string $back): Ftile
     {
+        if ($this->factory->vertical) {
+            return $this->vertical($if, $thens, $else, $back);
+        }
         $diamonds = [];
         foreach ($thens as $index => $branch) {
             $color = PlantUmlColor::parse((string) $branch->branch->color) ?? $back;
@@ -196,6 +199,39 @@ final readonly class FtileBuilder
             $this->factory->arrow,
             $this->factory->arrow->over($if->inLink()->color),
             $this->factory->arrow->over($if->outColor->color),
+        );
+    }
+
+    /**
+     * Else-ifs down, as PlantUML lays them out under `!pragma useVerticalIf on`: each test in the
+     * arrows' font, its branch's label east of it, the branches right of room for the labels into the tests.
+     *
+     * @param non-empty-list<BranchTile> $thens
+     */
+    private function vertical(InstructionIf $if, array $thens, BranchTile $else, string $back): Ftile
+    {
+        $factory = $this->factory;
+        $west = 10.0;
+        $diamonds = [];
+        $inlabels = [];
+        foreach ($thens as $branch) {
+            $test = $factory->label($branch->branch->labelTest) ?? new EmptyBlock();
+            $diamonds[] = $factory->diamond('inside2', $back, $test, $if->stereogroup)->with(east: $factory->label($branch->displayPositive()) ?? new EmptyBlock());
+            $inlabel = $factory->label($branch->branch->inlabel->display);
+            $inlabels[] = $inlabel;
+            $west = \max($west, $inlabel?->size()[0] ?? 0.0);
+        }
+
+        return new FtileIfLongVertical(
+            $diamonds,
+            \array_map(static fn (BranchTile $branch): Ftile => FtileMarged::horizontal($branch->tile, $west, 0.0), $thens),
+            FtileMarged::minimum($else->tile, 30.0),
+            $factory->diamond('empty', $back),
+            $thens,
+            $factory->arrow,
+            $factory->arrow->over($if->inLink()->color),
+            $factory->label($else->displayPositive()),
+            $inlabels,
         );
     }
 

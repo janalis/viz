@@ -29,6 +29,7 @@ final class FtileIf extends AbstractFtile
         private readonly Rainbow $arrow,
         private readonly ?Opale $left = null,
         private readonly ?Opale $right = null,
+        private readonly ConditionEnd $end = ConditionEnd::Diamond,
     ) {
         if (null !== $left) {
             [$width, $height] = $left->size();
@@ -104,6 +105,11 @@ final class FtileIf extends AbstractFtile
         $this->drawIn($canvas, $this->tile2, $this->branch2);
         $out1 = $this->tile1->geometry()->hasOut();
         $out2 = $this->tile2->geometry()->hasOut();
+        if ($out1 && $out2 && ConditionEnd::Hline === $this->end) {
+            $this->drawHline($canvas);
+
+            return;
+        }
         if ($out1 && $out2) {
             $this->drawOut($canvas, $this->tile1, $this->branch1);
             $this->drawOut($canvas, $this->tile2, $this->branch2);
@@ -141,6 +147,19 @@ final class FtileIf extends AbstractFtile
         $y2 += $dy;
         $snake = Snake::through($branch->out() ?? $this->arrow, Snake::arrow($x2 > $x1 ? 'R' : 'L'), [[$x1, $y1], [$x1, $y2], [$x2, $y2]]);
         $canvas->snake($branch->empty() ? $snake->emphasizing('D') : $snake);
+    }
+
+    /** Each branch straight down to its bottom, and a line across between them and its middle, as PlantUML closes it on a line. */
+    private function drawHline(Canvas $canvas): void
+    {
+        $internal = $this->internal();
+        $xs = [$internal->width / 2];
+        foreach ([$this->tile1, $this->tile2] as $tile) {
+            [$x, $y] = $this->outOf($tile);
+            $xs[] = $x;
+            $canvas->snake(Snake::through($this->arrow, Snake::arrow('D'), [[$x, $y], [$x, $internal->height]]));
+        }
+        $canvas->snake(Snake::through($this->arrow, null, [[\min($xs), $internal->height], [\max($xs), $internal->height]])->withMerge(MergeStrategy::None));
     }
 
     /** From the only branch leaving down to the decision's way out. */

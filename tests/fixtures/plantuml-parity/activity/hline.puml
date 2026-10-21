@@ -1,0 +1,18 @@
+@startuml
+skinparam conditionEndStyle hline
+start
+if (both?) then (yes)
+  :one;
+else (no)
+  :two;
+endif
+if (only?) then (yes)
+  :three;
+endif
+if (stop?) then (yes)
+  :four;
+else (no)
+  stop
+endif
+:after;
+@enduml

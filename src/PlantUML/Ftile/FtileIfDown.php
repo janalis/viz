@@ -25,6 +25,7 @@ final class FtileIfDown extends AbstractFtile
         /** The other way when it only stops, put right of the test. */
         private readonly ?Ftile $stop = null,
         private readonly ?Opale $note = null,
+        private readonly ConditionEnd $end = ConditionEnd::Diamond,
     ) {
         $this->diamond2 = null === $stop ? $diamond2 : new FtileEmpty();
     }
@@ -80,7 +81,7 @@ final class FtileIfDown extends AbstractFtile
         $this->drawElse($canvas);
         if ($then->hasOut()) {
             [$x1, $y1] = $this->at($this->then, $then->out());
-            [$x2, $y2] = $this->at($this->diamond2, $this->diamond2->geometry()->in());
+            [$x2, $y2] = $this->at($this->diamond2, ConditionEnd::Hline === $this->end ? self::middleRight($this->diamond2->geometry()) : $this->diamond2->geometry()->in());
             $canvas->snake(Snake::through($this->arrow->over($this->then->outLink()->color), Snake::arrow('D'), [[$x1, $y1], [$x2, $y2]]));
         }
     }
@@ -99,6 +100,15 @@ final class FtileIfDown extends AbstractFtile
             ? $this->at($this->diamond2, self::middleRight($this->diamond2->geometry()))
             : $this->geometry()->out();
         $xmax = \max($x1 + self::HALF, $this->thenAt()[0] + $this->then->geometry()->width);
+        if (ConditionEnd::Hline === $this->end && $this->then->geometry()->hasOut()) {
+            // As PlantUML: down beside the branch, then a line across under it and down to the way out.
+            [, $y3] = $this->at($this->diamond2, $this->diamond2->geometry()->out());
+            $canvas->add(Shape::empty($xmax, $y2 - self::HALF, 5.0, self::HALF));
+            $canvas->snake(Snake::through($this->elseColor, Snake::arrow('D'), [[$x1, $y1], [$xmax, $y1], [$xmax, $y2]]));
+            $canvas->snake(Snake::through($this->elseColor, null, [[$xmax, $y2], [$x2, $y2], [$x2, $y3]])->withMerge(MergeStrategy::None));
+
+            return;
+        }
         $canvas->add(Shape::empty($x2, $y2 - self::HALF, 5.0, self::HALF));
         $canvas->snake(Snake::through($this->elseColor, Snake::arrow('L'), [[$x1, $y1], [$xmax, $y1], [$xmax, $y2], [$x2, $y2]])->emphasizing('D'));
     }

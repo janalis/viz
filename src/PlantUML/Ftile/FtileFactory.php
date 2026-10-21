@@ -11,7 +11,6 @@ use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Style\PlantUmlColor;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Teoz\Rose\Pen;
-use Janalis\Viz\Source\Unsupported;
 
 /**
  * The tiles of an activity diagram's steps, styled by its document, as PlantUML's tile
@@ -24,8 +23,10 @@ final readonly class FtileFactory
     public Rainbow $arrow;
     /** How a test is drawn: `inside` a hexagon, above an `empty` diamond, or inside a `square` one. */
     public string $condition;
+    public ConditionEnd $end;
+    /** Whether else-ifs are laid out down, as `!pragma useVerticalIf on` asks. */
+    public bool $vertical;
 
-    /** @throws Unsupported for decisions closed by a line or else-ifs laid out down */
     public function __construct(PlantUmlDocument $document)
     {
         $this->styles = new FtileStyles($document->styles);
@@ -36,12 +37,8 @@ final readonly class FtileFactory
             'insidediamond', 'foo1' => 'square',
             default => 'inside',
         };
-        if ('hline' === \strtolower($document->param('conditionendstyle'))) {
-            throw new Unsupported('The native PlantUML renderer does not draw decisions closed by a line');
-        }
-        if (\in_array(\strtolower($document->pragmas['useverticalif'] ?? ''), ['true', 'on'], strict: true)) {
-            throw new Unsupported('The native PlantUML renderer does not draw else-ifs down');
-        }
+        $this->end = 'hline' === \strtolower($document->param('conditionendstyle')) ? ConditionEnd::Hline : ConditionEnd::Diamond;
+        $this->vertical = \in_array(\strtolower($document->pragmas['useverticalif'] ?? ''), ['true', 'on'], strict: true);
     }
 
     /** The pen arrows are drawn with. */

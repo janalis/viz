@@ -156,6 +156,16 @@ final class ActivityDrawingTest extends TestCase
         yield 'a switch whose last case is left of its test' => ["switch (a)\ncase (b)\n  :wwwwwwww;\ncase (a long label on the last case)\n  :x;\nendswitch", ['a long label on the last case']];
         yield 'a switch whose last case leaves just right of its end' => ["switch (a)\ncase (b)\n  :".\str_repeat('w', times: 24).";\ncase (a long label on the last case)\n  :x;\nendswitch", ['x']];
         yield 'a loop breaking from a switch' => ["while (w?)\n  switch (s)\n  case (a)\n    :x;\n    break\n  case (b)\n    :y;\n  endswitch\nendwhile\n:after;", ['x', 'y', 'after']];
+        yield 'decisions closed by a line' => [
+            "skinparam conditionEndStyle HLINE\nif (a) then\n  :b;\nelse\n  :c;\nendif\nif (d) then\n  :e;\nendif\nwhile (f?)\n  if (g) then\n    :h;\n    break\n  else\n    :i;\n  endif\nendwhile\nif (j) then\n  :k;\n  detach\nendif\n:l;",
+            ['b', 'c', 'e', 'h', 'i', 'k', 'l'],
+        ];
+        yield 'else-ifs down' => ["!pragma useVerticalIf on\nif (a) then\n  :b;\n(into c) elseif (c) then (yes)\n  :d;\nendif", ['b', 'into c', 'yes', 'd']];
+        yield 'else-ifs down breaking a loop' => [
+            "!pragma useVerticalIf on\nwhile (w?)\n  if (a) then\n    :b;\n    break\n  elseif (c) then\n    :d;\n  else\n    :e;\n    break\n  endif\nendwhile\n:after;",
+            ['b', 'd', 'e', 'after'],
+        ];
+        yield 'else-ifs down never leaving' => ["!pragma useVerticalIf true\n:x;\nif (a) then\n  stop\nelseif (c) then\n  stop\nelse\n  stop\nendif", ['a', 'c']];
         yield 'arrows of several colours' => [":a;\n-[#red;#blue]-> two;\n:b;\n-[#red;#blue,hidden]->\n:c;", ['two', 'c']];
         yield 'an arrow of several colours turning' => ["if (a) then\n  :x;\n  -[#red;#blue]-> out;\nelse\n  :y;\nendif", ['out']];
         yield 'arrows of several colours apart' => ["skinparam colorArrowSeparationSpace 3\n:a;\n-[#red,dotted;#blue]-> two;\n:b;", ['two']];
@@ -190,20 +200,6 @@ final class ActivityDrawingTest extends TestCase
 
         $this->assertContains('a', $shown);
         $this->assertContains('f?', $shown);
-    }
-
-    public function testDecisionsClosedByALineAreLeftToPlantUml(): void
-    {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw decisions closed by a line'));
-
-        self::draw("skinparam conditionEndStyle hline\nif (a) then\n  :b;\nendif");
-    }
-
-    public function testElseIfsDownAreLeftToPlantUml(): void
-    {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw else-ifs down'));
-
-        self::draw("!pragma useVerticalIf on\nif (a) then\n  :b;\nelseif (c) then\n  :d;\nendif");
     }
 
     public function testNotesOnASwitchAreLeftToPlantUml(): void
