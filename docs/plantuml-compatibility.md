@@ -25,7 +25,7 @@ Styles cascade as PlantUML's do: a declaration applies to an element when the el
 
 ## Diagrams
 
-PlantUML tries its diagram factories in order — sequence, class, the legacy activity syntax, description, state, then the new activity syntax — and the first whose commands take every line reads the diagram. The native renderer does the same with the commands of each factory, exported from the MIT jar by `tools/PlantUmlCommands.java` into `resources/plantuml/commands.json`, so it picks the factory PlantUML picks. A factory without a native family leaves its diagrams to PlantUML. A `@startmindmap` block is read by PlantUML's mind map factory alone, a `@startwbs` block by its WBS factory, a `@startchen` block by its Chen EER factory, `@startebnf`, `@startregex`, `@startboard`, `@startpacketdiag`, `@startnwdiag`, `@startwire` and `@startsalt` blocks by their own; `@startjson` and `@startyaml` blocks are read whole, as data, with no commands. Kinds of diagram PlantUML reads after these (salt within `@startuml`, timing, Gantt, ditaa, formulas, embedded DOT, its information pages), and other `@start` kinds (`@startgantt`, `@startsalt`, …), are left to it too.
+PlantUML tries its diagram factories in order — sequence, class, the legacy activity syntax, description, state, the new activity syntax, then timing — and the first whose commands take every line reads the diagram. The native renderer does the same with the commands of each factory, exported from the MIT jar by `tools/PlantUmlCommands.java` into `resources/plantuml/commands.json`, so it picks the factory PlantUML picks. A factory without a native family leaves its diagrams to PlantUML. A `@startmindmap` block is read by PlantUML's mind map factory alone, a `@startwbs` block by its WBS factory, a `@startchen` block by its Chen EER factory, `@startebnf`, `@startregex`, `@startboard`, `@startpacketdiag`, `@startnwdiag`, `@startwire` and `@startsalt` blocks by their own; `@startjson` and `@startyaml` blocks are read whole, as data, with no commands. Kinds of diagram PlantUML reads after these (salt within `@startuml`, Gantt, ditaa, formulas, embedded DOT, its information pages), and other `@start` kinds (`@startgantt`, …), are left to it too.
 
 | Diagram | Native |
 | --- | --- |
@@ -44,6 +44,7 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | Network (nwdiag) | yes, below |
 | Wire | yes, below |
 | Salt | yes, below |
+| Timing | yes, below |
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
@@ -205,11 +206,21 @@ Each edge is drawn as a curve from its row to the middle of the table it reaches
 | Grids, `{+`, `{^"title"`, `{-`, `{!`, `{#`, with `*`; `{S`, `{SI`, `{S-` scroll bars; `N=`, `S=`, `E=`, `W=`, `C=` borders; `{T` trees, ruled as `T+`, `T-`, `T!`, `T#`, with columns | Sprites |
 | `{*` menus, `{/` tabs; text, `[button]`, `"field"`, `[X]`/`[]` check boxes, `(X)`/`()` radio buttons, `^drop^list^`, `--` `==` `..` `~~` rules, `<<name` pictures and `<<name>>` | |
 
+### Timing diagrams
+
+Timing diagrams are read natively with PlantUML's rules (`PlantUML\Timing`) and drawn as PlantUML's `TimingDiagram` draws them: each player under the last, its title in a tab, its panel along a time axis whose tick is the highest common factor of the moments named — 50 apart, or as `scale … as … pixels` asks — one tick more than they span; the time grid dashed down the players, a frame round them unless `mode compact`.
+
+| Drawn natively | Left to PlantUML |
+| --- | --- |
+| `robust`, `concise`, `rectangle`, `binary` and `clock` players, compact or not, with a title, a colour, a stereotype and a height in pixels; states named with `has`; a first state before any moment | `analog` players |
+| `@` a moment, a named moment (`@0 as :start`, `@:start+10`), a relative one (`@+50`), a clock's tick (`@clk*2`), an hour or a date, or a player; states set by player or by moment, one or two at once (`{a,b}`), `{...}`, `{-}`, `{hidden}`, with a colour and a comment | `use date format` |
+| Messages between moments, with a colour; constraints, with a colour; notes above and below; highlights with a colour and a caption; `hide time-axis`, `manual time-axis` | Messages styled `dashed`, `dotted`, `bold` or by thickness |
+
 ## Parity
 
 `PlantUmlParityTest` grades the native drawing of each fixture in `tests/fixtures/plantuml-parity` against what PlantUML 1.2026.8 drew for it. `tools/record-plantuml-parity.php` records those goldens from the jar `tools/plantuml.lock` pins, checking its SHA-256. A fixture earns 1 when the native drawing writes the same words as PlantUML (the letters PlantUML draws as outlines in class and connector circles aside), 2 when its height is also within 5% of PlantUML's, 3 within 2%, and 4 when every word also stands within 3 points of where PlantUML writes it down the diagram, their baselines aligned on the median offset. Widths are not graded, since the bundled monospace font is wider than PlantUML's. Each fixture's grade has a floor in `manifest.php` that only rises. The `PlantUML parity (live)` workflow re-runs the pinned jar weekly and fails if PlantUML's own drawing drifts from a golden.
 
-The grades at 0.2.0, on 247 self-authored fixtures:
+The grades at 0.2.0, on 259 self-authored fixtures:
 
 | Family | Fixtures | Same words | and height within 5% | and within 2% | and every row within 3 pt |
 | --- | --- | --- | --- | --- | --- |
@@ -228,6 +239,7 @@ The grades at 0.2.0, on 247 self-authored fixtures:
 | Network | 5 | 5 | 5 | 5 | 5 |
 | Wire | 5 | 5 | 5 | 5 | 5 |
 | Salt | 14 | 14 | 14 | 14 | 14 |
+| Timing | 12 | 12 | 12 | 12 | 12 |
 
 Shadows, which `skin rose` casts under every element, are drawn as a darkened copy of the shape rather than PlantUML's blurred one; they take the room PlantUML gives them.
 

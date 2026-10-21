@@ -19,8 +19,6 @@ final class PlantUmlKinds
         '/^(?:strict[\s\x{a0}]+)?(?:di)?graph\b[^{]*\{$/iu' => 'embedded DOT',
         '/^ditaa\b/i' => 'ditaa',
         '/^(?:latex|math)\b/i' => 'formulas',
-        '/^(?:robust|concise|clock|binary|analog)[\s\x{a0}]/iu' => 'timing diagrams',
-        '/^@[+\d]/' => 'timing diagrams',
         '/^\[[^\]]+\][\s\x{a0}]+(?:lasts|requires|starts|ends|happens|is[\s\x{a0}]+colored|displays)\b/iu' => 'Gantt charts',
         '/^project[\s\x{a0}]+starts\b/iu' => 'Gantt charts',
         '/^(?:license|version|help|listfonts|listopeniconic|listsprites?|stdlib|colors|donors|keywords?)\b/i' => 'PlantUML\'s information pages',

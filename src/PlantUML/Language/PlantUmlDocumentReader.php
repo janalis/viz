@@ -250,7 +250,7 @@ final class PlantUmlDocumentReader
         return true;
     }
 
-    /** `scale 1.5` or `scale 2/3`; scales to a size are left to PlantUML. */
+    /** `scale 1.5` or `scale 2/3`; scales to a size are left to PlantUML, and a timing diagram's scale to its diagram. */
     private function scaled(string $line): bool
     {
         $match = [];
@@ -264,6 +264,10 @@ final class PlantUmlDocumentReader
             $this->scale = $scale / $divisor;
 
             return true;
+        }
+        // A timing diagram's `scale 100 as 50 pixels` is its own.
+        if (1 === \preg_match('/^scale[\s\x{a0}]+\d+(?:[\s\x{a0}]?[smhdDyY])?[\s\x{a0}]+as[\s\x{a0}]+\d+[\s\x{a0}]+pixels?[\s\x{a0}]*$/iu', $line)) {
+            return false;
         }
         if (1 === \preg_match('/^scale\b/i', $line)) {
             throw new Unsupported('The native PlantUML renderer leaves scaling to a size to PlantUML');

@@ -1,0 +1,14 @@
+@startuml
+hide time-axis
+scale 10 as 50 pixels
+concise "Web User" as WU #pink
+WU is 20 pixels height
+@0
+WU is Idle
+@20
+WU is Waiting
+@40
+WU is {hidden}
+@60
+WU is Done
+@enduml

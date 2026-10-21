@@ -1,0 +1,13 @@
+@startuml
+manual time-axis
+concise "Web User" as WU
+@0 as :start
+@50 as :middle
+@100 as :end
+@:start
+WU is Idle
+@:middle
+WU is Waiting
+@:end
+WU is Done
+@enduml

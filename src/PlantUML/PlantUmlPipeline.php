@@ -23,6 +23,7 @@ use Janalis\Viz\PlantUML\Packet\PacketFamily;
 use Janalis\Viz\PlantUML\Salt\SaltFamily;
 use Janalis\Viz\PlantUML\Sequences\SequenceFamily;
 use Janalis\Viz\PlantUML\States\StateFamily;
+use Janalis\Viz\PlantUML\Timing\TimingFamily;
 use Janalis\Viz\PlantUML\Wbs\WbsFamily;
 use Janalis\Viz\PlantUML\Wire\WireFamily;
 use Janalis\Viz\Source\Unsupported;
@@ -36,7 +37,15 @@ use Janalis\Viz\Source\Unsupported;
 final readonly class PlantUmlPipeline implements Pipeline
 {
     /** PlantUML's factories, in the order it tries them, by the name of their commands, and what their diagrams are called. */
-    public const array FACTORIES = ['sequence' => 'sequence', 'class' => 'class', 'activity' => 'legacy activity', 'description' => 'description', 'state' => 'state', 'activity3' => 'activity'];
+    public const array FACTORIES = [
+        'sequence' => 'sequence',
+        'class' => 'class',
+        'activity' => 'legacy activity',
+        'description' => 'description',
+        'state' => 'state',
+        'activity3' => 'activity',
+        'timing' => 'timing',
+    ];
 
     /** The factories for each kind of block, as `@start…` names it, the uml ones above. */
     public const array KINDS = [
@@ -68,6 +77,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'description' => new DescriptionFamily(),
             'state' => new StateFamily(),
             'activity3' => new ActivityFamily(),
+            'timing' => new TimingFamily(),
             'mindMap' => new MindMapFamily(),
             'wBS' => new WbsFamily(),
             'chenEer' => new ChenFamily(),
@@ -113,7 +123,9 @@ final readonly class PlantUmlPipeline implements Pipeline
             try {
                 return $family->read($document, $commands);
             } catch (PlantUmlRefusal $refused) {
-                $refusal = $refused;
+                // As PlantUML, which tells of the failure furthest down the source: timing, tried last,
+                // mostly fails at once on a diagram written for another factory.
+                $refusal = 'timing' === $factory && null !== $refusal ? $refusal : $refused;
                 continue;
             }
         }

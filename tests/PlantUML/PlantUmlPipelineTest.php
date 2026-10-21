@@ -54,8 +54,6 @@ final class PlantUmlPipelineTest extends TestCase
         yield 'salt brace' => ['{+', 'salt wireframes'];
         yield 'nwdiag' => ['nwdiag {', 'network diagrams'];
         yield 'dot' => ['digraph G {', 'embedded DOT'];
-        yield 'timing' => ['robust "Web" as WB', 'timing diagrams'];
-        yield 'timing time' => ['@100', 'timing diagrams'];
         yield 'gantt task' => ['[Design] lasts 5 days', 'Gantt charts'];
         yield 'gantt project' => ['Project starts 2026-01-01', 'Gantt charts'];
     }

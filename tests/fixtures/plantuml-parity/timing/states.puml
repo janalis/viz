@@ -1,0 +1,21 @@
+@startuml
+robust "DNS Resolver" as DNS
+DNS has Idle,Processing,Waiting
+concise "Client" as C
+
+C is Ready
+DNS is Idle
+
+@0
+C is Busy
+@50
+DNS is Processing : lookup
+@120
+DNS is Waiting
+C is {...}
+@200
+DNS is Idle
+C is {-}
+@250
+C is Done
+@enduml

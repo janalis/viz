@@ -1,0 +1,12 @@
+@startuml
+rectangle "Status" as ST
+concise "Mode" as M
+@0
+ST is Off
+M is A
+@40
+ST is On #lightgreen
+M is B
+@80
+ST is Off
+@enduml

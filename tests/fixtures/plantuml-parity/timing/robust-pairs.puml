@@ -1,0 +1,15 @@
+@startuml
+robust "Signal" as S
+binary "Enable" as EN
+@0
+S is low
+EN is low
+@10
+S is {low,high}
+EN is {0,1}
+@20
+S is high
+EN is high
+@30
+S is low #pink
+@enduml
