@@ -1,0 +1,6 @@
+@startebnf
+(* A rule with a comment above *)
+rule (* and below *) = "a" (* after a *), "b";
+(* a standalone comment *)
+other = 'x' | 'y' (* y below *);
+@endebnf

@@ -1,0 +1,8 @@
+@startebnf
+letter = ? any letter ?;
+word = letter, { letter };
+safe = word - "unsafe";
+repeated = 3 * "a";
+maybe = 0 * "b";
+empty = ;
+@endebnf

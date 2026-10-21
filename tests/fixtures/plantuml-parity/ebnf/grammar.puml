@@ -1,0 +1,6 @@
+@startebnf
+expression = term, { ( "+" | "-" ), term };
+term = factor, { ( "*" | "/" ), factor };
+factor = number | "(", expression, ")";
+number = digit, {digit}-;
+@endebnf

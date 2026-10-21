@@ -1,0 +1,4 @@
+@startebnf
+list = "[", [ item, { ",", item } ], "]";
+item = ( "a" | "b" | "c" ), [ ":", ( "x" | "y" ) ];
+@endebnf

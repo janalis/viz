@@ -75,7 +75,10 @@ public class PlantUmlCommands {
             for (int slot = 0; slot < slots.size(); slot++)
                 json.append(slot == 0 ? "" : ",").append(quote(slots.get(slot)));
             // As Ubrex records them, only the groups that took something: a name's first is its first that matched.
-            return json.append("],\"end\":null,\"ubrex\":true}").toString();
+            json.append("],\"end\":");
+            // A command over several lines ends at the line its end expression matches.
+            json.append(end == null ? "null" : quote("^" + ubrex(challenge(end), new ArrayList<>(), false) + "$"));
+            return json.append(",\"ubrex\":true}").toString();
         }
         json.append(",\"start\":").append(start == null ? "null" : quote(transform(pattern(start))));
         json.append(",\"slots\":");

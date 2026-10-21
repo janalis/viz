@@ -109,11 +109,14 @@ $factories = [
     'net.sourceforge.plantuml.mindmap.MindMapDiagramFactory',
     'net.sourceforge.plantuml.wbs.WBSDiagramFactory',
     'net.sourceforge.plantuml.cheneer.ChenEerDiagramFactory',
+    'net.sourceforge.plantuml.ebnf.PSystemEbnfFactory',
+    'net.sourceforge.plantuml.regexdiagram.PSystemRegexFactory',
 ];
 $commands = \json_decode($run(\sprintf('java -cp %s PlantUmlCommands %s', \escapeshellarg($jar.\PATH_SEPARATOR.$classes), \implode(' ', $factories))), associative: true, flags: \JSON_THROW_ON_ERROR);
 $families = [];
 foreach ($commands as $factory => $list) {
-    $families[\lcfirst(\str_replace('DiagramFactory', '', \substr($factory, (int) \strrpos($factory, '.') + 1)))] = $list;
+    // `ClassDiagramFactory` is read as `class`, `PSystemEbnfFactory` as `ebnf`.
+    $families[\lcfirst((string) \preg_replace('/^PSystem|DiagramFactory|Factory$/', '', \substr($factory, (int) \strrpos($factory, '.') + 1)))] = $list;
 }
 \file_put_contents($target.'/commands.json', \json_encode(['version' => $version, 'families' => $families], \JSON_UNESCAPED_SLASHES)."\n");
 \fwrite(\STDOUT, \sprintf("Imported the commands of %d diagram families\n", \count($families)));

@@ -1,0 +1,4 @@
+@startregex
+title Groups
+(?<year>\d{4})-(?<month>\d{2})(?=T)
+@endregex

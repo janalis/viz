@@ -79,9 +79,12 @@ final class PlantUmlCommands
             }
             $end = $command['end'];
             for ($last = $at + 1, $count = \count($lines); $last < $count; ++$last) {
-                if (1 === \preg_match(self::regex('^(?:'.$end.')$'), \trim($lines[$last]))) {
-                    return new PlantUmlCommand($name, $groups, \array_slice($lines, $at, $last - $at + 1));
+                if (1 !== \preg_match(self::regex('^(?:'.$end.')$'), \trim($lines[$last]))) {
+                    continue;
                 }
+                $multiline = new PlantUmlCommand($name, $groups, \array_slice($lines, $at, $last - $at + 1));
+
+                return $command['ubrex'] ?? false ? $multiline->taken() : $multiline;
             }
         }
 
