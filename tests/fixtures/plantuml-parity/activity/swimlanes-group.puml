@@ -1,0 +1,17 @@
+@startuml
+|A|
+start
+partition Work {
+  :one;
+  |B|
+  :two;
+}
+|A|
+:three;
+group Elsewhere {
+  |B|
+  :four;
+}
+|A|
+stop
+@enduml

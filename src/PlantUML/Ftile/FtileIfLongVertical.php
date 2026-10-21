@@ -69,18 +69,19 @@ final class FtileIfLongVertical extends AbstractFtile
     public function draw(Canvas $canvas): void
     {
         foreach ($this->tiles as $index => $tile) {
-            $tile->draw($canvas->moved(...$this->tileAt($index)));
+            $tile->draw($canvas->spanning()->moved(...$this->tileAt($index)));
         }
         foreach ($this->diamonds as $index => $diamond) {
             $diamond->draw($canvas->moved(...$this->diamondAt($index)));
         }
-        $this->tile2->draw($canvas->moved(...$this->tile2At()));
+        $this->tile2->draw($canvas->spanning()->moved(...$this->tile2At()));
         $this->last->draw($canvas->moved(...$this->lastAt()));
         $this->drawIn($canvas);
         foreach ($this->tiles as $index => $tile) {
             [$x1, $y1] = self::at($this->diamondAt($index), $this->diamonds[$index]->geometry()->pointB());
             [$x2, $y2] = self::at($this->tileAt($index), $tile->geometry()->in());
-            $canvas->snake(Snake::through($this->thens[$index]->inColor($this->arrow), Snake::arrow('D'), [[$x1, $y1], [$x2, $y1], [$x2, $y2]]));
+            // As PlantUML, none of its arrows is drawn across swimlanes.
+            $canvas->link(Snake::through($this->thens[$index]->inColor($this->arrow), Snake::arrow('D'), [[$x1, $y1], [$x2, $y1], [$x2, $y2]]), null, FtileLane::in($tile), self::none(...));
             if ($index > 0) {
                 $this->drawBetween($canvas, $index);
             }
@@ -99,7 +100,7 @@ final class FtileIfLongVertical extends AbstractFtile
         [$x1, $y1] = self::at($this->diamondAt($last), $this->diamonds[$last]->geometry()->out());
         [$x2, $y2] = self::at($this->tile2At(), $this->tile2->geometry()->in());
         $points = [[$x1, $y1], [$x1, $y2 - self::STEP], [$x2, $y2 - self::STEP], [$x2, $y2]];
-        $canvas->snake(Snake::through($this->in, Snake::arrow('D'), $points)->withLabel($this->elseLabel, 'center'));
+        $canvas->link(Snake::through($this->in, Snake::arrow('D'), $points)->withLabel($this->elseLabel, 'center'), null, FtileLane::in($this->tile2), self::none(...));
     }
 
     /** From a test down to the next, labelled with what is written before the next. */
@@ -121,7 +122,7 @@ final class FtileIfLongVertical extends AbstractFtile
                 continue;
             }
             [$x1, $y1] = self::at($this->tileAt($index), $tile->geometry()->out());
-            $canvas->snake(
+            $canvas->link(
                 0 === $index
                     ? Snake::through($this->arrow, Snake::arrow('L'), [
                         [$x1, $y1],
@@ -131,13 +132,22 @@ final class FtileIfLongVertical extends AbstractFtile
                         [$lx + ($lastGeometry->width / 2), $ly + ($lastGeometry->height / 2)],
                     ])
                     : Snake::through($this->arrow, Snake::arrow('R'), [[$x1, $y1], [$x1, $y1 + self::STEP], [$width, $y1 + self::STEP]]),
+                FtileLane::out($tile),
+                null,
+                self::none(...),
             );
         }
         if (!$this->tile2->geometry()->hasOut()) {
             return;
         }
         [$x1, $y1] = self::at($this->tile2At(), $this->tile2->geometry()->out());
-        $canvas->snake(Snake::through($this->arrow, Snake::arrow('D'), [[$x1, $y1], [$x1, $ly - self::STEP], [$lx, $ly - self::STEP], [$lx, $ly]]));
+        $canvas->link(Snake::through($this->arrow, Snake::arrow('D'), [[$x1, $y1], [$x1, $ly - self::STEP], [$lx, $ly - self::STEP], [$lx, $ly]]), FtileLane::out($this->tile2), null, self::none(...));
+    }
+
+    /** @return list<Snake> no arrow across swimlanes */
+    private static function none(): array
+    {
+        return [];
     }
 
     /** @return array{float, float} */

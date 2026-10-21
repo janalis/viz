@@ -91,7 +91,9 @@ final class Canvas
 
     public function add(Shape ...$shapes): void
     {
-        $this->laned();
+        if ($this->outside()) {
+            return;
+        }
         foreach ($shapes as $shape) {
             $this->store->shapes[] = $shape->moved($this->dx, $this->dy);
             $this->store->shapeLanes[] = $this->lane;
@@ -101,7 +103,9 @@ final class Canvas
     /** An arrow, merged with one it meets end to start if it can. */
     public function snake(Snake $snake): void
     {
-        $this->laned();
+        if ($this->outside()) {
+            return;
+        }
         $this->hold($snake->moved($this->dx, $this->dy), $this->lane);
     }
 
@@ -130,8 +134,9 @@ final class Canvas
      */
     public function link(Snake $snake, ?string $from, ?string $to, \Closure $across): void
     {
-        $from ??= $this->lane;
-        $to ??= $this->lane;
+        // As PlantUML, an arrow from or to what stands in no swimlane is drawn in the other end's.
+        $from ??= $this->lane ?? $to;
+        $to ??= $this->lane ?? $from;
         if (null === $this->lanes || null === $from || $from === $to) {
             (null === $from ? $this : $this->spanning()->inLane($from))->snake($snake);
 
@@ -215,11 +220,9 @@ final class Canvas
         $this->store->snakeLanes[] = $lane;
     }
 
-    /** @throws Unsupported for what is drawn outside any swimlane once there are swimlanes */
-    private function laned(): void
+    /** As PlantUML, which draws in swimlanes only, whether what it draws stands in none, and so is not drawn. */
+    private function outside(): bool
     {
-        if (null !== $this->lanes && null === $this->lane) {
-            throw new Unsupported('The native PlantUML renderer does not draw what stands outside any swimlane');
-        }
+        return null !== $this->lanes && null === $this->lane;
     }
 }

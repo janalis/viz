@@ -1,0 +1,17 @@
+@startuml
+!pragma useVerticalIf on
+|A|
+start
+if (a?) then (yes)
+  :one;
+elseif (b?) then (yes)
+  |B|
+  :two;
+  |A|
+else (no)
+  |B|
+  :three;
+endif
+|A|
+stop
+@enduml

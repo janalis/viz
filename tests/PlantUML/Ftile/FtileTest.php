@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\PlantUML\Ftile;
 
 use Janalis\Viz\PlantUML\Activities\LinkRendering;
+use Janalis\Viz\PlantUML\Ftile\Canvas;
 use Janalis\Viz\PlantUML\Ftile\FtileBreak;
 use Janalis\Viz\PlantUML\Ftile\FtileDecorate;
 use Janalis\Viz\PlantUML\Ftile\FtileEmpty;
@@ -16,6 +17,7 @@ use Janalis\Viz\PlantUML\Ftile\FtileSpanning;
 use Janalis\Viz\PlantUML\Ftile\FtileWithNote;
 use Janalis\Viz\PlantUML\Ftile\Genealogy;
 use Janalis\Viz\PlantUML\Ftile\Label;
+use Janalis\Viz\PlantUML\Ftile\LaneView;
 use Janalis\Viz\PlantUML\Ftile\MergeStrategy;
 use Janalis\Viz\PlantUML\Ftile\Opale;
 use Janalis\Viz\PlantUML\Ftile\Rainbow;
@@ -23,6 +25,7 @@ use Janalis\Viz\PlantUML\Ftile\Snake;
 use Janalis\Viz\PlantUML\Ftile\Worm;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Teoz\Rose\Pen;
+use Janalis\Viz\Source\Unsupported;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -89,6 +92,15 @@ final class FtileTest extends TestCase
         $this->assertNull(FtileLane::in(new FtileEmpty()));
         $spanning = new FtileSpanning($lane);
         $this->assertSame([$out, [0.0, 0.0], 'A'], [$spanning->outLink(), $spanning->translateFor($lane), FtileLane::out(new FtileLane($spanning, 'B'))]);
+    }
+
+    public function testACanvasDrawsNoStepOfAnotherSwimlaneInsideOneUnlessAStepBendsItsArrows(): void
+    {
+        $canvas = Canvas::create(new LaneView())->inLane('A');
+
+        $this->assertSame('B', $canvas->spanning()->inLane('B')->lane());
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a step holding steps of another swimlane'));
+        $canvas->inLane('B');
     }
 
     public function testTilesAroundABreakFindWhereItStands(): void

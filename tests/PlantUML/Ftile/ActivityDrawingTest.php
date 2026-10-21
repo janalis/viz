@@ -234,18 +234,14 @@ final class ActivityDrawingTest extends TestCase
         $this->assertContains('over', $shown);
     }
 
-    /** @return iterable<string, array{string}> */
-    public static function acrossSwimlanes(): iterable
+    public function testABreakInAnotherSwimlaneThanItsRepeatLeavesByNoArrow(): void
     {
-        yield 'a group across swimlanes' => ["|A|\npartition p {\n  |B|\n  :c;\n}"];
-    }
+        $shown = \array_map(
+            static fn (Mark $mark): string => \trim((string) $mark->text),
+            self::draw("|A|\nrepeat\n  :a;\n  |B|\n  if (b) then\n    break\n  endif\n  |A|\nrepeat while (c)\n:d;")->marks,
+        );
 
-    #[DataProvider('acrossSwimlanes')]
-    public function testStepsHoldingStepsOfAnotherSwimlaneAreLeftToPlantUml(string $lines): void
-    {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a step holding steps of another swimlane'));
-
-        self::draw($lines);
+        $this->assertContains('d', $shown);
     }
 
     public function testElseIfsLeavingOnlyInOtherSwimlanesCloseThere(): void
@@ -272,18 +268,12 @@ final class ActivityDrawingTest extends TestCase
         self::draw("|A|\nswitch (a test much wider than its case)\ncase (b)\n  |B|\n  while (c)\n    |C|\n    :d;\n  endwhile\nendswitch");
     }
 
-    public function testWhatStandsOutsideAnySwimlaneIsLeftToPlantUml(): void
+    public function testWhatStandsOutsideAnySwimlaneIsNotDrawn(): void
     {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw what stands outside any swimlane'));
+        $shown = \array_map(static fn (Mark $mark): string => \trim((string) $mark->text), self::draw("note right: first\nsplit\nend split\n|A|\nstart\n:a;\n|B|\n:b;")->marks);
 
-        self::draw("note right: first\n|A|\n:a;\n|B|\n:b;");
-    }
-
-    public function testAStepOutsideAnySwimlaneIsLeftToPlantUml(): void
-    {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a step outside any swimlane'));
-
-        self::draw("split\nend split\n|A|\n:a;\n|B|\n:b;");
+        $this->assertNotContains('first', $shown);
+        $this->assertContains('b', $shown);
     }
 
     public function testASwitchWithoutCasesIsLeftToPlantUml(): void

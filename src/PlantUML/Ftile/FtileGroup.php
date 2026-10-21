@@ -78,8 +78,18 @@ final class FtileGroup extends AbstractFtile
             ],
             default => $this->frame($pen, $width, $geometry->height),
         };
-        $canvas->add(...$shapes);
-        $this->inner->draw($canvas->moved(...$this->translateFor($this->inner)));
+        // As PlantUML, which draws a group in each swimlane it holds steps of, and only those: its frame in each.
+        $lanes = FtileLane::all($this->inner);
+        if ([] === $lanes || \in_array($canvas->lane(), $lanes, strict: true)) {
+            $canvas->add(...$shapes);
+        }
+        foreach ($lanes as $lane) {
+            if ($lane === $canvas->lane()) {
+                continue;
+            }
+            $canvas->pinned($lane)->add(...$shapes);
+        }
+        $this->inner->draw($canvas->spanning()->moved(...$this->translateFor($this->inner)));
     }
 
     /** @return list<Shape> a frame with its title in a tab at its top left */

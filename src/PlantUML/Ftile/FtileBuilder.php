@@ -67,11 +67,10 @@ final readonly class FtileBuilder
     public function tile(Instruction $instruction): Ftile
     {
         $tile = $this->unlaned($instruction);
-        if (null === $this->lanes) {
-            return $tile;
-        }
+        $lane = null === $this->lanes ? null : $this->lanes[$instruction] ?? null;
 
-        return new FtileLane($tile, $this->lanes[$instruction] ?? throw new Unsupported('The native PlantUML renderer does not draw a step outside any swimlane'));
+        // As PlantUML, a step written before any swimlane stands in none, and is not drawn.
+        return null === $lane ? $tile : new FtileLane($tile, $lane);
     }
 
     private function unlaned(Instruction $instruction): Ftile
@@ -389,15 +388,17 @@ final readonly class FtileBuilder
         $genealogy = new Genealogy($result);
         [$dx, $dy] = $genealogy->translate($diamond);
         $middle = $dy + ($diamond->geometry()->height / 2);
-        $snakes = [];
+        $links = [];
         foreach ($breaks as $index => $break) {
             [$x, $y] = $genealogy->translate($break);
-            $snakes[] = 0 === $index
+            $snake = 0 === $index
                 ? Snake::through($this->factory->arrow, Snake::arrow('R'), [[$x, $y], [0.0, $y], [0.0, $middle], [$dx, $middle]])
                 : Snake::through($this->factory->arrow, Snake::arrow('L'), [[$x, $y], [0.0, $y]]);
+            // As PlantUML, a break in another swimlane than the loop's leaves by no arrow.
+            $links[] = [$snake, $break->lane, null, static fn (): array => []];
         }
 
-        return new FtileDecorate($result, connections: [new Arrows($snakes)]);
+        return new FtileDecorate($result, connections: [new Links($links)]);
     }
 
     private function parallel(InstructionFork $fork): Ftile
