@@ -20,7 +20,7 @@ final readonly class FtileLane implements Ftile
         $children = $tile->children();
 
         return match (true) {
-            $tile instanceof self => $tile->lane,
+            $tile instanceof self => self::entry($tile->tile) ?? $tile->lane,
             [] === $children => null,
             default => self::in($children[0]),
         };
@@ -38,6 +38,19 @@ final readonly class FtileLane implements Ftile
         };
     }
 
+    /** The swimlane a step's own first tile stands in when not the step's, as a split's line stands in its first flow's. */
+    private static function entry(Ftile $tile): ?string
+    {
+        $children = $tile->children();
+
+        return match (true) {
+            $tile instanceof self => $tile->lane,
+            $tile instanceof FtileAssembly => self::entry($tile->tile1),
+            1 === \count($children) => self::entry($children[0]),
+            default => null,
+        };
+    }
+
     /** The swimlane a step's tile says the flow leaves it in, through the tiles wrapping it. */
     private static function exit(Ftile $tile): ?string
     {
@@ -45,7 +58,9 @@ final readonly class FtileLane implements Ftile
 
         return match (true) {
             $tile instanceof LaneExit => $tile->exitLane(),
-            1 === \count($children) && !$tile instanceof self => self::exit($children[0]),
+            $tile instanceof self => $tile->lane,
+            $tile instanceof FtileAssembly => self::exit($tile->tile2),
+            1 === \count($children) => self::exit($children[0]),
             default => null,
         };
     }

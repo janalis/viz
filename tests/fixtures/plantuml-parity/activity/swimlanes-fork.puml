@@ -1,0 +1,35 @@
+@startuml
+|A|
+start
+fork
+  :one;
+fork again
+  |B|
+  :two;
+end fork
+|A|
+:three;
+|B|
+fork
+  |A|
+  :four;
+fork again
+  |B|
+  :five;
+  |A|
+end fork
+split
+  |B|
+  :six;
+split again
+  |A|
+  :seven;
+end split
+fork
+  :eight;
+fork again
+  |B|
+  :nine;
+end merge
+stop
+@enduml

@@ -402,7 +402,7 @@ final readonly class FtileBuilder
     private function parallel(InstructionFork $fork): Ftile
     {
         $tiles = \array_map($this->list(...), $fork->forks);
-        $builder = new ParallelBuilder($this->factory, $tiles);
+        $builder = new ParallelBuilder($this->factory, $tiles, null === $this->lanes ? null : $fork->laneOut ?? $this->lanes[$fork] ?? null);
         $result = match ($fork->style) {
             'split' => $builder->split(),
             'merge' => $builder->merge($fork->stereogroup),

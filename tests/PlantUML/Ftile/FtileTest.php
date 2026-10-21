@@ -12,6 +12,7 @@ use Janalis\Viz\PlantUML\Ftile\FtileForkInner;
 use Janalis\Viz\PlantUML\Ftile\FtileGroup;
 use Janalis\Viz\PlantUML\Ftile\FtileKilled;
 use Janalis\Viz\PlantUML\Ftile\FtileLane;
+use Janalis\Viz\PlantUML\Ftile\FtileSpanning;
 use Janalis\Viz\PlantUML\Ftile\FtileWithNote;
 use Janalis\Viz\PlantUML\Ftile\Genealogy;
 use Janalis\Viz\PlantUML\Ftile\Label;
@@ -86,6 +87,8 @@ final class FtileTest extends TestCase
         $this->assertSame($out, $lane->outLink());
         $this->assertSame([[0.0, 0.0], 4.0, 'A', 'A'], [$lane->translateFor($lane->tile), $lane->geometry()->width, FtileLane::in($lane), FtileLane::out($lane)]);
         $this->assertNull(FtileLane::in(new FtileEmpty()));
+        $spanning = new FtileSpanning($lane);
+        $this->assertSame([$out, [0.0, 0.0], 'A'], [$spanning->outLink(), $spanning->translateFor($lane), FtileLane::out(new FtileLane($spanning, 'B'))]);
     }
 
     public function testTilesAroundABreakFindWhereItStands(): void

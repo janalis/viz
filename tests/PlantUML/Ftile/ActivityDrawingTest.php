@@ -237,7 +237,7 @@ final class ActivityDrawingTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function acrossSwimlanes(): iterable
     {
-        yield 'a fork across swimlanes' => ["|A|\nfork\n  |B|\n  :b;\nend fork"];
+        yield 'a switch across swimlanes' => ["|A|\nswitch (a)\ncase (b)\n  |B|\n  :c;\nendswitch"];
     }
 
     #[DataProvider('acrossSwimlanes')]

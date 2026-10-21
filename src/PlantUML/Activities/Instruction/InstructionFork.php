@@ -15,6 +15,8 @@ final class InstructionFork extends Noted implements Container
     /** `fork`, `merge` or `split` */
     public string $style;
     public ?string $label = null;
+    /** The swimlane its last `fork again` or its end was written in, where its bar below stands. */
+    public ?string $laneOut = null;
     private bool $finished = false;
 
     public function __construct(

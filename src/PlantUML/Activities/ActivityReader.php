@@ -373,6 +373,7 @@ final class ActivityReader
     {
         $fork = $this->currentFork($command);
         $fork->again($this->take());
+        $fork->laneOut = $this->lane?->name;
     }
 
     private function endFork(PlantUmlCommand $command): void
@@ -384,6 +385,7 @@ final class ActivityReader
             default => 'fork',
         };
         $fork->end($this->take(), $style, $command->get('LABEL'));
+        $fork->laneOut = $this->lane?->name;
         $this->current = $fork->parent;
     }
 

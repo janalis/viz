@@ -34,6 +34,7 @@ return [
     'activity/rose' => 4,
     'activity/split' => 4,
     'activity/styled' => 4,
+    'activity/swimlanes-fork' => 4,
     'activity/swimlanes-if-down' => 4,
     'activity/swimlanes-if' => 4,
     'activity/swimlanes-repeat' => 4,
