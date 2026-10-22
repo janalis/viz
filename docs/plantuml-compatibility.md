@@ -299,7 +299,7 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Legacy activity | 3 | 3 | 3 | 3 | 1 |
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |
-| JSON, YAML and HCL | 17 | 17 | 16 | 16 | 16 |
+| JSON, YAML and HCL | 17 | 17 | 17 | 16 | 16 |
 | Chen EER | 7 | 7 | 7 | 6 | 4 |
 | EBNF and regex | 10 | 10 | 10 | 10 | 10 |
 | Board and packet | 5 | 5 | 5 | 5 | 5 |

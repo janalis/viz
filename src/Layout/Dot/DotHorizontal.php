@@ -55,9 +55,10 @@ final class DotHorizontal
         foreach ($this->layers->ranks as $nodes) {
             $this->separate($nodes);
         }
-        // As the method's auxiliary graph has none, a graph without clusters has no bounds to hold its
-        // ranks: they hang off one node, holding nothing, so that no rank's end is held to them.
-        if ([] === $this->layers->parents && [] !== $this->layers->rank) {
+        // As the method's auxiliary graph has none, the graph has no bounds to hold its ranks: they
+        // hang off one node, holding nothing, so that no rank's end, nor cluster, is held to them and
+        // what is free to slide may settle midway.
+        if ([] !== $this->layers->rank) {
             $this->edges[] = [$this->rootLeft, \array_key_first($this->layers->rank), 0, 0];
         }
         $this->contain();
@@ -92,43 +93,36 @@ final class DotHorizontal
     private function separate(array $nodes): void
     {
         $layers = $this->layers;
-        $last = \count($nodes) - 1;
         foreach ($nodes as $index => $node) {
-            if (0 === $index && [] !== $layers->parents) {
-                $first = $this->outermostLeft($node, -1);
-                $this->edges[] = [$this->rootLeft, $first, self::length($first === $node ? $layers->left[$node] : DotPosition::MARGIN), 0];
+            if (0 === $index) {
+                continue;
             }
-            if ($index > 0) {
-                $previous = $nodes[$index - 1];
-                $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->gap($previous, $node) + $this->room($previous) + $this->room($node) + $layers->left[$node]), 0];
-                $shared = $layers->common($layers->cluster[$previous], $layers->cluster[$node]);
-                $from = $this->outermostRight($previous, $shared);
-                $to = $this->outermostLeft($node, $shared);
-                if ($from !== $previous || $to !== $node) {
-                    $gap = ($from === $previous ? $layers->right[$previous] : 0.0) + DotPosition::MARGIN + ($to === $node ? $layers->left[$node] : 0.0);
-                    $this->edges[] = [$from, $to, self::length($gap), 0];
-                }
-            }
-            if ($index === $last && [] !== $layers->parents) {
-                $end = $this->outermostRight($node, -1);
-                $this->edges[] = [$end, $this->rootRight, self::length($end === $node ? $layers->right[$node] : DotPosition::MARGIN), 0];
+            $previous = $nodes[$index - 1];
+            $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->gap($previous, $node) + $this->room($previous) + $this->room($node) + $layers->left[$node]), 0];
+            $shared = $layers->common($layers->cluster[$previous], $layers->cluster[$node]);
+            $from = $this->outermostRight($previous, $shared);
+            $to = $this->outermostLeft($node, $shared);
+            if ($from !== $previous || $to !== $node) {
+                $gap = ($from === $previous ? $layers->right[$previous] : 0.0) + DotPosition::MARGIN + ($to === $node ? $layers->left[$node] : 0.0);
+                $this->edges[] = [$from, $to, self::length($gap), 0];
             }
         }
     }
 
     /**
-     * The room between two neighbours: the node separation; where a labelled flat edge joins
+     * The room between two neighbours: the node separation, to the nearest point; where a labelled flat edge joins
      * them, room for its label and a separation besides, two separations at least, as `dot` is
      * seen to keep them.
      */
     private function gap(int $left, int $right): float
     {
-        $gap = $this->nodeSeparation;
+        $separation = \round($this->nodeSeparation);
+        $gap = $separation;
         foreach ($this->layers->flat as [$tail, $head, , $labelWidth, $labelHeight]) {
             if (($labelWidth <= 0 && $labelHeight <= 0) || ([$left, $right] !== [$tail, $head] && [$left, $right] !== [$head, $tail])) {
                 continue;
             }
-            $gap = \max($gap, 2 * $this->nodeSeparation, $this->nodeSeparation + $labelWidth);
+            $gap = \max($gap, 2 * $separation, $separation + $labelWidth);
         }
 
         return $gap;
@@ -136,7 +130,7 @@ final class DotHorizontal
 
     /**
      * The room a node of an edge's chain keeps beside it, besides its own width, as `dot` is seen
-     * to keep it: half the node separation; but on the ranks a graph with edge labels puts
+     * to keep it: half the node separation, rounded down to a point; but on the ranks a graph with edge labels puts
      * between its nodes' ranks, which hold only chains and labels, 2.5, so that two chain nodes
      * keep one separation and 5 between them there.
      */
@@ -145,11 +139,11 @@ final class DotHorizontal
         return match (true) {
             DotLayers::VIRTUAL !== $this->layers->kind[$node] => 0.0,
             [] !== $this->layers->labels && 1 === ($this->layers->rank[$node] % 2) => 2.5,
-            default => $this->nodeSeparation / 2,
+            default => \floor($this->nodeSeparation / 2),
         };
     }
 
-    /** Clusters hold their nodes, sub-clusters and label inside a margin, and sit inside the graph's bounds. */
+    /** Clusters hold their nodes, sub-clusters and label inside a margin, and hang off the graph's left bound. */
     private function contain(): void
     {
         foreach ($this->layers->cluster as $node => $cluster) {
@@ -162,7 +156,6 @@ final class DotHorizontal
         foreach ($this->layers->parents as $cluster => $parent) {
             $this->edges[] = [$this->left($cluster), $this->right($cluster), self::length(\max($this->labelWidths[$cluster] + (2 * DotPosition::MARGIN), 2 * DotPosition::MARGIN)), 1];
             $this->edges[] = [$this->rootLeft, $this->left($cluster), 0, 0];
-            $this->edges[] = [$this->right($cluster), $this->rootRight, 0, 0];
             if (-1 === $parent) {
                 continue;
             }
@@ -239,8 +232,9 @@ final class DotHorizontal
         return \count($this->layers->rank) + (2 * $cluster) + 1;
     }
 
+    /** A length to the nearest point, half a point up, as `dot` is seen to keep gaps between nodes. */
     private static function length(float $value): int
     {
-        return (int) \ceil($value);
+        return (int) \round($value);
     }
 }

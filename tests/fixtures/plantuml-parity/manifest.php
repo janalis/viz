@@ -176,7 +176,7 @@ return [
     'json/scalar' => 4,
     'json/styled' => 4,
     'json/title' => 4,
-    'json/wide' => 1,
+    'json/wide' => 2,
     'legacy/arrows' => 3,
     'legacy/branches' => 3,
     'legacy/partitions' => 4,
