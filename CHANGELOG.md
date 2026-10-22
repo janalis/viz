@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- PlantUML Creole diagrams (`@startcreole`) are read and drawn natively (`PlantUML\Creole`), ported from PlantUML's legacy Creole parser: headings, bulleted and numbered lists, tables, trees, code, alignments and inline markup, set as PlantUML sets them in Java's serif and monospaced fonts. They went to PlantUML before.
 - PlantUML charts (`@startchart`) are read and drawn natively (`PlantUML\Chart`), ported from PlantUML's: categorical and numeric axes, bar, line, area and scatter series — side by side or stacked, on their side, as pairs across a range — grids, legends and annotations, in `chartDiagram` styles. `tools/import-plantuml.php` now exports the chart commands. They went to PlantUML before.
 - PlantUML files diagrams (`@startfiles`) are read and drawn natively (`PlantUML\Files`), ported from PlantUML's: paths into folders, notes, each entry beside its emoji, drawn from the paths of PlantUML's own Twemoji pictures (CC-BY 4.0, bundled under `resources/plantuml/emoji`). They went to PlantUML before.
 - PlantUML flow diagrams (`@startflow`) are read and drawn natively (`PlantUML\Flow`), ported from PlantUML's: boxes set two cells apart on its tile field, moved east where one stands, and paths between their sides. `tools/import-plantuml.php` now exports the flow commands. They went to PlantUML before.

@@ -1,0 +1,16 @@
+@startcreole
+= **x** y
+# a
+text
+# b
+## c
+# d
+* <size:8>s</size> t
+
+after blank
+<c>centred line
+next follows
+<r>right
+|<#yellow> a |= b |
+|<r>right | c |
+@endcreole

@@ -1,0 +1,8 @@
+@startcreole
+= Title
+This is **bold** and //italic//
+* item one
+* item two
+|= A |= B |
+| 1 | 2 |
+@endcreole

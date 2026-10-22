@@ -1,0 +1,15 @@
+@startcreole
+Mixed **bold //both// bold** and __under__ --strike-- ~~wave~~
+<color:red>red</color> <size:20>big</size> <b>html bold</b> ""mono"" x<sup>2</sup> H<sub>2</sub>O
+<back:yellow>back</back> [[http://x.org label]] <u:blue>u</u>
+|_ root
+  |_ child
+    |_ leaf
+  |_ child2
+<code>
+int x = 1;
+  return x;
+</code>
+=== level3
+==== level4
+@endcreole

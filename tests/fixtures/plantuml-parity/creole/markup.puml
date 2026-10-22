@@ -1,0 +1,13 @@
+@startcreole
+== Escapes and guillemets
+Not ~**bold~** but <<stereo>> and &#169; plus <U+2190>
+<font:monospaced>fixed</font> <font color=blue size=18>blue</font> <plain>plain</plain>
+* first
+** second
+*** third
+* back
+<#lightblue,#red>|= Name |= Value |
+| one\ntwo | <#pink>pink |
+| bar \| pipe | <r>end |
+Last <space:20> spaced
+@endcreole

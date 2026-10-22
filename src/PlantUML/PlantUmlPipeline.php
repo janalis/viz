@@ -10,6 +10,7 @@ use Janalis\Viz\PlantUML\Board\BoardFamily;
 use Janalis\Viz\PlantUML\Chart\ChartFamily;
 use Janalis\Viz\PlantUML\ChenEer\ChenFamily;
 use Janalis\Viz\PlantUML\Classes\ClassFamily;
+use Janalis\Viz\PlantUML\Creole\CreoleReader;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
 use Janalis\Viz\PlantUML\Ebnf\EbnfFamily;
 use Janalis\Viz\PlantUML\Ebnf\RegexFamily;
@@ -120,6 +121,10 @@ final readonly class PlantUmlPipeline implements Pipeline
         // A git log is read line by line as it stands, its graph's signs and all.
         if ('git' === $parsed->kind) {
             return GitReader::read($parsed);
+        }
+        // A Creole diagram is all text: every line, `title` and `skinparam` among them, is Creole.
+        if ('creole' === $parsed->kind) {
+            return CreoleReader::read($parsed);
         }
         // A files diagram takes the lines that start with `/` or `<note>`, and leaves the rest.
         if ('files' === $parsed->kind) {
