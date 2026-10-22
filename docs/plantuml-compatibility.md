@@ -171,7 +171,7 @@ Each edge is drawn as a curve from its row to the middle of the table it reaches
 | `entity` and `relationship` blocks, `"Shown" as NAME`, stereotypes and `#colour`; attributes, nested with `{`, `"Shown" as Name`, `#colour` | |
 | `<<weak>>` entities and `<<identifying>>` relationships doubled; `<<key>>` attributes underlined, `<<multi>>` doubled, `<<derived>>` dashed | |
 | `A -1- B`, `A =(1,N)= B` with its cardinality, `=` bold, `#colour`; `A ->- B` and `A -<- B` with the subset sign across their middle; `A ->- d { B, C }`, `o` and `U` through a circle | |
-| `left to right direction`; `chenEerDiagram` styles of `chenEntity`, `chenRelationship`, `chenAttribute`, `circle`, their `title`, and `arrow` | |
+| `left to right direction`; `chenEerDiagram` styles of `chenEntity`, `chenRelationship`, `chenAttribute`, `circle` and their `title`; links and their labels styled as an `activityDiagram`'s `arrow`, as PlantUML styles them, 11 points by default | |
 
 ### EBNF and regex diagrams
 
@@ -300,7 +300,7 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |
 | JSON, YAML and HCL | 17 | 17 | 17 | 16 | 16 |
-| Chen EER | 7 | 7 | 7 | 6 | 4 |
+| Chen EER | 7 | 7 | 7 | 6 | 6 |
 | EBNF and regex | 10 | 10 | 10 | 10 | 10 |
 | Board and packet | 5 | 5 | 5 | 5 | 5 |
 | Network | 5 | 5 | 5 | 5 | 5 |

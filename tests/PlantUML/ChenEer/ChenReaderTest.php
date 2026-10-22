@@ -149,6 +149,26 @@ final class ChenReaderTest extends TestCase
         $this->assertEqualsWithDelta($bottom, $lines[0]->points[0][1], 0.5 * Units::POINT);
     }
 
+    public function testLinksAreStyledAsAnActivityDiagramsArrowAsPlantUmlStylesThem(): void
+    {
+        $scales = static function (string $style): array {
+            $scales = [];
+            foreach (Work::run(self::read($style."entity A {\n}\nrelationship R {\n}\nA -(1,N)- R")->drawing())->marks as $mark) {
+                if (MarkKind::Text !== $mark->kind) {
+                    continue;
+                }
+                $scales[$mark->text] = $mark->fontScale;
+            }
+
+            return $scales;
+        };
+        $plain = $scales('');
+        $this->assertEqualsWithDelta(11 / 14, $plain['(1,N)'] / $plain['A'], 1e-9, '11 points by default, by an entity\'s 14');
+
+        $styled = $scales("<style>\nactivityDiagram { arrow { FontSize 20 } }\nchenEerDiagram { arrow { FontSize 30 } }\n</style>\n");
+        $this->assertEqualsWithDelta(20 / 14, $styled['(1,N)'] / $styled['A'], 1e-9, 'an activity diagram\'s arrow style, not a Chen diagram\'s');
+    }
+
     public function testTheModelKeepsShapesBoldLinesAndCardinalities(): void
     {
         $graph = self::read("title ER\nentity A {\nx\n}\nrelationship R {\n}\nA =1= R")->model();

@@ -74,7 +74,7 @@ final class ChenDrawing
         $link = $this->diagram->links[$index];
         $styles = $this->diagram->document->styles;
 
-        return LinkLabel::of(null === $link->label ? [] : ClassReader::split($link->label), $styles->style(['root', 'element', 'chenEerDiagram', 'arrow']), [], $styles->style([
+        return LinkLabel::of(null === $link->label ? [] : ClassReader::split($link->label), $styles->style(['root', 'element', 'activityDiagram', 'arrow']), [], $styles->style([
             'root',
             'element',
             'chenEerDiagram',
@@ -86,7 +86,7 @@ final class ChenDrawing
     private function paint(Placement $placement): array
     {
         $styles = $this->diagram->document->styles;
-        $style = $styles->style(['root', 'element', 'chenEerDiagram', 'arrow']);
+        $style = $styles->style(['root', 'element', 'activityDiagram', 'arrow']);
         $background = $styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
         $shapes = \array_map(static fn (ChenBox $box): string => $box->shape(), $this->boxes);
         $marks = [];
