@@ -52,6 +52,11 @@ final class PlantUmlDocumentReader
             if ($this->body($line)) {
                 continue;
             }
+            // A chart's own `legend` command, which PlantUML tries before the shared one, places its legend.
+            if ('chart' === $kind && 1 === \preg_match('/^legend[\s\x{a0}]+(?:left|right|top|bottom)[\s\x{a0}]*$/iu', $trimmed)) {
+                $this->kept[] = $line;
+                continue;
+            }
             if (!$this->style($trimmed) && !$this->skin($trimmed) && !$this->caption($trimmed) && !$this->scaled($trimmed)) {
                 $this->kept[] = $line;
             }

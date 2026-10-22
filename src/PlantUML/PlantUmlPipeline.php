@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML;
 use Janalis\Viz\Draw\Pipeline;
 use Janalis\Viz\PlantUML\Activities\ActivityFamily;
 use Janalis\Viz\PlantUML\Board\BoardFamily;
+use Janalis\Viz\PlantUML\Chart\ChartFamily;
 use Janalis\Viz\PlantUML\ChenEer\ChenFamily;
 use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
@@ -65,6 +66,7 @@ final readonly class PlantUmlPipeline implements Pipeline
         'wire' => ['wire' => 'wire'],
         'salt' => ['salt' => 'salt'],
         'flow' => ['flow' => 'flow'],
+        'chart' => ['chart' => 'chart'],
     ];
 
     /** @param array<string, PlantUmlFamily> $families the native ones, by factory */
@@ -94,6 +96,7 @@ final readonly class PlantUmlPipeline implements Pipeline
             'wire' => new WireFamily(),
             'salt' => new SaltFamily(),
             'flow' => new FlowFamily(),
+            'chart' => new ChartFamily(),
         ]);
     }
 

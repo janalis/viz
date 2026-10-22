@@ -1,0 +1,10 @@
+@startchart
+h-axis "Months" [J, F, M, A, M2, J2, J3, A2] spacing 2 label-right
+v-axis "Primary" 0 --> 100 ticks [0:"Low", 50:"Mid", 100:"High"]
+v2-axis "Secondary" 0 --> 10
+bar "Main" [10, 20, 30, 40, 50, 60, 70, 80]
+line "Rate" [1, 3, 2, 5, 4, 6, 8, 7] v2 labels
+annotation "Peak" at (A2, 80) <<arrow>>
+annotation "Start" at (J, 10)
+annotation "Low" at (F, 95) <<arrow>>
+@endchart

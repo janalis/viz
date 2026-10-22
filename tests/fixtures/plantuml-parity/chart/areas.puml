@@ -1,0 +1,8 @@
+@startchart
+h-axis [Mon, Tue, Wed, Thu, Fri, Sat, Sun, Ext]
+v-axis "Users" label-top
+area "Web" [10, 20, 15, 30, 25, 10, 5, 8]
+area "App" [5, 10, 20, 15, 30, 20, 10, 12] labels
+line "Goal" [20, 30, 40, 45, 60, 35, 20, 25] #green
+legend top
+@endchart

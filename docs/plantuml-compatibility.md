@@ -8,7 +8,7 @@ Whatever the native renderer refuses is drawn by the `plantuml` command when `Vi
 
 | Read natively | Left to PlantUML |
 | --- | --- |
-| One `@startuml` … `@enduml` block, `@startmindmap` … `@endmindmap`, `@startwbs` … `@endwbs`, `@startjson` … `@endjson`, `@startyaml` … `@endyaml`, `@startchen` … `@endchen`, `@startebnf` … `@endebnf`, `@startregex` … `@endregex`, `@startboard` … `@endboard`, `@startpacketdiag` … `@endpacketdiag`, `@startnwdiag` … `@endnwdiag`, `@startwire` … `@endwire`, `@startsalt` … `@endsalt`, `@startgantt` … `@endgantt`, `@starthcl` … `@endhcl`, `@startgit` … `@endgit`, `@startflow` … `@endflow` or `@startfiles` … `@endfiles` (`\` may stand for `@`); lines ending in a backslash joined; `'` and `/'` … `'/` comments; `!pragma` | Several blocks; `@start` kinds other than `uml`, `mindmap`, `wbs`, `json`, `yaml`, `chen`, `ebnf`, `regex`, `board`, `packetdiag`, `nwdiag`, `wire`, `salt`, `gantt`, `hcl`, `git`, `flow` and `files` |
+| One `@startuml` … `@enduml` block, `@startmindmap` … `@endmindmap`, `@startwbs` … `@endwbs`, `@startjson` … `@endjson`, `@startyaml` … `@endyaml`, `@startchen` … `@endchen`, `@startebnf` … `@endebnf`, `@startregex` … `@endregex`, `@startboard` … `@endboard`, `@startpacketdiag` … `@endpacketdiag`, `@startnwdiag` … `@endnwdiag`, `@startwire` … `@endwire`, `@startsalt` … `@endsalt`, `@startgantt` … `@endgantt`, `@starthcl` … `@endhcl`, `@startgit` … `@endgit`, `@startflow` … `@endflow`, `@startfiles` … `@endfiles` or `@startchart` … `@endchart` (`\` may stand for `@`); lines ending in a backslash joined; `'` and `/'` … `'/` comments; `!pragma` | Several blocks; `@start` kinds other than `uml`, `mindmap`, `wbs`, `json`, `yaml`, `chen`, `ebnf`, `regex`, `board`, `packetdiag`, `nwdiag`, `wire`, `salt`, `gantt`, `hcl`, `git`, `flow`, `files` and `chart` |
 | The preprocessor, ported from PlantUML's (`PlantUML\Preprocessor`): variables (`!$a = …`, `?=`, `!local`, `!global`) holding numbers, strings and JSON, read in lines with `.field`, `[index]` and `##`; expressions; `!if`, `!elseif`, `!else`, `!ifdef`, `!ifndef`; `!while`, `!foreach`; `!procedure` and `!function`, `unquoted` and `final`, with defaults and named arguments; legacy `!define`, `!definelong`, `!undef`; `!startsub` and `!includesub` of a block of the source; `!assert`, `!log`; the built-in functions, colours computed in Java's floats as PlantUML computes them; `!theme` with the 31 themes PlantUML bundles under MIT, copied into `resources/plantuml/themes`, and `!theme … from <library/folder>` of the libraries below; `!include <library/file>` of the standard library's libraries under MIT — archimate, bootstrap, C4, domainstory — exported into `resources/plantuml/stdlib` | `!include` of a file or a URL, or of another library; `!includesub` of a file, `!import`; `!theme` with the other bundled themes, or `from` a folder or a URL; `!option` (as `sketchy`'s `handwritten`); the functions that read the clock, chance, the environment, files or the standard library (`%date`, `%now`, `%random`, `%getenv`, `%load_json`, …), `%reverse_hsluv_color` |
 
 Where PlantUML's preprocessor stops on an error, the diagram is left to PlantUML, which draws the error. `PlantUmlPreprocessorTest` compares the native preprocessor's output with what PlantUML 1.2026.8's `-preproc` gives out for each fixture of `tests/fixtures/plantuml-preprocessor`, recorded by `tools/record-plantuml-preprocessor.php`.
@@ -25,7 +25,7 @@ Styles cascade as PlantUML's do: a declaration applies to an element when the el
 
 ## Diagrams
 
-PlantUML tries its diagram factories in order — sequence, class, the legacy activity syntax, description, state, the new activity syntax, then timing — and the first whose commands take every line reads the diagram. The native renderer does the same with the commands of each factory, exported from the MIT jar by `tools/PlantUmlCommands.java` into `resources/plantuml/commands.json`, so it picks the factory PlantUML picks. A factory without a native family leaves its diagrams to PlantUML. A `@startmindmap` block is read by PlantUML's mind map factory alone, a `@startwbs` block by its WBS factory, a `@startchen` block by its Chen EER factory, `@startebnf`, `@startregex`, `@startboard`, `@startpacketdiag`, `@startnwdiag`, `@startwire`, `@startsalt` and `@startflow` blocks by their own; a `@startgantt` block by its sentences, as below; `@startjson`, `@startyaml` and `@starthcl` blocks are read whole, as data, with no commands; a `@startgit` block line by line, as `git log --graph` wrote it; a `@startfiles` block by its paths and notes. Kinds of diagram PlantUML reads after these (salt within `@startuml`, ditaa, formulas, embedded DOT, its information pages), and other `@start` kinds (`@startchart`, …), are left to it too.
+PlantUML tries its diagram factories in order — sequence, class, the legacy activity syntax, description, state, the new activity syntax, then timing — and the first whose commands take every line reads the diagram. The native renderer does the same with the commands of each factory, exported from the MIT jar by `tools/PlantUmlCommands.java` into `resources/plantuml/commands.json`, so it picks the factory PlantUML picks. A factory without a native family leaves its diagrams to PlantUML. A `@startmindmap` block is read by PlantUML's mind map factory alone, a `@startwbs` block by its WBS factory, a `@startchen` block by its Chen EER factory, `@startebnf`, `@startregex`, `@startboard`, `@startpacketdiag`, `@startnwdiag`, `@startwire`, `@startsalt`, `@startflow` and `@startchart` blocks by their own; a `@startgantt` block by its sentences, as below; `@startjson`, `@startyaml` and `@starthcl` blocks are read whole, as data, with no commands; a `@startgit` block line by line, as `git log --graph` wrote it; a `@startfiles` block by its paths and notes. Kinds of diagram PlantUML reads after these (salt within `@startuml`, ditaa, formulas, embedded DOT, its information pages), and other `@start` kinds (`@startbpm`, …), are left to it too.
 
 | Diagram | Native |
 | --- | --- |
@@ -49,6 +49,7 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 | Git log | yes, below |
 | Flow | yes, below |
 | Files | yes, below |
+| Chart | yes, below |
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
@@ -256,11 +257,19 @@ Timing diagrams are read natively with PlantUML's rules (`PlantUML\Timing`) and 
 | --- | --- |
 | Folders, files, notes; `filesDiagram` and `note` styles | |
 
+### Charts
+
+`@startchart` blocks are read by PlantUML's chart commands (`PlantUML\Chart`): `h-axis` with categories, or a range for pairs, its title, `spacing`, `label-right` and `grid`; `v-axis` with a range, a title, named `ticks`, `spacing`, `label-top` and `grid`, a second one as `v2-axis`, or categories for a chart on its side; `bar`, `line`, `area` and `scatter` series with their name, stereotype, colour, `v2`, `labels` and scatter marker, `line` and `scatter` values given as `(x, y)` pairs; `legend`, `stackMode`, `orientation` and `annotation`. A line PlantUML fails to carry out — a value that is not a number, pairs across categories or outside the range, a colour it does not know — is refused with PlantUML's message. Each is drawn as `ChartRenderer` draws it: the plot 300 high and 60 wide per category, 400 at least; the axes crossing at zero; the grid lines, the bars — alone, side by side or stacked — the lines, scatters and stacked areas, the annotations and the legend; each part in its `chartDiagram` style, as PlantUML takes their colours, so that a series without a colour of its own takes the style's. Numbers are written with a point, as PlantUML writes them in an English locale. The shared `Graph` model is lowered from the series for conversion.
+
+| Drawn natively | Left to PlantUML |
+| --- | --- |
+| Categories and ranges, named ticks, second axes, grids; bar, line, area and scatter series, stacked and side by side; charts on their side; legends and annotations; `chartDiagram` styles | |
+
 ## Parity
 
 `PlantUmlParityTest` grades the native drawing of each fixture in `tests/fixtures/plantuml-parity` against what PlantUML 1.2026.8 drew for it. `tools/record-plantuml-parity.php` records those goldens from the jar `tools/plantuml.lock` pins, checking its SHA-256. A fixture earns 1 when the native drawing writes the same words as PlantUML (the letters PlantUML draws as outlines in class and connector circles aside), 2 when its height is also within 5% of PlantUML's, 3 within 2%, and 4 when every word also stands within 3 points of where PlantUML writes it down the diagram, their baselines aligned on the median offset. Widths are not graded, since the bundled monospace font is wider than PlantUML's. Each fixture's grade has a floor in `manifest.php` that only rises. The `PlantUML parity (live)` workflow re-runs the pinned jar weekly and fails if PlantUML's own drawing drifts from a golden.
 
-The grades at 0.2.0, on 286 self-authored fixtures:
+The grades at 0.2.0, on 294 self-authored fixtures:
 
 | Family | Fixtures | Same words | and height within 5% | and within 2% | and every row within 3 pt |
 | --- | --- | --- | --- | --- | --- |
@@ -284,7 +293,8 @@ The grades at 0.2.0, on 286 self-authored fixtures:
 | Git log | 3 | 3 | 3 | 3 | 3 |
 | Flow | 3 | 3 | 3 | 3 | 3 |
 | Files | 3 | 3 | 3 | 3 | 3 |
+| Chart | 8 | 8 | 8 | 8 | 5 |
 
 Shadows, which `skin rose` casts under every element, are drawn as a darkened copy of the shape rather than PlantUML's blurred one; they take the room PlantUML gives them.
 
-Text is set a line apart as PlantUML measures its default font, whichever font draws it. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can still differ from `dot`'s on graphs these fixtures do not cover.
+Text is set a line apart as PlantUML measures its default font, whichever font draws it. A chart's axis titles turned along their axis are drawn centred on it, where PlantUML writes them from their start, so the three chart fixtures with one miss the last grade. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can still differ from `dot`'s on graphs these fixtures do not cover.

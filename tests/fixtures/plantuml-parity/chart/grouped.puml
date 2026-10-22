@@ -1,0 +1,8 @@
+@startchart
+title Sales by quarter
+h-axis "Quarter" [Q1, Q2, Q3, Q4]
+v-axis "Revenue" 0 --> 120
+bar "North" [40, 55, 70, 85] #1f77b4 labels
+bar "South" [30, 45, 50, 95] #ff7f0e
+legend right
+@endchart

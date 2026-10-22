@@ -1,0 +1,17 @@
+@startchart
+<style>
+chartDiagram {
+  bar { BackGroundColor #9cf; LineColor #036; LineThickness 1.5; BarWidth 0.8 }
+  line { LineColor red }
+  axis { LineColor #888; FontSize 11; FontColor #333 }
+  legend { FontSize 12 }
+}
+</style>
+caption Figure 1
+h-axis [A, B, C, D, E]
+v-axis 0 --> 10
+bar [3, 7, 2, 9, 5]
+line [2, 4, 6, 8, 10]
+scatter "S" [1, 2, 3, 4, 5] <<circle>>
+legend right
+@endchart

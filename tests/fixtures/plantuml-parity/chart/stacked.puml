@@ -1,0 +1,9 @@
+@startchart
+h-axis [Jan, Feb, Mar]
+v-axis -50 --> 150 spacing 25 grid
+bar "Gain" [60, 80, 40] labels
+bar "Loss" [-20, -30, -10]
+bar "Extra" [20, 10, 30]
+stackMode stacked
+legend bottom
+@endchart

@@ -1,0 +1,6 @@
+@startchart
+orientation horizontal
+v-axis [Alpha, Beta, Gamma]
+h-axis "Score" 0 --> 50
+bar "Score" [12, 45, 30] labels
+@endchart
