@@ -117,7 +117,7 @@ Activity diagrams in the new syntax are read natively — with PlantUML's own ru
 
 ### Legacy activity diagrams
 
-The legacy syntax (`(*) --> "A"`) is read natively with PlantUML's rules — a link without a first entity starts from the last one, `if` starts a branch that links after it leave from until `else` returns to it, an arrow's length and direction as PlantUML's `manageArrowForCuca` sets them, a left or up arrow laid out reversed — and laid out as svek lays it out: each entity a box of its image's size, notes among them, partitions as clusters, 20 between nodes and 40 between ranks at least.
+The legacy syntax (`(*) --> "A"`) is read natively with PlantUML's rules — a link without a first entity starts from the last one, `if` starts a branch that links after it leave from until `else` returns to it, an arrow's length and direction as PlantUML's `manageArrowForCuca` sets them, a left or up arrow laid out reversed — and laid out as svek lays it out: each entity a box of its image's size, notes among them, partitions as clusters, 20 between nodes and 40 between ranks at least. Links stop at their ends' outlines: the start's and ends' circles, a branch's diamond, the boxes of the rest.
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
@@ -296,7 +296,7 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Class | 26 | 26 | 26 | 26 | 26 |
 | State | 24 | 24 | 24 | 24 | 24 |
 | Description | 29 | 29 | 29 | 29 | 28 |
-| Legacy activity | 3 | 3 | 3 | 3 | 2 |
+| Legacy activity | 3 | 3 | 3 | 3 | 3 |
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |
 | JSON, YAML and HCL | 17 | 17 | 17 | 16 | 16 |

@@ -64,6 +64,16 @@ final readonly class LegacyBox
         return new self($entity, $style, $text, null, $width, $height);
     }
 
+    /** How a link stops at it: at its outline, for those not drawn as a box. */
+    public function shape(): string
+    {
+        return match ($this->entity->kind) {
+            'start', 'end' => 'oval',
+            'branch' => 'diamond',
+            default => 'box',
+        };
+    }
+
     /**
      * The note with its top left at a point, pointing from where its link leaves it to where the link ends.
      *

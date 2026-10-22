@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\PlantUML\LegacyActivities;
 
 use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Shape;
@@ -245,6 +246,40 @@ final class LegacyActivityReaderTest extends TestCase
 
         // As dot reads the file svek writes, the start of the arrow turned up first: the bar's later branch comes out on its left, as PlantUML draws it.
         $this->assertLessThan($x['send'], $x['store']);
+    }
+
+    public function testALinkStopsAtABranchsDiamondAsPlantUmlDrawsIt(): void
+    {
+        $source = (string) \file_get_contents(__DIR__.'/../../fixtures/plantuml-parity/legacy/arrows.puml');
+        $marks = Work::run(PlantUmlPipeline::native()->drawing($source))->marks;
+        $diamonds = \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 4 === \count($mark->points) && self::square($mark)));
+        $this->assertCount(1, $diamonds);
+        [$top, $right] = $diamonds[0]->points;
+        [$cx, $cy, $half] = [$top[0], $right[1], $right[0] - $top[0]];
+
+        $on = [];
+        foreach ($marks as $mark) {
+            if (MarkKind::Polygon !== $mark->kind || $mark === $diamonds[0]) {
+                continue;
+            }
+            foreach ($mark->points as [$x, $y]) {
+                // On the outline, within half a point, between its corners: the link from "check input" comes in aslant.
+                if (\abs(\abs($x - $cx) + \abs($y - $cy) - $half) >= ($half / 24) || \abs($x - $cx) <= ($half / 12) || \abs($y - $cy) <= ($half / 12)) {
+                    continue;
+                }
+                $on[] = [$x, $y];
+            }
+        }
+
+        $this->assertNotSame([], $on, 'an arrowhead\'s tip on the diamond');
+    }
+
+    /** Whether a polygon of four corners is a square stood on its corner, as a branch is drawn. */
+    private static function square(Mark $mark): bool
+    {
+        [$top, $right, $bottom, $left] = $mark->points;
+
+        return $top[0] === $bottom[0] && $left[1] === $right[1] && \abs($right[0] - $top[0] - ($right[1] - $top[1])) < 1e-6;
     }
 
     private static function read(string $lines): PlantUmlLegacyActivity

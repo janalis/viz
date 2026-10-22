@@ -172,11 +172,12 @@ final class LegacyActivityDrawing
         $style = $styles->style(['root', 'element', 'activityDiagram', 'arrow']);
         $background = $styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
         $pointers = $this->pointers($placement);
+        $shapes = \array_map(static fn (LegacyBox $box): string => $box->shape(), $this->boxes);
         foreach ($this->edges as $index => $edge) {
             if (\in_array($index, $pointers, strict: true)) {
                 continue;
             }
-            \array_push($marks, ...LinkPainter::marks($this->diagram->links[$index], $placement, $edge, $this->label($index), $style, $background));
+            \array_push($marks, ...LinkPainter::marks($this->diagram->links[$index], $placement, $edge, $this->label($index), $style, $background, $shapes));
         }
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
