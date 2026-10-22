@@ -16,6 +16,7 @@ use Janalis\Viz\Layout\Engine\LayoutRankSet;
 use Janalis\Viz\Layout\Engine\RankKind;
 use Janalis\Viz\Layout\Engine\Spacing;
 use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\Shape;
 
 /**
  * A parsed DOT graph as a layout engine's input, in points: node sizes from `width` and
@@ -75,6 +76,7 @@ final class DotLayoutInput
                 $clusterOf[$name] ?? null,
                 $order++,
                 ordering: \in_array($ordering, ['out', 'in'], strict: true) ? $ordering : null,
+                shape: self::outline($node->attribute('shape', 'ellipse')),
             );
         }
         $edges = [];
@@ -219,5 +221,15 @@ final class DotLayoutInput
     private static function bounded(string $value, int $ceiling): int
     {
         return \is_numeric($value) ? \min(\max(0, (int) \min((float) $value, $ceiling)), $ceiling) : 1;
+    }
+
+    /** The outline a node's edges stop at, an ellipse by default, as `dot` draws a node. */
+    private static function outline(string $shape): Shape
+    {
+        return match (\strtolower($shape)) {
+            '', 'ellipse', 'oval', 'circle', 'doublecircle', 'mcircle', 'point' => Shape::Ellipse,
+            'diamond', 'mdiamond' => Shape::Diamond,
+            default => Shape::Box,
+        };
     }
 }

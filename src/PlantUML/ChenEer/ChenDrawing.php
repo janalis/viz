@@ -58,7 +58,7 @@ final class ChenDrawing
         foreach ($this->diagram->elements as $element) {
             $box = ChenBox::of($element, $this->diagram->document->styles);
             $this->boxes[$element->id] = $box;
-            $svek->node($element->id, $box->width, $box->height);
+            $svek->node($element->id, $box->width, $box->height, shape: $box->shape());
         }
         foreach ($this->diagram->links as $index => $link) {
             [$width, $height] = $this->label($index)->size();

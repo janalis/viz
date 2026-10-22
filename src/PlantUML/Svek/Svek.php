@@ -14,6 +14,7 @@ use Janalis\Viz\Layout\Engine\Spacing;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\Shape;
 
 /**
  * The graph PlantUML's svek hands to dot, built the way svek builds it and laid out by the
@@ -33,6 +34,8 @@ final class Svek
 
     /** @var array<string, array{string, float, float, ?string}> by id, which each carries, as a numeric one would not stay a string key */
     private array $nodes = [];
+    /** @var array<string, Shape> each node's outline, by id */
+    private array $shapes = [];
     /** @var array<string, array{string, ?string, float, float}> */
     private array $clusters = [];
     /** @var array<string, true> the clusters `together` packs, which svek protects with no clusters of its own */
@@ -44,9 +47,15 @@ final class Svek
     /** @var list<array{string, string, int, float, float, bool, bool}> */
     private array $edges = [];
 
-    public function node(string $id, float $width, float $height, ?string $cluster = null): void
+    /** A node, with the outline links stop at, as `BoxClip` names it: `oval`, `diamond` or `box`. */
+    public function node(string $id, float $width, float $height, ?string $cluster = null, string $shape = 'box'): void
     {
         $this->nodes[$id] = [$id, $width, $height, $cluster];
+        $this->shapes[$id] = match ($shape) {
+            'oval' => Shape::Ellipse,
+            'diamond' => Shape::Diamond,
+            default => Shape::Box,
+        };
     }
 
     /** A cluster, with the size of its title, which it keeps room for above its content. */
@@ -194,7 +203,7 @@ final class Svek
                     null === $owner, \array_key_exists($id, $this->points) => $owner,
                     default => $this->holder($owner),
                 };
-                $ordered[] = new LayoutNode($id, '', $width, $height, $holder, \count($ordered));
+                $ordered[] = new LayoutNode($id, '', $width, $height, $holder, \count($ordered), shape: $this->shapes[$id] ?? Shape::Box);
             }
         }
 

@@ -59,6 +59,7 @@ final class DotLayers
      * @param list<array{0: int, 1: int, 2: int, 3: float, 4: float, 5?: float, 6?: float}> $edges tail, head, weight, label width, label height, and where across its tail and its head it ends, in authored order
      * @param float $spread how far apart edges sharing a chain run: each widens its virtual nodes by as much
      * @param Concentration $concentration whether edges merge their chains, as dot's `concentrate`
+     * @param bool $mirrored whether label nodes hold their label on their left, as `dot` is seen to set them in a layout to be turned left to right
      */
     public function __construct(
         array $ranks,
@@ -68,6 +69,7 @@ final class DotLayers
         array $edges,
         private readonly float $spread = 0.0,
         private readonly Concentration $concentration = Concentration::Apart,
+        public readonly bool $mirrored = false,
     ) {
         $this->parents = $parents;
         foreach ($ranks as $node => $rank) {
@@ -142,7 +144,7 @@ final class DotLayers
         for ($rank = $this->rank[$top] + 1; $rank < $this->rank[$bottom]; ++$rank) {
             $node =
                 null !== $label && $rank === $middle
-                    ? $this->add($rank, self::LABEL, 1.0, $label[0], $label[1], $owner)
+                    ? $this->add($rank, self::LABEL, $this->mirrored ? $label[0] : 1.0, $this->mirrored ? 1.0 : $label[0], $label[1], $owner)
                     : $this->add($rank, self::VIRTUAL, 1.0, 1.0, 1.0, $owner);
             if (null !== $label && $rank === $middle) {
                 $this->labels[$label[2]] = $node;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Layout\Dot;
 
+use Janalis\Viz\Model\Graph\Shape;
+
 /**
  * Edges drawn as splines, as Dobkin et al. route them: each edge between ranks runs through a
  * corridor of boxes — below its tail, the gap between each two ranks, the room beside each of
@@ -34,6 +36,8 @@ final class DotSplines
         private readonly DotLayers $layers,
         private readonly DotPosition $position,
         private readonly float $nodeSeparation,
+        /** @var array<int, Shape> each real node's outline, a box where none is given */
+        private readonly array $shapes = [],
     ) {
         foreach ($layers->rank as $node => $rank) {
             $this->half[$rank] = \max($this->half[$rank] ?? 0.0, $layers->height[$node] / 2);
@@ -93,8 +97,8 @@ final class DotSplines
     }
 
     /**
-     * Where along the spline it crosses a node's outline, by bisection between a parameter
-     * inside the node and one outside.
+     * Where along the spline it crosses a node's outline — its ellipse, its diamond, else its
+     * box — by bisection between a parameter inside the node and one outside.
      *
      * @param \Closure(float): array{float, float} $along
      */
@@ -104,11 +108,25 @@ final class DotSplines
         for ($step = 0; $step < 40; ++$step) {
             $u = ($inside + $outside) / 2;
             [$px, $py] = $along($u);
-            $in = $px >= ($x - $this->layers->left[$node]) && $px <= ($x + $this->layers->right[$node]) && \abs($py - $y) <= ($this->layers->height[$node] / 2);
+            $in = $this->within($node, $px - $x, $py - $y);
             [$inside, $outside] = $in ? [$u, $outside] : [$inside, $u];
         }
 
         return ($inside + $outside) / 2;
+    }
+
+    /** Whether a point, from a node's centre, lies within its outline. */
+    private function within(int $node, float $dx, float $dy): bool
+    {
+        [$left, $right, $half] = [$this->layers->left[$node], $this->layers->right[$node], $this->layers->height[$node] / 2];
+        $across = \abs($dx) / ($dx < 0 ? $left : $right);
+        $down = \abs($dy) / $half;
+
+        return match ($this->shapes[$node] ?? Shape::Box) {
+            Shape::Ellipse, Shape::Circle => ($across ** 2 + $down ** 2) <= 1,
+            Shape::Diamond => ($across + $down) <= 1,
+            default => $across <= 1 && $down <= 1,
+        };
     }
 
     /**
@@ -281,7 +299,7 @@ final class DotSplines
     /**
      * How far across the room beside a virtual node reaches: halfway to its neighbours, and
      * no further than the clusters they lie in and it does not. A label node keeps the edge
-     * to the left of its label.
+     * on the far side from its label.
      *
      * @return array{float, float} left and right
      */
@@ -301,7 +319,8 @@ final class DotSplines
             $right = \min($this->position->x[$next] - $layers->left[$next] - ($this->nodeSeparation / 2), $this->apart($next, $node, side: 0));
         }
         if (DotLayers::LABEL === $layers->kind[$node]) {
-            $right = $this->position->x[$node] + $layers->left[$node];
+            // Its label stands on its right, or its left mirrored: the edge keeps to the other side.
+            [$left, $right] = $layers->mirrored ? [$this->position->x[$node] - $layers->right[$node], $right] : [$left, $this->position->x[$node] + $layers->left[$node]];
         }
 
         return [\min($left, $this->position->x[$node]), \max($right, $this->position->x[$node])];

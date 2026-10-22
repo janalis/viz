@@ -98,7 +98,7 @@ final class DotHorizontal
                 continue;
             }
             $previous = $nodes[$index - 1];
-            $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->gap($previous, $node) + $this->room($previous) + $this->room($node) + $layers->left[$node]), 0];
+            $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->after($previous) + $this->gap($previous, $node) + $this->before($node) + $layers->left[$node]), 0];
             $shared = $layers->common($layers->cluster[$previous], $layers->cluster[$node]);
             $from = $this->outermostRight($previous, $shared);
             $to = $this->outermostLeft($node, $shared);
@@ -110,14 +110,15 @@ final class DotHorizontal
     }
 
     /**
-     * The room between two neighbours: the node separation, to the nearest point; where a labelled flat edge joins
-     * them, room for its label and a separation besides, two separations at least, as `dot` is
-     * seen to keep them.
+     * The room between two neighbours, as `dot` is seen to keep it: the node separation, to the
+     * nearest point; on the ranks a graph with edge labels puts between its nodes' ranks, 5;
+     * where a labelled flat edge joins them, room for its label and a separation besides, two
+     * separations at least.
      */
     private function gap(int $left, int $right): float
     {
         $separation = \round($this->nodeSeparation);
-        $gap = $separation;
+        $gap = [] !== $this->layers->labels && 1 === ($this->layers->rank[$left] % 2) ? 5.0 : $separation;
         foreach ($this->layers->flat as [$tail, $head, , $labelWidth, $labelHeight]) {
             if (($labelWidth <= 0 && $labelHeight <= 0) || ([$left, $right] !== [$tail, $head] && [$left, $right] !== [$head, $tail])) {
                 continue;
@@ -129,17 +130,27 @@ final class DotHorizontal
     }
 
     /**
-     * The room a node of an edge's chain keeps beside it, besides its own width, as `dot` is seen
-     * to keep it: half the node separation, rounded down to a point; but on the ranks a graph with edge labels puts
-     * between its nodes' ranks, which hold only chains and labels, 2.5, so that two chain nodes
-     * keep one separation and 5 between them there.
+     * The room a node keeps on its left, besides its own width, as `dot` is seen to keep it: a
+     * node of an edge's chain, half the node separation, rounded down to a point; a label node
+     * with its label on its right, the node separation, to the point, its own width included,
+     * whatever the label's size.
      */
-    private function room(int $node): float
+    private function before(int $node): float
     {
-        return match (true) {
-            DotLayers::VIRTUAL !== $this->layers->kind[$node] => 0.0,
-            [] !== $this->layers->labels && 1 === ($this->layers->rank[$node] % 2) => 2.5,
-            default => \floor($this->nodeSeparation / 2),
+        return match ($this->layers->kind[$node]) {
+            DotLayers::VIRTUAL => \floor($this->nodeSeparation / 2),
+            DotLayers::LABEL => $this->layers->mirrored ? 0.0 : \round($this->nodeSeparation) - $this->layers->left[$node],
+            default => 0.0,
+        };
+    }
+
+    /** The room a node keeps on its right, as on its left, a label node's label on its left in a mirrored layout. */
+    private function after(int $node): float
+    {
+        return match ($this->layers->kind[$node]) {
+            DotLayers::VIRTUAL => \floor($this->nodeSeparation / 2),
+            DotLayers::LABEL => $this->layers->mirrored ? \round($this->nodeSeparation) - $this->layers->right[$node] : 0.0,
+            default => 0.0,
         };
     }
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Layout\Engine;
 
+use Janalis\Viz\Model\Graph\Shape;
+
 /** One measured box. Margins reserve space around it, for a self-loop say, without growing what is drawn. */
 final readonly class LayoutNode
 {
@@ -20,5 +22,7 @@ final readonly class LayoutNode
         public float $marginY = 0.0,
         /** `out` to keep the heads of its edges out, or `in` the tails of its edges in, in the order the edges come, as dot's `ordering` does; null for neither. */
         public ?string $ordering = null,
+        /** The outline its edges stop at: an ellipse or a circle, a diamond, else its box. */
+        public Shape $shape = Shape::Box,
     ) {}
 }

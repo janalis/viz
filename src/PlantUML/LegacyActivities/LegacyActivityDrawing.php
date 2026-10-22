@@ -66,7 +66,7 @@ final class LegacyActivityDrawing
         foreach ($this->diagram->entities as $entity) {
             $box = LegacyBox::of($entity, $this->diagram->document->styles, $this->diagram->direction);
             $this->boxes[$entity->id] = $box;
-            $svek->node($entity->id, $box->width, $box->height, $entity->group);
+            $svek->node($entity->id, $box->width, $box->height, $entity->group, $box->shape());
         }
         foreach ($this->diagram->links as $index => $link) {
             [$width, $height] = $this->label($index)->size();

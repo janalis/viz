@@ -11,6 +11,7 @@ use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Model\Direction;
+use Janalis\Viz\Model\Graph\Shape;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -100,6 +101,7 @@ final readonly class DotEngine implements LayoutEngine
             \array_values($edges),
             $graph->spacing->nodeGap * DotSplines::SPREAD,
             $graph->concentrate ? Concentration::Merged : Concentration::Apart,
+            $turned,
         );
         $constrained = \array_column(\array_map(static fn ($edge): array => [$edge->index, $edge->constraint], $graph->edges), 1, 0);
         $loose = \array_keys(\array_filter(\array_keys($edges), static fn (int $original): bool => !$constrained[$original]));
@@ -236,7 +238,7 @@ final readonly class DotEngine implements LayoutEngine
         $labels = [];
         $splines = [];
         $polylines = [];
-        $router = new DotSplines($layers, $position, $graph->spacing->nodeGap);
+        $router = new DotSplines($layers, $position, $graph->spacing->nodeGap, \array_map(static fn ($node): Shape => $node->shape, $graph->nodes));
         // Merged, edges between the same two nodes are one line, none spread.
         $offsets = self::spread($layers, $graph->concentrate ? 0.0 : $graph->spacing->nodeGap * DotSplines::SPREAD);
         foreach ($edgeIndexes as $layered => $original) {
@@ -290,7 +292,7 @@ final readonly class DotEngine implements LayoutEngine
     {
         $node = $layers->labels[$layered] ?? null;
         if (null !== $node) {
-            return [$position->x[$node] + $layers->left[$node] + ($layers->right[$node] / 2), $position->y[$layers->rank[$node]]];
+            return [$layers->mirrored ? $position->x[$node] - ($layers->left[$node] / 2) : $position->x[$node] + ($layers->right[$node] / 2), $position->y[$layers->rank[$node]]];
         }
         $path = $layers->paths[$layered] ?? null;
         if (null === $path || null === $size) {
