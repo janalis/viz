@@ -296,7 +296,7 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Class | 26 | 26 | 26 | 26 | 26 |
 | State | 24 | 24 | 24 | 24 | 24 |
 | Description | 29 | 29 | 29 | 29 | 28 |
-| Legacy activity | 3 | 3 | 3 | 3 | 1 |
+| Legacy activity | 3 | 3 | 3 | 3 | 2 |
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |
 | JSON, YAML and HCL | 17 | 17 | 17 | 16 | 16 |

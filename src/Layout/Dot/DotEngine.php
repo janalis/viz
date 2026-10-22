@@ -73,12 +73,16 @@ final readonly class DotEngine implements LayoutEngine
         yield from $work;
         $ranks = $work->getReturn();
         $edges = [];
+        $labelSizes = [];
         foreach ($graph->edges as $edge) {
             if (!\array_key_exists($edge->from, $index) || !\array_key_exists($edge->to, $index)) {
                 continue;
             }
             [$labelWidth, $labelHeight] = $turned ? [$edge->labelHeight, $edge->labelWidth] : [$edge->labelWidth, $edge->labelHeight];
             $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->weight, $labelWidth, $labelHeight, $edge->tailPort, $edge->headPort];
+            if ($labelWidth > 0 || $labelHeight > 0) {
+                $labelSizes[$edge->index] = [$labelWidth, $labelHeight];
+            }
         }
         $edges = self::met($edges, $owner);
         $span = 0;
@@ -115,7 +119,7 @@ final readonly class DotEngine implements LayoutEngine
         yield from $placing;
         self::stretch($graph, $position);
 
-        return $this->placement($graph, $layers, $position, \array_keys($edges));
+        return $this->placement($graph, $layers, $position, \array_keys($edges), $labelSizes);
     }
 
     /**
@@ -195,8 +199,11 @@ final readonly class DotEngine implements LayoutEngine
         return $offsets;
     }
 
-    /** @param list<int> $edgeIndexes the original index of each edge the layers know, in their order */
-    private function placement(LayoutGraph $graph, DotLayers $layers, DotPosition $position, array $edgeIndexes): Placement
+    /**
+     * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
+     * @param array<int, array{float, float}> $labelSizes each labelled edge's label, by original index, as wide and tall as it is laid out
+     */
+    private function placement(LayoutGraph $graph, DotLayers $layers, DotPosition $position, array $edgeIndexes, array $labelSizes): Placement
     {
         $turned = \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true);
         $width = $turned ? $position->height : $position->width;
@@ -240,9 +247,9 @@ final readonly class DotEngine implements LayoutEngine
                 $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $spline);
                 $polylines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $corners);
             }
-            $label = $layers->labels[$layered] ?? null;
+            $label = self::label($layers, $position, $router, $layered, $labelSizes[$original] ?? null);
             if (null !== $label) {
-                $labels[$original] = $point($position->x[$label] + $layers->left[$label] + ($layers->right[$label] / 2), $position->y[$layers->rank[$label]]);
+                $labels[$original] = $point(...$label);
             }
         }
         foreach ($layers->flat as [$tail, $head, $layered, $labelWidth, $labelHeight]) {
@@ -269,6 +276,29 @@ final readonly class DotEngine implements LayoutEngine
         }
 
         return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines, $pieces);
+    }
+
+    /**
+     * Where a layered edge's label stands, as laid out before it is turned: right of its label
+     * node; or, on an edge to the next rank, which has no rank between for one, hung by its top
+     * right corner from its spline's middle, as `dot` is seen to hang it.
+     *
+     * @param ?array{float, float} $size the label's width and height as laid out, null for none
+     * @return ?array{float, float} null for an edge without a label
+     */
+    private static function label(DotLayers $layers, DotPosition $position, DotSplines $router, int $layered, ?array $size): ?array
+    {
+        $node = $layers->labels[$layered] ?? null;
+        if (null !== $node) {
+            return [$position->x[$node] + $layers->left[$node] + ($layers->right[$node] / 2), $position->y[$layers->rank[$node]]];
+        }
+        $path = $layers->paths[$layered] ?? null;
+        if (null === $path || null === $size) {
+            return null;
+        }
+        [$x, $y] = $router->middle($path);
+
+        return [$x - ($size[0] / 2), $y + ($size[1] / 2)];
     }
 
     /**

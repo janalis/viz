@@ -81,6 +81,22 @@ final class DotSplinesTest extends TestCase
         }
     }
 
+    public function testALabelOnAnEdgeToTheNextRankHangsByItsTopRightCornerFromTheEdge(): void
+    {
+        // i -> m runs to the rank of j -> i's label, with no rank between for its own.
+        $source = 'digraph { node [shape=box]; k -> l [minlen=0]; i -> m [minlen=0, label="false"]; h -> i; i -> j [label="true"]; j -> k; m -> l [label="Ending process"] }';
+        $placement = self::place($source);
+        $graph = Work::run(new DotParser()->parse($source));
+        [$width, $height] = DotNodes::edgeText($graph, $graph->edges[1])->size();
+        [$x, $y] = $placement->labels[1];
+        [$i, $m] = [$placement->endpoints['i'], $placement->endpoints['m']];
+        $corner = [$x + ($width / 2), $y - ($height / 2)];
+
+        $this->assertGreaterThan($i->y, $corner[1], 'below i');
+        $this->assertLessThan($m->y, $corner[1], 'above m, a rank below');
+        $this->assertLessThan(0.5, \abs($corner[0] - self::nearest($placement->splines[1], $corner[1])[0]), 'the corner on the edge');
+    }
+
     public function testAnEdgeTurnsRoundTheCornerOfAClusterBetweenRanks(): void
     {
         // s's edge to e comes down right of the cluster, then turns under it to e, below and left.

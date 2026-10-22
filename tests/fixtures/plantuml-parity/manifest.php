@@ -178,7 +178,7 @@ return [
     'json/title' => 4,
     'json/wide' => 2,
     'legacy/arrows' => 3,
-    'legacy/branches' => 3,
+    'legacy/branches' => 4,
     'legacy/partitions' => 4,
     'mindmap/basic' => 4,
     'mindmap/boxless' => 4,

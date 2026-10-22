@@ -58,12 +58,8 @@ final class DotSplines
     {
         $down = $this->layers->rank[$path[0]] < $this->layers->rank[$path[\count($path) - 1]];
         $path = $down ? $path : \array_reverse($path);
-        $boxes = $this->corridor($path);
-        $start = $this->centre($path[0]);
-        $end = $this->centre($path[\count($path) - 1]);
-        $points = self::funnel($start, $end, self::openings($boxes));
-        $curves = $this->fit($points, self::unit($points[0], $points[1]), self::unit($points[\count($points) - 2], $points[\count($points) - 1]), $boxes);
-        $drawn = [$start];
+        [$curves, $points] = $this->curves($path);
+        $drawn = [$points[0]];
         foreach ($curves as $curve) {
             for ($step = 1; $step <= self::STEPS; ++$step) {
                 $drawn[] = self::at($curve, $step / self::STEPS);
@@ -75,6 +71,58 @@ final class DotSplines
         }
 
         return $down ? [$drawn, $points] : [\array_reverse($drawn), \array_reverse($points)];
+    }
+
+    /**
+     * The point midway along a path's spline, by its parameter, between where it leaves its
+     * top node's outline and where it reaches its bottom node's, as `dot` is seen to take it.
+     *
+     * @param list<int> $path one edge's nodes, rank by rank, either way
+     * @return array{float, float}
+     */
+    public function middle(array $path): array
+    {
+        $path = $this->layers->rank[$path[0]] < $this->layers->rank[$path[\count($path) - 1]] ? $path : \array_reverse($path);
+        $curves = $this->curves($path)[0];
+        $count = \count($curves);
+        $along = static fn (float $u): array => self::at($curves[\min($count - 1, (int) $u)], $u - \min($count - 1, (int) $u));
+        $leaves = $this->crossing($along, $path[0], 0.0, $count);
+        $reaches = $this->crossing($along, $path[\count($path) - 1], $count, $leaves);
+
+        return $along(($leaves + $reaches) / 2);
+    }
+
+    /**
+     * Where along the spline it crosses a node's outline, by bisection between a parameter
+     * inside the node and one outside.
+     *
+     * @param \Closure(float): array{float, float} $along
+     */
+    private function crossing(\Closure $along, int $node, float $inside, float $outside): float
+    {
+        [$x, $y] = $this->centre($node);
+        for ($step = 0; $step < 40; ++$step) {
+            $u = ($inside + $outside) / 2;
+            [$px, $py] = $along($u);
+            $in = $px >= ($x - $this->layers->left[$node]) && $px <= ($x + $this->layers->right[$node]) && \abs($py - $y) <= ($this->layers->height[$node] / 2);
+            [$inside, $outside] = $in ? [$u, $outside] : [$inside, $u];
+        }
+
+        return ($inside + $outside) / 2;
+    }
+
+    /**
+     * The curves fitted to a path, top to bottom, and the shortest path through its corridor they are fitted to.
+     *
+     * @param list<int> $path top to bottom
+     * @return array{list<array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}>, list<array{float, float}>}
+     */
+    private function curves(array $path): array
+    {
+        $boxes = $this->corridor($path);
+        $points = self::funnel($this->centre($path[0]), $this->centre($path[\count($path) - 1]), self::openings($boxes));
+
+        return [$this->fit($points, self::unit($points[0], $points[1]), self::unit($points[\count($points) - 2], $points[\count($points) - 1]), $boxes), $points];
     }
 
     /**
