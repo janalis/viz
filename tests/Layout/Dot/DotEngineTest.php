@@ -58,6 +58,25 @@ final class DotEngineTest extends TestCase
         }
     }
 
+    public function testChainsKeepTheRoomDotIsSeenToKeepBetweenThem(): void
+    {
+        // Two edges' chains side by side keep two separations between them; on the ranks a graph
+        // with edge labels puts between its nodes', one separation and 5. Ends 1.44 wide, as points.
+        foreach ([[2, false, 2 + 36.0], [1, true, 2 + 18.0 + 5.0]] as [$length, $labelled, $apart]) {
+            $edges = [new LayoutEdge(0, 'a', 't', $length), new LayoutEdge(1, 'b', 't', $length)];
+            if ($labelled) {
+                $edges[] = new LayoutEdge(2, 'x', 'y', labelWidth: 10.0, labelHeight: 14.0);
+            }
+            $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+                [new LayoutNode('a', 'a', 1.44, 1.44), new LayoutNode('b', 'b', 1.44, 1.44), new LayoutNode('t', 't', 144, 36), new LayoutNode('x', 'x', 54, 36), new LayoutNode('y', 'y', 54, 36)],
+                $edges,
+                spacing: new Spacing(36, 18, 4),
+            )));
+
+            $this->assertSame($apart, \abs($placement->endpoints['b']->x - $placement->endpoints['a']->x), $labelled ? 'labelled' : 'plain');
+        }
+    }
+
     public function testALoopWidensItsNodesRightSide(): void
     {
         // Between b and c, the node separation and the loop's reach.

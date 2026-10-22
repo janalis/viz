@@ -100,7 +100,7 @@ final class DotHorizontal
             }
             if ($index > 0) {
                 $previous = $nodes[$index - 1];
-                $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->gap($previous, $node) + $layers->left[$node]), 0];
+                $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->gap($previous, $node) + $this->room($previous) + $this->room($node) + $layers->left[$node]), 0];
                 $shared = $layers->common($layers->cluster[$previous], $layers->cluster[$node]);
                 $from = $this->outermostRight($previous, $shared);
                 $to = $this->outermostLeft($node, $shared);
@@ -132,6 +132,21 @@ final class DotHorizontal
         }
 
         return $gap;
+    }
+
+    /**
+     * The room a node of an edge's chain keeps beside it, besides its own width, as `dot` is seen
+     * to keep it: half the node separation; but on the ranks a graph with edge labels puts
+     * between its nodes' ranks, which hold only chains and labels, 2.5, so that two chain nodes
+     * keep one separation and 5 between them there.
+     */
+    private function room(int $node): float
+    {
+        return match (true) {
+            DotLayers::VIRTUAL !== $this->layers->kind[$node] => 0.0,
+            [] !== $this->layers->labels && 1 === ($this->layers->rank[$node] % 2) => 2.5,
+            default => $this->nodeSeparation / 2,
+        };
     }
 
     /** Clusters hold their nodes, sub-clusters and label inside a margin, and sit inside the graph's bounds. */
