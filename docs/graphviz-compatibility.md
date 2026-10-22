@@ -14,7 +14,7 @@ Graphviz is under the Eclipse Public License. This library is MIT, so nothing he
 - M. Bruls, K. Huizing and J. J. van Wijk, "Squarified Treemaps", *Data Visualization 2000*: patchwork's layout.
 - Graphviz's public documentation of the DOT language and its attributes.
 
-Where the papers leave a choice open, the behaviour was set by comparing the native output with `dot -Tjson0` on the same graph. That includes defaults, tie-breaking and the spacing around clusters. The comparison treats `dot` only as a black box.
+Where the papers leave a choice open, the behaviour was set by comparing the native output with `dot -Tjson0` on the same graph. That includes defaults, tie-breaking and the spacing around clusters. The comparison treats `dot` only as a black box. `tools/compare-dot-layout.php` makes it over a directory of DOT files: for each graph, how far the native engine sets each node from where `dot -Tplain` sets it, and how many pairs of nodes on one rank stand in the other order.
 
 ## The DOT language
 
