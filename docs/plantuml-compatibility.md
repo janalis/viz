@@ -285,7 +285,7 @@ Timing diagrams are read natively with PlantUML's rules (`PlantUML\Timing`) and 
 
 ## Parity
 
-`PlantUmlParityTest` grades the native drawing of each fixture in `tests/fixtures/plantuml-parity` against what PlantUML 1.2026.8 drew for it. `tools/record-plantuml-parity.php` records those goldens from the jar `tools/plantuml.lock` pins, checking its SHA-256. A fixture earns 1 when the native drawing writes the same words as PlantUML (the letters PlantUML draws as outlines in class and connector circles aside), 2 when its height is also within 5% of PlantUML's, 3 within 2%, and 4 when every word also stands within 3 points of where PlantUML writes it down the diagram, their baselines aligned on the median offset. Widths are not graded, since the bundled monospace font is wider than PlantUML's. Each fixture's grade has a floor in `manifest.php` that only rises. The `PlantUML parity (live)` workflow re-runs the pinned jar weekly and fails if PlantUML's own drawing drifts from a golden.
+`PlantUmlParityTest` grades the native drawing of each fixture in `tests/fixtures/plantuml-parity` against what PlantUML 1.2026.8 drew for it. `tools/record-plantuml-parity.php` records those goldens from the jar `tools/plantuml.lock` pins, checking its SHA-256. A fixture earns 1 when the native drawing writes the same words as PlantUML (the letters PlantUML draws as outlines in class and connector circles aside), 2 when its height is also within 5% of PlantUML's, 3 within 2%, and 4 when every word also stands within 3 points of where PlantUML writes it down the diagram, their baselines aligned on the median offset; a word turned along an axis stands where its text starts, as PlantUML writes it. Widths are not graded, since the bundled monospace font is wider than PlantUML's. Each fixture's grade has a floor in `manifest.php` that only rises. The `PlantUML parity (live)` workflow re-runs the pinned jar weekly and fails if PlantUML's own drawing drifts from a golden.
 
 The grades at 0.2.0, on 298 self-authored fixtures:
 
@@ -311,9 +311,9 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Git log | 3 | 3 | 3 | 3 | 3 |
 | Flow | 3 | 3 | 3 | 3 | 3 |
 | Files | 3 | 3 | 3 | 3 | 3 |
-| Chart | 8 | 8 | 8 | 8 | 5 |
+| Chart | 8 | 8 | 8 | 8 | 8 |
 | Creole | 4 | 4 | 4 | 4 | 4 |
 
 Shadows, which `skin rose` casts under every element, are drawn as a darkened copy of the shape rather than PlantUML's blurred one; they take the room PlantUML gives them.
 
-Text is set a line apart as PlantUML measures its default font, whichever font draws it. A chart's axis titles turned along their axis are drawn centred on it, where PlantUML writes them from their start, so the three chart fixtures with one miss the last grade. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can still differ from `dot`'s on graphs these fixtures do not cover.
+Text is set a line apart as PlantUML measures its default font, whichever font draws it. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can still differ from `dot`'s on graphs these fixtures do not cover.

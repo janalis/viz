@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\PlantUML;
 
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\Render\Work;
 use Janalis\Viz\Source\Unsupported;
@@ -65,8 +66,13 @@ final class PlantUmlParityTest extends TestCase
             if (MarkKind::Text !== $mark->kind) {
                 continue;
             }
+            $y = $mark->points[0][1] / Units::POINT;
+            // A turned text stands, as PlantUML writes it, where it starts: half its width below its middle reading up, above reading down.
+            if (0.0 !== $mark->angle) {
+                $y -= \sin(\deg2rad($mark->angle)) * PlantUmlMetrics::width(\trim($mark->text), 12 * $mark->fontScale, $mark->font) / 2;
+            }
             foreach ((array) \preg_split('/\s+/u', \trim((string) $mark->text), flags: \PREG_SPLIT_NO_EMPTY) as $word) {
-                $placed[] = [\str_replace(['«', '»'], ['<<', '>>'], (string) $word), $mark->points[0][1] / Units::POINT];
+                $placed[] = [\str_replace(['«', '»'], ['<<', '>>'], (string) $word), $y];
             }
         }
         $expected = \array_map(static fn (array $word): array => [\str_replace(['«', '»'], ['<<', '>>'], $word[0]), $word[1]], $golden['baselines']);
