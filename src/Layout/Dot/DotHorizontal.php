@@ -55,6 +55,11 @@ final class DotHorizontal
         foreach ($this->layers->ranks as $nodes) {
             $this->separate($nodes);
         }
+        // As the method's auxiliary graph has none, a graph without clusters has no bounds to hold its
+        // ranks: they hang off one node, holding nothing, so that no rank's end is held to them.
+        if ([] === $this->layers->parents && [] !== $this->layers->rank) {
+            $this->edges[] = [$this->rootLeft, \array_key_first($this->layers->rank), 0, 0];
+        }
         $this->contain();
         $this->straighten();
         $solved = new NetworkSimplex($this->count, $this->edges)->solve(NetworkSimplex::BALANCE_SIDES);
@@ -89,13 +94,13 @@ final class DotHorizontal
         $layers = $this->layers;
         $last = \count($nodes) - 1;
         foreach ($nodes as $index => $node) {
-            if (0 === $index) {
+            if (0 === $index && [] !== $layers->parents) {
                 $first = $this->outermostLeft($node, -1);
                 $this->edges[] = [$this->rootLeft, $first, self::length($first === $node ? $layers->left[$node] : DotPosition::MARGIN), 0];
             }
             if ($index > 0) {
                 $previous = $nodes[$index - 1];
-                $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->nodeSeparation + $layers->left[$node]), 0];
+                $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->gap($previous, $node) + $layers->left[$node]), 0];
                 $shared = $layers->common($layers->cluster[$previous], $layers->cluster[$node]);
                 $from = $this->outermostRight($previous, $shared);
                 $to = $this->outermostLeft($node, $shared);
@@ -104,11 +109,29 @@ final class DotHorizontal
                     $this->edges[] = [$from, $to, self::length($gap), 0];
                 }
             }
-            if ($index === $last) {
+            if ($index === $last && [] !== $layers->parents) {
                 $end = $this->outermostRight($node, -1);
                 $this->edges[] = [$end, $this->rootRight, self::length($end === $node ? $layers->right[$node] : DotPosition::MARGIN), 0];
             }
         }
+    }
+
+    /**
+     * The room between two neighbours: the node separation; where a labelled flat edge joins
+     * them, room for its label and a separation besides, two separations at least, as `dot` is
+     * seen to keep them.
+     */
+    private function gap(int $left, int $right): float
+    {
+        $gap = $this->nodeSeparation;
+        foreach ($this->layers->flat as [$tail, $head, , $labelWidth, $labelHeight]) {
+            if (($labelWidth <= 0 && $labelHeight <= 0) || ([$left, $right] !== [$tail, $head] && [$left, $right] !== [$head, $tail])) {
+                continue;
+            }
+            $gap = \max($gap, 2 * $this->nodeSeparation, $this->nodeSeparation + $labelWidth);
+        }
+
+        return $gap;
     }
 
     /** Clusters hold their nodes, sub-clusters and label inside a margin, and sit inside the graph's bounds. */

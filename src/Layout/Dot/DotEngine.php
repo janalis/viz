@@ -246,8 +246,11 @@ final readonly class DotEngine implements LayoutEngine
                 $labels[$original] = $point($position->x[$label] + $layers->left[$label] + ($layers->right[$label] / 2), $position->y[$layers->rank[$label]]);
             }
         }
-        foreach ($layers->flat as [$tail, $head, $layered]) {
+        foreach ($layers->flat as [$tail, $head, $layered, $labelWidth, $labelHeight]) {
             $routes[$edgeIndexes[$layered]] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
+            if ($labelWidth > 0 || $labelHeight > 0) {
+                $labels[$edgeIndexes[$layered]] = $point(...self::flatLabel($layers, $position, $tail, $head, $labelHeight));
+            }
         }
 
         $pieces = [];
@@ -267,6 +270,19 @@ final readonly class DotEngine implements LayoutEngine
         }
 
         return new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines, $pieces);
+    }
+
+    /**
+     * Where a flat edge's label stands, as `dot` is seen to set it: midway between its ends'
+     * facing sides, half its height and 3 more above the edge.
+     *
+     * @return array{float, float}
+     */
+    private static function flatLabel(DotLayers $layers, DotPosition $position, int $tail, int $head, float $height): array
+    {
+        [$left, $right] = $position->x[$tail] <= $position->x[$head] ? [$tail, $head] : [$head, $tail];
+
+        return [($position->x[$left] + $layers->right[$left] + $position->x[$right] - $layers->left[$right]) / 2, $position->y[$layers->rank[$tail]] - ($height / 2) - 3];
     }
 
     /**

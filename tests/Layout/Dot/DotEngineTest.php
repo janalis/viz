@@ -30,6 +30,34 @@ final class DotEngineTest extends TestCase
         $this->assertSame(['' => Direction::TopBottom], $placement->directions);
     }
 
+    public function testAParentStandsCentredOverItsChildrenAsDotSetsIt(): void
+    {
+        // As `dot` sets x -> a, a -> b, a -> c: a, and x above it, midway over b and c.
+        $placement = self::place(['x', 'a', 'b', 'c'], [['x', 'a'], ['a', 'b'], ['a', 'c']]);
+        $at = $placement->endpoints;
+
+        $this->assertSame(($at['b']->x + $at['c']->x) / 2, $at['a']->x);
+        $this->assertSame($at['a']->x, $at['x']->x);
+    }
+
+    public function testALabelledFlatEdgeKeepsItsLabelBetweenItsEndsAndStandsAboveIt(): void
+    {
+        // As `dot` is seen to set one: the separation and the label's width apart, two separations at
+        // least; the label midway between the ends' facing sides, half its height and 3 above the edge.
+        foreach ([[60.0, 18.0 + 60.0], [10.0, 36.0]] as [$width, $room]) {
+            $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+                [new LayoutNode('a', 'a', 54, 36), new LayoutNode('b', 'b', 54, 36)],
+                [new LayoutEdge(0, 'a', 'b', labelWidth: $width, labelHeight: 14.0)],
+                spacing: new Spacing(36, 18, 4),
+                rankSets: [new LayoutRankSet(RankKind::Same, ['a', 'b'])],
+            )));
+            [$a, $b] = [$placement->endpoints['a'], $placement->endpoints['b']];
+
+            $this->assertSame(54.0 + $room, \abs($b->x - $a->x), 'label '.$width);
+            $this->assertSame([($a->x + $b->x) / 2, $a->y - 10.0], $placement->labels[0], 'label '.$width);
+        }
+    }
+
     public function testALoopWidensItsNodesRightSide(): void
     {
         // Between b and c, the node separation and the loop's reach.

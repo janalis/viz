@@ -296,11 +296,11 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Class | 26 | 26 | 26 | 26 | 26 |
 | State | 24 | 24 | 24 | 24 | 24 |
 | Description | 29 | 29 | 29 | 29 | 28 |
-| Legacy activity | 3 | 3 | 3 | 3 | 0 |
+| Legacy activity | 3 | 3 | 3 | 3 | 1 |
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |
-| JSON, YAML and HCL | 17 | 17 | 17 | 16 | 14 |
-| Chen EER | 7 | 7 | 6 | 6 | 4 |
+| JSON, YAML and HCL | 17 | 17 | 16 | 16 | 16 |
+| Chen EER | 7 | 7 | 7 | 6 | 4 |
 | EBNF and regex | 10 | 10 | 10 | 10 | 10 |
 | Board and packet | 5 | 5 | 5 | 5 | 5 |
 | Network | 5 | 5 | 5 | 5 | 5 |

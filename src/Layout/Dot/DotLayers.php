@@ -40,7 +40,7 @@ final class DotLayers
     public array $paths = [];
     /** @var array<int, int> the label node of each labelled original edge */
     public array $labels = [];
-    /** @var list<array{int, int, int}> flat edges: tail, head, original edge */
+    /** @var list<array{int, int, int, float, float}> flat edges: tail, head, original edge, and its label's width and height */
     public array $flat = [];
     /** @var list<array{int, int}> loops: node, original edge */
     public array $loops = [];
@@ -84,7 +84,7 @@ final class DotLayers
                 continue;
             }
             if ($ranks[$tail] === $ranks[$head]) {
-                $this->flat[] = [$tail, $head, $index];
+                $this->flat[] = [$tail, $head, $index, $labelWidth, $labelHeight];
                 continue;
             }
             $down = $ranks[$tail] < $ranks[$head];
