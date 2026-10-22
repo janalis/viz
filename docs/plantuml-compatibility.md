@@ -292,14 +292,14 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Family | Fixtures | Same words | and height within 5% | and within 2% | and every row within 3 pt |
 | --- | --- | --- | --- | --- | --- |
 | Activity | 56 | 56 | 56 | 56 | 56 |
-| Sequence | 25 | 25 | 25 | 25 | 24 |
+| Sequence | 25 | 25 | 25 | 25 | 25 |
 | Class | 26 | 26 | 26 | 26 | 26 |
 | State | 24 | 24 | 24 | 24 | 24 |
 | Description | 29 | 29 | 29 | 29 | 28 |
 | Legacy activity | 3 | 3 | 3 | 3 | 0 |
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |
-| JSON, YAML and HCL | 17 | 17 | 17 | 13 | 12 |
+| JSON, YAML and HCL | 17 | 17 | 17 | 16 | 14 |
 | Chen EER | 7 | 7 | 6 | 6 | 4 |
 | EBNF and regex | 10 | 10 | 10 | 10 | 10 |
 | Board and packet | 5 | 5 | 5 | 5 | 5 |
