@@ -80,8 +80,7 @@ final readonly class DotEngine implements LayoutEngine
             [$labelWidth, $labelHeight] = $turned ? [$edge->labelHeight, $edge->labelWidth] : [$edge->labelWidth, $edge->labelHeight];
             $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->weight, $labelWidth, $labelHeight, $edge->tailPort, $edge->headPort];
         }
-        // As dot, the ordering meets edges node by node, each node's out-edges in turn.
-        \uksort($edges, static fn (int $a, int $b): int => [$edges[$a][0], $a] <=> [$edges[$b][0], $b]);
+        $edges = self::met($edges, $owner);
         $span = 0;
         foreach ($edges as [$tail, $head]) {
             $span += \max(0, \abs($ranks[$tail] - $ranks[$head]) - 1);
@@ -283,6 +282,25 @@ final readonly class DotEngine implements LayoutEngine
         [$left, $right] = $position->x[$tail] <= $position->x[$head] ? [$tail, $head] : [$head, $tail];
 
         return [($position->x[$left] + $layers->right[$left] + $position->x[$right] - $layers->left[$right]) / 2, $position->y[$layers->rank[$tail]] - ($height / 2) - 3];
+    }
+
+    /**
+     * The edges in the order the ordering meets them, as dot meets them: node by node, each node's
+     * out-edges in turn. `dot` is seen to set a node's children in its own cluster first, then
+     * the rest, each left to right in the order they were made, whatever order its edges are
+     * written in.
+     *
+     * @template T of array{int, int, mixed, mixed, mixed, mixed, mixed}
+     * @param array<int, T> $edges by original index
+     * @param list<int> $owner each node's cluster, -1 at the top
+     * @return array<int, T>
+     */
+    private static function met(array $edges, array $owner): array
+    {
+        $outside = static fn (array $edge): int => (int) (-1 === $owner[$edge[0]] || $owner[$edge[0]] !== $owner[$edge[1]]);
+        \uksort($edges, static fn (int $a, int $b): int => [$edges[$a][0], $outside($edges[$a]), $edges[$a][1], $a] <=> [$edges[$b][0], $outside($edges[$b]), $edges[$b][1], $b]);
+
+        return $edges;
     }
 
     /**
