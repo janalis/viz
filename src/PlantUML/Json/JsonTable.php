@@ -8,7 +8,6 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
-use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Text\DisplayWidth;
@@ -24,6 +23,9 @@ final class JsonTable
 {
     private const float MIN_WIDTH = 30.0;
     private const float MIN_HEIGHT = 15.0;
+    /** A line's height and its descent below the baseline, for each point of size, as Java measures PlantUML's sans-serif font. */
+    private const float LINE = 603 / 512;
+    private const float DESCENT = 0.210_937_5;
 
     /** @var list<array{?array{list<string>, Style}, array{list<string>, Style}, ?JsonHighlight}> each row's key, value and highlight */
     private array $rows = [];
@@ -162,7 +164,7 @@ final class JsonTable
         $size = $style->fontSize();
         $width = \array_reduce($lines, static fn (float $widest, string $line): float => \max($widest, DisplayWidth::of($line) * Units::cell($size)), initial: 0.0);
 
-        return [$width + 10, (\count($lines) * PlantUmlText::lineHeight($size)) + 4];
+        return [$width + 10, (\count($lines) * $size * self::LINE) + 4];
     }
 
     /**
@@ -179,7 +181,7 @@ final class JsonTable
             default => 0.0,
         };
         $size = $style->fontSize();
-        $line = PlantUmlText::lineHeight($size);
+        $line = $size * self::LINE;
         $color = $style->color('FontColor', '#000000');
         $marks = [];
         foreach ($lines as $index => $text) {
@@ -189,7 +191,7 @@ final class JsonTable
             $foot = $y + 2 + (($index + 1) * $line);
             $marks[] = new Mark(
                 MarkKind::Text,
-                [[$x + 5 + ((DisplayWidth::of($text) * Units::cell($size)) / 2), $foot - (0.25 * $line)]],
+                [[$x + 5 + ((DisplayWidth::of($text) * Units::cell($size)) / 2), $foot - ($size * self::DESCENT)]],
                 $text,
                 stroke: $color,
                 font: $style->face(),

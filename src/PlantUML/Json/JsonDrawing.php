@@ -102,8 +102,10 @@ final class JsonDrawing
         }
         [$width, $height] = [0.0, 0.0];
         foreach ($marks as $mark) {
+            // As PlantUML's limit finder, which takes a stroked shape to reach half its stroke further.
+            $half = MarkKind::Text === $mark->kind ? 0.0 : $mark->strokeWidth / 2;
             foreach ($mark->points as [$x, $y]) {
-                [$width, $height] = [\max($width, $x), \max($height, $y)];
+                [$width, $height] = [\max($width, $x + $half), \max($height, $y + $half)];
             }
         }
 

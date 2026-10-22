@@ -120,7 +120,7 @@ final readonly class Rose
         $style = 'note' === $note->style ? $this->style('note') : $this->style('note', [], $note->style);
         $back = PlantUmlColor::parse((string) $note->color) ?? $style->color('BackGroundColor', '#feffdd');
 
-        return new NoteShape($note->style, RoseText::of($note->text, $style, NoteShape::padding($note->style)), Pen::of($style), $back, $style->number('RoundCorner'));
+        return new NoteShape($note->style, RoseText::of($note->text, $style, NoteShape::padding($note->style)), Pen::of($style), $back, $style->number('RoundCorner'), $style->number('Shadowing'));
     }
 
     /** @param list<string> $lines */

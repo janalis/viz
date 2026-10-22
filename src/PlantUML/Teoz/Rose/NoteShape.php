@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Teoz\Rose;
 
+use Janalis\Viz\PlantUML\Draw\Shadow;
+
 /**
  * A note as Rose draws it, 5 in from its area: a sheet with its corner folded (`note`), a
  * box (`rnote`) or a hexagon (`hnote`), widened to its area, its text set after its left
- * padding and half the widening.
+ * padding and half the widening; as much bigger as its shadow falls, as `ComponentRoseNote`
+ * sizes it.
  */
 final readonly class NoteShape implements Component
 {
@@ -20,6 +23,8 @@ final readonly class NoteShape implements Component
         private Pen $pen,
         private string $back,
         private float $round = 0.0,
+        /** How far its shadow falls. */
+        private float $shadow = 0.0,
     ) {}
 
     /**
@@ -40,7 +45,7 @@ final readonly class NoteShape implements Component
     #[\Override]
     public function size(): array
     {
-        return [$this->text->width() + (2 * self::PADDING), $this->text->height() + (2 * self::PADDING)];
+        return [$this->text->width() + (2 * self::PADDING) + $this->shadow, $this->text->height() + (2 * self::PADDING) + $this->shadow];
     }
 
     #[\Override]
@@ -75,6 +80,6 @@ final readonly class NoteShape implements Component
             ],
         };
 
-        return [...$outline, ...$this->text->marks($x + $this->text->padding[3] + ($widening / 2), $y + $this->text->padding[0])];
+        return [...Shadow::cast($outline, $this->shadow), ...$this->text->marks($x + $this->text->padding[3] + ($widening / 2), $y + $this->text->padding[0])];
     }
 }

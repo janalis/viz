@@ -207,8 +207,8 @@ final class JsonReaderTest extends TestCase
         $this->assertGreaterThan($texts['b'][0], $texts['c'][0]);
         $this->assertCount(1, $curves);
         $this->assertSame([3.0, 3.0], \array_map(static fn (float $length): float => \round($length / Units::POINT, precision: 6), $curves[0]->dashes ?? []));
-        // It starts level with its row, 13 back from the table's side.
-        $this->assertEqualsWithDelta($texts['b'][1], $curves[0]->points[0][1] / Units::POINT, 5.0);
+        // It starts level with its row, 13 back from the table's side: at its middle, which the row's baseline stands 5.3 below.
+        $this->assertEqualsWithDelta($texts['b'][1] - 5.3, $curves[0]->points[0][1] / Units::POINT, 0.5);
     }
 
     private static function read(string $kind, string $lines): PlantUmlJson

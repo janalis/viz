@@ -25,6 +25,7 @@ final readonly class PlantUmlText
      * Java's SansSerif, 11.14 ascent and 2.83 descent at 12 points.
      */
     private const float LINE = 1.164_062_5;
+    private const float SANS = 603 / 512;
 
     private const string TAGS = '/<\/?(?:b|i|u|s|w|strike|sub|sup|color(?::[^>]*)?|back(?::[^>]*)?|size(?::[^>]*)?|font(?:[: ][^>]*)?|plain|code)>|<&[\w-]+>|'.self::SPRITE.'/iu';
 
@@ -43,7 +44,15 @@ final readonly class PlantUmlText
         public string $color = '#000000',
         public array $sprites = [],
         public string $background = '#ffffff',
+        /** A line's height for each point of font size. */
+        public float $leading = self::LINE,
     ) {}
+
+    /** The text set a line apart as Java measures PlantUML's sans-serif font, 1.1777 times its size, as PlantUML's goldens set it. */
+    public function sans(): self
+    {
+        return clone($this, ['leading' => self::SANS]);
+    }
 
     /**
      * Text in a style: its font, colour and background, wrapped at its `MaximumWidth` — as
@@ -301,7 +310,7 @@ final readonly class PlantUmlText
     private function lineSize(array $atoms, float $size): array
     {
         $width = 0.0;
-        $height = self::lineHeight($size);
+        $height = $size * $this->leading;
         foreach ($atoms as [$text, $sprite, $scale]) {
             $width += null === $sprite ? DisplayWidth::of(self::plain($text)) * Units::cell($size) : $sprite->width * $scale;
             $height = \max($height, null === $sprite ? 0.0 : $sprite->height * $scale);
@@ -312,7 +321,7 @@ final readonly class PlantUmlText
 
     public function line(): float
     {
-        return self::lineHeight($this->size);
+        return $this->size * $this->leading;
     }
 
     /** A line's height at a font size in points, as PlantUML measures its default font. */
@@ -373,7 +382,7 @@ final readonly class PlantUmlText
         $color = 1 === \preg_match('/^\s*<color:([^>]+)>.*<\/color>\s*$/i', $line, $match) ? PlantUmlColor::parse($match[1]) ?? $this->color : $this->color;
         $mark = new Mark(
             MarkKind::Text,
-            [[$left + ($shown / 2), $foot - (0.25 * self::lineHeight($size))]],
+            [[$left + ($shown / 2), $foot - (0.25 * $size * $this->leading)]],
             $plain,
             stroke: $color,
             font: self::face(match (true) {
