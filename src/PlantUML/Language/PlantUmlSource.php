@@ -38,6 +38,7 @@ final readonly class PlantUmlSource
         'files',
         'chart',
         'creole',
+        'dot',
     ];
 
     /**
@@ -47,7 +48,7 @@ final readonly class PlantUmlSource
     public function __construct(
         public array $lines,
         public array $pragmas = [],
-        /** The block's kind, as `@start…` names it: `uml`, `mindmap`, `wbs`, `json`, `yaml`, `chen`, `ebnf`, `regex`, `board`, `packetdiag`, `nwdiag`, `wire`, `salt`, `gantt`, `hcl`, `git`, `flow`, `files`, `chart` or `creole`. */
+        /** The block's kind, as `@start…` names it: `uml`, `mindmap`, `wbs`, `json`, `yaml`, `chen`, `ebnf`, `regex`, `board`, `packetdiag`, `nwdiag`, `wire`, `salt`, `gantt`, `hcl`, `git`, `flow`, `files`, `chart`, `creole` or `dot`. */
         public string $kind = 'uml',
     ) {}
 

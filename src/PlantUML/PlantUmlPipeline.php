@@ -12,6 +12,7 @@ use Janalis\Viz\PlantUML\ChenEer\ChenFamily;
 use Janalis\Viz\PlantUML\Classes\ClassFamily;
 use Janalis\Viz\PlantUML\Creole\CreoleReader;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionFamily;
+use Janalis\Viz\PlantUML\Dot\PlantUmlDot;
 use Janalis\Viz\PlantUML\Ebnf\EbnfFamily;
 use Janalis\Viz\PlantUML\Ebnf\RegexFamily;
 use Janalis\Viz\PlantUML\Files\FilesReader;
@@ -121,6 +122,10 @@ final readonly class PlantUmlPipeline implements Pipeline
         // A git log is read line by line as it stands, its graph's signs and all.
         if ('git' === $parsed->kind) {
             return GitReader::read($parsed);
+        }
+        // A DOT block goes to Graphviz as it stands: here, to the native DOT renderer.
+        if ('dot' === $parsed->kind) {
+            return PlantUmlDot::read($parsed);
         }
         // A Creole diagram is all text: every line, `title` and `skinparam` among them, is Creole.
         if ('creole' === $parsed->kind) {
