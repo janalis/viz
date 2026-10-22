@@ -51,7 +51,7 @@ final class JsonTable
     /** @return array{float, float} */
     public function size(): array
     {
-        $height = \array_sum($this->heights());
+        $height = \floatval(\array_sum($this->heights()));
 
         return [$this->widthA() + $this->widthB(), 0.0 === $height ? self::MIN_HEIGHT : $height];
     }

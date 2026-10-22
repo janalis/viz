@@ -211,6 +211,22 @@ final class JsonReaderTest extends TestCase
         $this->assertEqualsWithDelta($texts['b'][1] - 5.3, $curves[0]->points[0][1] / Units::POINT, 0.5);
     }
 
+    public function testAnEmptyContainerIsDrawnThirtyByFifteen(): void
+    {
+        $drawing = Work::run(self::read('json', '{"a": []}')->drawing());
+        $sizes = [];
+        foreach ($drawing->marks as $mark) {
+            if (MarkKind::Polygon !== $mark->kind || 'none' !== $mark->fill) {
+                continue;
+            }
+            $xs = \array_column($mark->points, 0);
+            $ys = \array_column($mark->points, 1);
+            $sizes[] = [\round((\max($xs) - \min($xs)) / Units::POINT, precision: 3), \round((\max($ys) - \min($ys)) / Units::POINT, precision: 3)];
+        }
+
+        $this->assertContains([30.0, 15.0], $sizes);
+    }
+
     private static function read(string $kind, string $lines): PlantUmlJson
     {
         $diagram = PlantUmlPipeline::native()->diagram('@start'.$kind."\n".$lines."\n@end".$kind);
