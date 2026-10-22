@@ -15,6 +15,8 @@ final class PlantUmlLink
     public bool $bold = false;
     public bool $hidden = false;
     public bool $norank = false;
+    /** Whether it was turned round, as an arrow pointing up or left is: svek then writes its start first. */
+    public bool $reversed = false;
     public ?float $thickness = null;
     public ?string $color = null;
     public ?string $label = null;
@@ -42,6 +44,7 @@ final class PlantUmlLink
         $link->dashed = $this->dashed;
         $link->dotted = $this->dotted;
         $link->bold = $this->bold;
+        $link->reversed = !$this->reversed;
         [$link->firstLabel, $link->secondLabel] = [$this->secondLabel, $this->firstLabel];
 
         return $link;

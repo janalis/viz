@@ -69,7 +69,7 @@ final class PlantUmlParityTest extends TestCase
             $y = $mark->points[0][1] / Units::POINT;
             // A turned text stands, as PlantUML writes it, where it starts: half its width below its middle reading up, above reading down.
             if (0.0 !== $mark->angle) {
-                $y -= \sin(\deg2rad($mark->angle)) * PlantUmlMetrics::width(\trim($mark->text), 12 * $mark->fontScale, $mark->font) / 2;
+                $y -= (\sin(\deg2rad($mark->angle)) * PlantUmlMetrics::width(\trim($mark->text), 12 * $mark->fontScale, $mark->font)) / 2;
             }
             foreach ((array) \preg_split('/\s+/u', \trim((string) $mark->text), flags: \PREG_SPLIT_NO_EMPTY) as $word) {
                 $placed[] = [\str_replace(['«', '»'], ['<<', '>>'], (string) $word), $y];

@@ -24,7 +24,7 @@ final class TeozDrawingTest extends TestCase
         $marks = self::points(self::draw('A -> B'));
         // A head is its name, a line of PlantUML's sans-serif, 7 padding around it, and 1 more down; B stands 10 clear of A.
         $headWidth = Units::cell(14.0) + 14;
-        $headHeight = (14.0 * 603 / 512) + 14 + 1;
+        $headHeight = ((14.0 * 603) / 512) + 14 + 1;
         $this->assertEqualsWithDelta([0.0, 0.0], self::topLeft(self::rectangles($marks)[0]), 1e-9);
         $this->assertEqualsWithDelta([$headWidth + 10, 0.0], self::topLeft(self::rectangles($marks)[1]), 1e-9);
         // The arrow, 8 below the heads and 6 down its tile, runs from A's lifeline to 6 short of B's, its tip 2 short.

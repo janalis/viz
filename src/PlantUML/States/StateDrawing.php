@@ -107,6 +107,7 @@ final class StateDrawing
                 $width > 0 ? $width + Svek::labelMargin($link->from, $link->to) : 0.0,
                 $height > 0 ? $height + Svek::labelMargin($link->from, $link->to) : 0.0,
                 !$link->norank,
+                $link->reversed,
             );
         }
         // As svek, a composite state's inner image is laid out with dot's own separations: its

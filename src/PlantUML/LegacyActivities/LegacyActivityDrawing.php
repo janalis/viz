@@ -77,6 +77,7 @@ final class LegacyActivityDrawing
                 $width > 0 ? $width + Svek::labelMargin($link->from, $link->to) : 0.0,
                 $height > 0 ? $height + Svek::labelMargin($link->from, $link->to) : 0.0,
                 !$link->norank,
+                $link->reversed,
             );
         }
 

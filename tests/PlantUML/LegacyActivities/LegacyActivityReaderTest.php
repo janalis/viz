@@ -232,6 +232,21 @@ final class LegacyActivityReaderTest extends TestCase
         $this->assertNotSame([], \array_filter($drawing->marks, static fn (Mark $mark): bool => null !== $mark->text));
     }
 
+    public function testAnArrowTurnedUpPutsItsStartFirstAsSvekWritesIt(): void
+    {
+        $x = [];
+        $source = (string) \file_get_contents(__DIR__.'/../../fixtures/plantuml-parity/legacy/arrows.puml');
+        foreach (Work::run(PlantUmlPipeline::native()->drawing($source))->marks as $mark) {
+            if (!\in_array($mark->text, ['send', 'store'], strict: true)) {
+                continue;
+            }
+            $x[$mark->text] = $mark->points[0][0];
+        }
+
+        // As dot reads the file svek writes, the start of the arrow turned up first: the bar's later branch comes out on its left, as PlantUML draws it.
+        $this->assertLessThan($x['send'], $x['store']);
+    }
+
     private static function read(string $lines): PlantUmlLegacyActivity
     {
         $diagram = PlantUmlPipeline::native()->diagram("@startuml\n".$lines."\n@enduml");

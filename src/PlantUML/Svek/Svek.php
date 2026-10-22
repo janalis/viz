@@ -41,7 +41,7 @@ final class Svek
     private array $linked = [];
     /** @var array<string, true> the nodes standing in their cluster itself, not in its inner protection */
     private array $points = [];
-    /** @var list<array{string, string, int, float, float, bool}> */
+    /** @var list<array{string, string, int, float, float, bool, bool}> */
     private array $edges = [];
 
     public function node(string $id, float $width, float $height, ?string $cluster = null): void
@@ -95,9 +95,9 @@ final class Svek
     }
 
     /** An edge, by the dashes of the link it stands for: one lays its ends side by side. Its index in the placement's routes. */
-    public function edge(string $from, string $to, int $length, float $labelWidth = 0.0, float $labelHeight = 0.0, bool $constraint = true): int
+    public function edge(string $from, string $to, int $length, float $labelWidth = 0.0, float $labelHeight = 0.0, bool $constraint = true, bool $reversed = false): int
     {
-        $this->edges[] = [$from, $to, \max(0, $length - 1), $labelWidth, $labelHeight, $constraint];
+        $this->edges[] = [$from, $to, \max(0, $length - 1), $labelWidth, $labelHeight, $constraint, $reversed];
 
         return \count($this->edges) - 1;
     }
@@ -149,8 +149,40 @@ final class Svek
         );
     }
 
-    /** @return list<LayoutNode> the nodes at the top first, then cluster by cluster as they nest */
+    /**
+     * The nodes in the order dot creates them from the file svek writes: the starts of the
+     * links turned round, the last first, which svek writes before anything; then the ends of
+     * the links laid side by side, written next; then the rest, at the top first, then cluster
+     * by cluster as they nest.
+     *
+     * @return list<LayoutNode>
+     */
     private function ordered(): array
+    {
+        /** @var list<string> $first */
+        $first = [];
+        foreach ($this->edges as [$from, , , , , , $reversed]) {
+            // Only a node at the top, not one in a cluster, as `printCluster1` writes the top's.
+            if (!$reversed || !\array_key_exists($from, $this->nodes) || null !== $this->nodes[$from][3]) {
+                continue;
+            }
+            \array_unshift($first, $from);
+        }
+        foreach ($this->edges as [$from, $to, $minimum]) {
+            if (0 !== $minimum) {
+                continue;
+            }
+            \array_push($first, $from, $to);
+        }
+        $rank = \array_flip(\array_values(\array_unique($first)));
+        $nodes = $this->declared();
+        \usort($nodes, static fn (LayoutNode $a, LayoutNode $b): int => [$rank[$a->id] ?? \PHP_INT_MAX, $a->order] <=> [$rank[$b->id] ?? \PHP_INT_MAX, $b->order]);
+
+        return $nodes;
+    }
+
+    /** @return list<LayoutNode> the nodes as svek declares them: at the top first, then cluster by cluster as they nest */
+    private function declared(): array
     {
         $ordered = [];
         foreach ([null, ...\array_column($this->clusters, 0)] as $cluster) {
