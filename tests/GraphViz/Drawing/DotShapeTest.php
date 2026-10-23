@@ -46,7 +46,8 @@ final class DotShapeTest extends TestCase
         yield 'Mcircle' => ['Mcircle', 0, 2];
         yield 'Mdiamond' => ['Mdiamond', 0, 4];
         yield 'Msquare' => ['Msquare', 0, 4];
-        foreach (['note', 'tab', 'folder', 'cylinder', 'underline'] as $shape) {
+        yield 'folder' => ['folder', 0, 0];
+        foreach (['note', 'tab', 'cylinder', 'underline'] as $shape) {
             yield $shape => [$shape, 0, 1];
         }
         yield 'box3d' => ['box3d', 0, 2];
@@ -62,11 +63,15 @@ final class DotShapeTest extends TestCase
         $this->assertCount($decorations, $outline->decorations);
         $this->assertTrue($outline->contains(0.0, 0.0));
         $this->assertFalse($outline->contains(41.0 + (4 * $rings), 0.0));
-        // As `dot` draws it, a parallelogram leans past its box.
-        $reach = 'parallelogram' === $shape ? 40.0 * 1.0735 : 40.0;
+        // As `dot` draws them, a parallelogram leans past its box, a component's notches stand out 4 left and a tab's and a folder's 4 above.
+        $reach = match ($shape) {
+            'parallelogram' => 40.0 * 1.0735,
+            'component' => 44.0,
+            default => 40.0,
+        };
         foreach ($outline->outline as [$x, $y]) {
             $this->assertLessThanOrEqual($reach + 1e-9, \abs($x));
-            $this->assertLessThanOrEqual(20.0 + 1e-9, \abs($y));
+            $this->assertLessThanOrEqual(\in_array($shape, ['tab', 'folder'], strict: true) ? 24.0 : 20.0 + 1e-9, \abs($y));
         }
     }
 

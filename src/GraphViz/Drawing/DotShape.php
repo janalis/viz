@@ -104,7 +104,7 @@ final readonly class DotShape
             // As `dot` is seen to draw it: 6 in from its top and bottom, its point 12 long.
             'cds' => [[-$w, -$h + 6], [$w - 12, -$h + 6], [$w, 0.0], [$w - 12, $h - 6], [-$w, $h - 6]],
             'polygon' => self::polygon($sides, $w, $h, $skew, $distortion, $orientation),
-            default => [[-$w, -$h], [$w, -$h], [$w, $h], [-$w, $h]],
+            default => self::boxed($shape, $w, $h),
         };
         $count = $peripheries ?? match ($shape) {
             'doublecircle', 'doubleoctagon' => 2,
@@ -217,6 +217,57 @@ final readonly class DotShape
         return \array_map(static fn (array $point): array => [($w * $point[0]) / $across, ($h * $point[1]) / $down], $unit);
     }
 
+    /**
+     * A box's outline, as `dot` is seen to draw each: a note's corner cut 6, a tab 12 wide and 4
+     * tall above its top left, a folder's 21 wide above its top right, a box3d's corners cut 4,
+     * a component's two notches 4 deep and 4 tall, 4 from its top and bottom; a cylinder capped
+     * by half ellipses an eleventh of its height.
+     *
+     * @return list<array{float, float}>
+     */
+    private static function boxed(string $shape, float $w, float $h): array
+    {
+        return match ($shape) {
+            'note' => [[-$w, -$h], [$w - 6, -$h], [$w, -$h + 6], [$w, $h], [-$w, $h]],
+            'tab' => [[-$w, -$h - 4], [-$w + 12, -$h - 4], [-$w + 12, -$h], [$w, -$h], [$w, $h], [-$w, $h]],
+            'folder' => [[-$w, -$h], [$w - 27, -$h], [$w - 24, -$h - 4], [$w - 3, -$h - 4], [$w, -$h], [$w, $h], [-$w, $h]],
+            'box3d' => [[-$w + 4, -$h], [$w, -$h], [$w, $h - 4], [$w - 4, $h], [-$w, $h], [-$w, -$h + 4]],
+            'component' => [
+                [-$w, -$h],
+                [$w, -$h],
+                [$w, $h],
+                [-$w, $h],
+                [-$w, $h - 4],
+                [-$w - 4, $h - 4],
+                [-$w - 4, $h - 8],
+                [-$w, $h - 8],
+                [-$w, -$h + 8],
+                [-$w - 4, -$h + 8],
+                [-$w - 4, -$h + 4],
+                [-$w, -$h + 4],
+            ],
+            'cylinder' => [...self::cap($w, $h, -$h + ($h / 5.5), -1), ...self::cap($w, $h, $h - ($h / 5.5), 1)],
+            default => [[-$w, -$h], [$w, -$h], [$w, $h], [-$w, $h]],
+        };
+    }
+
+    /**
+     * Half an ellipse as wide as a shape, an eleventh of its height tall, around a centre line,
+     * bulging up or down: across from right to left going up, left to right going down.
+     *
+     * @return list<array{float, float}>
+     */
+    private static function cap(float $w, float $h, float $y, int $way): array
+    {
+        $points = [];
+        for ($step = 0; $step <= 16; ++$step) {
+            $angle = (\M_PI * $step) / 16;
+            $points[] = [$way * -$w * \cos($angle), $y + ($way * ($h / 5.5) * \sin($angle))];
+        }
+
+        return $points;
+    }
+
     /** @return list<array{float, float}> a pentagon stretched to its box, its base's corners out to the box's sides */
     private static function house(float $w, float $h): array
     {
@@ -322,20 +373,18 @@ final readonly class DotShape
     /** @return list<list<array{float, float}>> */
     private static function decorations(string $shape, float $w, float $h): array
     {
-        $fold = \min(10.0, $w / 3, $h / 3);
-
         return match ($shape) {
-            'note' => [[[$w - $fold, -$h], [$w - $fold, -$h + $fold], [$w, -$h + $fold]]],
-            'tab' => [[[-$w, -$h + $fold], [-$w + (3 * $fold), -$h + $fold], [-$w + (3 * $fold), -$h]]],
-            'folder' => [[[-$w, -$h + $fold], [$w * 0.2, -$h + $fold]]],
-            'box3d' => [[[-$w + $fold, -$h], [-$w + $fold, -$h - $fold], [$w + $fold, -$h - $fold], [$w + $fold, $h - $fold], [$w, $h]], [[$w, -$h], [$w + $fold, -$h - $fold]]],
+            'note' => [[[$w - 6, -$h], [$w - 6, -$h + 6], [$w, -$h + 6]]],
+            'tab' => [[[-$w, -$h], [-$w + 12, -$h]]],
+            'box3d' => [[[-$w, -$h + 4], [$w - 4, -$h + 4], [$w - 4, $h]], [[$w - 4, -$h + 4], [$w, -$h]]],
             'component' => [
-                [[-$w - 4, -$h / 2], [-$w + 4, -$h / 2], [-$w + 4, (-$h / 2) + 6], [-$w - 4, (-$h / 2) + 6], [-$w - 4, -$h / 2]],
-                [[-$w - 4, ($h / 2) - 6], [-$w + 4, ($h / 2) - 6], [-$w + 4, $h / 2], [-$w - 4, $h / 2], [-$w - 4, ($h / 2) - 6]],
+                [[-$w, -$h + 4], [-$w + 4, -$h + 4], [-$w + 4, -$h + 8], [-$w, -$h + 8]],
+                [[-$w, $h - 8], [-$w + 4, $h - 8], [-$w + 4, $h - 4], [-$w, $h - 4]],
             ],
-            'cylinder' => [\array_map(static fn (int $step): array => [$w * \cos((\M_PI * $step) / 16), -$h + ($fold * \sin((\M_PI * $step) / 16))], \range(start: 0, end: 16))],
+            // As `dot` is seen to draw it: the near half of its top cap.
+            'cylinder' => [\array_map(static fn (array $point): array => [-$point[0], (2 * (-$h + ($h / 5.5))) - $point[1]], self::cap($w, $h, -$h + ($h / 5.5), -1))],
             'underline' => [[[-$w, $h], [$w, $h]]],
-            default => self::marked($shape, $w, $h, $fold),
+            default => self::marked($shape, $w, $h),
         };
     }
 
@@ -344,22 +393,23 @@ final readonly class DotShape
      *
      * @return list<list<array{float, float}>>
      */
-    private static function marked(string $shape, float $w, float $h, float $fold): array
+    private static function marked(string $shape, float $w, float $h): array
     {
         if ($w <= 0 || $h <= 0) {
             return [];
         }
+        // As `dot` is seen to draw them: each corner cut 12 along its sides; a circle's lines three quarters of the way out.
+        [$across, $down] = [(12 * $w) / \hypot($w, $h), (12 * $h) / \hypot($w, $h)];
 
         return match ($shape) {
-            'Msquare' => [[[-$w, -$h + $fold], [-$w + $fold, -$h]], [[$w - $fold, -$h], [$w, -$h + $fold]], [[$w, $h - $fold], [$w - $fold, $h]], [[-$w + $fold, $h], [-$w, $h - $fold]]],
-            // Each tip cut off where the diamond is as wide as the cut is deep.
+            'Msquare' => [[[-$w, -$h + 12], [-$w + 12, -$h]], [[$w - 12, -$h], [$w, -$h + 12]], [[$w, $h - 12], [$w - 12, $h]], [[-$w + 12, $h], [-$w, $h - 12]]],
             'Mdiamond' => [
-                [[(-$fold * $w) / $h, -$h + $fold], [($fold * $w) / $h, -$h + $fold]],
-                [[(-$fold * $w) / $h, $h - $fold], [($fold * $w) / $h, $h - $fold]],
-                [[-$w + $fold, (-$fold * $h) / $w], [-$w + $fold, ($fold * $h) / $w]],
-                [[$w - $fold, (-$fold * $h) / $w], [$w - $fold, ($fold * $h) / $w]],
+                [[-$across, -$h + $down], [$across, -$h + $down]],
+                [[-$across, $h - $down], [$across, $h - $down]],
+                [[-$w + $across, -$down], [-$w + $across, $down]],
+                [[$w - $across, -$down], [$w - $across, $down]],
             ],
-            'Mcircle' => [[[-$w * 0.7, -$h * 0.7], [$w * 0.7, -$h * 0.7]], [[-$w * 0.7, $h * 0.7], [$w * 0.7, $h * 0.7]]],
+            'Mcircle' => [[[-$w * 0.661_4, -$h * 0.75], [$w * 0.661_4, -$h * 0.75]], [[-$w * 0.661_4, $h * 0.75], [$w * 0.661_4, $h * 0.75]]],
             default => [],
         };
     }
