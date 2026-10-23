@@ -86,6 +86,19 @@ final class DotShapeTest extends TestCase
         $this->assertEqualsWithDelta([72.0, 36.0], DotShape::inner('diamond', 89.89, 44.94, 2), 0.01);
     }
 
+    public function testRegularPolygonsReachTheirBoxAsDotDrawsThem(): void
+    {
+        $points = static fn (string $shape): array => \array_map(
+            static fn (array $point): array => [\round($point[0], precision: 2), \round($point[1], precision: 2)],
+            DotShape::of($shape, 144.0, 72.0)->outline,
+        );
+
+        // As `dot` draws them: a hexagon flat on top, a triangle's base a quarter of the way up, each reaching its box's sides.
+        $this->assertSame([[36.0, -36.0], [72.0, 0.0], [36.0, 36.0], [-36.0, 36.0], [-72.0, 0.0], [-36.0, -36.0]], $points('hexagon'));
+        $this->assertSame([[0.0, -36.0], [72.0, 18.0], [-72.0, 18.0]], $points('triangle'));
+        $this->assertSame([[0.0, -36.0], [72.0, -11.12], [44.5, 29.12], [-44.5, 29.12], [-72.0, -11.12]], $points('pentagon'));
+    }
+
     public function testPolygonsFollowSidesSkewDistortionAndOrientation(): void
     {
         $this->assertCount(3, DotShape::of('polygon', 20.0, 20.0, sides: 1)->outline);

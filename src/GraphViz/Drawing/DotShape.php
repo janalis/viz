@@ -88,17 +88,17 @@ final readonly class DotShape
         $outline = match ($shape) {
             'ellipse', 'oval', 'circle', 'doublecircle', 'Mcircle', 'point', 'egg' => self::ellipse($w, $h),
             'diamond', 'Mdiamond' => [[0.0, -$h], [$w, 0.0], [0.0, $h], [-$w, 0.0]],
-            'triangle' => [[0.0, -$h], [$w, $h], [-$w, $h]],
-            'invtriangle' => [[-$w, -$h], [$w, -$h], [0.0, $h]],
+            'triangle' => self::spread(3, $w, $h),
+            'invtriangle' => \array_map(static fn (array $point): array => [$point[0], -$point[1]], self::spread(3, $w, $h)),
             'trapezium' => [[-$w * 0.6, -$h], [$w * 0.6, -$h], [$w, $h], [-$w, $h]],
             'invtrapezium' => [[-$w, -$h], [$w, -$h], [$w * 0.6, $h], [-$w * 0.6, $h]],
             'parallelogram' => [[-$w * 0.6, -$h], [$w, -$h], [$w * 0.6, $h], [-$w, $h]],
             'house' => [[0.0, -$h], [$w, -$h / 3], [$w, $h], [-$w, $h], [-$w, -$h / 3]],
             'invhouse' => [[-$w, -$h], [$w, -$h], [$w, $h / 3], [0.0, $h], [-$w, $h / 3]],
-            'pentagon' => self::regular(5, $w, $h, 0.0),
-            'hexagon' => self::regular(6, $w, $h, 0.0),
-            'septagon' => self::regular(7, $w, $h, 0.0),
-            'octagon', 'doubleoctagon', 'tripleoctagon' => self::regular(8, $w, $h, 22.5),
+            'pentagon' => self::spread(5, $w, $h),
+            'hexagon' => self::spread(6, $w, $h),
+            'septagon' => self::spread(7, $w, $h),
+            'octagon', 'doubleoctagon', 'tripleoctagon' => self::spread(8, $w, $h),
             'star' => self::star($w, $h),
             'cds' => [[-$w, -$h], [$w * 0.7, -$h], [$w, 0.0], [$w * 0.7, $h], [-$w, $h]],
             'polygon' => self::polygon($sides, $w, $h, $skew, $distortion, $orientation),
@@ -192,6 +192,27 @@ final readonly class DotShape
         }
 
         return $points;
+    }
+
+    /**
+     * A regular polygon as `dot` is seen to draw one: a vertex at its top when its sides are
+     * odd, a side when even, stretched across and down until it reaches its box's sides and top
+     * or bottom.
+     *
+     * @return list<array{float, float}>
+     */
+    private static function spread(int $sides, float $w, float $h): array
+    {
+        $start = 0 === ($sides % 2) ? \M_PI / $sides : 0.0;
+        $unit = [];
+        for ($side = 0; $side < $sides; ++$side) {
+            $angle = $start + (((2 * \M_PI) / $sides) * $side) - (\M_PI / 2);
+            $unit[] = [\cos($angle), \sin($angle)];
+        }
+        $across = \max(\array_map(static fn (array $point): float => \abs($point[0]), $unit));
+        $down = \max(\array_map(static fn (array $point): float => \abs($point[1]), $unit));
+
+        return \array_map(static fn (array $point): array => [($w * $point[0]) / $across, ($h * $point[1]) / $down], $unit);
     }
 
     /** @return list<array{float, float}> a regular polygon inscribed in the ellipse, its first vertex at $start degrees from the top */
