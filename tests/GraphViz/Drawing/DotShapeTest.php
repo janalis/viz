@@ -69,6 +69,10 @@ final class DotShapeTest extends TestCase
             'component' => 44.0,
             default => 40.0,
         };
+        // A star, as big as covers its box, reaches past it.
+        if ('star' === $shape) {
+            return;
+        }
         foreach ($outline->outline as [$x, $y]) {
             $this->assertLessThanOrEqual($reach + 1e-9, \abs($x));
             $this->assertLessThanOrEqual(\in_array($shape, ['tab', 'folder'], strict: true) ? 24.0 : 20.0 + 1e-9, \abs($y));
@@ -104,6 +108,8 @@ final class DotShapeTest extends TestCase
         $this->assertSame([[36.0, -36.0], [72.0, 0.0], [36.0, 36.0], [-36.0, 36.0], [-72.0, 0.0], [-36.0, -36.0]], $points('hexagon'));
         $this->assertSame([[0.0, -36.0], [72.0, 18.0], [-72.0, 18.0]], $points('triangle'));
         $this->assertSame([[0.0, -36.0], [72.0, -11.12], [44.5, 29.12], [-44.5, 29.12], [-72.0, -11.12]], $points('pentagon'));
+        // A star keeps its own proportions, as big as covers its box, from the box's bottom left corner.
+        $this->assertSame([[0.0, -100.95], [17.0, -48.64], [72.0, -48.64]], \array_slice($points('star'), offset: 0, length: 3));
     }
 
     public function testPolygonsFollowSidesSkewDistortionAndOrientation(): void

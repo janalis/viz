@@ -289,11 +289,16 @@ final readonly class DotShape
     /** @return list<array{float, float}> */
     private static function star(float $w, float $h): array
     {
+        // As `dot` is seen to draw it: a regular star, its inner points on its outer ones' lines, as big as covers its box, from its bottom left corner.
+        $across = \cos(\M_PI / 10);
+        $below = \cos(\M_PI / 5);
+        $scale = \max($w / $across, (2 * $h) / (1 + $below));
+        $inner = \sin(\M_PI / 10) / \sin((3 * \M_PI) / 10);
         $points = [];
         for ($vertex = 0; $vertex < 10; ++$vertex) {
             $angle = ((\M_PI / 5) * $vertex) - (\M_PI / 2);
-            $radius = 0 === ($vertex % 2) ? 1.0 : 0.4;
-            $points[] = [$w * $radius * \cos($angle), $h * $radius * \sin($angle)];
+            $radius = 0 === ($vertex % 2) ? 1.0 : $inner;
+            $points[] = [-$w + ($scale * ($across + ($radius * \cos($angle)))), $h - ($scale * ($below - ($radius * \sin($angle))))];
         }
 
         return $points;
