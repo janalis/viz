@@ -118,11 +118,12 @@ final class DotNodes
         }
         [$width, $height] = [\max($width + (2 * $marginX), $imageWidth), \max($height + (2 * $marginY), $imageHeight)];
         $least = DotLayoutInput::least($node)[1];
-        // As `dot` is seen to fit a shape grown round its label to the height it keeps at least, where its label a half again as tall fits it: that tall, no wider than holds the label within it.
-        [$width, $height] =
-            $growth > 1 && ($height * \M_SQRT2) < $least
-                ? [(($width * $across) / \M_SQRT2) / \sqrt(1 - ($height / $least) ** 2), $least]
-                : [$width * $across, $height * $growth];
+        // As `dot` is seen to fit a shape grown round its label to the height it keeps at least, where its label a half again as tall fits it: that tall, or as its growth past an ellipse's makes it, no wider than holds the label within it.
+        [$width, $height] = match (true) {
+            'star' === $shape => self::star($width, $height),
+            $growth > 1 && ($height * \M_SQRT2) < $least => [(($width * $across) / \M_SQRT2) / \sqrt(1 - ($height / $least) ** 2), \max($least, ($height * $growth) / \M_SQRT2)],
+            default => [$width * $across, $height * $growth],
+        };
         $width = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, $width);
         $height = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, $height);
         if (DotShape::round($shape) || 'true' === \strtolower($node->attribute('regular'))) {
@@ -169,6 +170,19 @@ final class DotNodes
             $number('distortion', default: 0.0),
             $number('orientation', default: 0.0),
         );
+    }
+
+    /**
+     * A star round its label, as `dot` is seen to size it: as wide as 2.618 times the label's
+     * width or 4.454 times its height, and a regular star's height for that width.
+     *
+     * @return array{float, float}
+     */
+    private static function star(float $width, float $height): array
+    {
+        $across = \max($width * 2.618_034, $height * 4.454_12);
+
+        return [$across, $across * \cos(\M_PI / 10)];
     }
 
     /** @return array{float, float} the size of a record that shows its node's name */

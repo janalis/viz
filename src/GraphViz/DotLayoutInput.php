@@ -66,6 +66,11 @@ final class DotLayoutInput
                 $width = \max($width, $height);
                 $height = $width;
             }
+            // As `dot` is seen to size a star, fixed or not: a regular one, as big as covers its box.
+            if ('star' === $node->attribute('shape')) {
+                $width = \max($width, $height / \cos(\M_PI / 10));
+                $height = $width * \cos(\M_PI / 10);
+            }
             [$width, $height] = DotNodes::ringed($node, $width, $height);
             $sizes[$name] = [$width, $height];
             $ordering = \strtolower($node->attribute('ordering', $graph->attribute('ordering')));

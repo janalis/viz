@@ -72,7 +72,7 @@ final class DotNodesTest extends TestCase
 
         // As measured on `dot`'s output: an n-sided polygon √2 / cos(π/n) times its label, or fitted to the 36 it keeps at least.
         $this->assertEqualsWithDelta(
-            [[189.42, 45.72], [177.57, 42.86], [232.0, 56.0], [240.52, 56.0], [174.11, 36.0], [213.24, 36.0], [160.58, 36.0]],
+            [[189.42, 45.72], [177.57, 42.86], [232.0, 56.0], [240.52, 56.0], [174.11, 36.0], [213.24, 36.0], [160.58, 36.0], [301.57, 46.0], [303.69, 288.83]],
             [
                 $size('hexagon', height: 20),
                 $size('octagon', height: 20),
@@ -81,6 +81,8 @@ final class DotNodesTest extends TestCase
                 $size('hexagon', height: 15),
                 $size('diamond', height: 15),
                 $size('egg', height: 15),
+                $size('triangle', height: 15),
+                $size('star', height: 15),
             ],
             0.01,
         );

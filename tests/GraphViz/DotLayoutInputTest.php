@@ -70,6 +70,14 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame([[72.0, 72.0], [36.0, 36.0], [72.0, 72.0]], \array_map(static fn ($node): array => [$node->width, $node->height], $input->nodes));
     }
 
+    public function testAStarKeepsItsOwnProportions(): void
+    {
+        $input = self::input('digraph { node [shape=star, label=""]; a; b [height=2]; c [fixedsize=true, width=2, height=1]; }');
+
+        // As `dot` sizes them: a regular star as big as covers its box, fixed or not.
+        $this->assertEqualsWithDelta([[54.0, 51.36], [151.41, 144.0], [144.0, 136.95]], \array_map(static fn ($node): array => [$node->width, $node->height], $input->nodes), 0.01);
+    }
+
     public function testOutlinesAroundANodeGrowIt(): void
     {
         $input = self::input(
