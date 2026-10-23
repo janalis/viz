@@ -80,7 +80,11 @@ final readonly class DescriptionShapes
                 $this->polyline([[$x, $y], [$x + 10, $y + 5], [$x + 10, $bottom - 5], [$x, $bottom]]),
                 $this->polyline([[$right, $y], [$right - 10, $y + 5], [$right - 10, $bottom - 5], [$right, $bottom]]),
             ],
-            default => [$this->polygon(ClassBox::corners($x + 4, $y, $width - 4, $height - 4)), $this->polygon(ClassBox::corners($x, $y + 4, $width - 4, $height - 4))],
+            // As PlantUML: its copy 4 down and right, behind it, both rounded as a box.
+            default => [
+                ClassBox::rectangle($x + 4, $y + 4, $width - 4, $height - 4, $this->line, $this->back, $this->stroke, $round),
+                ClassBox::rectangle($x, $y, $width - 4, $height - 4, $this->line, $this->back, $this->stroke, $round),
+            ],
         };
     }
 

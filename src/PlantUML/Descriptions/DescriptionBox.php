@@ -31,7 +31,7 @@ final readonly class DescriptionBox
         'artifact' => [10, 20, 13, 10],
         'card' => [10, 10, 3, 3],
         'cloud' => [15, 15, 15, 15],
-        'collections' => [10, 10, 10, 10],
+        'collections' => [8, 12, 8, 12],
         'component' => [15, 25, 20, 10],
         'database' => [10, 10, 24, 5],
         'file' => [10, 10, 10, 10],

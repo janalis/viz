@@ -81,6 +81,15 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([21.535, 64.535], $at('queue'));
     }
 
+    public function testACollectionsCopyStandsBehindItDownAndRightAsPlantUmlDrawsIt(): void
+    {
+        $marks = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nrectangle a\ncollections X\na --> X\n@enduml"))->marks;
+        $text = \array_values(\array_filter($marks, static fn (Mark $mark): bool => 'X' === $mark->text))[0];
+
+        // As the jar draws it: the text 8 into the front copy, at the top left, the other 4 down and right behind it.
+        $this->assertEqualsWithDelta(125.025, $text->points[0][1] / Units::POINT, 1e-3);
+    }
+
     public function testWholeDiagramsDrawContainersLinksAndNotes(): void
     {
         $drawing = Work::run(PlantUmlPipeline::native()->drawing(<<<'PUML'
