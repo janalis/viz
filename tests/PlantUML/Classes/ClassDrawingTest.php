@@ -45,7 +45,10 @@ final class ClassDrawingTest extends TestCase
         $other = new ClassEntity('Odd', ['Odd'], 'circle');
         $this->assertSame(
             ['Odd'],
-            \array_map(static fn (Mark $mark): string => $mark->text, \array_values(\array_filter(ClassBox::of($other, StyleSheet::skin(), new ClassPortions([]))->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind))),
+            \array_map(
+                static fn (Mark $mark): string => $mark->text,
+                \array_values(\array_filter(ClassBox::of($other, StyleSheet::skin(), new ClassPortions([]))->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)),
+            ),
         );
     }
 
@@ -166,6 +169,7 @@ final class ClassDrawingTest extends TestCase
         // A circle's node as dot sizes the table svek writes for it, its name 17 below its centre.
         $this->assertEqualsWithDelta(174.535, $baseline, 0.005);
     }
+
     public function testColourSpecsReadTheirParts(): void
     {
         $this->assertSame('#ffc0cb', ClassColors::back('#pink'));

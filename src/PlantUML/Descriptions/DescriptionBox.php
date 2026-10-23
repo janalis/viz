@@ -221,11 +221,14 @@ final readonly class DescriptionBox
     {
         $stroke = \max($stroke, 1.0);
 
+        // As PlantUML draws it, half a point below its node's top, as measured on its output.
+        $y += 0.5;
+
         return [
-            StateBox::disc($x, $y + 9, 8.0, $line, $back),
-            new Mark(MarkKind::Polyline, [[$x, $y + 17], [$x, $y + 44]], stroke: $line, strokeWidth: $stroke),
-            new Mark(MarkKind::Polyline, [[$x - 13, $y + 25], [$x + 13, $y + 25]], stroke: $line, strokeWidth: $stroke),
-            new Mark(MarkKind::Polyline, [[$x - 13, $y + 59], [$x, $y + 44], [$x + 13, $y + 59]], stroke: $line, strokeWidth: $stroke),
+            StateBox::disc($x, $y + 8, 8.0, $line, $back),
+            new Mark(MarkKind::Polyline, [[$x, $y + 16], [$x, $y + 43]], stroke: $line, strokeWidth: $stroke),
+            new Mark(MarkKind::Polyline, [[$x - 13, $y + 24], [$x + 13, $y + 24]], stroke: $line, strokeWidth: $stroke),
+            new Mark(MarkKind::Polyline, [[$x - 13, $y + 58], [$x, $y + 43], [$x + 13, $y + 58]], stroke: $line, strokeWidth: $stroke),
         ];
     }
 

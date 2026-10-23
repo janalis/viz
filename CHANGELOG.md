@@ -11,6 +11,7 @@ Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the READ
 - PlantUML svek diagrams draw a link's label from the corner of the box svek writes for it, in whole points with its room, and a note on a link 1 below its label, as measured on PlantUML's output.
 - PlantUML state diagrams draw a composite state laid out as a cluster with its name 4 below its top and its line 1 below the name, and a history's letter at 14 points centred in its circle, as PlantUML draws them.
 - PlantUML svek diagrams take a text, when they measure what they draw, as PlantUML's limit finder is seen to: its line moved down to 1.5 below its baseline; it was a quarter of its line below.
+- PlantUML description diagrams draw an actor's figure half a point below its node's top, as PlantUML draws it.
 - PlantUML class diagrams draw a `circle` as a circle 16 across, its name below it, and a `diamond` as a diamond 24 across, as PlantUML draws them, links stopping at their outlines; they were drawn as classes.
 - PlantUML hexagons are as wide as twice their text, their flat sides as wide as it, 5 above and below it; a person a head above a body rounded as much, its head's radius 0.21 times the square root of the body's area; hexagons, actions, processes and a state's choice measured as the polygons PlantUML draws: all as measured on PlantUML's output.
 - PlantUML `collections` stand at their top left with their copy 4 down and right behind them, rounded, their text 8 in, as PlantUML draws them; the copy stood up and right.

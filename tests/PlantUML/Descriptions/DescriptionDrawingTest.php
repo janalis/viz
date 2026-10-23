@@ -89,6 +89,9 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([133.0, 153.0, 180.0], [$height('hexagon'), $height('action'), $height('person')]);
         // A label's text taken as PlantUML's limit finder takes it: its line 1.5 below its top.
         $this->assertSame(133.0, $height('label'));
+        // An actor's figure half a point below its node's top.
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nactor A\nrectangle R\nA --> R\n@enduml"));
+        $this->assertSame(192.0, $drawing->height / Units::POINT);
     }
 
     public function testACollectionsCopyStandsBehindItDownAndRightAsPlantUmlDrawsIt(): void
