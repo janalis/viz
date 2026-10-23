@@ -87,8 +87,7 @@ final class PlantUmlFrame
 
     /**
      * A diagram laid out by svek, as PlantUML sets one: what it draws moved to stand 6 in from
-     * the top left, as PlantUML's limit finder measures it, 10 more room past it — 11 past a
-     * class diagram's — and 5 more past everything, its captions included, its size rounded
+     * the top left, as PlantUML's limit finder measures it, 10 more room past it, and 5 more past everything, its captions included, its size rounded
      * down to whole points: as measured on PlantUML's output.
      *
      * @param list<Mark> $marks the diagram's, in points
@@ -163,6 +162,7 @@ final class PlantUmlFrame
                 Outline::Box => [1.0, 1.0],
                 Outline::Path => [0.0, 0.0],
                 Outline::Ellipse => [0.0, 1.0],
+                Outline::Block => [1.0, 0.0],
             };
             $xs = \array_column($mark->points, 0);
             $ys = \array_column($mark->points, 1);

@@ -141,7 +141,8 @@ final readonly class ClassBox
 
             return [new Mark(MarkKind::Polygon, [[$cx, $y], [$x + 24, $cy], [$cx, $y + 24], [$x, $cy]], stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Path)];
         }
-        $marks = Shadow::cast([self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))], $this->style->number('Shadowing'));
+        $marks = Shadow::cast([self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))
+            ->with(['outline' => Outline::Block])], $this->style->number('Shadowing'));
         \array_push($marks, ...$this->headerMarks($x, $y));
         $top = $y + $this->header;
         foreach ($this->compartments as [$lines, $separator, $title]) {

@@ -13,4 +13,6 @@ enum Outline
     case Path;
     /** An ellipse. */
     case Ellipse;
+    /** A box, its far sides taken as drawn, as PlantUML's limit finder takes a class. */
+    case Block;
 }
