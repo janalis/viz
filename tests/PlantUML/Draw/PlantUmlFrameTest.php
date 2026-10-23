@@ -34,6 +34,13 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertSame('#ffffff', $drawing->background);
     }
 
+    public function testItsSizeIsInWholePointsRoundedUpAsPlantUmlWritesIt(): void
+    {
+        $drawing = PlantUmlFrame::drawing(PlantUmlDocument::read(PlantUmlSource::parse("@startuml\n@enduml")), [], 100.2, 50.0);
+
+        $this->assertEqualsWithDelta([121 * Units::POINT, 70 * Units::POINT], [$drawing->width, $drawing->height], 1e-9);
+    }
+
     public function testAnEmptyDocumentKeepsItsMargin(): void
     {
         $document = PlantUmlDocument::read(PlantUmlSource::parse("@startuml\nskinparam backgroundColor transparent\n@enduml"));

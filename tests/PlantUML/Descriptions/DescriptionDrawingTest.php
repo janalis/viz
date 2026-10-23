@@ -46,7 +46,7 @@ final class DescriptionDrawingTest extends TestCase
         }
         $box = DescriptionBox::of(new DescriptionElement('R', ['Name'], 'rectangle'), StyleSheet::skin());
         // A line as Java measures the sans-serif font, 36.488 high with its margins, as the jar draws it.
-        $this->assertEqualsWithDelta([(4 * Units::cell(14.0)) + 20, (14 * 603 / 512) + 20], [$box->width, $box->height], 1e-9);
+        $this->assertEqualsWithDelta([(4 * Units::cell(14.0)) + 20, ((14 * 603) / 512) + 20], [$box->width, $box->height], 1e-9);
         // As PlantUML, an interface's node is a circle 16 across, 1 clear all round; its name hangs below.
         $this->assertEqualsWithDelta(
             [18.0, 18.0],

@@ -131,9 +131,9 @@ final class ChenReaderTest extends TestCase
             $ys = \array_column($mark->points, 1);
             $sizes[] = [\round((\max($xs) - \min($xs)) / Units::POINT, precision: 2), \round((\max($ys) - \min($ys)) / Units::POINT, precision: 2)];
         }
-        // A relationship's diamond twice as wide as tall, and the subset circle 25 across.
+        // A relationship's diamond twice as wide as tall, each side to the hundredth, and the subset circle 25 across.
         $this->assertContains([25.0, 25.0], $sizes);
-        $this->assertNotEmpty(\array_filter($sizes, static fn (array $size): bool => \abs($size[0] - (2 * $size[1])) < 0.01 && $size[0] > 25));
+        $this->assertNotEmpty(\array_filter($sizes, static fn (array $size): bool => \abs($size[0] - (2 * $size[1])) < 0.02 && $size[0] > 25));
     }
 
     public function testLinksStopAtTheOutlinesOfOvalsAndDiamonds(): void

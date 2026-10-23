@@ -114,6 +114,21 @@ final class ClassDrawingTest extends TestCase
         ])->hidden($entity, linked: true));
     }
 
+    public function testAStereotypeIsSetAt12PointsAndTheCircleSizedByItsLetterAsPlantUmlSetsThem(): void
+    {
+        $entity = new ClassEntity('A', ['Repository']);
+        $entity->stereotypes = ['service'];
+
+        // As the jar sets it: «service» at 12 points over the name at 14, 10 around them, whatever the styles' font size.
+        $styled = StyleSheet::skin()->with("classDiagram {\n class {\n  stereotype {\n   FontSize 20\n  }\n }\n}");
+        $this->assertEqualsWithDelta(40.621, ClassBox::of($entity, $styled, new ClassPortions([]))->header, 1e-3);
+
+        // The circle a third of its letter's size and 17 across each way, to the nearest point: 10 for a 12-point letter, 11 for the default 17.
+        $plain = new ClassEntity('B', ['B']);
+        $this->assertSame(30.0, ClassBox::of($plain, StyleSheet::skin(), new ClassPortions([]), letter: 12.0)->header);
+        $this->assertSame(32.0, ClassBox::of($plain, StyleSheet::skin(), new ClassPortions([]))->header);
+    }
+
     public function testColourSpecsReadTheirParts(): void
     {
         $this->assertSame('#ffc0cb', ClassColors::back('#pink'));

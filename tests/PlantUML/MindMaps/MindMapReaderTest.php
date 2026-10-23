@@ -160,8 +160,8 @@ final class MindMapReaderTest extends TestCase
 
         $this->assertCount(2, $drawing->marks);
         $xs = \array_column($drawing->marks[0]->points, 0);
-        // Its margins, 30 more, the diagram's 10 and the frame's 10 on each side.
-        $this->assertEqualsWithDelta(((\max($xs) - \min($xs)) / Units::POINT) + 80, $drawing->width / Units::POINT, 0.001);
+        // Its margins, 30 more, the diagram's 10 and the frame's 10 on each side, in whole points rounded up, as PlantUML writes its size.
+        $this->assertEqualsWithDelta(\ceil(((\max($xs) - \min($xs)) / Units::POINT) + 80), $drawing->width / Units::POINT, 0.001);
     }
 
     public function testATransparentArrowIsNotDrawn(): void

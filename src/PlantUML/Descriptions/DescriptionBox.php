@@ -79,11 +79,11 @@ final readonly class DescriptionBox
     public static function of(DescriptionElement $element, StyleSheet $sheet, ?Style $style = null, bool $flushLeft = false): self
     {
         $style ??= $sheet->style(['root', 'element', 'componentDiagram', $element->symbol], $element->stereotypes);
-        $text = PlantUmlText::styled($element->display, $style)->java();
+        $text = PlantUmlText::styled($element->display, $style);
         $stereoStyle = $sheet->style(['root', 'element', 'componentDiagram', $element->symbol, 'stereotype'], $element->stereotypes);
         $stereotypes = [] === $element->stereotypes || !$element->stereotypeShown
             ? null
-            : PlantUmlText::styled(\array_map(static fn (string $label): string => '«'.$label.'»', $element->stereotypes), $stereoStyle)->java();
+            : PlantUmlText::styled(\array_map(static fn (string $label): string => '«'.$label.'»', $element->stereotypes), $stereoStyle);
         [$textWidth, $textHeight] = $text->size();
         [$stereoWidth, $stereoHeight] = null === $stereotypes ? [0.0, 0.0] : $stereotypes->size();
         $labelWidth = \max($textWidth, $stereoWidth);

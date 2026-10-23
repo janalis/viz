@@ -80,7 +80,7 @@ Each scope is laid out as svek lays it out: a composite state no transition cros
 
 ### Description diagrams
 
-Component, deployment and use case diagrams are laid out as svek lays them out, each element a box of its symbol's size — its text within the margins PlantUML's symbol keeps — and containers as clusters drawn with their own symbol, a package's or folder's title in its tab and any other's centred at its top. Their elements' text and their containers' titles are set as Java measures PlantUML's sans-serif font — a line 1.1777 times its size, 0.2109 of it below the baseline, 10 at least — each line on its tallest text, a `<size:…>` around a line drawing it at that size. A name only links use becomes an actor in a diagram with actors or use cases, and an interface otherwise, as PlantUML settles it. They read into the shared use case model when they have actors or use cases, and into the shared graph otherwise.
+Component, deployment and use case diagrams are laid out as svek lays them out, each element a box of its symbol's size — its text within the margins PlantUML's symbol keeps — and containers as clusters drawn with their own symbol, a package's or folder's title in its tab and any other's centred at its top. A container's title stands 2 below its top, as PlantUML sets it. A name only links use becomes an actor in a diagram with actors or use cases, and an interface otherwise, as PlantUML settles it. They read into the shared use case model when they have actors or use cases, and into the shared graph otherwise.
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
@@ -300,7 +300,7 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |
 | JSON, YAML and HCL | 17 | 17 | 17 | 16 | 16 |
-| Chen EER | 7 | 7 | 7 | 6 | 6 |
+| Chen EER | 7 | 7 | 6 | 6 | 6 |
 | EBNF and regex | 10 | 10 | 10 | 10 | 10 |
 | Board and packet | 5 | 5 | 5 | 5 | 5 |
 | Network | 5 | 5 | 5 | 5 | 5 |
@@ -316,4 +316,4 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 
 Shadows, which `skin rose` casts under every element, are drawn as a darkened copy of the shape rather than PlantUML's blurred one; they take the room PlantUML gives them.
 
-Text is set a line apart as PlantUML measures its default font, whichever font draws it. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can still differ from `dot`'s on graphs these fixtures do not cover.
+Text is set a line apart as Java measures PlantUML's default font, its SansSerif, whichever font draws it: a line 1.1777 times its size and 10 at least, its baseline 0.2109 of the size above its foot, each line on its tallest text, a line written in `<size:…>` drawn at that size. A drawing's size is in whole points, rounded up, as PlantUML writes it. A class's stereotype is set at 12 points, and its circle sized by its letter's size, `skinparam circledCharacterFontSize` or `defaultFontSize`, as PlantUML sets them. The Chen EER `display` fixture, laid out left to right, is as tall as its text is wide, which the bundled monospace font makes too wide. Class, state and description diagrams are laid out by the native dot engine, whose ranks and orders can still differ from `dot`'s on graphs these fixtures do not cover.

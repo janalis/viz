@@ -21,11 +21,14 @@ use Janalis\Viz\Text\FontFace;
 final readonly class PlantUmlText
 {
     /**
-     * A line's height for each point of font size, as PlantUML measures its default font:
-     * Java's SansSerif, 11.14 ascent and 2.83 descent at 12 points.
+     * A line's height for each point of font size, as Java measures PlantUML's default font,
+     * its SansSerif: 1.1777 times its size, as PlantUML's goldens set it.
      */
-    private const float LINE = 1.164_062_5;
-    private const float SANS = 603 / 512;
+    private const float LINE = 603 / 512;
+    /** How far below its baseline that font reaches for each point of size. */
+    private const float DESCENT = 0.210_937_5;
+    /** The least height of a line, as PlantUML sets small text: the room below the text. */
+    private const float SHORTEST = 10.0;
 
     private const string TAGS = '/<\/?(?:b|i|u|s|w|strike|sub|sup|color(?::[^>]*)?|back(?::[^>]*)?|size(?::[^>]*)?|font(?:[: ][^>]*)?|plain|code)>|<&[\w-]+>|'.self::SPRITE.'/iu';
 
@@ -44,23 +47,7 @@ final readonly class PlantUmlText
         public string $color = '#000000',
         public array $sprites = [],
         public string $background = '#ffffff',
-        /** A line's height for each point of font size. */
-        public float $leading = self::LINE,
-        /** A line's descent below its baseline for each point of font size; null for a quarter of the line. */
-        public ?float $descent = null,
     ) {}
-
-    /** The text set a line apart as Java measures PlantUML's sans-serif font, 1.1777 times its size, as PlantUML's goldens set it. */
-    public function sans(): self
-    {
-        return clone($this, ['leading' => self::SANS]);
-    }
-
-    /** The text set as Java measures PlantUML's sans-serif font: a line 1.1777 times its size, 0.2109 of it below the baseline. */
-    public function java(): self
-    {
-        return clone($this, ['leading' => self::SANS, 'descent' => 0.210_937_5]);
-    }
 
     /**
      * Text in a style: its font, colour and background, wrapped at its `MaximumWidth` — as
@@ -364,7 +351,7 @@ final readonly class PlantUmlText
     private function lineSize(array $atoms, float $size): array
     {
         $width = 0.0;
-        $height = $this->tall($this->tallestOf($atoms, $size));
+        $height = self::lineHeight($this->tallestOf($atoms, $size));
         foreach ($atoms as [$text, $sprite, $scale]) {
             $width += null === $sprite ? self::shown($text, $size) : $sprite->width * $scale;
             $height = \max($height, null === $sprite ? 0.0 : $sprite->height * $scale);
@@ -375,13 +362,13 @@ final readonly class PlantUmlText
 
     public function line(): float
     {
-        return $this->size * $this->leading;
+        return self::lineHeight($this->size);
     }
 
-    /** A line's height at a font size in points, as PlantUML measures its default font. */
+    /** A line's height at a font size in points, as PlantUML measures its default font: 10 at least. */
     public static function lineHeight(float $size): float
     {
-        return $size * self::LINE;
+        return \max(self::SHORTEST, $size * self::LINE);
     }
 
     /**
@@ -413,7 +400,7 @@ final readonly class PlantUmlText
             };
             $tallest = $this->tallestOf($atoms, $size);
             foreach ($atoms as [$text, $sprite, $scale, $color]) {
-                [$mark, $advance] = null === $sprite ? $this->word($line, $text, $size, $left, $foot - $this->below($tallest)) : $this->picture($sprite, $scale, $color, $left, $foot);
+                [$mark, $advance] = null === $sprite ? $this->word($line, $text, $size, $left, $foot - self::below($tallest)) : $this->picture($sprite, $scale, $color, $left, $foot);
                 \array_push($marks, ...$mark);
                 $left += $advance;
             }
@@ -438,16 +425,10 @@ final readonly class PlantUmlText
         return $tallest ?? $size;
     }
 
-    /** How far below its baseline a line of text at a size reaches. */
-    private function below(float $size): float
+    /** How far below its baseline a line of text at a size reaches, as tall as Java measures it: the font's descent, and the room a short line keeps. */
+    private static function below(float $size): float
     {
-        return null === $this->descent ? 0.25 * $size * $this->leading : $this->tall($size) - (($this->leading - $this->descent) * $size);
-    }
-
-    /** A line of text's height at a size: as Java measures the font, 10 at least, the room below the text. */
-    private function tall(float $size): float
-    {
-        return null === $this->descent ? $size * $this->leading : \max(10.0, $size * $this->leading);
+        return self::lineHeight($size) - ((self::LINE - self::DESCENT) * $size);
     }
 
     /** As wide as the bundled font draws a stretch, each piece at its size. */

@@ -48,7 +48,7 @@ final class ClassDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        return PlantUmlFrame::svek($classes->document, $drawing->paint($placement));
+        return PlantUmlFrame::svek($classes->document, $drawing->paint($placement), trail: 15.0);
     }
 
     /** @return array{float, float} svek's separations, or those `skinparam nodesep` and `ranksep` set */
@@ -78,11 +78,15 @@ final class ClassDrawing
             $linked[$link->from] = true;
             $linked[$link->to] = true;
         }
+        // As PlantUML, the circled character takes its own size, else the document's default, else 17.
+        $document = $this->classes->document;
+        $letter = $document->param('circledCharacterFontSize', $document->param('defaultFontSize'));
+        $letter = \is_numeric($letter) && (float) $letter > 0 ? (float) $letter : 17.0;
         foreach ($this->classes->entities as $entity) {
             if ($portions->hidden($entity, \array_key_exists($entity->id, $linked))) {
                 continue;
             }
-            $box = ClassBox::of($entity, $this->classes->document->styles, $portions, \is_numeric($icons) ? (float) $icons : 10.0);
+            $box = ClassBox::of($entity, $this->classes->document->styles, $portions, \is_numeric($icons) ? (float) $icons : 10.0, $letter);
             $this->boxes[$entity->id] = $box;
             $svek->node($entity->id, $box->width, $box->height, $entity->group);
         }

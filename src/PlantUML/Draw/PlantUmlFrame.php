@@ -23,7 +23,7 @@ final class PlantUmlFrame
     /** Where svek moves what it draws, from the top left, as its limit finder measures it. */
     private const float SVEK_INSET = 6.0;
     /** How much room svek leaves past what it draws. */
-    private const float SVEK_TRAIL = 15.0;
+    private const float SVEK_TRAIL = 14.0;
     /** How much of that room lies past the document's captions, below and to the right of everything. */
     private const float SVEK_OUTER = 5.0;
 
@@ -74,28 +74,30 @@ final class PlantUmlFrame
 
     /**
      * A diagram laid out by svek, as PlantUML sets one: what it draws moved to stand 6 in from
-     * the top left, as PlantUML's limit finder measures it, 10 more room past it, and 5 more
-     * past everything, its captions included.
+     * the top left, as PlantUML's limit finder measures it, 9 more room past it — 10 past a
+     * class diagram's, as measured on PlantUML's output — and 5 more past everything, its
+     * captions included.
      *
      * @param list<Mark> $marks the diagram's, in points
+     * @param float $trail the room past what it draws, the 5 past everything included
      */
-    public static function svek(PlantUmlDocument $document, array $marks): Drawing
+    public static function svek(PlantUmlDocument $document, array $marks, float $trail = self::SVEK_TRAIL): Drawing
     {
         [$minX, $minY, $maxX, $maxY] = self::limits($marks);
 
         return self::framed(
             $document,
             \array_map(static fn (Mark $mark): Mark => self::moved($mark, self::SVEK_INSET - $minX, self::SVEK_INSET - $minY), $marks),
-            $maxX - $minX + self::SVEK_INSET + self::SVEK_TRAIL - self::SVEK_OUTER,
-            $maxY - $minY + self::SVEK_INSET + self::SVEK_TRAIL - self::SVEK_OUTER,
+            $maxX - $minX + self::SVEK_INSET + $trail - self::SVEK_OUTER,
+            $maxY - $minY + self::SVEK_INSET + $trail - self::SVEK_OUTER,
             [0.0, self::SVEK_OUTER, self::SVEK_OUTER, 0.0],
         );
     }
 
     /**
      * An image svek lays out within a diagram, as its result measures itself: what it draws
-     * moved 6 in from its top left, as PlantUML's limit finder measures it, and 15 wider and
-     * taller than that.
+     * moved 6 in from its top left, as PlantUML's limit finder measures it, and 14 wider and
+     * taller than that, as measured on PlantUML's output.
      *
      * @param list<Mark> $marks
      * @return array{list<Mark>, float, float} the marks moved, and the image's size
@@ -184,8 +186,9 @@ final class PlantUmlFrame
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
 
         return new Drawing(
-            \max(1.0, ($full + $left + $right) * $scale),
-            \max(1.0, ($y + $bottom) * $scale),
+            // As PlantUML writes its image's size, in whole points, rounded up.
+            \max(1.0, \ceil(($full + $left + $right) * $document->scaleFactor()) * Units::POINT),
+            \max(1.0, \ceil(($y + $bottom) * $document->scaleFactor()) * Units::POINT),
             \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $placed),
             'none' === $background ? null : $background,
         );

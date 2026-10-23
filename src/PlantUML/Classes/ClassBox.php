@@ -65,11 +65,17 @@ final readonly class ClassBox
         public float $width,
         public float $height,
         public float $header,
+        /** The circled character's font size. */
+        private float $letter = 17.0,
     ) {}
 
-    /** @param float $iconSize the visibility icons' size, `skinparam classAttributeIconSize`; 0 writes visibility as text */
-    public static function of(ClassEntity $entity, StyleSheet $sheet, ClassPortions $portions, float $iconSize = 10.0): self
+    /**
+     * @param float $iconSize the visibility icons' size, `skinparam classAttributeIconSize`; 0 writes visibility as text
+     * @param float $letter the circled character's font size, `skinparam circledCharacterFontSize`, which sets its circle's radius: a third of it and 17, to the nearest point, as measured on PlantUML's output
+     */
+    public static function of(ClassEntity $entity, StyleSheet $sheet, ClassPortions $portions, float $iconSize = 10.0, float $letter = 17.0): self
     {
+        $diameter = 2 * \round(($letter + 17) / 3);
         $style = $sheet->style(['root', 'element', 'classDiagram', 'class'], $entity->stereotypes);
         $italic = \in_array($entity->type, ['abstract', 'interface'], strict: true);
         $headerStyle = $sheet->style(['root', 'element', 'classDiagram', 'class', 'header'], $entity->stereotypes);
@@ -79,7 +85,7 @@ final readonly class ClassBox
             ? null
             : PlantUmlText::styled(
                 \array_map(static fn (string $label): string => '«'.$label.'»', $labels),
-                $sheet->style(['root', 'element', 'classDiagram', 'class', 'stereotype'], $entity->stereotypes),
+                self::stereotyped($sheet->style(['root', 'element', 'classDiagram', 'class', 'stereotype'], $entity->stereotypes)),
                 FontFace::Italic,
             );
         $generic = null === $entity->generic ? null : PlantUmlText::styled([$entity->generic], $sheet->style(['root', 'element', 'classDiagram', 'class', 'stereotype']), FontFace::Italic);
@@ -91,7 +97,7 @@ final readonly class ClassBox
                 $visibility = $visibility || \array_key_exists(\ltrim($member)[0] ?? '', self::ICONS);
             }
         }
-        [$headerWidth, $header] = self::header($name, $stereotypes, $generic, $circle ? 2 * self::RADIUS : 0.0);
+        [$headerWidth, $header] = self::header($name, $stereotypes, $generic, $circle ? $diameter : 0.0);
         $width = $headerWidth;
         $height = $header;
         $line = $name->line();
@@ -102,7 +108,7 @@ final readonly class ClassBox
             $height += 8 + (\count($lines) * $line);
         }
 
-        return new self($entity, $style, $sheet, $name, $stereotypes, $generic, $circle ? 2 * self::RADIUS : 0.0, $compartments, $iconSize > 0 && $visibility, $width, $height, $header);
+        return new self($entity, $style, $sheet, $name, $stereotypes, $generic, $circle ? $diameter : 0.0, $compartments, $iconSize > 0 && $visibility, $width, $height, $header, $letter);
     }
 
     /** @return list<Mark> the box with its top left at a point */
@@ -134,6 +140,12 @@ final readonly class ClassBox
         return $marks;
     }
 
+    /** A class's stereotype style at 12 points, as PlantUML sets it whatever its styles' font size. */
+    private static function stereotyped(Style $style): Style
+    {
+        return new Style(['FontSize' => '12'] + $style->values, $style->sprites);
+    }
+
     /** @return array{float, float} the header's width and height, as PlantUML's header layout gives them */
     private static function header(PlantUmlText $name, ?PlantUmlText $stereotypes, ?PlantUmlText $generic, float $circle): array
     {
@@ -160,7 +172,7 @@ final readonly class ClassBox
         $h1 = ($spare - $h2) / 2;
         $marks = [];
         if ($this->circle > 0) {
-            \array_push($marks, ...$this->spot($x + $h1 + 4 + self::RADIUS, $y + ($this->header / 2)));
+            \array_push($marks, ...$this->spot($x + $h1 + 4 + ($this->circle / 2), $y + ($this->header / 2)));
         }
         $textTop = $y + (($this->header - $stereoHeight - $nameHeight) / 2);
         $left = $x + $circleWidth + $h1 + $h2;
@@ -186,9 +198,9 @@ final readonly class ClassBox
         $circle = [];
         for ($step = 0; $step < 24; ++$step) {
             $angle = (2 * \M_PI * $step) / 24;
-            $circle[] = [$x + (self::RADIUS * \cos($angle)), $y + (self::RADIUS * \sin($angle))];
+            $circle[] = [$x + (($this->circle / 2) * \cos($angle)), $y + (($this->circle / 2) * \sin($angle))];
         }
-        $font = 17.0;
+        $font = $this->letter;
 
         return [
             new Mark(MarkKind::Polygon, $circle, stroke: $style->color('LineColor', '#181818'), fill: $style->color('BackGroundColor', '#add1b2'), strokeWidth: 1.0),

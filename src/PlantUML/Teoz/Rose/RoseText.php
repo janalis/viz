@@ -30,13 +30,13 @@ final readonly class RoseText
      */
     public static function of(array $lines, Style $style, array $padding, ?string $number = null): self
     {
-        $text = PlantUmlText::styled($lines, $style)->sans();
+        $text = PlantUmlText::styled($lines, $style);
 
         return new self(
             $text,
             \strtolower($style->value('HorizontalAlignment', 'left')),
             $padding,
-            null === $number ? null : new PlantUmlText([$number], $text->size, $text->face, $text->color)->sans(),
+            null === $number ? null : new PlantUmlText([$number], $text->size, $text->face, $text->color),
         );
     }
 
