@@ -234,6 +234,14 @@ final class ActivityDrawingTest extends TestCase
         $this->assertContains('over', $shown);
     }
 
+    public function testSwimlanesReachPastTheirLastDividerByTheirTitlesDescent(): void
+    {
+        $width = static fn (int $size): float => self::draw("<style>\nswimlane {\n FontSize {$size}\n}\n</style>\n|A|\nstart\n:a long action here;\n|B|\n:b;")->width / Units::POINT;
+
+        // As the jar sizes them: three quarters of the titles' descent further at each size.
+        $this->assertSame([220.0, 221.0, 223.0, 224.0], [$width(10), $width(18), $width(30), $width(40)]);
+    }
+
     public function testBigSwimlaneTitlesReachAboveTheSwimlanesAsPlantUmlsLimitsTakeThem(): void
     {
         $top = static function (int $size): float {

@@ -27,6 +27,8 @@ final readonly class SwimlaneDrawing
     /** @var array<string, TextBlock> */
     private array $titles;
     private float $min;
+    /** Whether `skinparam swimlaneWidth` sets the swimlanes' width. */
+    private bool $fixed;
     private Style $style;
 
     /**
@@ -58,6 +60,7 @@ final readonly class SwimlaneDrawing
             }
         }
         $this->min = $min;
+        $this->fixed = '' !== \trim($width);
     }
 
     /**
@@ -92,8 +95,9 @@ final readonly class SwimlaneDrawing
         [$offsets, $dividers] = $this->offsets();
         $back = $this->style->color('BackGroundColor', 'transparent');
         $last = $offsets[''];
-        // As PlantUML, the titles' background is drawn even when transparent, and takes its room.
-        $shapes = [self::rectangle(self::HALF, 0.0, $last - (2 * self::HALF) - 1, $titlesHeight, $back)];
+        // As PlantUML, the titles' background is drawn even when transparent, and takes its room: past the last divider by three quarters of the titles' descent, unless the swimlanes' width is set, as measured on its output.
+        $past = $this->fixed ? 0.0 : 0.75 * 0.210_937_5 * $this->style->fontSize();
+        $shapes = [self::rectangle(self::HALF, 0.0, $last - (2 * self::HALF) - 1 + $past, $titlesHeight, $back)];
         $lines = [];
         $pen = Pen::of($this->style, '#000000');
         foreach ($this->names as $index => $name) {
@@ -103,7 +107,8 @@ final readonly class SwimlaneDrawing
             if (null !== $color) {
                 $shapes[] = self::rectangle($x - $x2, 0.0, $this->actual($name) + $x2 + $dividers[$index + 1][0], $height, $color);
             }
-            $lines[] = Shape::empty($x - $x1 - $x2, 0.0, $x1 + $x2, 1.0);
+            // The room past the last divider reaches as far past it as the titles' background does.
+            $lines[] = Shape::empty($x - $x1 - $x2, 0.0, $x1 + $x2 + ('' === $name ? $past : 0.0), 1.0);
             $lines[] = Shape::of(ShapeKind::Line, [$pen->line($x - $x2, 0.0, $x - $x2, $height)]);
         }
         $canvas = Canvas::create(new LaneView($offsets, measuring: false))->moved(0.0, $down);
