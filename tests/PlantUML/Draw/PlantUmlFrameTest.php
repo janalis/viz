@@ -10,6 +10,8 @@ use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlSource;
+use Janalis\Viz\PlantUML\PlantUmlPipeline;
+use Janalis\Viz\Render\Work;
 use PHPUnit\Framework\TestCase;
 
 final class PlantUmlFrameTest extends TestCase
@@ -41,12 +43,24 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertEqualsWithDelta([121 * Units::POINT, 70 * Units::POINT], [$drawing->width, $drawing->height], 1e-9);
     }
 
-    public function testAScaledSizeIsRoundedDownAsPlantUmlWritesIt(): void
+    public function testAScaledSizeIsItsWholeSizeScaledAndRoundedDownAsPlantUmlWritesIt(): void
     {
-        // 120.2 by 70 at 100 dpi: 125.21 by 72.92, rounded down.
+        // 120.2 by 70, 121 by 70 in whole points, at 100 dpi: 126.04 by 72.92, rounded down.
         $drawing = PlantUmlFrame::drawing(PlantUmlDocument::read(PlantUmlSource::parse("@startuml\nskinparam dpi 100\n@enduml")), [], 100.2, 50.0);
 
-        $this->assertEqualsWithDelta([125 * Units::POINT, 72 * Units::POINT], [$drawing->width, $drawing->height], 1e-9);
+        $this->assertEqualsWithDelta([126 * Units::POINT, 72 * Units::POINT], [$drawing->width, $drawing->height], 1e-9);
+    }
+
+    public function testAScaledSvekDiagramIsItsSizeRoundedDownScaledAndRoundedDownAsPlantUmlWritesIt(): void
+    {
+        $height = static function (string $scale): float {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nscale {$scale}\nclass Order {\n  +id : int\n}\nclass Item\nOrder --> Item\n@enduml"));
+
+            return $drawing->height / Units::POINT;
+        };
+
+        // As the jar writes them: 194 unscaled, then 242.5, 291 and 155.2, rounded down.
+        $this->assertSame([194.0, 242.0, 291.0, 155.0], [$height('1'), $height('1.25'), $height('1.5'), $height('0.8')]);
     }
 
     public function testAnEmptyDocumentKeepsItsMargin(): void

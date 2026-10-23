@@ -176,7 +176,7 @@ final class PlantUmlFrame
     /**
      * @param list<Mark> $marks
      * @param array{float, float, float, float} $margins top, right, bottom and left, around everything, unless the document's style sets them
-     * @param ?\Closure(float): float $whole how its size is rounded to whole points: up by default, as PlantUML writes it
+     * @param ?\Closure(float): float $whole how its size unscaled is rounded to whole points: up by default, as PlantUML writes it
      */
     private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, array $margins, ?\Closure $whole = null): Drawing
     {
@@ -208,13 +208,15 @@ final class PlantUmlFrame
             $y += $blockHeight;
         }
         $scale = Units::POINT * $document->scaleFactor();
-        $whole ??= 1.0 === $document->scaleFactor() ? \ceil(...) : \floor(...);
+        $whole ??= \ceil(...);
+        $factor = $document->scaleFactor();
+        // As PlantUML writes its image's size: in whole points as it is unscaled, then scaled and rounded down.
+        $sized = static fn (float $size): float => \max(1.0, \floor(($whole($size) * $factor) + 1e-9) * Units::POINT);
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
 
         return new Drawing(
-            // As PlantUML writes its image's size, in whole points, rounded up — down, where it is seen to, and when it scales it.
-            \max(1.0, $whole(($full + $left + $right) * $document->scaleFactor()) * Units::POINT),
-            \max(1.0, $whole(($y + $bottom) * $document->scaleFactor()) * Units::POINT),
+            $sized($full + $left + $right),
+            $sized($y + $bottom),
             \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $placed),
             'none' === $background ? null : $background,
         );
