@@ -520,6 +520,28 @@ final class DotDrawingTest extends TestCase
         $this->assertCount(2, $straight->points, 'right above its head, an edge runs straight down');
     }
 
+    public function testAClustersLabelStandsInTheMiddleOfItsBand(): void
+    {
+        $tops = [];
+        foreach (['t', 'b'] as $where) {
+            $drawing = self::draw(
+                'digraph { node [shape=box, label=""]; subgraph cluster_x { label=<<TABLE FIXEDSIZE="TRUE" WIDTH="40" HEIGHT="20" BORDER="1"><TR><TD></TD></TR></TABLE>>; labelloc='
+                .$where
+                .'; a -> b } }',
+            );
+            [$cluster, $table] = self::kinds($drawing, MarkKind::Polygon);
+            $ys = static fn (Mark $mark): array => [\min(\array_column($mark->points, 1)) / Units::POINT, \max(\array_column($mark->points, 1)) / Units::POINT];
+            [
+                [$top,      $bottom],
+                [$labelTop, $labelBottom],
+            ] = [$ys($cluster), $ys($table)];
+            $tops[] = 't' === $where ? $labelTop - $top : $bottom - $labelBottom;
+        }
+
+        // As `dot` sets it: 4 in from the cluster's side, its border drawn half a point inside its box.
+        $this->assertEqualsWithDelta([4.5, 4.5], $tops, 1e-6);
+    }
+
     public function testLoopsStandAsDotDrawsThem(): void
     {
         $drawing = self::draw('digraph { a [shape=box]; a -> a; a -> a; a -> a; }');

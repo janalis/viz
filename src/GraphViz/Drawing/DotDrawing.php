@@ -183,9 +183,10 @@ final class DotDrawing
                 'r' => $box->x1 - \Janalis\Viz\Layout\Dot\DotPosition::MARGIN - ($width / 2),
                 default => ($box->x0 + $box->x1) / 2,
             };
+            // As `dot` is seen to set it: across, 8 in from the side it is justified to; down, in the middle of its band, 4 in.
             $y = 'b' === \strtolower($cluster->attribute('labelloc'))
-                ? $box->y1 - \Janalis\Viz\Layout\Dot\DotPosition::MARGIN - ($height / 2)
-                : $box->y0 + \Janalis\Viz\Layout\Dot\DotPosition::MARGIN + ($height / 2);
+                ? $box->y1 - (\Janalis\Viz\Layout\Dot\DotPosition::MARGIN / 2) - ($height / 2)
+                : $box->y0 + (\Janalis\Viz\Layout\Dot\DotPosition::MARGIN / 2) + ($height / 2);
             $this->text($text, $x, $y);
         }
     }
