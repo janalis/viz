@@ -15,8 +15,9 @@ use Janalis\Viz\PlantUML\Draw\Shadow;
 /**
  * A board drawn as PlantUML's `BoardDiagram` draws it: each activity's cards in a grid of
  * 170 by 90 — its column across, its stage down — the activities side by side, each card a
- * grey post-it 150 by 70, its text 3 in, shadowed; dashed lines across the board between the
- * stages, 10 above each; 10 more room past what it draws.
+ * grey post-it 150 by 70, its text 3 in, its shadow 2 down and right; dashed lines across the
+ * board between the stages, 10 above each; 10 more room past what it draws, its size rounded
+ * down to whole points, as measured on PlantUML's output.
  */
 final class BoardDrawing
 {
@@ -44,14 +45,15 @@ final class BoardDrawing
             $y = ($stage * self::STAGE) - 10;
             $marks[] = new Mark(MarkKind::Polyline, [[0.0, $y], [$left, $y]], stroke: '#000000', dashed: true, strokeWidth: 0.5, dashes: [5.0, 5.0]);
         }
-        [$width, $height] = [0.0, 0.0];
+        // As PlantUML's limit finder takes the lines between stages, 2 past their end, as measured on its output.
+        [$width, $height] = [$stages > 0 ? $left + 2 : 0.0, 0.0];
         foreach ($marks as $mark) {
             foreach ($mark->points as [$x, $y]) {
                 [$width, $height] = [\max($width, $x), \max($height, $y)];
             }
         }
 
-        return PlantUmlFrame::drawing($diagram->document, $marks, $width + 10, $height + 10);
+        return PlantUmlFrame::roundedDown($diagram->document, $marks, $width + 10, $height + 10);
     }
 
     /** @return list<Mark> PlantUML's `CardBox`, its top left at a point */
@@ -60,6 +62,6 @@ final class BoardDrawing
         $box = ClassBox::rectangle($x, $y, self::CARD_WIDTH, self::CARD_HEIGHT, '#000000', '#c0c0c0', 1.0, 0.0);
         $label = new PlantUmlText([$text], 14.0);
 
-        return [...Shadow::cast([$box], 1.0), ...$label->marks($x + 3, $y + 3, $label->size()[0], 'left')];
+        return [...Shadow::cast([$box], 2.0), ...$label->marks($x + 3, $y + 3, $label->size()[0], 'left')];
     }
 }

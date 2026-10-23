@@ -34,6 +34,16 @@ final class PlantUmlFrame
     }
 
     /**
+     * A diagram as {@see drawing()} frames it, its size rounded down to whole points, as PlantUML is seen to round a board's.
+     *
+     * @param list<Mark> $marks the diagram's, in points, its top left at the origin
+     */
+    public static function roundedDown(PlantUmlDocument $document, array $marks, float $width, float $height): Drawing
+    {
+        return self::framed($document, $marks, $width, $height, [self::MARGIN, self::MARGIN, self::MARGIN, self::MARGIN], \floor(...));
+    }
+
+    /**
      * A diagram PlantUML sets with no margin of its own, as a network diagram, its captions
      * still around it.
      *
@@ -152,8 +162,9 @@ final class PlantUmlFrame
     /**
      * @param list<Mark> $marks
      * @param array{float, float, float, float} $margins top, right, bottom and left, around everything, unless the document's style sets them
+     * @param ?\Closure(float): float $whole how its size is rounded to whole points: up by default, as PlantUML writes it
      */
-    private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, array $margins): Drawing
+    private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, array $margins, ?\Closure $whole = null): Drawing
     {
         // A margin the document's style sets, as a theme's `root` does, stands for the diagram's own.
         $style = $document->styles->style(['root', 'document']);
@@ -183,12 +194,13 @@ final class PlantUmlFrame
             $y += $blockHeight;
         }
         $scale = Units::POINT * $document->scaleFactor();
+        $whole ??= \ceil(...);
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
 
         return new Drawing(
-            // As PlantUML writes its image's size, in whole points, rounded up.
-            \max(1.0, \ceil(($full + $left + $right) * $document->scaleFactor()) * Units::POINT),
-            \max(1.0, \ceil(($y + $bottom) * $document->scaleFactor()) * Units::POINT),
+            // As PlantUML writes its image's size, in whole points, rounded up — down, where it is seen to.
+            \max(1.0, $whole(($full + $left + $right) * $document->scaleFactor()) * Units::POINT),
+            \max(1.0, $whole(($y + $bottom) * $document->scaleFactor()) * Units::POINT),
             \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $placed),
             'none' === $background ? null : $background,
         );

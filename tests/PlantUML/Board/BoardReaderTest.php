@@ -48,6 +48,20 @@ final class BoardReaderTest extends TestCase
         $this->assertEqualsWithDelta(3 * 170, ($lines[0]->points[1][0] - $lines[0]->points[0][0]) / Units::POINT, 0.001);
     }
 
+    public function testTheBoardIsSizedAsPlantUmlSizesIt(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startboard\n".$lines."\n@endboard"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sizes them: a card's shadow room 3 past it, the lines between stages 2 past their end, rounded down.
+        $this->assertSame([183.0, 103.0], $size('A1'));
+        $this->assertSame([202.0, 193.0], $size("A1\n+U"));
+        $this->assertSame([183.0, 135.0], $size("<style>\ntitle {\n FontSize 10\n}\n</style>\ntitle T\nA1"));
+    }
+
     public function testTheModelJoinsEachCardToTheOneAboveIt(): void
     {
         $graph = self::read("A\n+B\n++C")->model();
