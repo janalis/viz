@@ -8,9 +8,9 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
-use Janalis\Viz\Text\DisplayWidth;
 
 /**
  * An object or an array as PlantUML's `TextBlockJson` draws it: a row for each member, its
@@ -162,7 +162,7 @@ final class JsonTable
     private function cell(array $lines, Style $style): array
     {
         $size = $style->fontSize();
-        $width = \array_reduce($lines, static fn (float $widest, string $line): float => \max($widest, DisplayWidth::of($line) * Units::cell($size)), initial: 0.0);
+        $width = \array_reduce($lines, static fn (float $widest, string $line): float => \max($widest, PlantUmlMetrics::width($line, $size, $style->face())), initial: 0.0);
 
         return [$width + 10, (\count($lines) * $size * self::LINE) + 4];
     }
@@ -191,11 +191,12 @@ final class JsonTable
             $foot = $y + 2 + (($index + 1) * $line);
             $marks[] = new Mark(
                 MarkKind::Text,
-                [[$x + 5 + ((DisplayWidth::of($text) * Units::cell($size)) / 2), $foot - ($size * self::DESCENT)]],
+                [[$x + 5 + (PlantUmlMetrics::width($text, $size, $style->face()) / 2), $foot - ($size * self::DESCENT)]],
                 $text,
                 stroke: $color,
                 font: $style->face(),
                 fontScale: Units::fontScale($size) / Units::POINT,
+                slots: PlantUmlMetrics::slots($text, $size, $style->face()),
             );
         }
 

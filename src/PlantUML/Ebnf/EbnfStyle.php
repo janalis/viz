@@ -8,10 +8,10 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
-use Janalis\Viz\Text\DisplayWidth;
 use Janalis\Viz\Text\FontFace;
 
 /**
@@ -40,12 +40,12 @@ final readonly class EbnfStyle
         $this->color = $this->style->color('FontColor', '#000000');
     }
 
-    /** @return array{float, float} a text's size at a font size, the style's by default */
-    public function measure(string $text, ?float $size = null): array
+    /** @return array{float, float} a text's size at a font size, the style's by default, as PlantUML measures it in its face */
+    public function measure(string $text, ?float $size = null, FontFace $face = FontFace::Regular): array
     {
         $size ??= $this->size;
 
-        return [DisplayWidth::of($text) * Units::cell($size), PlantUmlText::lineHeight($size)];
+        return [PlantUmlMetrics::width($text, $size, $face), PlantUmlText::lineHeight($size)];
     }
 
     public function descent(?float $size = null): float
@@ -60,9 +60,17 @@ final readonly class EbnfStyle
         if ('' === \trim($text) || 'none' === $this->color) {
             return [];
         }
-        [$width, $height] = $this->measure($text, $size);
+        [$width, $height] = $this->measure($text, $size, $face);
 
-        return [new Mark(MarkKind::Text, [[$x + ($width / 2), $top + $height - $this->descent($size)]], $text, stroke: $this->color, font: $face, fontScale: Units::fontScale($size) / Units::POINT)];
+        return [new Mark(
+            MarkKind::Text,
+            [[$x + ($width / 2), $top + $height - $this->descent($size)]],
+            $text,
+            stroke: $this->color,
+            font: $face,
+            fontScale: Units::fontScale($size) / Units::POINT,
+            slots: PlantUmlMetrics::slots($text, $size, $face),
+        )];
     }
 
     /**

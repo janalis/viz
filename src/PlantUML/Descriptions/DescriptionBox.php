@@ -56,9 +56,6 @@ final readonly class DescriptionBox
      */
     private const array ICONS = ['actor' => [28.0, 60.0], 'boundary' => [49.0, 32.0], 'control' => [32.0, 32.0], 'entity' => [32.0, 32.0], 'interface' => [18.0, 18.0], 'circle' => [18.0, 18.0]];
 
-    /** How wide PlantUML's default font sets a text, for the bundled font's width. */
-    private const float PLANTUML_WIDTH = 0.8;
-
     /** The room a folder keeps for its title, which an element does not show. */
     private const array FOLDER_TITLE = [40.0, 15.0];
 
@@ -98,7 +95,7 @@ final readonly class DescriptionBox
         $labelWidth = \max($textWidth, $stereoWidth);
         $labelHeight = $textHeight + $stereoHeight;
         [$width, $height] = match (true) {
-            'usecase' === $element->symbol => [($labelWidth * \M_SQRT2) + 20, self::useCaseHeight($labelWidth, $labelHeight)],
+            'usecase' === $element->symbol => self::inEllipse($labelWidth, $labelHeight),
             // As PlantUML: its flat sides as wide as its text, its points half as far again, 5 above and below.
             'hexagon' === $element->symbol => [2 * $labelWidth, $labelHeight + 10],
             'person' === $element->symbol => self::person($labelWidth + 20, $labelHeight + 20),
@@ -191,21 +188,17 @@ final readonly class DescriptionBox
     }
 
     /**
-     * A use case's height, as PlantUML fits its ellipse: the smallest around its text, as flat
-     * as the text but between a fifth and four fifths as tall as wide, 6 bigger. A text no
-     * wider than five times its height gives the height √2 times its own; a wider one, a
-     * height that grows with its width — taken as PlantUML's font would set it, 0.8 of the
-     * bundled font's, as it measures on PlantUML's own drawings.
+     * The ellipse PlantUML's `TextBlockInEllipse` fits around a text: the smallest around it,
+     * as flat as the text but between a fifth and four fifths as tall as wide, 6 bigger.
+     *
+     * @return array{float, float}
      */
-    private static function useCaseHeight(float $width, float $height): float
+    public static function inEllipse(float $width, float $height): array
     {
-        $width *= self::PLANTUML_WIDTH;
-        if (0.0 === $width) {
-            return 6.0;
-        }
-        $aspect = \min(0.8, \max(0.2, $height / $width));
+        $aspect = $width > 0 ? \min(0.8, \max(0.2, $height / $width)) : 0.8;
+        $half = \hypot($width / 2, $height / (2 * $aspect));
 
-        return ($aspect * \hypot($width, $height / $aspect)) + 6;
+        return [(2 * $half) + 6, (2 * $half * $aspect) + 6];
     }
 
     /** @return list<Mark> the stereotypes above the text, both centred within a width */

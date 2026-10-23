@@ -6,7 +6,7 @@ namespace Janalis\Viz\Tests\PlantUML\Draw;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
-use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Draw\PlantUmlTable;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\Text\FontFace;
@@ -35,7 +35,7 @@ final class PlantUmlTableTest extends TestCase
         $this->assertSame('#333333', $lines[\count($lines) - 1]->stroke, 'or the text does');
         $this->assertSame('#123456', $words[7]->stroke);
         $this->assertCount(3 + 3 + 2 + 2, $lines, 'a line above and below each row, and beside each column');
-        $this->assertEqualsWithDelta(11 * Units::cell(10.0), $width, 1e-9, 'its widest column, " longer ", and the next');
+        $this->assertEqualsWithDelta(PlantUmlMetrics::width(' longer ', 10.0) + PlantUmlMetrics::width(' x ', 10.0), $width, 1e-9, 'its widest column, " longer ", and the next, " x "');
         $this->assertEqualsWithDelta((6 * PlantUmlText::lineHeight(10.0)) + 8.0, $height, 1e-9, '2 above and below each table');
     }
 }

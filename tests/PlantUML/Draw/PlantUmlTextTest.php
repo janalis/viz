@@ -7,6 +7,7 @@ namespace Janalis\Viz\Tests\PlantUML\Draw;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\Text\FontFace;
@@ -24,7 +25,8 @@ final class PlantUmlTextTest extends TestCase
         $this->assertSame(['bold', 'italic', 'both', 'plain'], \array_map(static fn (Mark $mark): string => $mark->text, $marks));
         $this->assertSame([FontFace::Bold, FontFace::Italic, FontFace::Bold, FontFace::Regular], \array_map(static fn (Mark $mark): FontFace => $mark->font, $marks));
         $this->assertSame('#ff0000', $marks[0]->stroke);
-        $this->assertEqualsWithDelta([6 * Units::cell(12.0), 5 * PlantUmlText::lineHeight(12.0)], $text->size(), 1e-9);
+        // As wide as its widest line in PlantUML's font, each in its face.
+        $this->assertEqualsWithDelta([PlantUmlMetrics::width('plain', 12.0), 5 * PlantUmlText::lineHeight(12.0)], $text->size(), 1e-9);
     }
 
     public function testTextWrapsAtItsStylesMaximumWidthAsPlantUmlWraps(): void
@@ -87,7 +89,7 @@ final class PlantUmlTextTest extends TestCase
     public function testLinesSetLeftCentredOrRight(): void
     {
         $text = new PlantUmlText(['ab'], 12.0, FontFace::BoldItalic);
-        $width = 2 * Units::cell(12.0);
+        $width = PlantUmlMetrics::width('ab', 12.0, FontFace::BoldItalic);
 
         $this->assertEqualsWithDelta($width / 2, $text->marks(0.0, 0.0, 100.0, 'left')[0]->points[0][0], 1e-9);
         $this->assertEqualsWithDelta(50.0, $text->marks(0.0, 0.0, 100.0)[0]->points[0][0], 1e-9);
@@ -104,7 +106,7 @@ final class PlantUmlTextTest extends TestCase
         $note = new NoteBox(new PlantUmlText(['hello'], 12.0), new Style(), '#ffffff');
 
         [$width, $height] = $note->size();
-        $this->assertEqualsWithDelta([(5 * Units::cell(12.0)) + 22, PlantUmlText::lineHeight(12.0) + 10], [$width, $height], 1e-9);
+        $this->assertEqualsWithDelta([PlantUmlMetrics::width('hello', 12.0) + 22, PlantUmlText::lineHeight(12.0) + 10], [$width, $height], 1e-9);
         $marks = $note->marks(0.0, 0.0);
         $this->assertCount(5, $marks[0]->points);
         $this->assertSame('#ffffff', $marks[0]->fill);

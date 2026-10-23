@@ -151,7 +151,7 @@ final class PlantUmlFrame
     {
         if (MarkKind::Text === $mark->kind) {
             [$x, $y] = $mark->points[0];
-            $half = (DisplayWidth::of($mark->text) * $mark->fontScale) / 2;
+            $half = (null === $mark->slots ? DisplayWidth::of($mark->text) * $mark->fontScale : \array_sum($mark->slots)) / 2;
             // As PlantUML's limit finder takes a text, as measured on its output: its line moved 1.5 down from its baseline's top.
             $size = $mark->fontScale * Units::POINT * 12;
 

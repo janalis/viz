@@ -161,6 +161,7 @@ final readonly class PdfBackend
             return;
         }
         $size = 1.6 * $mark->fontScale;
+        $centres = $text === $mark->text ? Mark::centres($mark) : null;
         $runs = $this->runs($fonts, $text, $mark);
         $width = \array_sum(\array_map(static fn (array $run): float => $run[0]->width($run[1]) * $size, $runs));
         $radians = \deg2rad($mark->angle);
@@ -172,7 +173,16 @@ final readonly class PdfBackend
         $canvas->save();
         $canvas->alpha($alpha * $mark->opacity, stroke: 1.0);
         $canvas->fillColor($rgb);
+        $index = 0;
         foreach ($runs as [$font, $codepoints]) {
+            if (null !== $centres) {
+                // Each character in the middle of its own room along the line.
+                foreach ($codepoints as $codepoint) {
+                    $along = $centres[$index++] - (($font->width([$codepoint]) * $size) / 2);
+                    $canvas->text($font, [$codepoint], [$cos * $size, $sin * $size, $sin * $size, -$cos * $size, $mark->points[0][0] + ($cos * $along), $mark->points[0][1] + ($sin * $along)]);
+                }
+                continue;
+            }
             $canvas->text($font, $codepoints, [$cos * $size, $sin * $size, $sin * $size, -$cos * $size, $x, $y]);
             $advance = $font->width($codepoints) * $size;
             $x += $cos * $advance;

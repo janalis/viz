@@ -148,6 +148,12 @@ final readonly class PngBackend
             return;
         }
         $size = \max(0.1, 1.2 * $scale * $mark->fontScale);
+        $centres = Mark::centres($mark);
+        if (null !== $centres) {
+            $this->placed($canvas, $mark, $centres, $size, $scale, $color, $font);
+
+            return;
+        }
         $segments = [];
         $width = 0;
         foreach ($this->segments($mark->text, $font) as [$text, $path]) {
@@ -166,6 +172,27 @@ final readonly class PngBackend
             \imagettftext($canvas, $size, angle: -$mark->angle, x: (int) \round($x), y: (int) \round($y), color: $color, font_filename: $path, text: $text);
             $x += $cos * $advance;
             $y += $sin * $advance;
+        }
+    }
+
+    /**
+     * A text's characters each drawn in the middle of its own room along the line.
+     *
+     * @param list<float> $centres
+     */
+    private function placed(\GdImage $canvas, Mark $mark, array $centres, float $size, float $scale, int $color, string $font): void
+    {
+        $radians = \deg2rad($mark->angle);
+        [$cos, $sin] = [\cos($radians), \sin($radians)];
+        foreach (\mb_str_split($mark->text) as $index => $character) {
+            foreach ($this->segments($character, $font) as [$text, $path]) {
+                /** @var false|array{int, int, int, int, int, int, int, int} $box GD returns four integer coordinate pairs */
+                $box = \imagettfbbox($size, angle: 0.0, font_filename: $path, string: $text);
+                $along = ($centres[$index] * $scale) - ((false === $box ? 0 : $box[2] - $box[0]) / 2);
+                $x = ($mark->points[0][0] * $scale) + ($cos * $along);
+                $y = ($mark->points[0][1] * $scale) + ($sin * $along);
+                \imagettftext($canvas, $size, angle: -$mark->angle, x: (int) \round($x), y: (int) \round($y), color: $color, font_filename: $path, text: $text);
+            }
         }
     }
 

@@ -12,6 +12,7 @@ use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassEntity;
 use Janalis\Viz\PlantUML\Classes\ClassPortions;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
@@ -26,7 +27,7 @@ final class ClassDrawingTest extends TestCase
 
         // As PlantUML: a 32-point header around the circled character, two 8-point compartments.
         $this->assertSame([32.0, 48.0], [$box->header, $box->height]);
-        $this->assertEqualsWithDelta(26 + (3 * Units::cell(14.0)) + 6, $box->width, 1e-9);
+        $this->assertEqualsWithDelta(26 + PlantUmlMetrics::width('Dog', 14.0) + 6, $box->width, 1e-9);
         $texts = \array_values(\array_filter($box->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
         $this->assertSame(['C', 'Dog'], \array_map(static fn (Mark $mark): string => $mark->text, $texts));
     }
@@ -235,17 +236,17 @@ final class ClassDrawingTest extends TestCase
 
     public function testAHeadLabelThatWouldOverlapTheTailLabelStandsOnTheOtherSide(): void
     {
-        $centre = static function (Drawing $drawing, string $text): float {
+        $centre = static function (Drawing $drawing, string $text, float $side = 0.0): float {
             foreach ($drawing->marks as $mark) {
                 if ($text === $mark->text) {
-                    return $mark->points[0][0];
+                    return $mark->points[0][0] + (($side * \array_sum($mark->slots ?? [])) / 2);
                 }
             }
             self::fail('No '.$text);
         };
-        // Labels short enough leave both ends on the line's left, as dot sets them.
+        // Labels short enough leave both ends on the line's left, as dot sets them: their right sides by it, a point apart at most, as the jar sets them.
         $short = self::draw('A "t" --> "h" B');
-        $this->assertEqualsWithDelta($centre($short, text: 't'), $centre($short, text: 'h'), 1e-9);
+        $this->assertEqualsWithDelta($centre($short, text: 't', side: 1.0), $centre($short, text: 'h', side: 1.0), Units::POINT);
         // Labels tall enough to meet put the head's on the right.
         $tall = self::draw("A \"t\\n1\\n2\\n3\" --> \"h\\n1\\n2\\n3\" B");
         $this->assertGreaterThan($centre($tall, text: 't'), $centre($tall, text: 'h'));

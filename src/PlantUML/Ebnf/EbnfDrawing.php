@@ -68,7 +68,7 @@ final class EbnfDrawing
         if (null !== $rule->below) {
             $parts[] = $this->style->note($rule->below);
         }
-        $sizes = \array_map(fn ($part): array => \is_string($part) ? $this->style->measure($part) : $part->size(), $parts);
+        $sizes = \array_map(fn ($part): array => \is_string($part) ? $this->style->measure($part, face: FontFace::Bold) : $part->size(), $parts);
         $widest = \max(\array_column($sizes, 0));
         $top = $this->height;
         foreach ($parts as $index => $part) {

@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\Render\Work;
 use Janalis\Viz\Source\Unsupported;
@@ -23,16 +24,17 @@ final class TeozDrawingTest extends TestCase
     {
         $marks = self::points(self::draw('A -> B'));
         // A head is its name, a line of PlantUML's sans-serif, 7 padding around it, and 1 more down; B stands 10 clear of A.
-        $headWidth = Units::cell(14.0) + 14;
+        $headWidth = PlantUmlMetrics::width('A', 14.0) + 14;
+        $otherWidth = PlantUmlMetrics::width('B', 14.0) + 14;
         $headHeight = ((14.0 * 603) / 512) + 14 + 1;
         $this->assertEqualsWithDelta([0.0, 0.0], self::topLeft(self::rectangles($marks)[0]), 1e-9);
         $this->assertEqualsWithDelta([$headWidth + 10, 0.0], self::topLeft(self::rectangles($marks)[1]), 1e-9);
         // The arrow, 8 below the heads and 6 down its tile, runs from A's lifeline to 6 short of B's, its tip 2 short.
         $arrowY = $headHeight + 8 + 6;
         $line = self::lineAt($marks, $arrowY);
-        $this->assertEqualsWithDelta([[$headWidth / 2, $arrowY], [$headWidth + 10 + ($headWidth / 2) - 6, $arrowY]], $line->points, 1e-9);
+        $this->assertEqualsWithDelta([[$headWidth / 2, $arrowY], [$headWidth + 10 + ($otherWidth / 2) - 6, $arrowY]], $line->points, 1e-9);
         $tip = \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 4 === \count($mark->points)))[0];
-        $this->assertEqualsWithDelta($headWidth + 10 + ($headWidth / 2) - 2, $tip->points[1][0], 1e-9);
+        $this->assertEqualsWithDelta($headWidth + 10 + ($otherWidth / 2) - 2, $tip->points[1][0], 1e-9);
         // The lifelines run 8 + 14 + 10 down between the heads and the feet.
         $lifeline = \array_values(\array_filter($marks, static fn (Mark $mark): bool => null !== $mark->dashes))[0];
         $this->assertEqualsWithDelta([[$headWidth / 2, $headHeight], [$headWidth / 2, $headHeight + 32]], $lifeline->points, 1e-9);

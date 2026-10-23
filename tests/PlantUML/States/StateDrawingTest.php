@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\States\PlantUmlStates;
@@ -62,12 +63,12 @@ final class StateDrawingTest extends TestCase
         $states = self::read("state Idle\nstate Busy : working hard on it\n[*] --> Idle\nIdle --> [*]\nIdle --> [H]\nstate C <<choice>>\nstate F <<fork>>\nstate D <<history*>>\nstate C2");
         $size = static fn (string $id): array => [StateBox::of($states->nodes[$id], $states)->width, StateBox::of($states->nodes[$id], $states)->height];
 
-        $this->assertSame([\max(50.0, (4 * Units::cell(14.0)) + 20), 50.0], $size('Idle'), 'at least 50 by 50');
+        $this->assertSame([\max(50.0, PlantUmlMetrics::width('Idle', 14.0) + 20), 50.0], $size('Idle'), 'at least 50 by 50');
         $this->assertSame([50.0, 50.0], $size('C2'));
-        $this->assertEqualsWithDelta([(18 * Units::cell(14.0)) + 20, (2 * PlantUmlText::lineHeight(14.0)) + 20], $size('Busy'), 1e-9);
+        $this->assertEqualsWithDelta([PlantUmlMetrics::width('working hard on it', 14.0) + 20, (2 * PlantUmlText::lineHeight(14.0)) + 20], $size('Busy'), 1e-9);
         $this->assertSame([[20.0, 20.0], [22.0, 22.0], [22.0, 22.0], [24.0, 24.0], [80.0, 8.0], [22.0, 22.0]], [$size('*start*'), $size('*end*'), $size('*h*'), $size('C'), $size('F'), $size('D')]);
         $hidden = self::read("hide empty description\nstate Idle\nleft to right direction\nstate F <<join>>");
-        $this->assertSame([\max(50.0, (4 * Units::cell(14.0)) + 10), 40.0], [StateBox::of($hidden->nodes['Idle'], $hidden)->width, StateBox::of($hidden->nodes['Idle'], $hidden)->height]);
+        $this->assertSame([\max(50.0, PlantUmlMetrics::width('Idle', 14.0) + 10), 40.0], [StateBox::of($hidden->nodes['Idle'], $hidden)->width, StateBox::of($hidden->nodes['Idle'], $hidden)->height]);
         $this->assertSame([8.0, 80.0], [StateBox::of($hidden->nodes['F'], $hidden)->width, StateBox::of($hidden->nodes['F'], $hidden)->height]);
     }
 

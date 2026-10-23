@@ -96,7 +96,17 @@ final class SvgBackend
         $style .= 1.0 === $mark->fontScale ? '' : ' style="font-size:'.(1.6 * $mark->fontScale).'px"';
         $style .= 0.0 === $mark->angle ? '' : ' transform="rotate('.$mark->angle.' '.$x.' '.$y.')"';
 
-        return '<text x="'.$x.'" y="'.$y.'" fill="'.self::escape($mark->stroke).'"'.$style.'>'.self::escape($mark->text).'</text>';
+        $centres = Mark::centres($mark);
+        if (null === $centres) {
+            return '<text x="'.$x.'" y="'.$y.'" fill="'.self::escape($mark->stroke).'"'.$style.'>'.self::escape($mark->text).'</text>';
+        }
+        // Each character in the middle of its own room, a chunk of its own as every renderer sets one; a blank draws nothing.
+        $spans = '';
+        foreach (\mb_str_split($mark->text) as $index => $character) {
+            $spans .= '' === \trim($character) ? '' : '<tspan x="'.\round($x + $centres[$index], precision: 4).'">'.self::escape($character).'</tspan>';
+        }
+
+        return '<text y="'.$y.'" fill="'.self::escape($mark->stroke).'"'.$style.'>'.$spans.'</text>';
     }
 
     private static function outline(Mark $mark, string $fill): string

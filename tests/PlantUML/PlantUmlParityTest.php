@@ -18,8 +18,8 @@ use PHPUnit\Framework\TestCase;
  * PlantUML drew for it, as tools/record-plantuml-parity.php recorded it from the pinned jar:
  * 0 when left to PlantUML, 1 when it writes the same words, 2 when its height is also within
  * 5% of PlantUML's, 3 within 2%, and 4 when every word also stands within 3 points of where
- * PlantUML writes it down the diagram, their baselines aligned on the median offset. Widths are not graded: text is set in the bundled monospace
- * font, wider than PlantUML's. Each fixture's grade may only rise above its floor in manifest.php.
+ * PlantUML writes it down the diagram, their baselines aligned on the median offset. Widths are not graded. Each fixture's grade may only
+ * rise above its floor in manifest.php.
  */
 final class PlantUmlParityTest extends TestCase
 {

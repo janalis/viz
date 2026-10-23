@@ -38,6 +38,7 @@ final class Units
             'strokeWidth' => $mark->strokeWidth * $scale,
             'fontScale' => MarkKind::Text === $mark->kind ? $mark->fontScale * $scale : $mark->fontScale,
             'dashes' => null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
+            'slots' => null === $mark->slots ? null : \array_map(static fn (float $slot): float => $slot * $scale, $mark->slots),
         ]);
     }
 

@@ -43,7 +43,7 @@ final readonly class ChenBox
         [$width, $height] = match ($element->kind) {
             ChenKind::Entity => [$textWidth + (2 * self::ENTITY_MARGIN), $textHeight + (2 * self::ENTITY_MARGIN)],
             ChenKind::Relationship => self::diamond($textWidth, $textHeight),
-            ChenKind::Attribute => self::ellipse($textWidth, $textHeight),
+            ChenKind::Attribute => DescriptionBox::inEllipse($textWidth, $textHeight),
             ChenKind::Circle => [self::CIRCLE, self::CIRCLE],
         };
 
@@ -99,18 +99,6 @@ final readonly class ChenBox
         $diagonal = (($width + (2 * $height)) / \sqrt(5)) + 10;
 
         return [$diagonal * \sqrt(5), ($diagonal * \sqrt(5)) / 2];
-    }
-
-    /**
-     * @return array{float, float} the smallest ellipse around a text, as flat as it but between
-     *                             a fifth and four fifths as tall as wide, 6 bigger
-     */
-    private static function ellipse(float $width, float $height): array
-    {
-        $aspect = $width > 0 ? \min(0.8, \max(0.2, $height / $width)) : 0.8;
-        $half = \hypot($width / 2, $height / (2 * $aspect));
-
-        return [(2 * $half) + 6, (2 * $half * $aspect) + 6];
     }
 
     /** @return list<Mark> a `<<key>>` attribute's name underlined, a line under each of its lines */

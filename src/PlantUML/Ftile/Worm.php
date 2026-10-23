@@ -57,7 +57,7 @@ final class Worm
     /** Whether it is one stretch across. */
     public function horizontal(): bool
     {
-        return 2 === \count($this->points) && $this->points[0][1] === $this->points[1][1];
+        return 2 === \count($this->points) && \abs($this->points[0][1] - $this->points[1][1]) < 1e-6;
     }
 
     /** It followed by another starting where it ends, the turns that cancel out smoothed away. */
@@ -92,10 +92,13 @@ final class Worm
      */
     public static function direction(array $from, array $to): ?string
     {
+        // Points a rounding apart stand level, or one above the other.
+        [$across, $down] = [\abs($to[0] - $from[0]) < 1e-6, \abs($to[1] - $from[1]) < 1e-6];
+
         return match (true) {
-            $from[0] === $to[0] && $from[1] === $to[1] => null,
-            $from[0] === $to[0] => $to[1] > $from[1] ? 'D' : 'U',
-            $from[1] === $to[1] => $to[0] > $from[0] ? 'R' : 'L',
+            $across && $down => null,
+            $across => $to[1] > $from[1] ? 'D' : 'U',
+            $down => $to[0] > $from[0] ? 'R' : 'L',
             default => 'X',
         };
     }

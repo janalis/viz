@@ -9,11 +9,11 @@ use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Style\PlantUmlColor;
 use Janalis\Viz\PlantUML\Style\Style;
-use Janalis\Viz\Text\DisplayWidth;
 use Janalis\Viz\Text\FontFace;
 
 /**
- * PlantUML text in the bundled font, in points: lines of Creole with their markup taken out —
+ * PlantUML text in points, measured as PlantUML measures its font, each character drawn in the
+ * middle of its own room: lines of Creole with their markup taken out —
  * a line wholly bold or italic drawn so, a heading — one to three = before it — bigger and bold,
  * a sprite (`<$name>`) drawn in its place as PlantUML draws one — measured, and set as text
  * marks left, centred or right within a width.
@@ -235,7 +235,7 @@ final readonly class PlantUmlText
         $widest = 0.0;
         $height = 0.0;
         foreach ($this->blocks() as $block) {
-            [$blockWidth, $blockHeight] = $block instanceof PlantUmlTable ? $block->size() : $this->lineSize($this->atoms($block), $this->fontSize($block));
+            [$blockWidth, $blockHeight] = $block instanceof PlantUmlTable ? $block->size() : $this->lineSize($this->atoms($block), $this->fontSize($block), $block);
             $widest = \max($widest, $blockWidth);
             $height += $blockHeight;
         }
@@ -348,12 +348,12 @@ final readonly class PlantUmlText
      * @param list<array{string, ?PlantUmlSprite, float, ?string}> $atoms
      * @return array{float, float} a line's width, and its height: its text's, or its tallest sprite's
      */
-    private function lineSize(array $atoms, float $size): array
+    private function lineSize(array $atoms, float $size, string $line): array
     {
         $width = 0.0;
         $height = self::lineHeight($this->tallestOf($atoms, $size));
         foreach ($atoms as [$text, $sprite, $scale]) {
-            $width += null === $sprite ? self::shown($text, $size) : $sprite->width * $scale;
+            $width += null === $sprite ? self::shown($text, $size, $this->faceOf($line, $text)) : $sprite->width * $scale;
             $height = \max($height, null === $sprite ? 0.0 : $sprite->height * $scale);
         }
 
@@ -413,7 +413,7 @@ final readonly class PlantUmlText
             }
             $size = $this->fontSize($line);
             $atoms = $this->atoms($line);
-            [$shown, $height] = $this->lineSize($atoms, $size);
+            [$shown, $height] = $this->lineSize($atoms, $size, $line);
             $foot = $top + $height;
             $top = $foot;
             $left = match ($align) {
@@ -455,14 +455,14 @@ final readonly class PlantUmlText
     }
 
     /** As wide as the bundled font draws a stretch, each piece at its size. */
-    private static function shown(string $text, float $size): float
+    private static function shown(string $text, float $size, FontFace $face): float
     {
         if (!\str_contains(\strtolower($text), '<size')) {
-            return DisplayWidth::of(self::plain($text)) * Units::cell($size);
+            return PlantUmlMetrics::width(self::plain($text), $size, $face);
         }
         $width = 0.0;
         foreach (self::stretches($text, $size) as [$part, $at]) {
-            $width += DisplayWidth::of($part) * Units::cell($at);
+            $width += PlantUmlMetrics::width($part, $at, $face);
         }
 
         return $width;
@@ -472,7 +472,8 @@ final readonly class PlantUmlText
     private function word(string $line, string $text, float $size, float $left, float $baseline): array
     {
         $plain = self::plain($text);
-        $shown = self::shown($text, $size);
+        $face = $this->faceOf($line, $text);
+        $shown = self::shown($text, $size, $face);
         $size = self::drawn($text, $size);
         // As PlantUML, which writes no text of a transparent colour.
         if ('' === \trim($plain) || 'none' === $this->color) {
@@ -487,12 +488,9 @@ final readonly class PlantUmlText
             [[$left + ($shown / 2), $baseline]],
             $plain,
             stroke: $color,
-            font: self::face(match (true) {
-                $depth < 0 => self::heading($line)[1],
-                $depth < 3 => '**'.$text.'**',
-                default => '//'.$text.'//',
-            }, $this->face),
+            font: $face,
             fontScale: Units::fontScale($size) / Units::POINT,
+            slots: self::slots($plain, $size, $face, $shown),
         );
 
         return [[$mark], $shown];
@@ -506,6 +504,32 @@ final readonly class PlantUmlText
         $uri = $sprite->png('none' === $this->background ? '#ffffff' : $this->background, 'none' === $tint ? '#000000' : $tint);
 
         return [[new Mark(MarkKind::Image, [[$left, $foot - $height], [$left + $width, $foot]], $uri)], $width];
+    }
+
+    /**
+     * Where each character stands, as PlantUML sets it: in the room its advance takes in
+     * PlantUML's font, all of them as wide as the stretch is shown.
+     *
+     * @return list<float>
+     */
+    private static function slots(string $plain, float $size, FontFace $face, float $shown): array
+    {
+        $slots = PlantUmlMetrics::slots($plain, $size, $face);
+        $sum = \array_sum($slots);
+
+        return $sum > 0 ? \array_map(static fn (float $slot): float => ($slot * $shown) / $sum, $slots) : $slots;
+    }
+
+    /** The face a stretch of a line takes: its heading's, or its line's own markup over the text's. */
+    private function faceOf(string $line, string $text): FontFace
+    {
+        $depth = self::heading($line)[0];
+
+        return self::face(match (true) {
+            $depth < 0 => self::heading($line)[1],
+            $depth < 3 => '**'.$text.'**',
+            default => '//'.$text.'//',
+        }, $this->face);
     }
 
     /** The face a line's own markup gives it, over the one it would have. */

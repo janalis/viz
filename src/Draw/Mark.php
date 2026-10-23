@@ -36,7 +36,33 @@ final readonly class Mark
         public ?float $gradientSplit = null,
         /** How a shape is drawn: as a box, a path or an ellipse. */
         public Outline $outline = Outline::Box,
+        /** @var ?list<float> a text mark's room for each of its characters along its line, in units, each drawn in the middle of its own; null sets them as its font does */
+        public ?array $slots = null,
     ) {}
+
+    /**
+     * Where the middle of each of a text mark's characters stands along its line, from its
+     * anchor, when its slots set them: one slot for each of its characters, all of them centred
+     * on the anchor; null when they do not.
+     *
+     * @return ?list<float>
+     */
+    public static function centres(self $mark): ?array
+    {
+        $characters = \mb_str_split($mark->text);
+        // SVG addresses a character beyond the Basic Multilingual Plane as two: such a text is set as its font sets it.
+        if (null === $mark->slots || \count($mark->slots) !== \count($characters) || [] !== \array_filter($characters, static fn (string $char): bool => \mb_ord($char) > 0xFFFF)) {
+            return null;
+        }
+        $at = -\array_sum($mark->slots) / 2;
+        $centres = [];
+        foreach ($mark->slots as $slot) {
+            $centres[] = $at + ($slot / 2);
+            $at += $slot;
+        }
+
+        return $centres;
+    }
 
     /** @param array<string, mixed> $changes properties to change, by name */
     public function with(array $changes): self
