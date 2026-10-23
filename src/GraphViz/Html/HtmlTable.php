@@ -62,8 +62,8 @@ final class HtmlTable implements DotLabel
                 $column += $cell->colspan;
             }
         }
-        $this->widths = $this->stretched($this->spread(axis: 1), 'width');
-        $this->heights = $this->stretched($this->spread(axis: 0), 'height');
+        $this->widths = $this->spread(axis: 1);
+        $this->heights = $this->spread(axis: 0);
     }
 
     #[\Override]
@@ -76,11 +76,11 @@ final class HtmlTable implements DotLabel
     public function size(): array
     {
         [$width, $height] = [$this->extent($this->widths), $this->extent($this->heights)];
-        if ('true' !== \strtolower($this->attributes['fixedsize'] ?? '')) {
-            return [$width, $height];
-        }
-        // As `dot` is seen to size a table of a fixed size: as wide and tall as asked, whatever it holds.
         $asked = fn (string $name, float $own): float => \is_numeric($value = $this->attributes[$name] ?? '') ? \min(65_535.0, (float) $value) : $own;
+        // As `dot` is seen to size a table: as wide and tall as asked, its cells packed from its top left in the room past what they need; of a fixed size, as asked whatever it holds.
+        if ('true' !== \strtolower($this->attributes['fixedsize'] ?? '')) {
+            return [\max($width, $asked('width', $width)), \max($height, $asked('height', $height))];
+        }
 
         return [$asked('width', $width), $asked('height', $height)];
     }
@@ -161,23 +161,6 @@ final class HtmlTable implements DotLabel
         }
 
         return $all;
-    }
-
-    /**
-     * Columns widened, or rows heightened, evenly to the table's `WIDTH` or `HEIGHT`.
-     *
-     * @param list<float> $sizes
-     * @return list<float>
-     */
-    private function stretched(array $sizes, string $name): array
-    {
-        $asked = $this->attributes[$name] ?? '';
-        $lack = \is_numeric($asked) ? \min(65_535.0, (float) $asked) - $this->extent($sizes) : 0.0;
-        if ($lack <= 0 || [] === $sizes) {
-            return $sizes;
-        }
-
-        return \array_map(static fn (float $size): float => $size + ($lack / \count($sizes)), $sizes);
     }
 
     /** @param list<float> $sizes */

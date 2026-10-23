@@ -93,15 +93,18 @@ final class HtmlParserTest extends TestCase
         $this->assertFalse($label->empty());
     }
 
-    public function testTablesStretchAndCellsMayBeFixed(): void
+    public function testTablesTakeTheSizeAskedAndCellsMayBeFixed(): void
     {
         $plain = self::parse('<TABLE><TR><TD>a</TD></TR></TABLE>');
         $wide = self::parse('<TABLE WIDTH="200" HEIGHT="100"><TR><TD>a</TD><TD>b</TD></TR></TABLE>');
         $fixed = self::parse('<TABLE CELLBORDER="0"><TR><TD FIXEDSIZE="TRUE" WIDTH="5" HEIGHT="x">long text</TD></TR></TABLE>');
-        $empty = self::parse('<TABLE WIDTH="100"></TABLE>');
+        $empty = self::parse('<TABLE></TABLE>');
 
         $this->assertSame([Units::cell(14.0) + 6 + 4 + 2, Units::line(14.0) + 6 + 4 + 2], $plain->size(), 'text, padding, cell border, spacing and border');
         $this->assertSame([200.0, 100.0], $wide->size());
+        // As `dot` packs them: from the table's top left, the room past what they need left empty.
+        $cells = \array_values(\array_filter($wide->marks(100.0, 50.0), static fn ($mark): bool => MarkKind::Polygon === $mark->kind));
+        $this->assertLessThan(60.0, \max(\array_column($cells[1]->points, 0)), 'the cells keep their own width');
         $this->assertSame(5.0 + 4 + 2, $fixed->size()[0]);
         $this->assertSame([2 + 2.0, 2 + 2.0], $empty->size(), 'no cells: the spacing and the border');
     }
