@@ -51,10 +51,9 @@ final class TimingDrawing
         // As PlantUML, as large as its block and 10 round it, or as far as anything is drawn, then to the next whole point.
         [$right, $bottom] = [$width + (4 * self::AROUND), $height + (4 * self::AROUND)];
         foreach ($marks as $mark) {
-            if (MarkKind::Text === $mark->kind) {
-                continue;
-            }
-            foreach ($mark->points as [$x, $y]) {
+            // A text reaches as far as its characters' room, and no further down than its baseline.
+            $points = MarkKind::Text === $mark->kind ? [[$mark->points[0][0] + (\array_sum($mark->slots ?? []) / 2), $mark->points[0][1]]] : $mark->points;
+            foreach ($points as [$x, $y]) {
                 [$right, $bottom] = [\max($right, $x + self::AROUND), \max($bottom, $y + self::AROUND)];
             }
         }
