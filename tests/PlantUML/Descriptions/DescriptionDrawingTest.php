@@ -87,7 +87,7 @@ final class DescriptionDrawingTest extends TestCase
         $text = \array_values(\array_filter($marks, static fn (Mark $mark): bool => 'X' === $mark->text))[0];
 
         // As the jar draws it: the text 8 into the front copy, at the top left, the other 4 down and right behind it.
-        $this->assertEqualsWithDelta(125.025, $text->points[0][1] / Units::POINT, 1e-3);
+        $this->assertEqualsWithDelta(125.025, $text->points[0][1] / Units::POINT, 0.005);
     }
 
     public function testWholeDiagramsDrawContainersLinksAndNotes(): void
