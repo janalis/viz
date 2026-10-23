@@ -11,7 +11,6 @@ use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionElement;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionReader;
-use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Render\Work;
@@ -46,7 +45,8 @@ final class DescriptionDrawingTest extends TestCase
             $this->assertContains('Name', \array_map(static fn (Mark $mark): string => $mark->text, $marks), $symbol);
         }
         $box = DescriptionBox::of(new DescriptionElement('R', ['Name'], 'rectangle'), StyleSheet::skin());
-        $this->assertEqualsWithDelta([(4 * Units::cell(14.0)) + 20, PlantUmlText::lineHeight(14.0) + 20], [$box->width, $box->height], 1e-9);
+        // A line as Java measures the sans-serif font, 36.488 high with its margins, as the jar draws it.
+        $this->assertEqualsWithDelta([(4 * Units::cell(14.0)) + 20, (14 * 603 / 512) + 20], [$box->width, $box->height], 1e-9);
         // As PlantUML, an interface's node is a circle 16 across, 1 clear all round; its name hangs below.
         $this->assertEqualsWithDelta(
             [18.0, 18.0],

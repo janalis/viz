@@ -80,7 +80,7 @@ Each scope is laid out as svek lays it out: a composite state no transition cros
 
 ### Description diagrams
 
-Component, deployment and use case diagrams are laid out as svek lays them out, each element a box of its symbol's size — its text within the margins PlantUML's symbol keeps — and containers as clusters drawn with their own symbol, a package's or folder's title in its tab and any other's centred at its top. A name only links use becomes an actor in a diagram with actors or use cases, and an interface otherwise, as PlantUML settles it. They read into the shared use case model when they have actors or use cases, and into the shared graph otherwise.
+Component, deployment and use case diagrams are laid out as svek lays them out, each element a box of its symbol's size — its text within the margins PlantUML's symbol keeps — and containers as clusters drawn with their own symbol, a package's or folder's title in its tab and any other's centred at its top. Their elements' text and their containers' titles are set as Java measures PlantUML's sans-serif font — a line 1.1777 times its size, 0.2109 of it below the baseline, 10 at least — each line on its tallest text, a `<size:…>` around a line drawing it at that size. A name only links use becomes an actor in a diagram with actors or use cases, and an interface otherwise, as PlantUML settles it. They read into the shared use case model when they have actors or use cases, and into the shared graph otherwise.
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
@@ -295,7 +295,7 @@ The grades at 0.2.0, on 298 self-authored fixtures:
 | Sequence | 25 | 25 | 25 | 25 | 25 |
 | Class | 26 | 26 | 26 | 26 | 26 |
 | State | 24 | 24 | 24 | 24 | 24 |
-| Description | 29 | 29 | 29 | 29 | 28 |
+| Description | 29 | 29 | 29 | 29 | 29 |
 | Legacy activity | 3 | 3 | 3 | 3 | 3 |
 | Mind map | 10 | 10 | 10 | 10 | 10 |
 | Work breakdown structure | 14 | 14 | 14 | 14 | 14 |

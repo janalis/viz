@@ -46,12 +46,20 @@ final readonly class PlantUmlText
         public string $background = '#ffffff',
         /** A line's height for each point of font size. */
         public float $leading = self::LINE,
+        /** A line's descent below its baseline for each point of font size; null for a quarter of the line. */
+        public ?float $descent = null,
     ) {}
 
     /** The text set a line apart as Java measures PlantUML's sans-serif font, 1.1777 times its size, as PlantUML's goldens set it. */
     public function sans(): self
     {
         return clone($this, ['leading' => self::SANS]);
+    }
+
+    /** The text set as Java measures PlantUML's sans-serif font: a line 1.1777 times its size, 0.2109 of it below the baseline. */
+    public function java(): self
+    {
+        return clone($this, ['leading' => self::SANS, 'descent' => 0.210_937_5]);
     }
 
     /**
@@ -108,12 +116,28 @@ final readonly class PlantUmlText
     private static function measured(string $text, float $size, FontFace $face): float
     {
         $width = 0.0;
+        foreach (self::stretches($text, $size) as [$part, $at]) {
+            $width += PlantUmlMetrics::width($part, $at, $face);
+        }
+
+        return $width;
+    }
+
+    /**
+     * A stretch of Creole in the pieces its `<size:…>` sets apart, each without its markup and
+     * at its size — a piece of a line may hold markup it does not close, as wrapping cuts it:
+     * every marker comes out.
+     *
+     * @return list<array{string, float}>
+     */
+    private static function stretches(string $text, float $size): array
+    {
+        $stretches = [];
         $sizes = [$size];
         foreach ((array) \preg_split('/(<\/?size(?::[^>]*)?>)/i', $text, flags: \PREG_SPLIT_DELIM_CAPTURE) as $index => $part) {
             $part = (string) $part;
             if (0 === ($index % 2)) {
-                // A piece of a line may hold markup it does not close, as wrapping cuts it: every marker comes out.
-                $width += PlantUmlMetrics::width(\str_replace(['**', '//', '""', '__', '~~'], replace: '', subject: self::plain($part)), $sizes[\count($sizes) - 1], $face);
+                $stretches[] = [\str_replace(['**', '//', '""', '__', '~~'], replace: '', subject: self::plain($part)), $sizes[\count($sizes) - 1]];
                 continue;
             }
             $match = [];
@@ -126,7 +150,37 @@ final readonly class PlantUmlText
             }
         }
 
-        return $width;
+        return $stretches;
+    }
+
+    /** The size of a stretch's tallest text, as PlantUML sets a line on it; its own size when it has none. */
+    private static function tallest(string $text, float $size): float
+    {
+        $sizes = self::sizes($text, $size);
+
+        return [] === $sizes ? $size : \max($sizes);
+    }
+
+    /** The size a stretch is drawn at: the one all its text shares, else its own. */
+    private static function drawn(string $text, float $size): float
+    {
+        $sizes = \array_values(\array_unique(self::sizes($text, $size)));
+
+        return 1 === \count($sizes) ? $sizes[0] : $size;
+    }
+
+    /** @return list<float> the size of each piece of a stretch with text in it */
+    private static function sizes(string $text, float $size): array
+    {
+        $sizes = [];
+        foreach (self::stretches($text, $size) as [$part, $at]) {
+            if ('' === \trim($part)) {
+                continue;
+            }
+            $sizes[] = $at;
+        }
+
+        return $sizes;
     }
 
     /**
@@ -310,9 +364,9 @@ final readonly class PlantUmlText
     private function lineSize(array $atoms, float $size): array
     {
         $width = 0.0;
-        $height = $size * $this->leading;
+        $height = $this->tall($this->tallestOf($atoms, $size));
         foreach ($atoms as [$text, $sprite, $scale]) {
-            $width += null === $sprite ? DisplayWidth::of(self::plain($text)) * Units::cell($size) : $sprite->width * $scale;
+            $width += null === $sprite ? self::shown($text, $size) : $sprite->width * $scale;
             $height = \max($height, null === $sprite ? 0.0 : $sprite->height * $scale);
         }
 
@@ -357,8 +411,9 @@ final readonly class PlantUmlText
                 'right' => $x + $width - $shown,
                 default => $x + (($width - $shown) / 2),
             };
+            $tallest = $this->tallestOf($atoms, $size);
             foreach ($atoms as [$text, $sprite, $scale, $color]) {
-                [$mark, $advance] = null === $sprite ? $this->word($line, $text, $size, $left, $foot) : $this->picture($sprite, $scale, $color, $left, $foot);
+                [$mark, $advance] = null === $sprite ? $this->word($line, $text, $size, $left, $foot - $this->below($tallest)) : $this->picture($sprite, $scale, $color, $left, $foot);
                 \array_push($marks, ...$mark);
                 $left += $advance;
             }
@@ -367,11 +422,54 @@ final readonly class PlantUmlText
         return $marks;
     }
 
-    /** @return array{list<Mark>, float} a stretch of text's mark, standing on a line's foot, and its width */
-    private function word(string $line, string $text, float $size, float $left, float $foot): array
+    /**
+     * @param list<array{string, ?PlantUmlSprite, float, ?string}> $atoms
+     */
+    private function tallestOf(array $atoms, float $size): float
+    {
+        $tallest = null;
+        foreach ($atoms as [$text, $sprite]) {
+            if (null !== $sprite) {
+                continue;
+            }
+            $tallest = \max($tallest ?? 0.0, self::tallest($text, $size));
+        }
+
+        return $tallest ?? $size;
+    }
+
+    /** How far below its baseline a line of text at a size reaches. */
+    private function below(float $size): float
+    {
+        return null === $this->descent ? 0.25 * $size * $this->leading : $this->tall($size) - (($this->leading - $this->descent) * $size);
+    }
+
+    /** A line of text's height at a size: as Java measures the font, 10 at least, the room below the text. */
+    private function tall(float $size): float
+    {
+        return null === $this->descent ? $size * $this->leading : \max(10.0, $size * $this->leading);
+    }
+
+    /** As wide as the bundled font draws a stretch, each piece at its size. */
+    private static function shown(string $text, float $size): float
+    {
+        if (!\str_contains(\strtolower($text), '<size')) {
+            return DisplayWidth::of(self::plain($text)) * Units::cell($size);
+        }
+        $width = 0.0;
+        foreach (self::stretches($text, $size) as [$part, $at]) {
+            $width += DisplayWidth::of($part) * Units::cell($at);
+        }
+
+        return $width;
+    }
+
+    /** @return array{list<Mark>, float} a stretch of text's mark, standing on its baseline, and its width */
+    private function word(string $line, string $text, float $size, float $left, float $baseline): array
     {
         $plain = self::plain($text);
-        $shown = DisplayWidth::of($plain) * Units::cell($size);
+        $shown = self::shown($text, $size);
+        $size = self::drawn($text, $size);
         // As PlantUML, which writes no text of a transparent colour.
         if ('' === \trim($plain) || 'none' === $this->color) {
             return [[], $shown];
@@ -382,7 +480,7 @@ final readonly class PlantUmlText
         $color = 1 === \preg_match('/^\s*<color:([^>]+)>.*<\/color>\s*$/i', $line, $match) ? PlantUmlColor::parse($match[1]) ?? $this->color : $this->color;
         $mark = new Mark(
             MarkKind::Text,
-            [[$left + ($shown / 2), $foot - (0.25 * $size * $this->leading)]],
+            [[$left + ($shown / 2), $baseline]],
             $plain,
             stroke: $color,
             font: self::face(match (true) {

@@ -65,6 +65,23 @@ final class PlantUmlTextTest extends TestCase
         );
     }
 
+    public function testJavasMetricsSetEachLineOnItsTallestTextAsPlantUmlSetsIt(): void
+    {
+        // As the jar sets a box's text, from the text's top: a heading, then a line wholly 12 points, a blank line, a plain one.
+        $text = new PlantUmlText(['== Web', '//<size:12>[PHP]</size>//', '', 'Serves pages'])->java();
+        $marks = $text->marks(0.0, 0.0, 100.0);
+
+        $this->assertSame(['Web', '[PHP]', 'Serves pages'], \array_map(static fn (Mark $mark): string => $mark->text, $marks));
+        $this->assertEqualsWithDelta([15.469, 30.445, 63.0], \array_map(static fn (Mark $mark): float => $mark->points[0][1], $marks), 1e-3);
+        $this->assertEqualsWithDelta(Units::fontScale(12.0) / Units::POINT, $marks[1]->fontScale, 1e-9, 'drawn at its own size');
+        $this->assertEqualsWithDelta(65.953, $text->size()[1], 1e-3);
+
+        // A line of small text 10 high at least, the room below it.
+        $small = new PlantUmlText(['a', 'b'], 6.0)->java();
+        $this->assertEqualsWithDelta([5.801, 15.801], \array_map(static fn (Mark $mark): float => $mark->points[0][1], $small->marks(0.0, 0.0, 10.0)), 1e-3);
+        $this->assertEqualsWithDelta(20.0, $small->size()[1], 1e-9);
+    }
+
     public function testLinesSetLeftCentredOrRight(): void
     {
         $text = new PlantUmlText(['ab'], 12.0, FontFace::BoldItalic);
