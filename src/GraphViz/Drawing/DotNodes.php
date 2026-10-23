@@ -111,6 +111,10 @@ final class DotNodes
         // An image needs its own size and a point either side, as dot measures it, its label laid over it.
         $image = $graph->images[$node->attribute('image')] ?? null;
         [$imageWidth, $imageHeight] = null === $image ? [0.0, 0.0] : [$image->width + 2, $image->height + 2];
+        // As `dot` is seen to size a node with no label to show and no image: no room for it, nor its margin.
+        if (0.0 === $width && 0.0 === $height && null === $image) {
+            return [0.0, 0.0];
+        }
         $width = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, \max($width + (2 * $marginX), $imageWidth) * $growth);
         $height = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, \max($height + (2 * $marginY), $imageHeight) * $growth);
         if (DotShape::round($shape) || 'true' === \strtolower($node->attribute('regular'))) {

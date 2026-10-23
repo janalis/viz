@@ -49,6 +49,19 @@ final class DotNodesTest extends TestCase
         $this->assertEqualsWithDelta([(3 * $cell) + 15.84, $line + 7.92], DotNodes::size($graph, $graph->nodes['odd']), 1e-9);
     }
 
+    public function testANodeWithNoLabelToShowTakesNoRoomForItsMargin(): void
+    {
+        $graph = self::graph('digraph { circle [shape=circle, label=""]; box [shape=box, label=""]; diamond [shape=diamond, label=""]; space [shape=box, label=" "]; }');
+
+        // As `dot` sizes them: as small as their width and height let them be, a label of a space still taken.
+        $this->assertSame([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]], [
+            DotNodes::size($graph, $graph->nodes['circle']),
+            DotNodes::size($graph, $graph->nodes['box']),
+            DotNodes::size($graph, $graph->nodes['diamond']),
+        ]);
+        $this->assertGreaterThan(15.84, DotNodes::size($graph, $graph->nodes['space'])[0]);
+    }
+
     public function testRecordSizesKeepToTheLargestSizeTaken(): void
     {
         $graph = Work::run(new DotParser()->parse('digraph { a [shape=record, label="'.\str_repeat('x|', times: 20_000).'"]; b [shape=record, label="{bad"] }'));
