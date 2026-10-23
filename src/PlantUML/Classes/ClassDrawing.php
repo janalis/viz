@@ -49,8 +49,10 @@ final class ClassDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        // As PlantUML is seen to leave a class diagram 1 more room past it.
-        return PlantUmlFrame::svek($classes->document, $drawing->paint($placement), trail: 16.0);
+        // As PlantUML is seen to leave a class diagram 1 more room past it, and a lone class, which it lays out without dot, 1 less.
+        $alone = 1 === \count($placement->graph->nodes) && [] === $placement->graph->clusters;
+
+        return PlantUmlFrame::svek($classes->document, $drawing->paint($placement), trail: $alone ? 14.0 : 16.0);
     }
 
     /** @return array{float, float} svek's separations, or those `skinparam nodesep` and `ranksep` set */

@@ -46,8 +46,10 @@ final class DescriptionDrawing
         $placing = $drawing->graph()->place($diagram->direction);
         yield from $placing;
         $placement = $placing->getReturn();
+        // As PlantUML is seen to leave a lone element, which it lays out without dot, 1 less room past it.
+        $alone = 1 === \count($placement->graph->nodes) && [] === $placement->graph->clusters;
 
-        return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement));
+        return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement), trail: $alone ? 14.0 : 15.0);
     }
 
     /** The room PlantUML's symbols keep around a container's title for their shape: a node's depth, a database's lid. */

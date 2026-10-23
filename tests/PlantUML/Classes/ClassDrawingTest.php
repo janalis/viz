@@ -143,6 +143,15 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([21.535, 62.291], [$baselines['P'], $baselines['A']]);
     }
 
+    public function testTheDiagramIsAsBigAsPlantUmlMakesIt(): void
+    {
+        $height = static fn (string $lines): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"))->height / Units::POINT;
+
+        // As the jar sizes them: a lone class, laid out without dot, 2 less room past it than two.
+        $this->assertSame([68.0, 70.0, 84.0], [$height('class A'), $height("class A\nclass B"), $height("class A {\nx\n}")]);
+        $this->assertSame([56.0, 57.0], [$height('rectangle A'), $height("rectangle A\nrectangle B")]);
+    }
+
     public function testColourSpecsReadTheirParts(): void
     {
         $this->assertSame('#ffc0cb', ClassColors::back('#pink'));
