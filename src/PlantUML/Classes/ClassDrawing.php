@@ -185,9 +185,11 @@ final class ClassDrawing
             stroke: $line,
             fill: $back,
             strokeWidth: $stroke,
+            // As PlantUML, which draws it as a path, its limit finder taking it as it runs.
+            path: true,
         );
         $this->marks[] = new Mark(MarkKind::Polyline, [[$x0, $y0 + $tab], [$x0 + $width + 12, $y0 + $tab]], stroke: $line, strokeWidth: $stroke);
-        \array_push($this->marks, ...$title->marks($x0 + 6, $y0 + 3, $width));
+        \array_push($this->marks, ...$title->marks($x0 + 4, $y0 + 2, $width));
     }
 
     private function link(PlantUmlLink $link, Placement $placement, int $edge, int $index): void

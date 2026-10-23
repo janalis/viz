@@ -129,6 +129,20 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame(32.0, ClassBox::of($plain, StyleSheet::skin(), new ClassPortions([]))->header);
     }
 
+    public function testAPackagesTitleAndClassesStandWherePlantUmlDrawsThem(): void
+    {
+        $baselines = [];
+        foreach (Work::run(PlantUmlPipeline::native()->drawing("@startuml\npackage P {\n class A\n}\n@enduml"))->marks as $mark) {
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
+            $baselines[$mark->text] = \round($mark->points[0][1] / Units::POINT, precision: 3);
+        }
+
+        // As the jar draws them: the title 2 below the package's top, the package taken as the path it draws.
+        $this->assertSame([21.535, 62.291], [$baselines['P'], $baselines['A']]);
+    }
+
     public function testColourSpecsReadTheirParts(): void
     {
         $this->assertSame('#ffc0cb', ClassColors::back('#pink'));
