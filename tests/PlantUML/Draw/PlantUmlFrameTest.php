@@ -41,6 +41,14 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertEqualsWithDelta([121 * Units::POINT, 70 * Units::POINT], [$drawing->width, $drawing->height], 1e-9);
     }
 
+    public function testAScaledSizeIsRoundedDownAsPlantUmlWritesIt(): void
+    {
+        // 120.2 by 70 at 100 dpi: 125.21 by 72.92, rounded down.
+        $drawing = PlantUmlFrame::drawing(PlantUmlDocument::read(PlantUmlSource::parse("@startuml\nskinparam dpi 100\n@enduml")), [], 100.2, 50.0);
+
+        $this->assertEqualsWithDelta([125 * Units::POINT, 72 * Units::POINT], [$drawing->width, $drawing->height], 1e-9);
+    }
+
     public function testAnEmptyDocumentKeepsItsMargin(): void
     {
         $document = PlantUmlDocument::read(PlantUmlSource::parse("@startuml\nskinparam backgroundColor transparent\n@enduml"));

@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\LegacyActivities;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Draw\Route;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
@@ -165,7 +166,14 @@ final class LegacyActivityDrawing
             // As PlantUML's folder: a tab as wide as the title and 6 more, slanting 7 across to its foot, as tall as the title and 6 more.
             [$x0, $y0, $x1, $y1, $tab, $foot] = [$box->x0, $box->y0, $box->x1, $box->y1, $box->x0 + $titleWidth + 6, $box->y0 + $titleHeight + 6];
             $thickness = $style->number('LineThickness', 1.5);
-            $marks[] = new Mark(MarkKind::Polygon, [[$x0, $y0], [$tab, $y0], [$tab + 7, $foot], [$x1, $foot], [$x1, $y1], [$x0, $y1]], stroke: $line, fill: $back, strokeWidth: $thickness);
+            $marks[] = new Mark(
+                MarkKind::Polygon,
+                [[$x0, $y0], [$tab, $y0], [$tab + 7, $foot], [$x1, $foot], [$x1, $y1], [$x0, $y1]],
+                stroke: $line,
+                fill: $back,
+                strokeWidth: $thickness,
+                outline: Outline::Path,
+            );
             $marks[] = new Mark(MarkKind::Polyline, [[$x0, $foot], [$tab + 7, $foot]], stroke: $line, strokeWidth: $thickness);
             \array_push($marks, ...$title->marks($box->x0 + 4.0, $box->y0 + 2.0, $title->size()[0], 'left'));
         }

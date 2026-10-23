@@ -208,11 +208,11 @@ final class PlantUmlFrame
             $y += $blockHeight;
         }
         $scale = Units::POINT * $document->scaleFactor();
-        $whole ??= \ceil(...);
+        $whole ??= 1.0 === $document->scaleFactor() ? \ceil(...) : \floor(...);
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
 
         return new Drawing(
-            // As PlantUML writes its image's size, in whole points, rounded up — down, where it is seen to.
+            // As PlantUML writes its image's size, in whole points, rounded up — down, where it is seen to, and when it scales it.
             \max(1.0, $whole(($full + $left + $right) * $document->scaleFactor()) * Units::POINT),
             \max(1.0, $whole(($y + $bottom) * $document->scaleFactor()) * Units::POINT),
             \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $placed),
