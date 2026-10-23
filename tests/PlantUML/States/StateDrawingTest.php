@@ -32,6 +32,20 @@ final class StateDrawingTest extends TestCase
         $this->assertSame([98.535, 140.291], [$baselines['Player'], $baselines['H']]);
     }
 
+    public function testALabelAndItsNoteStandAsPlantUmlDrawsThem(): void
+    {
+        $baselines = [];
+        foreach (Work::run(PlantUmlPipeline::native()->drawing("@startuml\n[*] --> Locked\nLocked --> Open : coin\nnote on link\n  pays\nend note\nOpen --> Locked : push\n@enduml"))->marks as $mark) {
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
+            $baselines[\trim($mark->text)] = $mark->points[0][1] / Units::POINT;
+        }
+
+        // As the jar draws them: from the corner of the box svek writes in whole points, the note 1 below its label.
+        $this->assertEqualsWithDelta(['coin' => 180.568, 'pays' => 206.879, 'push' => 198.068], \array_intersect_key($baselines, ['coin' => 0, 'pays' => 0, 'push' => 0]), 0.005);
+    }
+
     public function testTheDiagramIsAsTallAsPlantUmlMakesIt(): void
     {
         $height = static fn (string $lines): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"))->height / Units::POINT;

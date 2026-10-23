@@ -72,13 +72,19 @@ final readonly class LinkLabel
         }
         [$noteWidth, $noteHeight] = $this->note->size();
         [$textAt, $noteAt] = match ($this->position) {
-            'top' => [[$x + (($totalWidth - $textWidth) / 2), $y + $noteHeight], [$x + (($totalWidth - $noteWidth) / 2), $y]],
+            'top' => [[$x + (($totalWidth - $textWidth) / 2), $y + $noteHeight + $this->gap()], [$x + (($totalWidth - $noteWidth) / 2), $y]],
             'left' => [[$x + $noteWidth, $y + (($totalHeight - $textHeight) / 2)], [$x, $y + (($totalHeight - $noteHeight) / 2)]],
             'right' => [[$x, $y + (($totalHeight - $textHeight) / 2)], [$x + $textWidth, $y + (($totalHeight - $noteHeight) / 2)]],
-            default => [[$x + (($totalWidth - $textWidth) / 2), $y], [$x + (($totalWidth - $noteWidth) / 2), $y + $textHeight]],
+            default => [[$x + (($totalWidth - $textWidth) / 2), $y], [$x + (($totalWidth - $noteWidth) / 2), $y + $textHeight + $this->gap()]],
         };
 
         return [...$this->text->marks($textAt[0], $textAt[1], $textWidth), ...$this->note->marks($noteAt[0], $noteAt[1], new Area($noteWidth, $noteHeight), Layer::Foreground)];
+    }
+
+    /** How far below a label the note under it is drawn, or a label below the note over it, past the room the two take, as measured on PlantUML's output: 1, none without a label. */
+    private function gap(): float
+    {
+        return $this->text->empty() || null === $this->note ? 0.0 : 1.0;
     }
 
     private function across(): bool

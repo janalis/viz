@@ -14,6 +14,7 @@ use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Links\Extremity;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\Style\Style;
+use Janalis\Viz\PlantUML\Svek\Svek;
 
 /**
  * A link drawn as PlantUML draws it, in points: its route smoothed and trimmed at the boxes
@@ -53,7 +54,10 @@ final class LinkPainter
         if (!$label->empty()) {
             [$width, $height] = $label->size();
             [$x, $y] = $placement->labels[$edge] ?? $points[\intdiv(\count($points), num2: 2)];
-            \array_push($marks, ...$label->marks($x - ($width / 2), $y - ($height / 2), $width));
+            // As PlantUML, from the corner of the box svek wrote, its room around it, in whole points.
+            $margin = Svek::labelMargin($link->from, $link->to);
+            $top = \array_key_exists($edge, $placement->labels) ? $y - (\floor($height + $margin) / 2) + ($margin / 2) : $y - ($height / 2);
+            \array_push($marks, ...$label->marks($x - ($width / 2), $top, $width));
             \array_push($marks, ...self::labelArrow($link, $from, $to, $x - ($width / 2) - 8, $y, $color));
         }
         \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes));
