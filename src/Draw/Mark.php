@@ -34,6 +34,8 @@ final readonly class Mark
         public float $gradientAngle = 0.0,
         /** Where a linear gradient changes colour at once, as a part of its way; null for a blend. */
         public ?float $gradientSplit = null,
+        /** Whether a shape is drawn as a path, which a renderer's bounds may take as it runs, rather than as a box. */
+        public bool $path = false,
     ) {}
 
     /** @param array<string, mixed> $changes properties to change, by name */

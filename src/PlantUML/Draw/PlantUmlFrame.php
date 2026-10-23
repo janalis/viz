@@ -152,7 +152,7 @@ final class PlantUmlFrame
 
             return [[$x - $half, $y - (0.75 * $line)], [$x + $half, $y + (0.25 * $line)]];
         }
-        if (MarkKind::Polygon === $mark->kind) {
+        if (MarkKind::Polygon === $mark->kind && !$mark->path) {
             return \array_map(static fn (array $point): array => [$point[0] - 1, $point[1] - 1], $mark->points);
         }
 

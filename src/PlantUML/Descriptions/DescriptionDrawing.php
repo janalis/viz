@@ -53,8 +53,8 @@ final class DescriptionDrawing
     /** The room PlantUML's symbols keep around a container's title for their shape: a node's depth, a database's lid. */
     private const array SHAPE_ROOM = ['node' => [60.0, 5.0], 'database' => [0.0, 15.0]];
 
-    /** How far below a container's top its title stands, where PlantUML sets it otherwise than in a plain box: 11 lower, 10 in a node, 19 under a database's lid, 5 in storage, 1 higher in a file or a queue. */
-    private const array TITLE_TOPS = ['node' => 12.0, 'cloud' => 13.0, 'component' => 13.0, 'stack' => 13.0, 'database' => 21.0, 'storage' => 7.0, 'file' => 1.0, 'queue' => 1.0];
+    /** How far below a container's top its title stands, where PlantUML sets it lower than in a plain box: 11 more, 20 under a database's lid, 5 in storage. */
+    private const array TITLE_TOPS = ['node' => 13.0, 'cloud' => 13.0, 'component' => 13.0, 'stack' => 13.0, 'database' => 22.0, 'storage' => 7.0];
 
     private function graph(): Svek
     {
@@ -165,7 +165,7 @@ final class DescriptionDrawing
             );
             // A package's, a folder's or a frame's title sits in its tab; any other container's is centred at its top, lower for the symbols PlantUML draws it lower in.
             $tabbed = \in_array($group->symbol, ['package', 'folder', 'frame'], strict: true);
-            [$tabX, $tabY] = 'frame' === $group->symbol ? [3.0, 1.0] : [4.0, 1.0];
+            [$tabX, $tabY] = 'frame' === $group->symbol ? [3.0, 1.0] : [4.0, 2.0];
             \array_push($marks, ...$title->marks(
                 $tabbed ? $box->x0 + $tabX : $box->x0 + ('node' === $group->symbol ? -4.0 : 0.0),
                 $box->y0 + ($tabbed ? $tabY : self::TITLE_TOPS[$group->symbol] ?? 2.0),

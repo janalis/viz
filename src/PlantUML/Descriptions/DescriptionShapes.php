@@ -28,23 +28,25 @@ final readonly class DescriptionShapes
             'database' => [self::room($x + $width, $y + $height)],
             default => [],
         };
+        $outline = match ($symbol) {
+            'component', 'node', 'frame', 'stack', 'collections' => $pen->framed($symbol, $x, $y, $width, $height, $round),
+            'folder', 'file', 'artifact', 'package' => $pen->tabbed($symbol, $x, $y, $width, $height),
+            'hexagon', 'action', 'process' => [$pen->polygon(self::pointed($symbol, $x, $y, $width, $height))],
+            'database' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke),
+            'queue' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke, across: 1),
+            'cloud' => self::cloud($pen, $x, $y, $width, $height),
+            'storage' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 50.0)],
+            'person' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 20.0)],
+            'card' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 0.0)],
+            'label' => [],
+            default => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, $round)],
+        };
+        // As PlantUML, which draws these as paths, its limit finder taking them as they run, not as boxes.
+        if (\in_array($symbol, ['node', 'database', 'queue', 'folder', 'file', 'package'], strict: true)) {
+            $outline = \array_map(static fn (Mark $mark): Mark => MarkKind::Polygon === $mark->kind ? $mark->with(['path' => true]) : $mark, $outline);
+        }
 
-        return [
-            ...$room,
-            ...match ($symbol) {
-                'component', 'node', 'frame', 'stack', 'collections' => $pen->framed($symbol, $x, $y, $width, $height, $round),
-                'folder', 'file', 'artifact', 'package' => $pen->tabbed($symbol, $x, $y, $width, $height),
-                'hexagon', 'action', 'process' => [$pen->polygon(self::pointed($symbol, $x, $y, $width, $height))],
-                'database' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke),
-                'queue' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke, across: 1),
-                'cloud' => self::cloud($pen, $x, $y, $width, $height),
-                'storage' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 50.0)],
-                'person' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 20.0)],
-                'card' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 0.0)],
-                'label' => [],
-                default => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, $round)],
-            },
-        ];
+        return [...$room, ...$outline];
     }
 
     /** Room 10 by 10 from a point, drawn with no line, which a diagram's extent takes in. */

@@ -58,6 +58,29 @@ final class DescriptionDrawingTest extends TestCase
         );
     }
 
+    public function testAContainersTitleAndContentStandWherePlantUmlDrawsThem(): void
+    {
+        $at = static function (string $symbol): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$symbol} \"Tq\" as g {\n rectangle x\n}\n@enduml"));
+            $baselines = [];
+            foreach ($drawing->marks as $mark) {
+                if (MarkKind::Text !== $mark->kind) {
+                    continue;
+                }
+                $baselines[$mark->text] = \round($mark->points[0][1] / Units::POINT, precision: 3);
+            }
+
+            return [$baselines['Tq'], $baselines['x']];
+        };
+
+        // As the jar draws them, a package's, a node's and a queue's outlines taken as the paths it draws.
+        $this->assertSame([22.535, 65.535], $at('rectangle'));
+        $this->assertSame([21.535, 64.535], $at('package'));
+        $this->assertSame([32.535, 69.535], $at('node'));
+        $this->assertSame([41.535, 79.535], $at('database'));
+        $this->assertSame([21.535, 64.535], $at('queue'));
+    }
+
     public function testWholeDiagramsDrawContainersLinksAndNotes(): void
     {
         $drawing = Work::run(PlantUmlPipeline::native()->drawing(<<<'PUML'
