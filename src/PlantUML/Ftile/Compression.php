@@ -54,7 +54,7 @@ final readonly class Compression
     {
         $slots = [];
         foreach ($shapes as $shape) {
-            \array_push($slots, ...self::slots($shape, $shape->ignoreY, $shape->minY, $shape->maxY));
+            \array_push($slots, ...self::slots($shape, $shape->ignoreY, $shape->minY - $shape->overhang[0], $shape->maxY - $shape->overhang[1]));
         }
         $compression = new self(self::gaps($slots));
         $identity = static fn (float $v): float => $v;

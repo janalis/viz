@@ -102,7 +102,7 @@ final class FtileGroup extends AbstractFtile
         return [
             new Shape(ShapeKind::Rectangle, [$pen->rectangle(0.0, 0.0, $width, $height, $this->back, $this->style->number('RoundCorner'))], 0.0, 0.0, $width, $height, ignoreX: true, ignoreY: true),
             Shape::of(ShapeKind::Path, [$pen->path([[$tab, 0.0], [$tab, $tabHeight - $corner], [$tab - $corner, $tabHeight], [0.0, $tabHeight]])], ignoreX: true),
-            ...$this->title->shapes(3.0, 1.0),
+            ...\array_map(static fn (Shape $shape): Shape => $shape->settled(), $this->title->shapes(3.0, 1.0)),
         ];
     }
 

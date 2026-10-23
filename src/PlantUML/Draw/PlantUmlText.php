@@ -371,6 +371,23 @@ final readonly class PlantUmlText
         return self::lineHeight($this->size) - self::below($this->size);
     }
 
+    /**
+     * How far past its block PlantUML's limit finder takes the text: from 1.5 below its first
+     * line's top less what that line keeps below its baseline, to 1.5 below its last line's
+     * baseline; a table as its box.
+     *
+     * @return array{float, float} how far above its top, and how far short of its bottom
+     */
+    public function overhang(): array
+    {
+        $past = [];
+        foreach ($this->blocks() as $line) {
+            $past[] = $line instanceof PlantUmlTable ? 0.0 : self::below($this->tallestOf($this->atoms($line), $this->fontSize($line))) - 1.5;
+        }
+
+        return [$past[0] ?? 0.0, $past[\count($past) - 1] ?? 0.0];
+    }
+
     /** A line's height at a font size in points, as PlantUML measures its default font: 10 at least. */
     public static function lineHeight(float $size): float
     {

@@ -323,6 +323,37 @@ final class ActivityDrawingTest extends TestCase
         self::draw("switch (a)\nendswitch");
     }
 
+    public function testALabelOnAnArrowAcrossSwimlanesTakesTheRoomPlantUmlsCompressionGivesIt(): void
+    {
+        $baseline = static function (string $label): float {
+            $marks = self::draw("|A|\n|C|\n|A|\nstart\n:one;\n{$label}\n|C|\n:two;")->marks;
+            $two = \array_values(\array_filter($marks, static fn (Mark $mark): bool => 'two' === $mark->text));
+
+            return $two[0]->points[0][1] / Units::POINT;
+        };
+
+        // As the jar sets them: the label's text down to 1.5 below its baseline, 10 clear of the arrow's head.
+        $this->assertEqualsWithDelta(
+            [174.715, 176.877, 182.928, 186.593],
+            [
+                $baseline('-> <size:8>across;'),
+                $baseline('-> across;'),
+                $baseline('-> <size:20>across;'),
+                $baseline('-> across\nmore;'),
+            ],
+            1e-3,
+        );
+    }
+
+    public function testACaseLabelTakesTheRoomPlantUmlsCompressionGivesIt(): void
+    {
+        $marks = self::draw("start\nswitch (which?)\ncase (left)\n  :one;\ncase (right)\n  :two;\nendswitch\n:after;")->marks;
+        $at = static fn (string $text): float => \array_values(\array_filter($marks, static fn (Mark $mark): bool => $text === $mark->text))[0]->points[0][1] / Units::POINT;
+
+        // As the jar sets them: the label from its line's height less 1.5 above its baseline, 10 below the diamond.
+        $this->assertEqualsWithDelta([100.455, 143.557, 231.689], [$at('left'), $at('one'), $at('after')], 1e-3);
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

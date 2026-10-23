@@ -26,12 +26,14 @@ final readonly class Shape
         public float $span = 0.0,
         /** How far above its box PlantUML's limit finder takes it to reach: text in a big font. */
         public float $rise = 0.0,
+        /** @var array{float, float} how far past its box PlantUML's compression takes it down: above its top, and short of its bottom */
+        public array $overhang = [0.0, 0.0],
     ) {}
 
     /** Text centred across a width from a point, once compressed, taking no room. */
     public static function centered(self $text, float $x, float $span): self
     {
-        return new self(ShapeKind::Centered, $text->marks, $text->minX, $text->minY, $text->maxX, $text->maxY, anchor: [$x, $text->minY], span: $span, rise: $text->rise);
+        return new self(ShapeKind::Centered, $text->marks, $text->minX, $text->minY, $text->maxX, $text->maxY, anchor: [$x, $text->minY], span: $span, rise: $text->rise, overhang: $text->overhang);
     }
 
     /**
@@ -104,7 +106,14 @@ final readonly class Shape
             null === $this->anchor ? null : [$this->anchor[0] + $dx, $this->anchor[1] + $dy],
             $this->span,
             $this->rise,
+            $this->overhang,
         );
+    }
+
+    /** The shape taken as its box, not reaching past it. */
+    public function settled(): self
+    {
+        return new self($this->kind, $this->marks, $this->minX, $this->minY, $this->maxX, $this->maxY, $this->ignoreX, $this->ignoreY, $this->anchor, $this->span);
     }
 
     /** @return array{float, float} where it was drawn from */
@@ -124,7 +133,7 @@ final readonly class Shape
         $marks = \array_map(static fn (Mark $mark): Mark => self::withPoints($mark, \array_map(static fn (array $point): array => [$x($point[0]), $y($point[1])], $mark->points)), $this->marks);
         $anchor = null === $this->anchor ? null : [$x($this->anchor[0]), $y($this->anchor[1])];
 
-        return new self($this->kind, $marks, $x($this->minX), $y($this->minY), $x($this->maxX), $y($this->maxY), $this->ignoreX, $this->ignoreY, $anchor, $this->span, $this->rise);
+        return new self($this->kind, $marks, $x($this->minX), $y($this->minY), $x($this->maxX), $y($this->maxY), $this->ignoreX, $this->ignoreY, $anchor, $this->span, $this->rise, $this->overhang);
     }
 
     /**

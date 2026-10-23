@@ -53,7 +53,11 @@ final readonly class Label implements TextBlock
             return [new Shape(ShapeKind::Text, $marks, $x, $y, $x + $width, $y + $this->size()[1])];
         }
 
-        return [new Shape(ShapeKind::Text, $marks, $x, $y, $x + $width, $y + $height, rise: $this->rise())];
+        // As PlantUML's compression takes text: from its first line's height less 1.5 above its baseline to 1.5 below its last.
+        [$above, $short] = $this->text->overhang();
+        $lowered = $this->lowered ? $this->rise() : 0.0;
+
+        return [new Shape(ShapeKind::Text, $marks, $x, $y, $x + $width, $y + $height, rise: $this->lowered ? 0.0 : $this->rise(), overhang: [$above - $lowered, $short - $lowered])];
     }
 
     /** How far above its block the limit finder takes the text to reach. */
