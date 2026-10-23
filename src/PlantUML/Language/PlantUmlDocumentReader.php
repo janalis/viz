@@ -238,7 +238,7 @@ final class PlantUmlDocumentReader
         if (1 === \preg_match('/^(?:(left|right|center)[\s\x{a0}]*)?(header|footer)(?=[\s\x{a0}:])(.*)$/iu', $line, $match)) {
             $text = PlantUmlDocument::text($match[3]);
             if (null !== $text) {
-                $this->captions[\strtolower($match[2])] = new PlantUmlCaption([$text], '' === $match[1] ? null : \strtolower($match[1]));
+                $this->captions[\strtolower($match[2])] = new PlantUmlCaption(self::lines($text), '' === $match[1] ? null : \strtolower($match[1]));
 
                 return true;
             }
@@ -250,9 +250,19 @@ final class PlantUmlDocumentReader
         if (null === $text) {
             return false;
         }
-        $this->captions[\strtolower($match[1])] = new PlantUmlCaption([$text]);
+        $this->captions[\strtolower($match[1])] = new PlantUmlCaption(self::lines($text));
 
         return true;
+    }
+
+    /**
+     * A caption written on one line, broken where `\n` breaks it, as PlantUML breaks it.
+     *
+     * @return list<string>
+     */
+    private static function lines(string $text): array
+    {
+        return \explode("\n", \str_replace(['\\n', '\\l', '\\r'], replace: "\n", subject: $text));
     }
 
     /** `scale 1.5` or `scale 2/3`; scales to a size are left to PlantUML, and a timing diagram's scale to its diagram. */

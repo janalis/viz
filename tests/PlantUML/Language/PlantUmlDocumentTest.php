@@ -99,6 +99,9 @@ final class PlantUmlDocumentTest extends TestCase
         $this->assertEquals(new PlantUmlCaption(['Top'], vertical: 'top'), self::read("legend top\nTop\nendlegend")->captions['legend']);
         $this->assertEquals(new PlantUmlCaption(['Plain']), self::read("legend\nPlain\nendlegend")->captions['legend']);
         $this->assertSame(2.0, $document->scale);
+        // A caption on one line breaks where `\n` breaks it, as PlantUML breaks it.
+        $this->assertEquals(new PlantUmlCaption(['M', 'line']), self::read('title M\\nline')->captions['title']);
+        $this->assertEquals(new PlantUmlCaption(['H', 'x'], 'left'), self::read('left header H\\nx')->captions['header']);
     }
 
     public function testLinesThatOnlyLookLikeCommandsStay(): void
