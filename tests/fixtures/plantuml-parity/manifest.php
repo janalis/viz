@@ -71,7 +71,7 @@ return [
     'chart/stacked' => 4,
     'chart/styled' => 4,
     'chen/basic' => 4,
-    'chen/display' => 1,
+    'chen/display' => 2,
     'chen/movies' => 4,
     'chen/styled' => 4,
     'chen/subclass' => 4,

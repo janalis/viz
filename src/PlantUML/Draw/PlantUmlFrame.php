@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Draw;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Language\PlantUmlCaption;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
@@ -24,6 +25,8 @@ final class PlantUmlFrame
     private const float SVEK_INSET = 6.0;
     /** How much room svek leaves past what it draws. */
     private const float SVEK_TRAIL = 14.0;
+    /** How much room svek leaves past an image it lays out within a diagram. */
+    private const float SVEK_IMAGE_TRAIL = 15.0;
     /** How much of that room lies past the document's captions, below and to the right of everything. */
     private const float SVEK_OUTER = 5.0;
 
@@ -85,8 +88,8 @@ final class PlantUmlFrame
     /**
      * A diagram laid out by svek, as PlantUML sets one: what it draws moved to stand 6 in from
      * the top left, as PlantUML's limit finder measures it, 9 more room past it — 10 past a
-     * class diagram's, as measured on PlantUML's output — and 5 more past everything, its
-     * captions included.
+     * class or a state diagram's, as measured on PlantUML's output — and 5 more past everything,
+     * its captions included.
      *
      * @param list<Mark> $marks the diagram's, in points
      * @param float $trail the room past what it draws, the 5 past everything included
@@ -106,7 +109,7 @@ final class PlantUmlFrame
 
     /**
      * An image svek lays out within a diagram, as its result measures itself: what it draws
-     * moved 6 in from its top left, as PlantUML's limit finder measures it, and 14 wider and
+     * moved 6 in from its top left, as PlantUML's limit finder measures it, and 15 wider and
      * taller than that, as measured on PlantUML's output.
      *
      * @param list<Mark> $marks
@@ -118,14 +121,15 @@ final class PlantUmlFrame
 
         return [
             \array_map(static fn (Mark $mark): Mark => self::moved($mark, self::SVEK_INSET - $minX, self::SVEK_INSET - $minY), $marks),
-            $maxX - $minX + self::SVEK_TRAIL,
-            $maxY - $minY + self::SVEK_TRAIL,
+            $maxX - $minX + self::SVEK_IMAGE_TRAIL,
+            $maxY - $minY + self::SVEK_IMAGE_TRAIL,
         ];
     }
 
     /**
-     * The box PlantUML's limit finder gives marks: a filled shape 1 short of its far sides and
-     * 1 before its near ones, as it finds rectangles; a line as it runs; a text its line's box.
+     * The box PlantUML's limit finder gives marks: a box 1 short of its far sides and 1 before
+     * its near ones, as it finds rectangles, an ellipse from its near sides to 1 short of its far
+     * ones, a path and a line as they run; a text its line's box.
      *
      * @param list<Mark> $marks
      * @return array{float, float, float, float}
@@ -152,8 +156,16 @@ final class PlantUmlFrame
 
             return [[$x - $half, $y - (0.75 * $line)], [$x + $half, $y + (0.25 * $line)]];
         }
-        if (MarkKind::Polygon === $mark->kind && !$mark->path) {
-            return \array_map(static fn (array $point): array => [$point[0] - 1, $point[1] - 1], $mark->points);
+        if (MarkKind::Polygon === $mark->kind) {
+            [$near, $far] = match ($mark->outline) {
+                Outline::Box => [1.0, 1.0],
+                Outline::Path => [0.0, 0.0],
+                Outline::Ellipse => [0.0, 1.0],
+            };
+            $xs = \array_column($mark->points, 0);
+            $ys = \array_column($mark->points, 1);
+
+            return [[\min($xs) - $near, \min($ys) - $near], [\max($xs) - $far, \max($ys) - $far]];
         }
 
         return $mark->points;

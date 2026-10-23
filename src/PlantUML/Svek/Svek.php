@@ -103,10 +103,13 @@ final class Svek
         return $from === $to ? 12.0 : 2.0;
     }
 
-    /** An edge, by the dashes of the link it stands for: one lays its ends side by side. Its index in the placement's routes. */
+    /**
+     * An edge, by the dashes of the link it stands for: one lays its ends side by side. Its index in the placement's routes.
+     * Its label's size, its room included, in whole points down, as svek writes it into the graph.
+     */
     public function edge(string $from, string $to, int $length, float $labelWidth = 0.0, float $labelHeight = 0.0, bool $constraint = true, bool $reversed = false): int
     {
-        $this->edges[] = [$from, $to, \max(0, $length - 1), $labelWidth, $labelHeight, $constraint, $reversed];
+        $this->edges[] = [$from, $to, \max(0, $length - 1), \floor($labelWidth), \floor($labelHeight), $constraint, $reversed];
 
         return \count($this->edges) - 1;
     }

@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\States;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
@@ -110,6 +111,6 @@ final readonly class StateBox
             $points[] = [$x + ($radius * \cos(($step * \M_PI) / 12)), $y + ($radius * \sin(($step * \M_PI) / 12))];
         }
 
-        return new Mark(MarkKind::Polygon, $points, stroke: $stroke, fill: $fill, strokeWidth: 1.0);
+        return new Mark(MarkKind::Polygon, $points, stroke: $stroke, fill: $fill, strokeWidth: 1.0, outline: Outline::Ellipse);
     }
 }

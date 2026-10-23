@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Classes;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
@@ -186,7 +187,7 @@ final class ClassDrawing
             fill: $back,
             strokeWidth: $stroke,
             // As PlantUML, which draws it as a path, its limit finder taking it as it runs.
-            path: true,
+            outline: Outline::Path,
         );
         $this->marks[] = new Mark(MarkKind::Polyline, [[$x0, $y0 + $tab], [$x0 + $width + 12, $y0 + $tab]], stroke: $line, strokeWidth: $stroke);
         \array_push($this->marks, ...$title->marks($x0 + 4, $y0 + 2, $width));

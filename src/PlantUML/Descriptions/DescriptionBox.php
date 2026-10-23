@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\Descriptions;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
@@ -223,6 +224,6 @@ final readonly class DescriptionBox
             $points[] = [$x + ($width / 2) + (($width / 2) * \cos($angle)), $y + ($height / 2) + (($height / 2) * \sin($angle))];
         }
 
-        return new Mark(MarkKind::Polygon, $points, stroke: $line, fill: $back, strokeWidth: $stroke);
+        return new Mark(MarkKind::Polygon, $points, stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Ellipse);
     }
 }

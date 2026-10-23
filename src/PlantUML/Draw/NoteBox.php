@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\Draw;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Style\Style;
 
 /**
@@ -89,6 +90,8 @@ final readonly class NoteBox
                 stroke: $line,
                 fill: $this->back ?? $this->style->color('BackGroundColor', '#feffdd'),
                 strokeWidth: $stroke,
+                // As PlantUML, which draws it as a path.
+                outline: Outline::Path,
             ),
             new Mark(MarkKind::Polyline, [[$right - self::FOLD, $y], [$right - self::FOLD, $y + self::FOLD], [$right, $y + self::FOLD]], stroke: $line, strokeWidth: $stroke),
             ...$this->text->marks($x + 6, $y + 5, $width - 12 - self::FOLD, 'left'),

@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\Descriptions;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Draw\JavaRandom;
 
@@ -43,7 +44,7 @@ final readonly class DescriptionShapes
         };
         // As PlantUML, which draws these as paths, its limit finder taking them as they run, not as boxes.
         if (\in_array($symbol, ['node', 'database', 'queue', 'folder', 'file', 'package'], strict: true)) {
-            $outline = \array_map(static fn (Mark $mark): Mark => MarkKind::Polygon === $mark->kind ? $mark->with(['path' => true]) : $mark, $outline);
+            $outline = \array_map(static fn (Mark $mark): Mark => MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => Outline::Path]) : $mark, $outline);
         }
 
         return [...$room, ...$outline];
