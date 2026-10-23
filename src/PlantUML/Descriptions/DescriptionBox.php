@@ -91,6 +91,9 @@ final readonly class DescriptionBox
         $labelHeight = $textHeight + $stereoHeight;
         [$width, $height] = match (true) {
             'usecase' === $element->symbol => [($labelWidth * \M_SQRT2) + 20, self::useCaseHeight($labelWidth, $labelHeight)],
+            // As PlantUML: its flat sides as wide as its text, its points half as far again, 5 above and below.
+            'hexagon' === $element->symbol => [2 * $labelWidth, $labelHeight + 10],
+            'person' === $element->symbol => self::person($labelWidth + 20, $labelHeight + 20),
             // As PlantUML, an interface's node is its circle alone, its name hanging below it.
             \in_array($element->symbol, ['interface', 'circle'], strict: true) => self::ICONS[$element->symbol],
             \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight],
@@ -100,6 +103,13 @@ final readonly class DescriptionBox
         };
 
         return new self($element, $style, $text, $stereotypes, $width, $height, $flushLeft);
+    }
+
+    /** @return array{float, float} */
+    /** @return array{float, float} a person's size: its body around its text, its head above it */
+    private static function person(float $width, float $height): array
+    {
+        return [$width, $height + (2 * DescriptionShapes::radius($width, $height))];
     }
 
     /** @return array{float, float} */
@@ -124,9 +134,12 @@ final readonly class DescriptionBox
         $outline = 'usecase' === $symbol
             ? [self::ellipse($x, $y, $this->width, $this->height, $line, $back, $stroke)]
             : DescriptionShapes::outline($symbol, $x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'));
-        [$labelLeft, $labelTop, $labelWidth] = 'usecase' === $symbol
-            ? [$x, $y + (($this->height - $this->labelHeight()) / 2), $this->width]
-            : [$x + $left, $y + $top + ('folder' === $symbol ? self::FOLDER_TITLE[1] : 0.0), $this->width - $left - $right];
+        [$labelLeft, $labelTop, $labelWidth] = match ($symbol) {
+            'usecase' => [$x, $y + (($this->height - $this->labelHeight()) / 2), $this->width],
+            'hexagon' => [$x + ($this->width / 4), $y + 5, $this->width / 2],
+            'person' => [$x + $left, $y + (2 * DescriptionShapes::head($this->width, $this->height)) + $top, $this->width - $left - $right],
+            default => [$x + $left, $y + $top + ('folder' === $symbol ? self::FOLDER_TITLE[1] : 0.0), $this->width - $left - $right],
+        };
 
         return [...Shadow::cast($outline, $this->style->number('Shadowing')), ...$this->label($labelLeft, $labelTop, $labelWidth)];
     }

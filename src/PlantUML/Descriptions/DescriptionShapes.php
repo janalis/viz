@@ -37,17 +37,50 @@ final readonly class DescriptionShapes
             'queue' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke, across: 1),
             'cloud' => self::cloud($pen, $x, $y, $width, $height),
             'storage' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 50.0)],
-            'person' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 20.0)],
+            'person' => self::person($x, $y, $width, $height, $line, $back, $stroke),
             'card' => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, 0.0)],
             'label' => [],
             default => [ClassBox::rectangle($x, $y, $width, $height, $line, $back, $stroke, $round)],
         };
         // As PlantUML, which draws these as paths, its limit finder taking them as they run, not as boxes.
-        if (\in_array($symbol, ['node', 'database', 'queue', 'folder', 'file', 'package'], strict: true)) {
+        if (\in_array($symbol, ['node', 'database', 'queue', 'folder', 'file', 'package', 'hexagon', 'action', 'process'], strict: true)) {
             $outline = \array_map(static fn (Mark $mark): Mark => MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => Outline::Path]) : $mark, $outline);
         }
 
         return [...$room, ...$outline];
+    }
+
+    /**
+     * A person's head's radius, as measured on PlantUML's output: 0.21 times the square root of its body's area.
+     */
+    public static function radius(float $width, float $height): float
+    {
+        return 0.21 * \sqrt($width * $height);
+    }
+
+    /** A person's head's radius, from its whole size: its body below the head. */
+    public static function head(float $width, float $height): float
+    {
+        // The body's height h solves h + 2 * radius(width, h) = height; by a few steps of Newton's method from the whole.
+        $body = $height;
+        for ($step = 0; $step < 8; ++$step) {
+            $f = $body + (2 * self::radius($width, $body)) - $height;
+            $slope = 1 + (0.21 * \sqrt($width / \max($body, 1e-9)));
+            $body -= $f / $slope;
+        }
+
+        return self::radius($width, $body);
+    }
+
+    /** @return list<Mark> a person as PlantUML draws one: a head on a body, rounded as much as its head is round */
+    private static function person(float $x, float $y, float $width, float $height, string $line, string $back, float $stroke): array
+    {
+        $radius = self::head($width, $height);
+
+        return [
+            DescriptionBox::ellipse($x + ($width / 2) - $radius, $y, 2 * $radius, 2 * $radius, $line, $back, $stroke),
+            ClassBox::rectangle($x, $y + (2 * $radius), $width, $height - (2 * $radius), $line, $back, $stroke, 2 * $radius),
+        ];
     }
 
     /** Room 10 by 10 from a point, drawn with no line, which a diagram's extent takes in. */
@@ -131,7 +164,7 @@ final readonly class DescriptionShapes
         $middle = $y + ($height / 2);
 
         return match ($symbol) {
-            'hexagon' => [[$x + 10, $y], [$right - 10, $y], [$right, $middle], [$right - 10, $bottom], [$x + 10, $bottom], [$x, $middle]],
+            'hexagon' => [[$x + ($width / 4), $y], [$right - ($width / 4), $y], [$right, $middle], [$right - ($width / 4), $bottom], [$x + ($width / 4), $bottom], [$x, $middle]],
             'action' => [[$x, $y], [$right - 10, $y], [$right, $middle], [$right - 10, $bottom], [$x, $bottom]],
             default => [[$x, $y], [$right - 10, $y], [$right, $middle], [$right - 10, $bottom], [$x, $bottom], [$x + 10, $middle]],
         };

@@ -81,6 +81,13 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([21.535, 64.535], $at('queue'));
     }
 
+    public function testAHexagonAnActionAndAPersonAreAsBigAsPlantUmlDrawsThem(): void
+    {
+        $height = static fn (string $symbol): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$symbol} X\n{$symbol} Y\nX --> Y\n@enduml"))->height / Units::POINT;
+
+        // As the jar sizes them: a hexagon 5 above and below its text, an action as a path, a person's head above its body.
+        $this->assertSame([133.0, 153.0, 180.0], [$height('hexagon'), $height('action'), $height('person')]);
+    }
     public function testACollectionsCopyStandsBehindItDownAndRightAsPlantUmlDrawsIt(): void
     {
         $marks = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nrectangle a\ncollections X\na --> X\n@enduml"))->marks;
