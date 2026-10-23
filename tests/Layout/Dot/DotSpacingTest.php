@@ -93,6 +93,16 @@ final class DotSpacingTest extends TestCase
 
         $this->assertEqualsWithDelta([49.0, 98.0], [$at['t'] - $at['a'], $at['c'] - $at['a']], 0.01);
     }
+
+    public function testABlockOfSourcesIsCentredOverWhatItPullsTo(): void
+    {
+        // As dot sets svek's Chen EER movies: two attributes held a separation apart, centred over the attribute they hang from.
+        $source = 'digraph unix { nodesep=0.486111; ranksep=0.833333; n06 [shape=rect,label="",width=1.239271,height=0.506782]; n07 [shape=ellipse,label="",width=1.152664,height=0.407194]; n08 [shape=ellipse,label="",width=0.848272,height=0.407194]; n09 [shape=ellipse,label="",width=0.963208,height=0.407194]; n10 [shape=ellipse,label="",width=0.962402,height=0.407194]; n11 [shape=ellipse,label="",width=1.673230,height=0.407194]; n12 [shape=ellipse,label="",width=0.695070,height=0.407194]; n13 [shape=ellipse,label="",width=0.597724,height=0.407194]; n14 [shape=rect,label="",width=1.321587,height=0.506782]; n15 [shape=rect,label="",width=0.884847,height=0.506782]; n16 [shape=ellipse,label="",width=0.768784,height=0.407194]; n17 [shape=diamond,label="",width=1.885774,height=0.942887]; n18 [shape=ellipse,label="",width=0.697218,height=0.407194]; n07->n06[minlen=1]; n08->n06[minlen=1]; n09->n08[minlen=1]; n10->n08[minlen=1]; n11->n06[minlen=1]; n12->n06[minlen=1]; n13->n06[minlen=1]; n16->n15[minlen=1]; n18->n17[minlen=1]; n17->n14[minlen=2,label=<<TABLE FIXEDSIZE="TRUE" WIDTH="8" HEIGHT="14"><TR><TD></TD></TR></TABLE>>]; n17->n15[minlen=2,label=<<TABLE FIXEDSIZE="TRUE" WIDTH="10" HEIGHT="14"><TR><TD></TD></TR></TABLE>>]; }';
+        $at = self::across($source, ['n08' => 0.0, 'n09' => 0.0, 'n10' => 0.0], 'x');
+
+        $this->assertEqualsWithDelta([-52.0, 52.0], [$at['n09'] - $at['n08'], $at['n10'] - $at['n08']], 0.01);
+    }
+
     public function testRanksStandTheirSeparationApartToTheNearestPoint(): void
     {
         // As dot sets them: 0.35 inch, 25.2, apart as 25, and 0.37, 26.64, as 27.
