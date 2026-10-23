@@ -18,6 +18,20 @@ use PHPUnit\Framework\TestCase;
 
 final class StateDrawingTest extends TestCase
 {
+    public function testAClusteredCompositeAndAHistoryStandAsPlantUmlDrawsThem(): void
+    {
+        $baselines = [];
+        foreach (Work::run(PlantUmlPipeline::native()->drawing("@startuml\n[*] --> Player\nstate Player {\n  [*] --> Stopped\n}\nPlayer --> Off\nOff --> Player[H]\n@enduml"))->marks as $mark) {
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
+            $baselines[$mark->text] = \round($mark->points[0][1] / Units::POINT, precision: 3);
+        }
+
+        // As the jar draws them: the cluster's name 4 below its top, the history's letter at 14 points, centred.
+        $this->assertSame([98.535, 140.291], [$baselines['Player'], $baselines['H']]);
+    }
+
     public function testTheDiagramIsAsTallAsPlantUmlMakesIt(): void
     {
         $height = static fn (string $lines): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"))->height / Units::POINT;

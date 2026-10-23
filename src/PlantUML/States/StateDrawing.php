@@ -244,14 +244,26 @@ final class StateDrawing
     /**
      * A composite state's frame: the rounded box, its name over a line, and its description.
      *
+     * @param float $titleTop how far below its top its name stands
+     * @param float $below how far below its name its line runs
      * @return list<Mark>
      */
-    private function frame(StateNode $node, float $x, float $y, float $width, float $height, float $titleHeight, PlantUmlText $title, PlantUmlText $description): array
-    {
+    private function frame(
+        StateNode $node,
+        float $x,
+        float $y,
+        float $width,
+        float $height,
+        float $titleHeight,
+        PlantUmlText $title,
+        PlantUmlText $description,
+        float $titleTop = self::MARGIN,
+        float $below = self::MARGIN,
+    ): array {
         $style = $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'state'], $node->stereotypes);
         $line = ClassColors::line($node->color) ?? $style->color('LineColor', '#181818');
         $stroke = $style->number('LineThickness', 0.5);
-        $rule = $y + (2 * self::MARGIN) + $titleHeight;
+        $rule = $y + $titleTop + $titleHeight + $below;
 
         $band = ClassColors::back($node->color) ?? $style->color('BackGroundColor', '#f1f1f1');
         $body = ClassColors::back($node->color) ?? $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'state', 'body'], $node->stereotypes)->color('BackGroundColor', 'none');
@@ -268,7 +280,7 @@ final class StateDrawing
             new Mark(MarkKind::Polygon, [[$x, $rule], ...$left, ...$right, [$x + $width, $rule]], stroke: 'none', fill: $band, strokeWidth: 0.0),
             new Mark(MarkKind::Polygon, $outline->points, stroke: $line, fill: 'none', strokeWidth: $stroke),
             new Mark(MarkKind::Polyline, [[$x, $rule], [$x + $width, $rule]], stroke: $line, strokeWidth: $stroke),
-            ...$title->marks($x, $y + self::MARGIN, $width),
+            ...$title->marks($x, $y + $titleTop, $width),
             ...$description->marks($x + self::MARGIN, $rule + self::MARGIN, $width, 'left'),
         ];
     }
@@ -352,7 +364,19 @@ final class StateDrawing
         foreach ($clusters as $node) {
             $box = $boxesById[$node->id];
             [, $titleHeight] = $this->title($node)->size();
-            \array_push($marks, ...$this->frame($node, $box->x0, $box->y0, $box->x1 - $box->x0, $box->y1 - $box->y0, $titleHeight, $this->title($node), $this->description($node)));
+            // As PlantUML draws a composite state laid out as a cluster: its name 4 below its top, its line 1 below the name.
+            \array_push($marks, ...$this->frame(
+                $node,
+                $box->x0,
+                $box->y0,
+                $box->x1 - $box->x0,
+                $box->y1 - $box->y0,
+                $titleHeight,
+                $this->title($node),
+                $this->description($node),
+                titleTop: 4.0,
+                below: 1.0,
+            ));
         }
         $style = $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'arrow']);
         $background = $this->states->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');

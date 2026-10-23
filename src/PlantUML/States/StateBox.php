@@ -83,7 +83,11 @@ final readonly class StateBox
         return match ($this->node->kind) {
             'start' => [self::disc($cx, $cy, 10.0, $dark, $dark)],
             'end' => [self::disc($cx, $cy, 11.0, $dark, 'none'), self::disc($cx, $cy, 6.0, $dark, $dark)],
-            'history', 'deephistory' => [self::disc($cx, $cy, 11.0, $line, $back), ...new PlantUmlText(['history' === $this->node->kind ? 'H' : 'H*'], 12.0)->marks($x, $cy - 7.5, $this->width)],
+            // As PlantUML: its letter at 14 points, its line centred on the circle.
+            'history', 'deephistory' => [
+                self::disc($cx, $cy, 11.0, $line, $back),
+                ...new PlantUmlText(['history' === $this->node->kind ? 'H' : 'H*'])->marks($x, $cy - (PlantUmlText::lineHeight(14.0) / 2), $this->width),
+            ],
             'choice' => [new Mark(MarkKind::Polygon, [[$cx, $y], [$x + $this->width, $cy], [$cx, $y + $this->height], [$x, $cy]], stroke: $line, fill: $back, strokeWidth: $stroke)],
             'fork', 'join' => [new Mark(MarkKind::Polygon, ClassBox::corners($x, $y, $this->width, $this->height), stroke: $dark, fill: $dark, strokeWidth: 1.0)],
             default => $this->state($x, $y, $line, $back, $stroke),
