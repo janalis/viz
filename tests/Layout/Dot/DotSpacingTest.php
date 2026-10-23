@@ -85,6 +85,14 @@ final class DotSpacingTest extends TestCase
         $this->assertEqualsWithDelta([-78.0, 13.0], [$at['n07'] - $at['n10'], $at['n11'] - $at['n10']], 0.01);
     }
 
+    public function testANodeFreeAboveAChainIsCentredBetweenItsFarEnds(): void
+    {
+        // As dot sets svek's Chen EER subclass: t over a's long edge, kept straight, and c, midway between a and c.
+        $source = 'digraph { nodesep=0.486111; ranksep=0.833333; node [shape=rect, label="", height=0.506782]; t [width=1.013021]; a [width=1.244778]; p [width=1.157810]; q [width=1.146037]; d [width=0.972385]; c [shape=ellipse, width=0.347222, height=0.347222]; t->a [minlen=2]; t->c; c->p [minlen=2]; c->q [minlen=2]; a->d [minlen=2] }';
+        $at = self::across($source, ['t' => 0.0, 'a' => 0.0, 'c' => 0.0], 'x');
+
+        $this->assertEqualsWithDelta([49.0, 98.0], [$at['t'] - $at['a'], $at['c'] - $at['a']], 0.01);
+    }
     public function testRanksStandTheirSeparationApartToTheNearestPoint(): void
     {
         // As dot sets them: 0.35 inch, 25.2, apart as 25, and 0.37, 26.64, as 27.

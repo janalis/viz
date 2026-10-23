@@ -67,7 +67,7 @@ final class DotHorizontal
         $movers = \array_map(static fn (): bool => true, \array_filter($this->layers->kind, static fn (int $kind): bool => DotLayers::REAL === $kind));
         $solved = new NetworkSimplex($this->count, $this->edges, movers: $movers)->solve(NetworkSimplex::BALANCE_SIDES);
         yield from $solved;
-        $values = $solved->getReturn();
+        $values = $this->freed($solved->getReturn());
         // The graph's bounds hold what it draws, its clusters a margin inside, nothing pulling them in: they lie at its extremes.
         $lefts = [];
         $rights = [];
@@ -89,6 +89,173 @@ final class DotHorizontal
             $this->boxes[] = [$values[$this->left($cluster)] + $shift, $values[$this->right($cluster)] + $shift];
         }
         $this->width = $high - $low + (2 * $this->padding);
+    }
+
+    /**
+     * The positions with each real node free to slide between equal pulls set as `dot` is seen
+     * to set it: the chains of virtual nodes it starts down straight from their far ends, and it
+     * midway between its neighbours above and those ends — where the ranks keep their room. Left
+     * alone in graphs with clusters, flat edges or ports.
+     *
+     * @param list<int> $values
+     * @return list<int>
+     */
+    private function freed(array $values): array
+    {
+        $layers = $this->layers;
+        if ([] !== $layers->parents || [] !== $layers->flat) {
+            return $values;
+        }
+        /** @var array<int, list<array{int, int}>> $up */
+        $up = [];
+        /** @var array<int, list<array{int, int}>> $down */
+        $down = [];
+        foreach ($layers->edges as [$tail, $head, $weight, , $tailPort, $headPort]) {
+            if (0.0 !== $tailPort || 0.0 !== $headPort) {
+                return $values;
+            }
+            $down[$tail][] = [$head, $weight];
+            $up[$head][] = [$tail, $weight];
+        }
+        foreach ($layers->rank as $node => $_) {
+            if (DotLayers::REAL !== $layers->kind[$node]) {
+                continue;
+            }
+            // Pulled up by its neighbours as they stand, down by the far ends of the chains it starts.
+            $anchors = [];
+            $chains = [];
+            foreach ($up[$node] ?? [] as [$next, $weight]) {
+                $anchors[] = [$values[$next], $weight];
+            }
+            foreach ($down[$node] ?? [] as [$next, $weight]) {
+                $found = $this->chain($next, $down, $values);
+                if (null === $found) {
+                    continue 2;
+                }
+                [$nodes, $end] = $found;
+                $anchors[] = [$values[$end], $weight];
+                $chains[] = [$nodes, $values[$end]];
+            }
+            $values = $this->centred($node, $anchors, $chains, $values);
+        }
+
+        return $values;
+    }
+
+    /**
+     * A chain down through virtual nodes free to move, to a real node or one its rank holds.
+     *
+     * @param array<int, list<array{int, int}>> $down
+     * @param list<int> $values
+     * @return ?array{list<int>, int} its free nodes and its end, or null where it forks
+     */
+    private function chain(int $next, array $down, array $values): ?array
+    {
+        $nodes = [];
+        while (DotLayers::REAL !== $this->layers->kind[$next] && !$this->pinned($next, $values)) {
+            if (1 !== \count($down[$next] ?? [])) {
+                return null;
+            }
+            $nodes[] = $next;
+            $next = $down[$next][0][0];
+        }
+
+        return [$nodes, $next];
+    }
+
+    /**
+     * A node moved midway between its pulls, with its chains straight from their ends, where it
+     * is free to move and the ranks keep their room.
+     *
+     * @param list<array{int, int}> $anchors
+     * @param list<array{list<int>, int}> $chains
+     * @param list<int> $values
+     * @return list<int>
+     */
+    private function centred(int $node, array $anchors, array $chains, array $values): array
+    {
+        if ([] === \array_filter($chains, static fn (array $chain): bool => [] !== $chain[0]) || \count($anchors) < 2) {
+            return $values;
+        }
+        [$low, $high] = self::median($anchors);
+        if (($high - $low) < 2 || $values[$node] < $low || $values[$node] > $high) {
+            return $values;
+        }
+        $moved = $values;
+        $moved[$node] = \intdiv($low + $high, num2: 2);
+        foreach ($chains as [$nodes, $x]) {
+            foreach ($nodes as $virtual) {
+                $moved[$virtual] = $x;
+            }
+        }
+
+        return $this->roomy($moved) ? $moved : $values;
+    }
+
+    /**
+     * The interval of positions a weighted median takes between the anchors pulling a node.
+     *
+     * @param list<array{int, int}> $anchors each anchor's position and weight
+     * @return array{int, int}
+     */
+    private static function median(array $anchors): array
+    {
+        \usort($anchors, static fn (array $a, array $b): int => $a[0] <=> $b[0]);
+        $total = \array_sum(\array_column($anchors, 1));
+        $sum = 0;
+        foreach ($anchors as $index => [$x, $weight]) {
+            $sum += $weight;
+            if ((2 * $sum) === $total) {
+                return [$x, $anchors[$index + 1][0]];
+            }
+            if ((2 * $sum) > $total) {
+                return [$x, $x];
+            }
+        }
+
+        return [0, 0];
+    }
+
+    /** @param list<int> $values whether a node stands its least room from a neighbour on its rank */
+    private function pinned(int $node, array $values): bool
+    {
+        $nodes = $this->layers->ranks[$this->layers->rank[$node]];
+        $index = (int) \array_search($node, $nodes, strict: true);
+        foreach ([$index - 1, $index + 1] as $other) {
+            if (!\array_key_exists($other, $nodes)) {
+                continue;
+            }
+            [$a, $b] = $other < $index ? [$nodes[$other], $node] : [$node, $nodes[$other]];
+            if (($values[$b] - $values[$a]) <= $this->room($a, $b)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function room(int $previous, int $node): int
+    {
+        return self::length($this->layers->right[$previous] + $this->after($previous) + $this->gap($previous, $node) + $this->before($node) + $this->layers->left[$node]);
+    }
+
+    /** @param list<int> $values whether every rank keeps its neighbours their room */
+    private function roomy(array $values): bool
+    {
+        $layers = $this->layers;
+        foreach ($layers->ranks as $nodes) {
+            foreach ($nodes as $index => $node) {
+                if (0 === $index) {
+                    continue;
+                }
+                $previous = $nodes[$index - 1];
+                if (($values[$node] - $values[$previous]) < $this->room($previous, $node)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /** @param list<int> $nodes one rank, in order */
