@@ -152,7 +152,7 @@ final readonly class FtileBuilder
         $diamond2 = $this->factory->diamond('inside', $first ?? Stereogroup::back($switch->endColors) ?? Stereogroup::back($switch->stereogroup));
         $positives = \array_map(fn (BranchTile $case): ?TextBlock => $this->factory->label($case->displayPositive()), $cases);
         $specials = \array_map(static fn (BranchTile $case): ?array => $case->branch->special?->display, $cases);
-        $specials = \array_map($this->factory->label(...), $specials);
+        $specials = \array_map($this->factory->endLabel(...), $specials);
         $tiles = [];
         foreach ($cases as $index => $case) {
             $tiles[] = self::labelled($case->tile, $positives[$index], $specials[$index]);

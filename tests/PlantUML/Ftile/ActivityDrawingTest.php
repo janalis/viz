@@ -260,6 +260,20 @@ final class ActivityDrawingTest extends TestCase
         $this->assertEqualsWithDelta([109.422, 113.01, 125.289, 137.066], [$baseline(8), $baseline(11), $baseline(20), $baseline(30)], 1e-3);
     }
 
+    public function testALabelAtTheEndOfABranchStandsAsPlantUmlDrawsIt(): void
+    {
+        $at = static function (string $lines, string $text): float {
+            $marks = \array_values(\array_filter(self::draw($lines)->marks, static fn (Mark $mark): bool => $text === $mark->text));
+
+            return $marks[0]->points[0][1] / Units::POINT;
+        };
+        $if = static fn (int $size): string => "<style>\narrow {\n FontSize {$size}\n}\n</style>\nif (t?) then (yes)\n  :a;\n  -> out a;\nelse (no)\n  :b;\nendif\n:c;";
+
+        // As the jar draws them: the label as low as it is taken to reach above its block, the step after past its whole descent.
+        $this->assertEqualsWithDelta([106.363, 162.285, 187.281], [$at($if(11), text: 'out a'), $at($if(11), text: 'c'), $at($if(20), text: 'c')], 1e-3);
+        $this->assertEqualsWithDelta(170.498, $at("start\nswitch (kind?)\ncase (a)\n  :first;\n  -> out of a;\ncase (b)\n  :second;\nendswitch\nstop", text: 'out of a'), 1e-3);
+    }
+
     public function testABreakInAnotherSwimlaneThanItsRepeatLeavesByNoArrow(): void
     {
         $shown = \array_map(

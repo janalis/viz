@@ -49,11 +49,21 @@ final readonly class FtileFactory
 
     /**
      * @param ?list<string> $lines a label on an arrow, none when not written
-     * @param bool $drawn whether it is measured as drawn, as the label on an arrow from one step to the next is
+     * @param ?float $reach how far below its baseline it is taken to reach when measured as drawn, as the label on an arrow from one step to the next is; null when measured as its block
      */
-    public function label(?array $lines, bool $drawn = false): ?TextBlock
+    public function label(?array $lines, ?float $reach = null): ?TextBlock
     {
-        return null === $lines ? null : new Label($lines, $this->styles->arrow(), drawn: $drawn);
+        return null === $lines ? null : new Label($lines, $this->styles->arrow(), reach: $reach);
+    }
+
+    /**
+     * A label at the end of a branch, as PlantUML draws one: its text as low in its block as the limit finder takes it to reach above.
+     *
+     * @param ?list<string> $lines none when not written
+     */
+    public function endLabel(?array $lines): ?TextBlock
+    {
+        return null === $lines ? null : new Label($lines, $this->styles->arrow(), lowered: true);
     }
 
     /** @param list<string> $lines */
@@ -145,8 +155,8 @@ final readonly class FtileFactory
     /** One tile above another, 35 apart — more for the label on the arrow between them — the arrow drawn when the first leaves. */
     public function assembly(Ftile $tile1, Ftile $tile2): Ftile
     {
-        // As PlantUML, a label on an arrow down to the next step in the same swimlane is measured as drawn.
-        $label = $this->label($tile2->inLink()->display, drawn: FtileLane::out($tile1) === FtileLane::in($tile2));
+        // As PlantUML, a label on an arrow down to the next step in the same swimlane is measured as drawn, to 4 below its baseline at most.
+        $label = $this->label($tile2->inLink()->display, FtileLane::out($tile1) === FtileLane::in($tile2) ? 4.0 : null);
         $space = FtileMarged::bottom($tile1, 35 + ($label?->size()[1] ?? 0.0));
         $result = new FtileAssembly($space, $tile2);
         $geometry = $tile1->geometry();

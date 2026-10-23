@@ -147,6 +147,7 @@ final readonly class ConditionalBuilder
 
     private function out(BranchTile $branch): ?TextBlock
     {
-        return $this->factory->label($branch->tile->outLink()->display);
+        // As PlantUML, the label at the end of a branch is measured as drawn, its whole descent.
+        return $this->factory->label($branch->tile->outLink()->display, \INF);
     }
 }
