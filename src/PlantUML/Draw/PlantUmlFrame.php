@@ -153,9 +153,10 @@ final class PlantUmlFrame
         if (MarkKind::Text === $mark->kind) {
             [$x, $y] = $mark->points[0];
             $half = (DisplayWidth::of($mark->text) * $mark->fontScale) / 2;
-            $line = 2 * $mark->fontScale;
+            // As PlantUML's limit finder takes a text, as measured on its output: its line moved 1.5 down from its baseline's top.
+            $size = $mark->fontScale * Units::POINT * 12;
 
-            return [[$x - $half, $y - (0.75 * $line)], [$x + $half, $y + (0.25 * $line)]];
+            return [[$x - $half, $y - PlantUmlText::lineHeight($size) + 1.5], [$x + $half, $y + 1.5]];
         }
         if (MarkKind::Polygon === $mark->kind) {
             [$near, $far] = match ($mark->outline) {
