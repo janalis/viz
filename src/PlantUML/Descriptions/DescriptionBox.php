@@ -54,7 +54,7 @@ final readonly class DescriptionBox
      *
      * @var array<string, array{float, float}>
      */
-    private const array ICONS = ['actor' => [28.0, 60.0], 'boundary' => [30.0, 22.0], 'control' => [22.0, 22.0], 'entity' => [22.0, 22.0], 'interface' => [18.0, 18.0], 'circle' => [18.0, 18.0]];
+    private const array ICONS = ['actor' => [28.0, 60.0], 'boundary' => [49.0, 32.0], 'control' => [32.0, 32.0], 'entity' => [32.0, 32.0], 'interface' => [18.0, 18.0], 'circle' => [18.0, 18.0]];
 
     /** How wide PlantUML's default font sets a text, for the bundled font's width. */
     private const float PLANTUML_WIDTH = 0.8;
@@ -71,7 +71,15 @@ final readonly class DescriptionBox
         public float $height,
         /** Whether its lines are set left in their block, the block centred, as a network diagram's servers set them; each line centred otherwise. */
         private bool $flushLeft = false,
+        /** Whether an interface is its circle alone, its name hanging below, as svek writes one linked beside another. */
+        private bool $alone = false,
     ) {}
+
+    /** An interface as svek writes one a link joins beside another: its circle alone, 18 across, its name hanging 8 below. */
+    public function beside(): self
+    {
+        return \in_array($this->element->symbol, ['interface', 'circle'], strict: true) ? clone($this, ['width' => 18.0, 'height' => 18.0, 'alone' => true]) : $this;
+    }
 
     /**
      * @param ?Style $style the style it is drawn in, its symbol's in a component diagram by default, as a network diagram's servers take their own
@@ -94,8 +102,8 @@ final readonly class DescriptionBox
             // As PlantUML: its flat sides as wide as its text, its points half as far again, 5 above and below.
             'hexagon' === $element->symbol => [2 * $labelWidth, $labelHeight + 10],
             'person' === $element->symbol => self::person($labelWidth + 20, $labelHeight + 20),
-            // As PlantUML, an interface's node is its circle alone, its name hanging below it.
-            \in_array($element->symbol, ['interface', 'circle'], strict: true) => self::ICONS[$element->symbol],
+            // As svek writes an interface, and dot sizes it: its circle in a cell 18 across, its name's height above and below and as wide as its name, in whole points, 4 around, 54 wide at least.
+            \in_array($element->symbol, ['interface', 'circle'], strict: true) => [\max(54.0, 18 + (2 * \round(\max(0.5, ($labelWidth - 18) / 2))) + 8), (2 * \round($labelHeight)) + 26],
             \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight],
             // As PlantUML, a folder keeps room for a title it does not show, 40 by 15, above its label.
             'folder' === $element->symbol => self::boxed($element->symbol, \max(self::FOLDER_TITLE[0], $labelWidth), self::FOLDER_TITLE[1] + $labelHeight),
@@ -148,23 +156,36 @@ final readonly class DescriptionBox
     private function icon(string $symbol, float $x, float $y, string $line, string $back, float $stroke): array
     {
         $centre = $x + ($this->width / 2);
-        [, $iconHeight] = self::ICONS[$symbol];
         $marks = match ($symbol) {
             'actor' => self::stickman($centre, $y, $line, $back, $stroke),
+            // As PlantUML 1.2026 draws them, each a circle 24 across 16 below its node's top: beside a bar 24 tall, over a line, under an arrowhead.
             'boundary' => [
-                StateBox::disc($centre + 4, $y + 11, 11.0, $line, $back),
-                new Mark(MarkKind::Polyline, [[$centre - 15, $y], [$centre - 15, $y + 22]], stroke: $line, strokeWidth: $stroke),
-                new Mark(MarkKind::Polyline, [[$centre - 15, $y + 11], [$centre - 7, $y + 11]], stroke: $line, strokeWidth: $stroke),
+                StateBox::disc($centre + 4.5, $y + 16, 12.0, $line, $back),
+                new Mark(MarkKind::Polyline, [[$centre - 24.5, $y + 4], [$centre - 24.5, $y + 28]], stroke: $line, strokeWidth: $stroke),
+                new Mark(MarkKind::Polyline, [[$centre - 24.5, $y + 16], [$centre - 7.5, $y + 16]], stroke: $line, strokeWidth: $stroke),
             ],
             'control' => [
-                StateBox::disc($centre, $y + 11, 11.0, $line, $back),
-                new Mark(MarkKind::Polygon, [[$centre - 2, $y - 3], [$centre + 4, $y], [$centre - 2, $y + 3]], stroke: $line, fill: $line, strokeWidth: $stroke),
+                StateBox::disc($centre, $y + 16, 12.0, $line, $back),
+                new Mark(
+                    MarkKind::Polygon,
+                    [[$centre - 4, $y + 4], [$centre + 2, $y - 1], [$centre, $y + 4], [$centre + 2, $y + 9]],
+                    stroke: $line,
+                    fill: $line,
+                    strokeWidth: $stroke,
+                    outline: Outline::Path,
+                ),
             ],
-            'entity' => [StateBox::disc($centre, $y + 11, 11.0, $line, $back), new Mark(MarkKind::Polyline, [[$centre - 11, $y + 22], [$centre + 11, $y + 22]], stroke: $line, strokeWidth: $stroke)],
-            // As PlantUML's interface: a circle 16 across, 1 clear of its icon's sides.
-            default => [StateBox::disc($centre, $y + 9, 8.0, $line, $back)],
+            'entity' => [StateBox::disc($centre, $y + 16, 12.0, $line, $back), new Mark(MarkKind::Polyline, [[$centre - 12, $y + 30], [$centre + 12, $y + 30]], stroke: $line, strokeWidth: $stroke)],
+            // As PlantUML's interface: a circle 16 across at its node's centre.
+            default => [StateBox::disc($centre, $y + ($this->height / 2), 8.0, $line, $back)],
         };
-        $top = $y + $iconHeight + self::gap($symbol);
+        // An interface's name 17 below its circle's centre, 8 below its node alone; another's under its icon.
+        $top = $y
+        + match (true) {
+            $this->alone => 26.0,
+            \in_array($symbol, ['interface', 'circle'], strict: true) => ($this->height / 2) + 17,
+            default => self::ICONS[$symbol][1],
+        };
 
         return [...$marks, ...$this->label($x, $top, $this->width)];
     }
@@ -185,12 +206,6 @@ final readonly class DescriptionBox
         $aspect = \min(0.8, \max(0.2, $height / $width));
 
         return ($aspect * \hypot($width, $height / $aspect)) + 6;
-    }
-
-    /** How far an icon's name stands below it: 8 under an interface's circle, outside its node, right under the others. */
-    private static function gap(string $symbol): float
-    {
-        return \in_array($symbol, ['interface', 'circle'], strict: true) ? 8.0 : 0.0;
     }
 
     /** @return list<Mark> the stereotypes above the text, both centred within a width */

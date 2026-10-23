@@ -70,8 +70,17 @@ final class DescriptionDrawing
             [$shapeWidth, $shapeHeight] = self::SHAPE_ROOM[$group->symbol] ?? [0.0, 0.0];
             $svek->cluster($group->id, $group->parent, ...Svek::label($width, $height, shapeWidth: $shapeWidth, shapeHeight: $shapeHeight));
         }
+        $beside = [];
+        foreach ($this->diagram->links as $link) {
+            if (1 !== $link->length) {
+                continue;
+            }
+            $beside[$link->from] = true;
+            $beside[$link->to] = true;
+        }
         foreach ($this->diagram->elements as $element) {
             $box = DescriptionBox::of($element, $this->diagram->document->styles);
+            $box = \array_key_exists($element->id, $beside) ? $box->beside() : $box;
             $this->boxes[$element->id] = $box;
             $svek->node($element->id, $box->width, $box->height, $element->group);
         }

@@ -47,15 +47,9 @@ final class DescriptionDrawingTest extends TestCase
         $box = DescriptionBox::of(new DescriptionElement('R', ['Name'], 'rectangle'), StyleSheet::skin());
         // A line as Java measures the sans-serif font, 36.488 high with its margins, as the jar draws it.
         $this->assertEqualsWithDelta([(4 * Units::cell(14.0)) + 20, ((14 * 603) / 512) + 20], [$box->width, $box->height], 1e-9);
-        // As PlantUML, an interface's node is a circle 16 across, 1 clear all round; its name hangs below.
-        $this->assertEqualsWithDelta(
-            [18.0, 18.0],
-            [
-                DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin())->width,
-                DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin())->height,
-            ],
-            1e-9,
-        );
+        // As PlantUML: an interface's node the table svek writes for it, as dot sizes it; linked beside another, a circle 16 across, 1 clear all round, its name hanging below.
+        $interface = DescriptionBox::of(new DescriptionElement('I', ['I'], 'interface'), StyleSheet::skin());
+        $this->assertEqualsWithDelta([54.0, 58.0, 18.0, 18.0], [$interface->width, $interface->height, $interface->beside()->width, $interface->beside()->height], 1e-9);
     }
 
     public function testAContainersTitleAndContentStandWherePlantUmlDrawsThem(): void
@@ -92,6 +86,16 @@ final class DescriptionDrawingTest extends TestCase
         // An actor's figure half a point below its node's top.
         $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nactor A\nrectangle R\nA --> R\n@enduml"));
         $this->assertSame(192.0, $drawing->height / Units::POINT);
+    }
+
+    public function testIconsAreAsBigAsPlantUmlDrawsThem(): void
+    {
+        $height = static fn (string $lines): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"))->height / Units::POINT;
+
+        // As the jar sizes them: 1.2026's icons, 32 tall with their circles 24 across.
+        $this->assertSame([160.0, 165.0, 160.0], [$height("boundary X\nrectangle R\nX --> R"), $height("control X\nrectangle R\nX --> R"), $height("entity X\nrectangle R\nX --> R")]);
+        // An interface as dot sizes the table svek writes for it, or its circle alone when a link joins it beside another.
+        $this->assertSame([153.0, 72.0], [$height("interface X\nrectangle R\nX --> R"), $height("interface X\nrectangle R\nX - R")]);
     }
 
     public function testACollectionsCopyStandsBehindItDownAndRightAsPlantUmlDrawsIt(): void
