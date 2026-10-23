@@ -56,6 +56,17 @@ final class DotSpacingTest extends TestCase
         $this->assertEqualsWithDelta($expected, self::across($source, $expected, 'x'), 0.01);
     }
 
+    public function testALabelNodeHoldsItsRoomInsideItsCluster(): void
+    {
+        // As dot sets them: the label's side 8 inside the cluster, the other half a separation and the label's width, a separation at most.
+        foreach ([16 => [41.0, 26.0], 40 => [43.0, 48.0]] as $width => $expected) {
+            $graph = Work::run(new DotParser()->parse('digraph { '.self::NODES.' subgraph cluster_x { a -> b [label='.self::label($width).'] } }'));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())));
+            [$cluster, $a] = [$placement->graph->clusters[0], $placement->graph->nodes[0]];
+
+            $this->assertEqualsWithDelta($expected, [$a->x - $cluster->x0, $cluster->x1 - $a->x], 0.01, (string) $width);
+        }
+    }
     public function testANodeFreeBetweenTwoPullsIsCentredBetweenTheirEnds(): void
     {
         // As dot sets it: c pulled equally by b, straight above it, and by the label node of a's long edge, midway between them.

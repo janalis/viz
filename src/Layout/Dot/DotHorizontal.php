@@ -154,6 +154,20 @@ final class DotHorizontal
         };
     }
 
+    /**
+     * The room a label node keeps inside its cluster on the side away from its label, as `dot` is
+     * seen to: half a separation, rounded down, and its label's width, a whole separation at most.
+     */
+    private function held(int $node): float
+    {
+        if (DotLayers::LABEL !== $this->layers->kind[$node]) {
+            return 0.0;
+        }
+        $label = $this->layers->mirrored ? $this->layers->left[$node] : $this->layers->right[$node];
+
+        return \min(\round($this->nodeSeparation), \floor($this->nodeSeparation / 2) + $label) - ($this->layers->mirrored ? $this->layers->right[$node] : $this->layers->left[$node]);
+    }
+
     /** Clusters hold their nodes, sub-clusters and label inside a margin, and hang off the graph's left bound. */
     private function contain(): void
     {
@@ -161,8 +175,13 @@ final class DotHorizontal
             if (-1 === $cluster) {
                 continue;
             }
-            $this->edges[] = [$this->left($cluster), $node, self::length($this->layers->left[$node] + DotPosition::MARGIN + $this->band($cluster)), 0];
-            $this->edges[] = [$node, $this->right($cluster), self::length($this->layers->right[$node] + DotPosition::MARGIN), 0];
+            $this->edges[] = [
+                $this->left($cluster),
+                $node,
+                self::length($this->layers->left[$node] + ($this->layers->mirrored ? 0.0 : $this->held($node)) + DotPosition::MARGIN + $this->band($cluster)),
+                0,
+            ];
+            $this->edges[] = [$node, $this->right($cluster), self::length($this->layers->right[$node] + ($this->layers->mirrored ? $this->held($node) : 0.0) + DotPosition::MARGIN), 0];
         }
         foreach ($this->layers->parents as $cluster => $parent) {
             $this->edges[] = [$this->left($cluster), $this->right($cluster), self::length(\max($this->labelWidths[$cluster] + (2 * DotPosition::MARGIN), 2 * DotPosition::MARGIN)), 1];
