@@ -67,6 +67,7 @@ final class DotSpacingTest extends TestCase
             $this->assertEqualsWithDelta($expected, [$a->x - $cluster->x0, $cluster->x1 - $a->x], 0.01, (string) $width);
         }
     }
+
     public function testANodeFreeBetweenTwoPullsIsCentredBetweenTheirEnds(): void
     {
         // As dot sets it: c pulled equally by b, straight above it, and by the label node of a's long edge, midway between them.

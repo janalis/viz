@@ -9,6 +9,7 @@ use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Route;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Links\Extremity;
@@ -60,7 +61,7 @@ final class LinkPainter
             \array_push($marks, ...$label->marks($x - ($width / 2), $top, $width));
             \array_push($marks, ...self::labelArrow($link, $from, $to, $x - ($width / 2) - 8, $y, $color));
         }
-        \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes));
+        \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes, $placement->directions[''] ?? Direction::TopBottom));
 
         return $marks;
     }
@@ -94,13 +95,22 @@ final class LinkPainter
      * @param array<int, GraphNode> $nodes
      * @return list<Mark>
      */
-    private static function endLabels(?string $tail, ?string $head, array $points, float $size, array $nodes): array
+    private static function endLabels(?string $tail, ?string $head, array $points, float $size, array $nodes, Direction $direction): array
     {
         $last = \count($points) - 1;
-        $tailBox = self::endBox($tail, $points[0], $points[1], 25.0, $size);
-        $headBox = self::endBox($head, $points[$last], $points[$last - 1], -25.0, $size);
-        if (null !== $tailBox && null !== $headBox && self::overlap($tailBox[1], $headBox[1])) {
-            $headBox = self::endBox($head, $points[$last], $points[$last - 1], 25.0, $size);
+        // As `dot` is seen to set head and tail labels, whatever the line's slope: laid out down, the head's above its end and the tail's below its start, both on its left; turned with the layout.
+        $across = \in_array($direction, [Direction::TopBottom, Direction::BottomTop], strict: true);
+        [$tailSides, $headSides] = match ($direction) {
+            Direction::TopBottom => [[-1, 1], [-1, -1]],
+            Direction::BottomTop => [[-1, -1], [-1, 1]],
+            Direction::LeftRight => [[1, 1], [-1, 1]],
+            Direction::RightLeft => [[-1, 1], [1, 1]],
+        };
+        $tailBox = self::endBox($tail, $points[0], $tailSides, $size);
+        $headBox = self::endBox($head, $points[$last], $headSides, $size);
+        // Laid out down, labels that would meet put the head's on the line's other side, as `dot` sets them.
+        if ($across && null !== $tailBox && null !== $headBox && self::overlap($tailBox[1], $headBox[1])) {
+            $headBox = self::endBox($head, $points[$last], [-$headSides[0], $headSides[1]], $size);
         }
         $marks = [];
         foreach ([$tailBox, $headBox] as $box) {
@@ -119,22 +129,21 @@ final class LinkPainter
     }
 
     /**
-     * A label with a corner on a line's end, on the side the line turns to by an angle.
+     * A label with a corner on a line's end, reaching from it across and down, each by -1 or 1.
      *
      * @param array{float, float} $end
-     * @param array{float, float} $along a point further along the line
+     * @param array{int, int} $sides
      * @return ?array{PlantUmlText, array{float, float, float, float}} the label and its box
      */
-    private static function endBox(?string $text, array $end, array $along, float $turn, float $size): ?array
+    private static function endBox(?string $text, array $end, array $sides, float $size): ?array
     {
         if (null === $text) {
             return null;
         }
         $label = new PlantUmlText(ClassReader::split($text), $size);
         [$width, $height] = $label->size();
-        $angle = \atan2($along[1] - $end[1], $along[0] - $end[0]) + \deg2rad($turn);
-        $x = \cos($angle) < 0 ? $end[0] - $width : $end[0];
-        $y = \sin($angle) < 0 ? $end[1] - $height : $end[1];
+        $x = $sides[0] < 0 ? $end[0] - $width : $end[0];
+        $y = $sides[1] < 0 ? $end[1] - $height : $end[1];
 
         return [$label, [$x, $y, $x + $width, $y + $height]];
     }

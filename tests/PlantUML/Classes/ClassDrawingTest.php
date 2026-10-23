@@ -170,6 +170,20 @@ final class ClassDrawingTest extends TestCase
         $this->assertEqualsWithDelta(174.535, $baseline, 0.005);
     }
 
+    public function testEndLabelsStandWhereDotSetsThem(): void
+    {
+        $baselines = [];
+        foreach (Work::run(PlantUmlPipeline::native()->drawing("@startuml\nleft to right direction\nclass Author\nclass Book\nAuthor \"1..*\" -- \"0..*\" Book\n@enduml"))->marks as $mark) {
+            if (MarkKind::Text !== $mark->kind || !\str_contains($mark->text, '..')) {
+                continue;
+            }
+            $baselines[$mark->text] = $mark->points[0][1] / Units::POINT;
+        }
+
+        // As the jar draws them, from dot's head and tail labels: laid out left to right, both below the line, whatever its slope.
+        $this->assertEqualsWithDelta(['1..*' => 44.693, '0..*' => 45.028], $baselines, 0.5);
+    }
+
     public function testColourSpecsReadTheirParts(): void
     {
         $this->assertSame('#ffc0cb', ClassColors::back('#pink'));
