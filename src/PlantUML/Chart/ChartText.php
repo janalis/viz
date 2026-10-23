@@ -69,7 +69,7 @@ final readonly class ChartText
             };
             $text = new PlantUmlText([$line], $this->size, $this->face, $this->color);
             $baseline = $y + ($index * $this->size * self::LINE) + ($this->size * self::ASCENT);
-            \array_push($marks, ...$text->marks($left, $baseline - (0.75 * $text->line()), $shown));
+            \array_push($marks, ...$text->marks($left, $baseline - $text->ascent(), $shown));
         }
 
         return $marks;

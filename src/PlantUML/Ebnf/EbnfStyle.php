@@ -62,7 +62,7 @@ final readonly class EbnfStyle
         }
         [$width, $height] = $this->measure($text, $size);
 
-        return [new Mark(MarkKind::Text, [[$x + ($width / 2), $top + $height - (0.25 * $height)]], $text, stroke: $this->color, font: $face, fontScale: Units::fontScale($size) / Units::POINT)];
+        return [new Mark(MarkKind::Text, [[$x + ($width / 2), $top + $height - $this->descent($size)]], $text, stroke: $this->color, font: $face, fontScale: Units::fontScale($size) / Units::POINT)];
     }
 
     /**

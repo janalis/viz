@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\PlantUML\Ebnf;
 
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\Model\Graph\Shape;
@@ -61,6 +62,20 @@ final class EbnfReaderTest extends TestCase
             \array_map(static fn (EbnfToken $item): string => $item->kind, $expression->tokens),
         );
         $this->assertSame(' note ', $expression->tokens[22]->data);
+    }
+
+    public function testTextStandsOnItsBaselineAsPlantUmlSetsIt(): void
+    {
+        $baselines = [];
+        foreach (Work::run(PlantUmlPipeline::native()->drawing("@startebnf\nrule = \"a\";\n@endebnf"))->marks as $mark) {
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
+            $baselines[$mark->text] = $mark->points[0][1] / Units::POINT;
+        }
+
+        // As the jar draws them: each baseline its line's descent above its foot.
+        $this->assertEqualsWithDelta(['rule' => 23.535, 'a' => 55.023], $baselines, 1e-3);
     }
 
     public function testAnEmptyStringIsASpace(): void

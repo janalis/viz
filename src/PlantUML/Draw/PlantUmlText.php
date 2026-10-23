@@ -365,6 +365,12 @@ final readonly class PlantUmlText
         return self::lineHeight($this->size);
     }
 
+    /** How far below the top of its first line the text's baseline stands, as Java measures the font. */
+    public function ascent(): float
+    {
+        return self::lineHeight($this->size) - self::below($this->size);
+    }
+
     /** A line's height at a font size in points, as PlantUML measures its default font: 10 at least. */
     public static function lineHeight(float $size): float
     {

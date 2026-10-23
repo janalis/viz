@@ -76,6 +76,8 @@ final class PlantUmlTextTest extends TestCase
         $this->assertEqualsWithDelta(Units::fontScale(12.0) / Units::POINT, $marks[1]->fontScale, 1e-9, 'drawn at its own size');
         $this->assertEqualsWithDelta(65.953, $text->size()[1], 1e-3);
 
+        $this->assertEqualsWithDelta(15.469, new PlantUmlText(['x'], 16.0)->ascent(), 1e-3, 'its baseline below its top');
+
         // A line of small text 10 high at least, the room below it.
         $small = new PlantUmlText(['a', 'b'], 6.0);
         $this->assertEqualsWithDelta([5.801, 15.801], \array_map(static fn (Mark $mark): float => $mark->points[0][1], $small->marks(0.0, 0.0, 10.0)), 1e-3);

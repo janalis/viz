@@ -69,7 +69,7 @@ final class FilesDrawing
             if ($index > 0) {
                 $foot += $size * self::SANS;
             }
-            \array_push($this->marks, ...$text->marks($left, $foot - (0.75 * $text->line()), $text->size()[0], 'left'));
+            \array_push($this->marks, ...$text->marks($left, $foot - $text->ascent(), $text->size()[0], 'left'));
             $this->width = \max($this->width, $left + $text->size()[0]);
         }
         $this->y = $foot + ($size * self::DESCENT) + self::GAP;
