@@ -104,10 +104,11 @@ final class DotNodes
         }
         $shape = $node->attribute('shape', 'ellipse');
         [$width, $height] = self::text($graph, $node)->size();
-        $margins = \array_map(\trim(...), \explode(',', $node->attribute('margin', '0.11,0.055')));
-        $marginX = self::number($margins[0], 0.11) * DotLayoutInput::POINTS;
-        $marginY = self::number($margins[1] ?? $margins[0], 0.055) * DotLayoutInput::POINTS;
-        $growth = \in_array($shape, DotShape::BARE, strict: true) ? 1.0 : DotShape::growth($shape);
+        // As `dot` is seen to wrap a label: 8 either side and 4 above and below unless a margin is written, in inches.
+        $margins = \array_map(\trim(...), \explode(',', $node->attribute('margin')));
+        $marginX = self::number($margins[0], 8 / DotLayoutInput::POINTS) * DotLayoutInput::POINTS;
+        $marginY = self::number($margins[1] ?? $margins[0], 4 / DotLayoutInput::POINTS) * DotLayoutInput::POINTS;
+        [$across, $growth] = \in_array($shape, DotShape::BARE, strict: true) ? [1.0, 1.0] : [DotShape::across($shape), DotShape::growth($shape)];
         // An image needs its own size and a point either side, as dot measures it, its label laid over it.
         $image = $graph->images[$node->attribute('image')] ?? null;
         [$imageWidth, $imageHeight] = null === $image ? [0.0, 0.0] : [$image->width + 2, $image->height + 2];
@@ -115,8 +116,15 @@ final class DotNodes
         if (0.0 === $width && 0.0 === $height && null === $image) {
             return [0.0, 0.0];
         }
-        $width = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, \max($width + (2 * $marginX), $imageWidth) * $growth);
-        $height = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, \max($height + (2 * $marginY), $imageHeight) * $growth);
+        [$width, $height] = [\max($width + (2 * $marginX), $imageWidth), \max($height + (2 * $marginY), $imageHeight)];
+        $least = DotLayoutInput::least($node)[1];
+        // As `dot` is seen to fit a shape grown round its label to the height it keeps at least, where its label a half again as tall fits it: that tall, no wider than holds the label within it.
+        [$width, $height] =
+            $growth > 1 && ($height * \M_SQRT2) < $least
+                ? [(($width * $across) / \M_SQRT2) / \sqrt(1 - ($height / $least) ** 2), $least]
+                : [$width * $across, $height * $growth];
+        $width = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, $width);
+        $height = \min(DotLayoutInput::MAX_INCHES * DotLayoutInput::POINTS, $height);
         if (DotShape::round($shape) || 'true' === \strtolower($node->attribute('regular'))) {
             $width = \max($width, $height);
             $height = $width;

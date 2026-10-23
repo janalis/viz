@@ -38,15 +38,15 @@ final class DotNodesTest extends TestCase
         $cell = Units::cell(14.0);
         $line = Units::line(14.0);
 
-        $this->assertEqualsWithDelta([(3 * $cell) + 15.84, $line + 7.92], DotNodes::size($graph, $graph->nodes['box']), 1e-9);
-        $this->assertEqualsWithDelta([((7 * $cell) + 15.84) * \M_SQRT2, ($line + 7.92) * \M_SQRT2], DotNodes::size($graph, $graph->nodes['ellipse']), 1e-9);
+        $this->assertEqualsWithDelta([(3 * $cell) + 16, $line + 8], DotNodes::size($graph, $graph->nodes['box']), 1e-9);
+        $this->assertEqualsWithDelta([((7 * $cell) + 16) * \M_SQRT2, ($line + 8) * \M_SQRT2], DotNodes::size($graph, $graph->nodes['ellipse']), 1e-9);
         [$width, $height] = DotNodes::size($graph, $graph->nodes['circle']);
         $this->assertSame($width, $height);
         [$width, $height] = DotNodes::size($graph, $graph->nodes['regular']);
         $this->assertSame($width, $height);
-        $this->assertEqualsWithDelta([(4 * $cell) + 15.84, $line + 7.92], DotNodes::size($graph, $graph->nodes['bare']), 1e-9);
+        $this->assertEqualsWithDelta([(4 * $cell) + 16, $line + 8], DotNodes::size($graph, $graph->nodes['bare']), 1e-9);
         $this->assertEqualsWithDelta([(6 * $cell) + 72, $line + 72], DotNodes::size($graph, $graph->nodes['margin']), 1e-9);
-        $this->assertEqualsWithDelta([(3 * $cell) + 15.84, $line + 7.92], DotNodes::size($graph, $graph->nodes['odd']), 1e-9);
+        $this->assertEqualsWithDelta([(3 * $cell) + 16, $line + 8], DotNodes::size($graph, $graph->nodes['odd']), 1e-9);
     }
 
     public function testANodeWithNoLabelToShowTakesNoRoomForItsMargin(): void
@@ -60,6 +60,30 @@ final class DotNodesTest extends TestCase
             DotNodes::size($graph, $graph->nodes['diamond']),
         ]);
         $this->assertGreaterThan(15.84, DotNodes::size($graph, $graph->nodes['space'])[0]);
+    }
+
+    public function testShapesGrowRoundTheirLabelAsDotIsSeenToGrowThem(): void
+    {
+        $size = static function (string $shape, int $height): array {
+            $graph = self::graph("digraph { a [shape={$shape}, label=<<TABLE FIXEDSIZE=\"TRUE\" WIDTH=\"100\" HEIGHT=\"{$height}\"><TR><TD></TD></TR></TABLE>>] }");
+
+            return DotNodes::size($graph, $graph->nodes['a']);
+        };
+
+        // As measured on `dot`'s output: an n-sided polygon √2 / cos(π/n) times its label, or fitted to the 36 it keeps at least.
+        $this->assertEqualsWithDelta(
+            [[189.42, 45.72], [177.57, 42.86], [232.0, 56.0], [240.52, 56.0], [174.11, 36.0], [213.24, 36.0], [160.58, 36.0]],
+            [
+                $size('hexagon', height: 20),
+                $size('octagon', height: 20),
+                $size('diamond', height: 20),
+                $size('parallelogram', height: 20),
+                $size('hexagon', height: 15),
+                $size('diamond', height: 15),
+                $size('egg', height: 15),
+            ],
+            0.01,
+        );
     }
 
     public function testRecordSizesKeepToTheLargestSizeTaken(): void

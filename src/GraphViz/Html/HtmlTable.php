@@ -75,7 +75,14 @@ final class HtmlTable implements DotLabel
     #[\Override]
     public function size(): array
     {
-        return [$this->extent($this->widths), $this->extent($this->heights)];
+        [$width, $height] = [$this->extent($this->widths), $this->extent($this->heights)];
+        if ('true' !== \strtolower($this->attributes['fixedsize'] ?? '')) {
+            return [$width, $height];
+        }
+        // As `dot` is seen to size a table of a fixed size: as wide and tall as asked, whatever it holds.
+        $asked = fn (string $name, float $own): float => \is_numeric($value = $this->attributes[$name] ?? '') ? \min(65_535.0, (float) $value) : $own;
+
+        return [$asked('width', $width), $asked('height', $height)];
     }
 
     #[\Override]

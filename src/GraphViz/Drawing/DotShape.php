@@ -28,20 +28,21 @@ final readonly class DotShape
         'egg' => \M_SQRT2,
         'diamond' => 2.0,
         'Mdiamond' => 2.0,
-        'triangle' => 2.0,
-        'invtriangle' => 2.0,
         'star' => 2.0,
-        'pentagon' => 1.25,
-        'hexagon' => 1.2,
-        'septagon' => 1.15,
-        'octagon' => 1.1,
-        'doubleoctagon' => 1.1,
-        'tripleoctagon' => 1.1,
-        'house' => 1.3,
-        'invhouse' => 1.3,
-        'trapezium' => 1.4,
-        'invtrapezium' => 1.4,
-        'parallelogram' => 1.4,
+        // As measured on `dot`'s output: a polygon of n sides √2 / cos(π/n) times as big.
+        'triangle' => 2.828_427,
+        'invtriangle' => 2.828_427,
+        'pentagon' => 1.748_064,
+        'hexagon' => 1.632_993,
+        'septagon' => 1.569_595,
+        'octagon' => 1.530_734,
+        'doubleoctagon' => 1.530_734,
+        'tripleoctagon' => 1.530_734,
+        'house' => 1.748_064,
+        'invhouse' => 1.748_064,
+        'trapezium' => 2.0,
+        'invtrapezium' => 2.0,
+        'parallelogram' => 2.0,
     ];
 
     /**
@@ -59,6 +60,19 @@ final readonly class DotShape
     public static function growth(string $shape): float
     {
         return self::GROWTH[$shape] ?? 1.0;
+    }
+
+    /**
+     * How much larger than its label a shape must be across, where it differs from down: a
+     * slanted or distorted shape's, as measured on `dot`'s output.
+     */
+    public static function across(string $shape): float
+    {
+        return match ($shape) {
+            'egg' => 1.506_05,
+            'parallelogram' => 2.073_49,
+            default => self::growth($shape),
+        };
     }
 
     /** Whether a shape is round, so a regular one is as wide as it is tall. */

@@ -56,21 +56,13 @@ final class DotLayoutInput
         foreach ($graph->nodes as $node) {
             // The node's own name: its key in the list is a number where the name is one.
             $name = $node->name;
-            $width = self::inches($node->attribute('width'), 0.75);
-            $height = self::inches($node->attribute('height'), 0.5);
-            // A point takes no label: it is a dot as wide as the size written, the smaller of both, 0.05in by default, as `dot` is seen to size it.
-            if ('point' === $node->attribute('shape')) {
-                $written = \array_filter([$node->attribute('width'), $node->attribute('height')], static fn (string $size): bool => \is_numeric(\trim($size)));
-                $width = \min(\array_map(static fn (string $size): float => self::inches($size, 0.05), [] === $written ? ['0.05'] : $written));
-                $height = $width;
-            }
+            [$width, $height] = self::least($node);
             if (null !== $measure && 'true' !== \strtolower($node->attribute('fixedsize')) && 'point' !== $node->attribute('shape')) {
                 [$labelWidth, $labelHeight] = $measure($node);
                 $width = \max($width, $labelWidth);
                 $height = \max($height, $labelHeight);
             }
-            // As `dot` is seen to size a round or regular node: as wide as tall, the larger of its sizes, fixed or not.
-            if (DotShape::round($node->attribute('shape', 'ellipse')) || 'true' === \strtolower($node->attribute('regular'))) {
+            if (self::regular($node)) {
                 $width = \max($width, $height);
                 $height = $width;
             }
@@ -217,6 +209,37 @@ final class DotLayoutInput
         $group = $graph->nodes[$edge->tail]->attribute('group');
 
         return '' !== $group && $graph->nodes[$edge->head]->attribute('group') === $group;
+    }
+
+    /**
+     * The least size a node takes, in points, as `dot` is seen to size it: its width and height,
+     * 0.75in by 0.5in by default; a round or regular node as wide as tall, the larger of those
+     * written, 0.5in when none is; a point the smaller of those written, 0.05in when none is.
+     *
+     * @return array{float, float}
+     */
+    public static function least(DotNode $node): array
+    {
+        $written = \array_values(\array_filter([$node->attribute('width'), $node->attribute('height')], static fn (string $size): bool => \is_numeric(\trim($size))));
+        $sizes = \array_map(static fn (string $size): float => self::inches($size, 0.5), $written);
+        if ('point' === $node->attribute('shape')) {
+            $side = [] === $sizes ? 0.05 * self::POINTS : \min($sizes);
+
+            return [$side, $side];
+        }
+        if (self::regular($node)) {
+            $side = [] === $sizes ? 0.5 * self::POINTS : \max($sizes);
+
+            return [$side, $side];
+        }
+
+        return [self::inches($node->attribute('width'), 0.75), self::inches($node->attribute('height'), 0.5)];
+    }
+
+    /** Whether a node is as wide as tall: round, or `regular`. */
+    private static function regular(DotNode $node): bool
+    {
+        return DotShape::round($node->attribute('shape', 'ellipse')) || 'true' === \strtolower($node->attribute('regular'));
     }
 
     private static function inches(string $value, float $default): float
