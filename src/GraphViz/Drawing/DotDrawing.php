@@ -221,7 +221,7 @@ final class DotDrawing
             }
             $arrow = DotArrow::parse($edge->attribute('arrow'.$end, 'normal'));
             $line = 'head' === $end ? $pieces[$at][0] : \array_reverse($pieces[$at][0]);
-            [$line, $tip, $along] = Route::shorten($line, $arrow->length($size));
+            [$line, $tip, $along] = Route::shorten($line, $arrow->length($size, $penWidth));
             \array_push($this->marks, ...$arrow->marks($tip, $along, $size, $colors['head' === $end ? 1 : 0], $background, $penWidth));
             $pieces[$at][0] = 'head' === $end ? $line : \array_reverse($line);
         }
