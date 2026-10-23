@@ -62,8 +62,10 @@ final class DotShapeTest extends TestCase
         $this->assertCount($decorations, $outline->decorations);
         $this->assertTrue($outline->contains(0.0, 0.0));
         $this->assertFalse($outline->contains(41.0 + (4 * $rings), 0.0));
+        // As `dot` draws it, a parallelogram leans past its box.
+        $reach = 'parallelogram' === $shape ? 40.0 * 1.0735 : 40.0;
         foreach ($outline->outline as [$x, $y]) {
-            $this->assertLessThanOrEqual(40.0 + 1e-9, \abs($x));
+            $this->assertLessThanOrEqual($reach + 1e-9, \abs($x));
             $this->assertLessThanOrEqual(20.0 + 1e-9, \abs($y));
         }
     }

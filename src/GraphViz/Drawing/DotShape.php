@@ -90,17 +90,19 @@ final readonly class DotShape
             'diamond', 'Mdiamond' => [[0.0, -$h], [$w, 0.0], [0.0, $h], [-$w, 0.0]],
             'triangle' => self::spread(3, $w, $h),
             'invtriangle' => \array_map(static fn (array $point): array => [$point[0], -$point[1]], self::spread(3, $w, $h)),
-            'trapezium' => [[-$w * 0.6, -$h], [$w * 0.6, -$h], [$w, $h], [-$w, $h]],
-            'invtrapezium' => [[-$w, -$h], [$w, -$h], [$w * 0.6, $h], [-$w * 0.6, $h]],
-            'parallelogram' => [[-$w * 0.6, -$h], [$w, -$h], [$w * 0.6, $h], [-$w, $h]],
-            'house' => [[0.0, -$h], [$w, -$h / 3], [$w, $h], [-$w, $h], [-$w, -$h / 3]],
-            'invhouse' => [[-$w, -$h], [$w, -$h], [$w, $h / 3], [0.0, $h], [-$w, $h / 3]],
+            // As `dot` is seen to draw them: a trapezium's top 0.584 as wide as its base, a parallelogram leaning past its box, a house a pentagon on its base's corners.
+            'trapezium' => [[-$w * 0.584, -$h], [$w * 0.584, -$h], [$w, $h], [-$w, $h]],
+            'invtrapezium' => [[-$w, -$h], [$w, -$h], [$w * 0.584, $h], [-$w * 0.584, $h]],
+            'parallelogram' => [[-$w * 0.5757, -$h], [$w * 1.0735, -$h], [$w * 0.6493, $h], [-$w, $h]],
+            'house' => self::house($w, $h),
+            'invhouse' => \array_map(static fn (array $point): array => [$point[0], -$point[1]], self::house($w, $h)),
             'pentagon' => self::spread(5, $w, $h),
             'hexagon' => self::spread(6, $w, $h),
             'septagon' => self::spread(7, $w, $h),
             'octagon', 'doubleoctagon', 'tripleoctagon' => self::spread(8, $w, $h),
             'star' => self::star($w, $h),
-            'cds' => [[-$w, -$h], [$w * 0.7, -$h], [$w, 0.0], [$w * 0.7, $h], [-$w, $h]],
+            // As `dot` is seen to draw it: 6 in from its top and bottom, its point 12 long.
+            'cds' => [[-$w, -$h + 6], [$w - 12, -$h + 6], [$w, 0.0], [$w - 12, $h - 6], [-$w, $h - 6]],
             'polygon' => self::polygon($sides, $w, $h, $skew, $distortion, $orientation),
             default => [[-$w, -$h], [$w, -$h], [$w, $h], [-$w, $h]],
         };
@@ -213,6 +215,12 @@ final readonly class DotShape
         $down = \max(\array_map(static fn (array $point): float => \abs($point[1]), $unit));
 
         return \array_map(static fn (array $point): array => [($w * $point[0]) / $across, ($h * $point[1]) / $down], $unit);
+    }
+
+    /** @return list<array{float, float}> a pentagon stretched to its box, its base's corners out to the box's sides */
+    private static function house(float $w, float $h): array
+    {
+        return \array_map(static fn (array $point): array => $point[1] > 0 ? [($point[0] <=> 0) * $w * 0.9991, $point[1]] : $point, self::spread(5, $w, $h));
     }
 
     /** @return list<array{float, float}> a regular polygon inscribed in the ellipse, its first vertex at $start degrees from the top */
