@@ -115,7 +115,8 @@ final readonly class DotEngine implements LayoutEngine
         // Laid out top-down to be turned left to right, a cluster keeps its label's band on its left, which becomes its top.
         $clusterLabels = \array_map(static fn ($cluster): array => $turned ? [0.0, 0.0] : [$cluster->minWidth, $cluster->labelHeight], $graph->clusters);
         $bands = \array_map(static fn ($cluster): float => $turned ? $cluster->labelHeight : 0.0, $graph->clusters);
-        $rankSeparation = $labelled ? $graph->spacing->rankGap / 2 : $graph->spacing->rankGap;
+        // Without labels, ranks stand their separation apart to the nearest point, as `dot` is seen to set them.
+        $rankSeparation = $labelled ? $graph->spacing->rankGap / 2 : \round($graph->spacing->rankGap);
         $position = new DotPosition($layers, $clusterLabels, $graph->spacing->nodeGap, $rankSeparation, $graph->spacing->padding, $bands);
         $placing = $position->place();
         yield from $placing;

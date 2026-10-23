@@ -56,6 +56,15 @@ final class DotSpacingTest extends TestCase
         $this->assertEqualsWithDelta($expected, self::across($source, $expected, 'x'), 0.01);
     }
 
+    public function testRanksStandTheirSeparationApartToTheNearestPoint(): void
+    {
+        // As dot sets them: 0.35 inch, 25.2, apart as 25, and 0.37, 26.64, as 27.
+        foreach (['0.35' => 49.0, '0.37' => 51.0] as $separation => $step) {
+            $at = self::across("digraph { ranksep={$separation}; node [shape=box, fixedsize=true, width=1, height=0.333333]; a -> b -> c }", ['a' => 0.0, 'b' => 0.0, 'c' => 0.0], 'y');
+            $this->assertEqualsWithDelta([$step, $step], [$at['b'] - $at['a'], $at['c'] - $at['b']], 0.01, $separation);
+        }
+    }
+
     public function testALabelNodeLaidOutToBeTurnedHoldsItsLabelOnItsOtherSide(): void
     {
         // Left to right, t faces the label: the label and a separation apart, not two separations.

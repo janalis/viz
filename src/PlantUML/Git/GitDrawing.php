@@ -13,12 +13,12 @@ use Janalis\Viz\Layout\Engine\LayoutEdge;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\LayoutNode;
 use Janalis\Viz\Layout\Engine\Spacing;
+use Janalis\Viz\PlantUML\Creole\CreoleFont;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
 use Janalis\Viz\PlantUML\Draw\PlantUmlArrow;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\RoundedBox;
-use Janalis\Viz\Text\FontFace;
 
 /**
  * A git log laid out as PlantUML's `SmetanaForGit` lays it out: each node a box of dot as big
@@ -93,7 +93,7 @@ final class GitDrawing
     private static function size(GitNode $node): array
     {
         [$commentWidth, $commentHeight] = self::comment($node);
-        [$namesWidth, $namesHeight] = self::names($node)->size();
+        [$namesWidth, $namesHeight] = self::namesSize($node);
 
         return [\round(\max($commentWidth, $namesWidth) + 8), \max(self::LOWEST, \round($commentHeight + $namesHeight + 2))];
     }
@@ -108,9 +108,18 @@ final class GitDrawing
         return [new PlantUmlText([$node->comment], self::COMMENT)->size()[0], self::COMMENT * self::SANS];
     }
 
-    private static function names(GitNode $node, string $color = '#000000'): PlantUmlText
+    /** Its commits' names, in bold, in the monospaced font PlantUML writes them in. */
+    private static function font(string $color = '#000000'): CreoleFont
     {
-        return new PlantUmlText($node->texts, self::NAME, FontFace::Bold, $color);
+        return new CreoleFont(self::NAME, 'monospaced', bold: true, color: $color);
+    }
+
+    /** @return array{float, float} its names' size, a monospaced line each, as Java measures the font */
+    private static function namesSize(GitNode $node): array
+    {
+        $font = self::font();
+
+        return [\max(0.0, ...\array_map($font->width(...), $node->texts)), \count($node->texts) * $font->line()];
     }
 
     /**
@@ -128,9 +137,14 @@ final class GitDrawing
             $comment = new PlantUmlText([(string) $node->comment], self::COMMENT, color: $font);
             \array_push($marks, ...$comment->marks($x, $y, $comment->size()[0], 'left'));
         }
-        $names = self::names($node, $font);
-        [$namesWidth, $namesHeight] = $names->size();
-        \array_push($marks, ...$names->marks($x + (($width - $namesWidth) / 2), $y + $below + (($boxHeight - $namesHeight) / 2), $namesWidth));
+        [$namesWidth, $namesHeight] = self::namesSize($node);
+        $names = self::font($font);
+        $top = $y + $below + (($boxHeight - $namesHeight) / 2);
+        foreach ($node->texts as $index => $text) {
+            // Each line centred, standing its descent above its foot.
+            $left = $x + (($width - $namesWidth) / 2) + (($namesWidth - $names->width($text)) / 2);
+            \array_push($marks, ...$names->marks($text, $left, $top + (($index + 1) * $names->line()) - $names->descent()));
+        }
 
         return $marks;
     }
