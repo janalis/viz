@@ -535,11 +535,16 @@ final class NetworkSimplex
 
     /**
      * Where a tree edge's cut value is zero, its subtree can slide without cost as far as the
-     * least slack of an edge back across that cut: it moves halfway, so nodes do not hug a side.
+     * least slack of an edge back across that cut: it moves halfway, so nodes do not hug a side;
+     * the subtrees lowest in the tree first, from the leaves up, as fits `dot`'s output best.
      */
     private function balanceSides(): void
     {
-        foreach ($this->treeList as $edge) {
+        $order = $this->treeList;
+        // By the postorder number of the end the subtree hangs from.
+        $key = fn (int $edge): int => \min($this->lim[$this->tails[$edge]], $this->lim[$this->heads[$edge]]);
+        \usort($order, static fn (int $a, int $b): int => $key($a) <=> $key($b));
+        foreach ($order as $edge) {
             if (0 !== $this->cut[$edge]) {
                 continue;
             }

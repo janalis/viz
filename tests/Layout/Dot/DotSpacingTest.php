@@ -56,6 +56,14 @@ final class DotSpacingTest extends TestCase
         $this->assertEqualsWithDelta($expected, self::across($source, $expected, 'x'), 0.01);
     }
 
+    public function testANodeFreeBetweenTwoPullsIsCentredBetweenTheirEnds(): void
+    {
+        // As dot sets it: c pulled equally by b, straight above it, and by the label node of a's long edge, midway between them.
+        $at = self::across('digraph { '.self::NODES.' a->b; b->c; a->c [label='.self::label(37).'] }', ['b' => 0.0, 'c' => 0.0], 'x');
+
+        $this->assertEqualsWithDelta(44.0, $at['c'] - $at['b'], 0.01);
+    }
+
     public function testRanksStandTheirSeparationApartToTheNearestPoint(): void
     {
         // As dot sets them: 0.35 inch, 25.2, apart as 25, and 0.37, 26.64, as 27.
