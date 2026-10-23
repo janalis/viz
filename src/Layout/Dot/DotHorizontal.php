@@ -63,7 +63,9 @@ final class DotHorizontal
         }
         $this->contain();
         $this->straighten();
-        $solved = new NetworkSimplex($this->count, $this->edges)->solve(NetworkSimplex::BALANCE_SIDES);
+        // As `dot` is seen to, the subtrees holding real nodes are centred first, virtual nodes after.
+        $movers = \array_map(static fn (): bool => true, \array_filter($this->layers->kind, static fn (int $kind): bool => DotLayers::REAL === $kind));
+        $solved = new NetworkSimplex($this->count, $this->edges, movers: $movers)->solve(NetworkSimplex::BALANCE_SIDES);
         yield from $solved;
         $values = $solved->getReturn();
         // The graph's bounds hold what it draws, its clusters a margin inside, nothing pulling them in: they lie at its extremes.

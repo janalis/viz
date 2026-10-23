@@ -76,6 +76,15 @@ final class DotSpacingTest extends TestCase
         $this->assertEqualsWithDelta(44.0, $at['c'] - $at['b'], 0.01);
     }
 
+    public function testRealNodesAreCentredBeforeTheChainsBetweenThem(): void
+    {
+        // As dot sets svek's legacy activity: the start and the first action left of the branch, the end where its two ways meet.
+        $source = 'digraph unix { nodesep=0.277778; ranksep=0.555556; n07 [shape=rect,style=rounded,label="",width=1.217231,height=0.474067]; n10->n12[minlen=0]; n13->n12[minlen=0]; n06 [shape=circle,label="",width=0.277778,height=0.277778]; n08 [shape=diamond,label="",width=0.333333,height=0.333333]; n09 [shape=rect,style=rounded,label="",width=1.663601,height=0.474067]; n10 [shape=rect,style=rounded,label="",width=1.404894,height=0.474067]; n11 [shape=circle,label="",width=0.305556,height=0.305556]; n12 [shape=rect,style=rounded,label="",width=0.532254,height=0.474067]; n13 [shape=rect,label="",width=0.659390,height=0.351535]; n14 [shape=rect,label="",width=1.111111,height=0.111111]; n15 [shape=rect,style=rounded,label="",width=0.663927,height=0.474067]; n16 [shape=rect,style=rounded,label="",width=0.688504,height=0.474067]; n17 [shape=rect,label="",width=1.111111,height=0.111111]; n06->n07[minlen=1]; n07->n08[minlen=1,headlabel=<<TABLE FIXEDSIZE="TRUE" WIDTH="85" HEIGHT="12"><TR><TD></TD></TR></TABLE>>]; n08->n09[minlen=1,label=<<TABLE FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="14"><TR><TD></TD></TR></TABLE>>]; n09->n10[minlen=1]; n08->n10[minlen=1]; n10->n11[minlen=1,label=<<TABLE FIXEDSIZE="TRUE" WIDTH="36" HEIGHT="14"><TR><TD></TD></TR></TABLE>>]; n07->n10[minlen=1]; n12->n14[minlen=1]; n14->n15[minlen=1]; n14->n16[minlen=1]; n15->n17[minlen=1]; n16->n17[minlen=1]; n17->n11[minlen=1]; }';
+        $at = self::across($source, ['n07' => 0.0, 'n10' => 0.0, 'n11' => 0.0], 'x');
+
+        $this->assertEqualsWithDelta([-78.0, 13.0], [$at['n07'] - $at['n10'], $at['n11'] - $at['n10']], 0.01);
+    }
+
     public function testRanksStandTheirSeparationApartToTheNearestPoint(): void
     {
         // As dot sets them: 0.35 inch, 25.2, apart as 25, and 0.37, 26.64, as 27.

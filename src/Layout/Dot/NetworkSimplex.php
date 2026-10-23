@@ -83,6 +83,8 @@ final class NetworkSimplex
         private readonly int $searchSize = 30,
         /** How many swaps at most, or -1 for no limit, as dot's `nslimit` × nodes. */
         private readonly int $maxIterations = -1,
+        /** @var array<int, true> the nodes whose subtrees are balanced before the others; none when empty */
+        private readonly array $movers = [],
     ) {
         $this->adjacent = \array_fill(0, $nodes, []);
         $this->out = \array_fill(0, $nodes, []);
@@ -481,6 +483,17 @@ final class NetworkSimplex
         return $node;
     }
 
+    private function holdsMover(int $root): bool
+    {
+        for ($number = $this->low[$root]; $number <= $this->lim[$root]; ++$number) {
+            if (\array_key_exists($this->byLim[$number], $this->movers)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function shiftSubtree(int $root, int $amount): void
     {
         for ($number = $this->low[$root]; $number <= $this->lim[$root]; ++$number) {
@@ -536,7 +549,8 @@ final class NetworkSimplex
     /**
      * Where a tree edge's cut value is zero, its subtree can slide without cost as far as the
      * least slack of an edge back across that cut: it moves halfway, so nodes do not hug a side;
-     * the subtrees lowest in the tree first, from the leaves up, as fits `dot`'s output best.
+     * the subtrees lowest in the tree first, from the leaves up, and those holding a mover before
+     * the others, as fits `dot`'s output best.
      */
     private function balanceSides(): void
     {
@@ -544,22 +558,42 @@ final class NetworkSimplex
         // By the postorder number of the end the subtree hangs from.
         $key = fn (int $edge): int => \min($this->lim[$this->tails[$edge]], $this->lim[$this->heads[$edge]]);
         \usort($order, static fn (int $a, int $b): int => $key($a) <=> $key($b));
+        $later = [];
         foreach ($order as $edge) {
             if (0 !== $this->cut[$edge]) {
                 continue;
             }
-            $enter = $this->enterEdge($edge);
-            if (null === $enter) {
+            if ([] !== $this->movers && !$this->holdsMover($this->hanging($edge))) {
+                $later[] = $edge;
                 continue;
             }
-            $delta = \intdiv($this->slack($enter), num2: 2);
-            if ($delta < 1) {
-                continue;
-            }
-            $tail = $this->tails[$edge];
-            $head = $this->heads[$edge];
-            $root = $this->lim[$tail] < $this->lim[$head] ? $tail : $head;
-            $this->shiftSubtree($root, $this->within($this->tails[$enter], $this->low[$root], $this->lim[$root]) ? $delta : -$delta);
+            $this->balance($edge);
         }
+        foreach ($later as $edge) {
+            $this->balance($edge);
+        }
+    }
+
+    /** The end of a tree edge its subtree hangs from. */
+    private function hanging(int $edge): int
+    {
+        [$tail, $head] = [$this->tails[$edge], $this->heads[$edge]];
+
+        return $this->lim[$tail] < $this->lim[$head] ? $tail : $head;
+    }
+
+    /** A zero-cut tree edge's subtree moved halfway across the slack it may take. */
+    private function balance(int $edge): void
+    {
+        $enter = $this->enterEdge($edge);
+        if (null === $enter) {
+            return;
+        }
+        $delta = \intdiv($this->slack($enter), num2: 2);
+        if ($delta < 1) {
+            return;
+        }
+        $root = $this->hanging($edge);
+        $this->shiftSubtree($root, $this->within($this->tails[$enter], $this->low[$root], $this->lim[$root]) ? $delta : -$delta);
     }
 }
