@@ -125,15 +125,37 @@ final class DotNodes
         return [$width, $height];
     }
 
+    /**
+     * The size a node takes with its outlines around it, as `dot` is seen to size it.
+     *
+     * @return array{float, float}
+     */
+    public static function ringed(DotNode $node, float $width, float $height): array
+    {
+        return DotShape::grown($node->attribute('shape', 'ellipse'), $width, $height, self::peripheries($node));
+    }
+
+    /** How many outlines a node is drawn with, where written. */
+    private static function peripheries(DotNode $node): ?int
+    {
+        $written = \trim($node->attribute('peripheries'));
+
+        return \is_numeric($written) ? \max(0, (int) $written) : null;
+    }
+
     public static function shape(DotNode $node, float $width, float $height): DotShape
     {
         $number = static fn (string $name, float $default): float => self::number($node->attribute($name), $default);
+        $shape = $node->attribute('shape', 'ellipse');
+        $peripheries = self::peripheries($node);
+        // As `dot` sizes a node with its outlines around it: the outline within drawn that much smaller.
+        [$width, $height] = DotShape::inner($shape, $width, $height, $peripheries);
 
         return DotShape::of(
-            $node->attribute('shape', 'ellipse'),
+            $shape,
             $width,
             $height,
-            (int) $number('peripheries', default: 1),
+            $peripheries,
             (int) $number('sides', default: 4),
             $number('skew', default: 0.0),
             $number('distortion', default: 0.0),

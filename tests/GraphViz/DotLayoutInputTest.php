@@ -54,6 +54,36 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame([36.0, 36.0], [$input->nodes[1]->width, $input->nodes[1]->height]);
     }
 
+    public function testAPointIsAsWideAsTheSizeWritten(): void
+    {
+        $input = self::input('digraph { node [shape=point]; w [width=0.3]; h [height=0.3]; both [width=0.3, height=0.2]; }');
+
+        // As `dot` sizes them: the size written, the smaller of both.
+        $this->assertEqualsWithDelta([21.6, 21.6, 14.4], [$input->nodes[0]->width, $input->nodes[1]->height, $input->nodes[2]->width], 1e-9);
+    }
+
+    public function testARoundOrRegularNodeIsAsWideAsTall(): void
+    {
+        $input = self::input('digraph { a [shape=circle, width=1, height=0.5]; b [shape=circle, width=0.3, height=0.5, fixedsize=true]; c [shape=box, regular=true, width=1, height=0.5]; }');
+
+        // As `dot` sizes them: the larger of their sizes, fixed or not.
+        $this->assertSame([[72.0, 72.0], [36.0, 36.0], [72.0, 72.0]], \array_map(static fn ($node): array => [$node->width, $node->height], $input->nodes));
+    }
+
+    public function testOutlinesAroundANodeGrowIt(): void
+    {
+        $input = self::input(
+            'digraph { node [width=1, height=0.5]; double [shape=doublecircle]; box [shape=box, peripheries=3]; diamond [shape=diamond, peripheries=2]; single [shape=doublecircle, peripheries=1]; point [shape=point, peripheries=2]; }',
+        );
+
+        // As `dot` sizes them: each outline 4 outside the one within, along every side — a diamond's slanted ones reaching further.
+        $this->assertEqualsWithDelta(
+            [[80.0, 80.0], [88.0, 52.0], [89.89, 44.94], [72.0, 72.0], [44.0, 44.0]],
+            \array_map(static fn ($node): array => [$node->width, $node->height], $input->nodes),
+            0.01,
+        );
+    }
+
     public function testClustersClaimNodesOnceAndRankSetsTieTheirs(): void
     {
         $input = self::input(<<<'DOT'

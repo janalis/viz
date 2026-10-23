@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\GraphViz;
 
+use Janalis\Viz\GraphViz\Drawing\DotNodes;
+use Janalis\Viz\GraphViz\Drawing\DotShape;
 use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\GraphViz\Model\DotNode;
@@ -56,9 +58,10 @@ final class DotLayoutInput
             $name = $node->name;
             $width = self::inches($node->attribute('width'), 0.75);
             $height = self::inches($node->attribute('height'), 0.5);
-            // A point takes no label: it is a dot as wide as the smaller of its sizes, 0.05in by default.
+            // A point takes no label: it is a dot as wide as the size written, the smaller of both, 0.05in by default, as `dot` is seen to size it.
             if ('point' === $node->attribute('shape')) {
-                $width = \min(self::inches($node->attribute('width'), 0.05), self::inches($node->attribute('height'), 0.05));
+                $written = \array_filter([$node->attribute('width'), $node->attribute('height')], static fn (string $size): bool => \is_numeric(\trim($size)));
+                $width = \min(\array_map(static fn (string $size): float => self::inches($size, 0.05), [] === $written ? ['0.05'] : $written));
                 $height = $width;
             }
             if (null !== $measure && 'true' !== \strtolower($node->attribute('fixedsize')) && 'point' !== $node->attribute('shape')) {
@@ -66,6 +69,12 @@ final class DotLayoutInput
                 $width = \max($width, $labelWidth);
                 $height = \max($height, $labelHeight);
             }
+            // As `dot` is seen to size a round or regular node: as wide as tall, the larger of its sizes, fixed or not.
+            if (DotShape::round($node->attribute('shape', 'ellipse')) || 'true' === \strtolower($node->attribute('regular'))) {
+                $width = \max($width, $height);
+                $height = $width;
+            }
+            [$width, $height] = DotNodes::ringed($node, $width, $height);
             $sizes[$name] = [$width, $height];
             $ordering = \strtolower($node->attribute('ordering', $graph->attribute('ordering')));
             $nodes[] = new LayoutNode(

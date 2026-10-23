@@ -67,7 +67,8 @@ final readonly class DotShape
         return \in_array($shape, ['circle', 'doublecircle', 'Mcircle', 'point'], strict: true);
     }
 
-    public static function of(string $shape, float $width, float $height, int $peripheries = 1, int $sides = 4, float $skew = 0.0, float $distortion = 0.0, float $orientation = 0.0): self
+    /** @param ?int $peripheries how many outlines it is drawn with, its shape's own when not written */
+    public static function of(string $shape, float $width, float $height, ?int $peripheries = null, int $sides = 4, float $skew = 0.0, float $distortion = 0.0, float $orientation = 0.0): self
     {
         [$w, $h] = [$width / 2, $height / 2];
         $outline = match ($shape) {
@@ -89,18 +90,65 @@ final readonly class DotShape
             'polygon' => self::polygon($sides, $w, $h, $skew, $distortion, $orientation),
             default => [[-$w, -$h], [$w, -$h], [$w, $h], [-$w, $h]],
         };
-        $count = \max($peripheries, match ($shape) {
+        $count = $peripheries ?? match ($shape) {
             'doublecircle', 'doubleoctagon' => 2,
             'tripleoctagon' => 3,
             default => 1,
-        });
+        };
         $rings = [];
+        $curved = \in_array($shape, ['ellipse', 'oval', 'circle', 'doublecircle', 'Mcircle', 'point', 'egg'], strict: true);
         for ($ring = 1; $ring < $count; ++$ring) {
             $grow = 4.0 * $ring;
-            $rings[] = \array_map(static fn (array $point): array => self::outward($point, $w, $h, $grow), $outline);
+            $rings[] = $curved ? \array_map(static fn (array $point): array => self::outward($point, $w, $h, $grow), $outline) : self::offset($outline, $grow);
         }
 
         return new self($outline, $rings, self::decorations($shape, $w, $h));
+    }
+
+    /**
+     * The size a shape takes with its outlines around it, as `dot` is seen to size it: each
+     * outline 4 outside the one within, along every side.
+     *
+     * @return array{float, float}
+     */
+    public static function grown(string $shape, float $width, float $height, ?int $peripheries = null): array
+    {
+        $drawn = self::of($shape, $width, $height, $peripheries);
+        if ([] === $drawn->peripheries) {
+            return [$width, $height];
+        }
+        [$outerWidth, $outerHeight] = self::extent($drawn->peripheries[\count($drawn->peripheries) - 1]);
+        [$ownWidth, $ownHeight] = self::extent($drawn->outline);
+
+        return [$width + $outerWidth - $ownWidth, $height + $outerHeight - $ownHeight];
+    }
+
+    /**
+     * @param list<array{float, float}> $polygon
+     * @return array{float, float} how wide and tall it reaches
+     */
+    private static function extent(array $polygon): array
+    {
+        $xs = \array_column($polygon, 0);
+        $ys = \array_column($polygon, 1);
+
+        return [\max($xs) - \min($xs), \max($ys) - \min($ys)];
+    }
+
+    /**
+     * The size of the outline within a shape's outlines that take a size together.
+     *
+     * @return array{float, float}
+     */
+    public static function inner(string $shape, float $width, float $height, ?int $peripheries = null): array
+    {
+        [$innerWidth, $innerHeight] = [$width, $height];
+        for ($step = 0; $step < 8; ++$step) {
+            [$grownWidth, $grownHeight] = self::grown($shape, $innerWidth, $innerHeight, $peripheries);
+            [$innerWidth, $innerHeight] = [\max(0.0, $innerWidth + $width - $grownWidth), \max(0.0, $innerHeight + $height - $grownHeight)];
+        }
+
+        return [$innerWidth, $innerHeight];
     }
 
     /** Whether a point, around the centre, falls inside the outermost outline. */
@@ -169,6 +217,50 @@ final readonly class DotShape
         }
 
         return $points;
+    }
+
+    /**
+     * A polygon's sides each moved outward by a distance, its corners where they meet.
+     *
+     * @param list<array{float, float}> $polygon
+     * @return list<array{float, float}>
+     */
+    private static function offset(array $polygon, float $distance): array
+    {
+        $count = \count($polygon);
+        $area = 0.0;
+        for ($index = 0; $index < $count; ++$index) {
+            [$x1, $y1] = $polygon[$index];
+            [$x2, $y2] = $polygon[($index + 1) % $count];
+            $area += ($x1 * $y2) - ($x2 * $y1);
+        }
+        $turn = $area < 0 ? -1.0 : 1.0;
+        $moved = [];
+        foreach ($polygon as $index => $point) {
+            [$ax, $ay] = self::normal($polygon[($index + $count - 1) % $count], $point, $turn);
+            [$bx, $by] = self::normal($point, $polygon[($index + 1) % $count], $turn);
+            $join = 1 + ($ax * $bx) + ($ay * $by);
+            $moved[] = $join > 1e-9
+                ? [$point[0] + (($distance * ($ax + $bx)) / $join), $point[1] + (($distance * ($ay + $by)) / $join)]
+                : [$point[0] + ($distance * $ax), $point[1] + ($distance * $ay)];
+        }
+
+        return $moved;
+    }
+
+    /**
+     * The unit normal of a side, outward for a polygon turning the way given.
+     *
+     * @param array{float, float} $from
+     * @param array{float, float} $to
+     * @return array{float, float}
+     */
+    private static function normal(array $from, array $to, float $turn): array
+    {
+        [$dx, $dy] = [$to[0] - $from[0], $to[1] - $from[1]];
+        $length = \hypot($dx, $dy);
+
+        return $length > 0 ? [($turn * $dy) / $length, (-$turn * $dx) / $length] : [0.0, 0.0];
     }
 
     /**

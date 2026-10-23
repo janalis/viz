@@ -77,6 +77,15 @@ final class DotShapeTest extends TestCase
         $this->assertTrue($shape->contains(17.0, 0.0));
     }
 
+    public function testAPolygonsOutlinesRunTheirDistanceOutsideAlongEverySide(): void
+    {
+        $shape = DotShape::of('diamond', 72.0, 36.0, peripheries: 2);
+
+        // As `dot` draws them: the outer diamond's sides 4 outside the inner's, its corners where they meet.
+        $this->assertEqualsWithDelta([[0.0, -22.47], [44.94, 0.0]], [$shape->peripheries[0][0], $shape->peripheries[0][1]], 0.01);
+        $this->assertEqualsWithDelta([72.0, 36.0], DotShape::inner('diamond', 89.89, 44.94, 2), 0.01);
+    }
+
     public function testPolygonsFollowSidesSkewDistortionAndOrientation(): void
     {
         $this->assertCount(3, DotShape::of('polygon', 20.0, 20.0, sides: 1)->outline);
