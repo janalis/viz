@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\Layout\Dot;
 
+use Janalis\Viz\GraphViz\DotLayoutInput;
+use Janalis\Viz\GraphViz\Language\DotParser;
 use Janalis\Viz\Layout\Dot\DotEngine;
 use Janalis\Viz\Layout\Engine\LayoutCluster;
 use Janalis\Viz\Layout\Engine\LayoutEdge;
@@ -280,6 +282,15 @@ final class DotEngineTest extends TestCase
             new Spacing(36, 18, 4),
         )));
         $this->assertEqualsWithDelta($pulled->endpoints['a']->x - 27, $pulled->endpoints['b']->x, 1.0, 'b under the port, a quarter of a across from its centre');
+    }
+
+    public function testTheDrawingIsBoundedByWhatItDraws(): void
+    {
+        $graph = Work::run(new DotParser()->parse('digraph { node [shape=box, label=""]; a -> b; a -> c; b -> d; c -> d; a -> d }'));
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+
+        // As `dot` bounds it: the long edge round c bulges past it, not as far as the room kept for its chain, out to whole points.
+        $this->assertSame([147.0, 188.0], [$placement->graph->width, $placement->graph->height]);
     }
 
     public function testAnAspectStretchesPositionsNeverNodes(): void
