@@ -6,7 +6,9 @@ namespace Janalis\Viz\PlantUML\Classes;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
 use Janalis\Viz\PlantUML\Style\Style;
@@ -22,6 +24,8 @@ use Janalis\Viz\Text\FontFace;
 final readonly class ClassBox
 {
     private const float RADIUS = 11.0;
+    /** A circle entity's radius, as PlantUML draws one. */
+    public const float DOT = 8.0;
     /**
      * Each visibility's icon: its shape and its colour for a field, then for a method, which is filled.
      *
@@ -89,6 +93,16 @@ final readonly class ClassBox
                 FontFace::Italic,
             );
         $generic = null === $entity->generic ? null : PlantUmlText::styled([$entity->generic], $sheet->style(['root', 'element', 'classDiagram', 'class', 'stereotype']), FontFace::Italic);
+        if (\in_array($entity->type, ['circle', 'diamond'], strict: true)) {
+            // As svek writes them, and dot sizes them: a circle in a cell 18 across, its name's height above and below and as wide as its name, in whole points, 4 around, 54 wide at least; a diamond 24 across, nameless.
+            $plain = PlantUmlText::styled($entity->display, $headerStyle);
+            [$nameWidth, $nameHeight] = $plain->size();
+            [$width, $height] = 'circle' === $entity->type
+                ? [\max(54.0, 18 + (2 * \round(\max(0.5, ($nameWidth - 18) / 2))) + 8), (2 * \round($nameHeight)) + 18 + 8]
+                : [24.0, 24.0];
+
+            return new self($entity, $style, $sheet, $plain, null, null, 0.0, [], false, $width, $height, 0.0, $letter);
+        }
         $circle = $portions->shown($entity, 'circle');
         $compartments = ClassBody::of($entity, $portions)->compartments;
         $visibility = false;
@@ -117,6 +131,16 @@ final readonly class ClassBox
         $line = $this->style->color('LineColor', '#181818');
         $back = ClassColors::back($this->entity->color) ?? $this->style->color('BackGroundColor', '#f1f1f1');
         $stroke = $this->style->number('LineThickness', 0.5);
+        if ('circle' === $this->entity->type) {
+            [$cx, $cy] = [$x + ($this->width / 2), $y + ($this->height / 2)];
+
+            return [DescriptionBox::ellipse($cx - self::DOT, $cy - self::DOT, 2 * self::DOT, 2 * self::DOT, $line, $back, $stroke), ...$this->name->marks($x, $cy + 17, $this->width)];
+        }
+        if ('diamond' === $this->entity->type) {
+            [$cx, $cy] = [$x + 12, $y + 12];
+
+            return [new Mark(MarkKind::Polygon, [[$cx, $y], [$x + 24, $cy], [$cx, $y + 24], [$x, $cy]], stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Path)];
+        }
         $marks = Shadow::cast([self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))], $this->style->number('Shadowing'));
         \array_push($marks, ...$this->headerMarks($x, $y));
         $top = $y + $this->header;

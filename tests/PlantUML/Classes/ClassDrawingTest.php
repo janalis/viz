@@ -41,10 +41,11 @@ final class ClassDrawingTest extends TestCase
         $texts = \array_values(\array_filter($box->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
         $this->assertSame(['I', '«service»', 'Box', 'T'], \array_map(static fn (Mark $mark): string => $mark->text, $texts));
         $this->assertGreaterThan(32.0, $box->header);
+        // A circle is drawn as PlantUML draws one: the circle, its name below, no spot.
         $other = new ClassEntity('Odd', ['Odd'], 'circle');
         $this->assertSame(
-            'C',
-            \array_values(\array_filter(ClassBox::of($other, StyleSheet::skin(), new ClassPortions([]))->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind))[0]->text,
+            ['Odd'],
+            \array_map(static fn (Mark $mark): string => $mark->text, \array_values(\array_filter(ClassBox::of($other, StyleSheet::skin(), new ClassPortions([]))->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Text === $mark->kind))),
         );
     }
 
@@ -152,6 +153,19 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([56.0, 57.0], [$height('rectangle A'), $height("rectangle A\nrectangle B")]);
     }
 
+    public function testACircleAndADiamondStandAsPlantUmlDrawsThem(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\ndiamond D\nclass A\nclass B\nA -- D\nD -- B\n@enduml"));
+
+        // As the jar draws them: a nameless diamond 24 across, between its classes.
+        $this->assertSame(262.0, $drawing->height / Units::POINT);
+        $baseline = 0.0;
+        foreach (Work::run(PlantUmlPipeline::native()->drawing("@startuml\nclass A\ncircle X\nA -- X\n@enduml"))->marks as $mark) {
+            $baseline = 'X' === $mark->text ? $mark->points[0][1] / Units::POINT : $baseline;
+        }
+        // A circle's node as dot sizes the table svek writes for it, its name 17 below its centre.
+        $this->assertEqualsWithDelta(174.535, $baseline, 0.005);
+    }
     public function testColourSpecsReadTheirParts(): void
     {
         $this->assertSame('#ffc0cb', ClassColors::back('#pink'));

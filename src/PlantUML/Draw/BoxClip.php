@@ -55,6 +55,12 @@ final class BoxClip
         if ($box->w <= 0 || $box->h <= 0) {
             return false;
         }
+        // A circle of a radius about the node's centre, whatever the node's room around it.
+        if (\str_starts_with($shape, 'circle:')) {
+            $radius = \substr($shape, offset: 7);
+
+            return \is_numeric($radius) && \hypot($point[0] - $box->x, $point[1] - $box->y) < (float) $radius;
+        }
         [$x, $y] = [\abs($point[0] - $box->x) / ($box->w / 2), \abs($point[1] - $box->y) / ($box->h / 2)];
 
         return match ($shape) {

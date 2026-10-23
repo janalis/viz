@@ -200,7 +200,16 @@ final class ClassDrawing
     {
         $style = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'arrow']);
         $background = $this->classes->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
-        \array_push($this->marks, ...LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background));
+        // A link stops at a circle's or a diamond's outline, as PlantUML draws it.
+        $shapes = [];
+        foreach ([$link->from, $link->to] as $id) {
+            $shapes[$id] = match (\array_key_exists($id, $this->classes->entities) ? $this->classes->entities[$id]->type : 'class') {
+                'circle' => 'circle:'.ClassBox::DOT,
+                'diamond' => 'diamond',
+                default => 'box',
+            };
+        }
+        \array_push($this->marks, ...LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, $shapes));
     }
 
     /** The dashed line from a note to the entity it stands beside. */
