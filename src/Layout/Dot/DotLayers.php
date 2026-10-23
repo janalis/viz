@@ -82,7 +82,7 @@ final class DotLayers
             if ($tail === $head) {
                 // Loops are drawn to a node's right, one beside the other: the node is as wide as they reach.
                 $this->loops[] = [$tail, $index];
-                $this->right[$tail] += \max(self::LOOP, $this->height[$tail] / 2) + $labelWidth;
+                $this->right[$tail] += self::LOOP + $labelWidth;
                 continue;
             }
             if ($ranks[$tail] === $ranks[$head]) {

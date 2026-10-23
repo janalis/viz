@@ -7,6 +7,7 @@ namespace Janalis\Viz\GraphViz\Drawing;
 use Janalis\Viz\Draw\Route;
 use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
+use Janalis\Viz\Layout\Curve\CurvePath;
 use Janalis\Viz\Layout\Dot\DotLayers;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
@@ -52,7 +53,7 @@ final class DotEdgePaths
         // Only a loop has no route; an edge between ranks has its spline, bent to any port.
         $points = match (true) {
             null === $route && 'ortho' === $splines => self::squareLoop($tail),
-            null === $route => self::loop($tail),
+            null === $route => self::loop($tail, ...$this->loopReach($index)),
             'ortho' === $splines => $this->ortho()->path($index),
             \in_array($splines, ['line', 'false'], strict: true) => $this->ported([$route[0], $route[\count($route) - 1]], $edge),
             'polyline' === $splines && null !== $polyline => $this->bent($polyline, $edge),
@@ -161,19 +162,48 @@ final class DotEdgePaths
         return [[$node->x, $node->y - ($node->h / 4)], [$out, $node->y - ($node->h / 4)], [$out, $node->y + ($node->h / 4)], [$node->x, $node->y + ($node->h / 4)]];
     }
 
-    /** @return list<array{float, float}> a loop out to a node's right and back */
-    private static function loop(GraphNode $node): array
+    /**
+     * How far right of its node's centre a loop reaches, and how far above and below it bulges,
+     * as `dot` is seen to draw the loops on a node: each 18 beyond the one before and its label,
+     * the i-th of n bulging i/n of a quarter of the node's height.
+     *
+     * @return array{float, float}
+     */
+    public function loopReach(int $index): array
     {
-        $right = $node->x + ($node->w / 2);
-        $reach = \max(DotLayers::LOOP, $node->h / 2);
+        $edge = $this->graph->edges[$index];
+        $node = $this->placement->endpoints[$edge->tail];
+        [$before, $at, $count] = [0.0, 0, 0];
+        foreach ($this->graph->edges as $other => $loop) {
+            if ($loop->tail !== $edge->tail || $loop->head !== $edge->tail) {
+                continue;
+            }
+            ++$count;
+            if ($other < $index) {
+                ++$at;
+                $before += DotNodes::edgeText($this->graph, $loop)->size()[0];
+            }
+        }
 
-        return Route::smooth([
-            [$node->x, $node->y - ($node->h / 4)],
-            [$right + ($reach / 2), $node->y - ($node->h / 2)],
-            [$right + $reach, $node->y],
-            [$right + ($reach / 2), $node->y + ($node->h / 2)],
-            [$node->x, $node->y + ($node->h / 4)],
-        ]);
+        return [($node->w / 2) + (DotLayers::LOOP * ($at + 1)) + $before, (($node->h / 4) * ($at + 1)) / \max(1, $count)];
+    }
+
+    /**
+     * A loop out to a node's right and back, as `dot` is seen to draw one: from the node's
+     * centre, a curve out to its reach, held a third of the way out and at the reach as far up
+     * as it bulges, then back as far down — clipped at the node's outline afterwards.
+     *
+     * @return list<array{float, float}>
+     */
+    private static function loop(GraphNode $node, float $reach, float $bulge): array
+    {
+        [$x, $y] = [$node->x, $node->y];
+        [$out, $third] = [$x + $reach, $x + ($reach / 3)];
+        $path = new CurvePath([$x, $y]);
+        $path->cubic([$third, $y - $bulge], [$out, $y - $bulge], [$out, $y]);
+        $path->cubic([$out, $y + $bulge], [$third, $y + $bulge], [$x, $y]);
+
+        return $path->points;
     }
 
     /**

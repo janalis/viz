@@ -14,7 +14,6 @@ use Janalis\Viz\GraphViz\DotLayoutInput;
 use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\GraphViz\Model\DotSubgraph;
-use Janalis\Viz\Layout\Dot\DotLayers;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
@@ -250,7 +249,7 @@ final class DotDrawing
         }
         [$x, $y] = match (true) {
             \array_key_exists($index, $this->placement->labels) => $this->placement->labels[$index],
-            null === $route => [$tail->x + ($tail->w / 2) + \max(DotLayers::LOOP, $tail->h / 2) + ($text->size()[0] / 2), $tail->y],
+            null === $route => [$tail->x + $this->paths->loopReach($index)[0] + ($text->size()[0] / 2), $tail->y],
             default => $points[\intdiv(\count($points), num2: 2)],
         };
         $this->text($text, $x, $y);

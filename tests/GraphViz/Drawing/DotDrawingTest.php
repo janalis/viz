@@ -520,6 +520,19 @@ final class DotDrawingTest extends TestCase
         $this->assertCount(2, $straight->points, 'right above its head, an edge runs straight down');
     }
 
+    public function testLoopsStandAsDotDrawsThem(): void
+    {
+        $drawing = self::draw('digraph { a [shape=box]; a -> a; a -> a; a -> a; }');
+        $loops = \array_values(\array_filter(self::kinds($drawing, MarkKind::Polyline), static fn (Mark $mark): bool => \count($mark->points) > 2));
+        $height = $drawing->height / Units::POINT;
+        $at = static fn (array $point): array => [\round(($point[0] / Units::POINT) - 4, precision: 1), \round(($point[1] / Units::POINT) - $height + 4, precision: 1)];
+
+        // As `dot` draws them: each 18 further out, the i-th of three leaving i/3 of a quarter of the node's height up a curve from its centre.
+        $this->assertSame([72.0, 90.0, 108.0], \array_map(static fn (Mark $mark): float => \round((\max(\array_column($mark->points, 0)) / Units::POINT) - 4, precision: 1), $loops));
+        $this->assertSame([[54.0, -20.2], [54.0, -22.1], [54.0, -23.4]], \array_map(static fn (Mark $mark): array => $at($mark->points[0]), $loops));
+        $this->assertEqualsWithDelta(116.0, $drawing->width / Units::POINT, 1e-6);
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));
