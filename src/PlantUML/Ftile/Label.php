@@ -35,6 +35,9 @@ final readonly class Label implements TextBlock
             return [];
         }
 
-        return [new Shape(ShapeKind::Text, $this->text->marks($x, $y, $width, $this->align), $x, $y, $x + $width, $y + $height)];
+        // As PlantUML's limit finder takes text, from 1.5 below the top of its first line's descent, as measured on its output: above its block when the font is big.
+        $rise = \max(0.0, (0.210_937_5 * $this->text->size) - 1.5);
+
+        return [new Shape(ShapeKind::Text, $this->text->marks($x, $y, $width, $this->align), $x, $y, $x + $width, $y + $height, rise: $rise)];
     }
 }

@@ -24,12 +24,14 @@ final readonly class Shape
         public ?array $anchor = null,
         /** The width centred text is centred across, from its anchor. */
         public float $span = 0.0,
+        /** How far above its box PlantUML's limit finder takes it to reach: text in a big font. */
+        public float $rise = 0.0,
     ) {}
 
     /** Text centred across a width from a point, once compressed, taking no room. */
     public static function centered(self $text, float $x, float $span): self
     {
-        return new self(ShapeKind::Centered, $text->marks, $text->minX, $text->minY, $text->maxX, $text->maxY, anchor: [$x, $text->minY], span: $span);
+        return new self(ShapeKind::Centered, $text->marks, $text->minX, $text->minY, $text->maxX, $text->maxY, anchor: [$x, $text->minY], span: $span, rise: $text->rise);
     }
 
     /**
@@ -101,6 +103,7 @@ final readonly class Shape
             $this->ignoreY,
             null === $this->anchor ? null : [$this->anchor[0] + $dx, $this->anchor[1] + $dy],
             $this->span,
+            $this->rise,
         );
     }
 
@@ -121,7 +124,7 @@ final readonly class Shape
         $marks = \array_map(static fn (Mark $mark): Mark => self::withPoints($mark, \array_map(static fn (array $point): array => [$x($point[0]), $y($point[1])], $mark->points)), $this->marks);
         $anchor = null === $this->anchor ? null : [$x($this->anchor[0]), $y($this->anchor[1])];
 
-        return new self($this->kind, $marks, $x($this->minX), $y($this->minY), $x($this->maxX), $y($this->maxY), $this->ignoreX, $this->ignoreY, $anchor);
+        return new self($this->kind, $marks, $x($this->minX), $y($this->minY), $x($this->maxX), $y($this->maxY), $this->ignoreX, $this->ignoreY, $anchor, $this->span, $this->rise);
     }
 
     /**
@@ -136,7 +139,7 @@ final readonly class Shape
             ShapeKind::Polygon => [$this->minX - 10, $this->minY, $this->maxX + 10, $this->maxY],
             ShapeKind::Rectangle => [$this->minX - 1, $this->minY - 1, $this->maxX - 1, $this->maxY - 1],
             ShapeKind::Ellipse => [$this->minX, $this->minY, $this->maxX - 1, $this->maxY - 1],
-            default => [$this->minX, $this->minY, $this->maxX, $this->maxY],
+            default => [$this->minX, $this->minY - $this->rise, $this->maxX, $this->maxY],
         };
     }
 

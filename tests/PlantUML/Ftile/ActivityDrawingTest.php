@@ -234,6 +234,19 @@ final class ActivityDrawingTest extends TestCase
         $this->assertContains('over', $shown);
     }
 
+    public function testBigSwimlaneTitlesReachAboveTheSwimlanesAsPlantUmlsLimitsTakeThem(): void
+    {
+        $top = static function (int $size): float {
+            $drawing = self::draw("<style>\nswimlane {\n FontSize {$size}\n}\n</style>\n|A|\nstart\n:x;\n|B|\n:y;");
+            $lines = \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind);
+
+            return \min(\array_map(static fn (Mark $mark): float => $mark->points[0][1], $lines)) / Units::POINT;
+        };
+
+        // As the jar draws them: from 16 down, then lower by what the title's descent passes 2.5 by.
+        $this->assertEqualsWithDelta([16.0, 16.031, 17.297, 21.094], [$top(8), $top(12), $top(18), $top(36)], 1e-3);
+    }
+
     public function testABreakInAnotherSwimlaneThanItsRepeatLeavesByNoArrow(): void
     {
         $shown = \array_map(
