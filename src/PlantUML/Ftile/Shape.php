@@ -151,21 +151,6 @@ final readonly class Shape
     /** @param list<array{float, float}> $points */
     private static function withPoints(Mark $mark, array $points): Mark
     {
-        return new Mark(
-            $mark->kind,
-            $points,
-            $mark->text,
-            $mark->stroke,
-            $mark->fill,
-            $mark->dashed,
-            $mark->strokeWidth,
-            $mark->font,
-            $mark->fontScale,
-            $mark->fillOpacity,
-            $mark->opacity,
-            $mark->angle,
-            $mark->gradient,
-            $mark->dashes,
-        );
+        return $mark->with(['points' => $points]);
     }
 }

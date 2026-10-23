@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\States;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Model\Direction;
@@ -408,21 +409,6 @@ final class StateDrawing
 
     private static function moved(Mark $mark, float $x, float $y): Mark
     {
-        return new Mark(
-            $mark->kind,
-            \array_map(static fn (array $point): array => [$point[0] + $x, $point[1] + $y], $mark->points),
-            $mark->text,
-            $mark->stroke,
-            $mark->fill,
-            $mark->dashed,
-            $mark->strokeWidth,
-            $mark->font,
-            $mark->fontScale,
-            $mark->fillOpacity,
-            $mark->opacity,
-            $mark->angle,
-            $mark->gradient,
-            $mark->dashes,
-        );
+        return Units::moved($mark, $x, $y);
     }
 }

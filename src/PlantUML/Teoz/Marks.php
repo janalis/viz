@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\Teoz;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 
 /** Marks moved as a whole, and how far down they reach. */
 final class Marks
@@ -16,22 +17,7 @@ final class Marks
      */
     public static function moved(array $marks, float $dx, float $dy): array
     {
-        return \array_map(static fn (Mark $mark): Mark => new Mark(
-            $mark->kind,
-            \array_map(static fn (array $point): array => [$point[0] + $dx, $point[1] + $dy], $mark->points),
-            $mark->text,
-            $mark->stroke,
-            $mark->fill,
-            $mark->dashed,
-            $mark->strokeWidth,
-            $mark->font,
-            $mark->fontScale,
-            $mark->fillOpacity,
-            $mark->opacity,
-            $mark->angle,
-            $mark->gradient,
-            $mark->dashes,
-        ), $marks);
+        return \array_map(static fn (Mark $mark): Mark => Units::moved($mark, $dx, $dy), $marks);
     }
 
     /**

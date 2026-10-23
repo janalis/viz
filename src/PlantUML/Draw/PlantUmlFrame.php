@@ -241,21 +241,6 @@ final class PlantUmlFrame
 
     private static function moved(Mark $mark, float $x, float $y): Mark
     {
-        return new Mark(
-            $mark->kind,
-            \array_map(static fn (array $point): array => [$point[0] + $x, $point[1] + $y], $mark->points),
-            $mark->text,
-            $mark->stroke,
-            $mark->fill,
-            $mark->dashed,
-            $mark->strokeWidth,
-            $mark->font,
-            $mark->fontScale,
-            $mark->fillOpacity,
-            $mark->opacity,
-            $mark->angle,
-            $mark->gradient,
-            $mark->dashes,
-        );
+        return Units::moved($mark, $x, $y);
     }
 }

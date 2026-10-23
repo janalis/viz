@@ -33,49 +33,18 @@ final class Units
      */
     public static function scaled(Mark $mark, float $scale): Mark
     {
-        return new Mark(
-            $mark->kind,
-            \array_map(static fn (array $point): array => [$point[0] * $scale, $point[1] * $scale], $mark->points),
-            $mark->text,
-            $mark->stroke,
-            $mark->fill,
-            $mark->dashed,
-            $mark->strokeWidth * $scale,
-            $mark->font,
-            MarkKind::Text === $mark->kind ? $mark->fontScale * $scale : $mark->fontScale,
-            $mark->fillOpacity,
-            $mark->opacity,
-            $mark->angle,
-            $mark->gradient,
-            null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
-            $mark->shading,
-            $mark->gradientAngle,
-            $mark->gradientSplit,
-        );
+        return $mark->with([
+            'points' => \array_map(static fn (array $point): array => [$point[0] * $scale, $point[1] * $scale], $mark->points),
+            'strokeWidth' => $mark->strokeWidth * $scale,
+            'fontScale' => MarkKind::Text === $mark->kind ? $mark->fontScale * $scale : $mark->fontScale,
+            'dashes' => null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
+        ]);
     }
 
     /** A mark moved by an offset, in its own unit. */
     public static function moved(Mark $mark, float $x, float $y): Mark
     {
-        return new Mark(
-            $mark->kind,
-            \array_map(static fn (array $point): array => [$point[0] + $x, $point[1] + $y], $mark->points),
-            $mark->text,
-            $mark->stroke,
-            $mark->fill,
-            $mark->dashed,
-            $mark->strokeWidth,
-            $mark->font,
-            $mark->fontScale,
-            $mark->fillOpacity,
-            $mark->opacity,
-            $mark->angle,
-            $mark->gradient,
-            $mark->dashes,
-            $mark->shading,
-            $mark->gradientAngle,
-            $mark->gradientSplit,
-        );
+        return $mark->with(['points' => \array_map(static fn (array $point): array => [$point[0] + $x, $point[1] + $y], $mark->points)]);
     }
 
     /**
@@ -85,24 +54,10 @@ final class Units
      */
     public static function turned(Mark $mark, float $width): Mark
     {
-        return new Mark(
-            $mark->kind,
-            \array_map(static fn (array $point): array => [$point[1], $width - $point[0]], $mark->points),
-            $mark->text,
-            $mark->stroke,
-            $mark->fill,
-            $mark->dashed,
-            $mark->strokeWidth,
-            $mark->font,
-            $mark->fontScale,
-            $mark->fillOpacity,
-            $mark->opacity,
-            $mark->angle - 90.0,
-            $mark->gradient,
-            $mark->dashes,
-            $mark->shading,
-            $mark->gradientAngle + 90.0,
-            $mark->gradientSplit,
-        );
+        return $mark->with([
+            'points' => \array_map(static fn (array $point): array => [$point[1], $width - $point[0]], $mark->points),
+            'angle' => $mark->angle - 90.0,
+            'gradientAngle' => $mark->gradientAngle + 90.0,
+        ]);
     }
 }

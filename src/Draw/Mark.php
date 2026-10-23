@@ -35,4 +35,10 @@ final readonly class Mark
         /** Where a linear gradient changes colour at once, as a part of its way; null for a blend. */
         public ?float $gradientSplit = null,
     ) {}
+
+    /** @param array<string, mixed> $changes properties to change, by name */
+    public function with(array $changes): self
+    {
+        return clone($this, $changes);
+    }
 }
