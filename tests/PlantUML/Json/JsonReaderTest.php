@@ -239,6 +239,14 @@ final class JsonReaderTest extends TestCase
         $this->assertContains([30.0, 15.0], $sizes);
     }
 
+    public function testEachRanksWidestTableStandsThirtySevenPastTheRankBefore(): void
+    {
+        $width = static fn (string $json): float => Work::run(self::read('json', $json)->drawing())->width / Units::POINT;
+
+        // As the jar sizes them: each rank to the nearest point, its tables centred on its widest.
+        $this->assertSame([139.0, 180.0, 196.0], [$width('{"a":{"b":1}}'), $width('{"aaaaaa":{"b":1}}'), $width('{"a":{"x":1},"b":{"yyyyyyyy":2}}')]);
+    }
+
     private static function read(string $kind, string $lines): PlantUmlJson
     {
         $diagram = PlantUmlPipeline::native()->diagram('@start'.$kind."\n".$lines."\n@end".$kind);

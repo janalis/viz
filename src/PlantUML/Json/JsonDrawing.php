@@ -90,7 +90,7 @@ final class JsonDrawing
         }
         $left = \min(\array_column($corners, 0));
         $top = \min(\array_column($corners, 1));
-        $corners = \array_map(static fn (array $corner): array => [$corner[0] - $left, $corner[1] - $top], $corners);
+        $corners = $this->ranked(\array_map(static fn (array $corner): array => [$corner[0] - $left, $corner[1] - $top], $corners));
         $marks = [];
         foreach ($this->tables as $index => [$table]) {
             \array_push($marks, ...$table->marks(...$corners[$index]));
@@ -109,6 +109,34 @@ final class JsonDrawing
         }
 
         return [$marks, $width, $height];
+    }
+
+    /**
+     * The tables' corners with each rank across as PlantUML sets it, as measured on its output:
+     * its widest table 37 past the rank before it, to the nearest point, the others centred on it.
+     *
+     * @param list<array{float, float}> $corners
+     * @return list<array{float, float}>
+     */
+    private function ranked(array $corners): array
+    {
+        $ranks = [];
+        foreach ($corners as $index => [$x]) {
+            $width = $this->tables[$index][0]->size()[0];
+            $ranks[(int) \round(($x + ($width / 2)) * 1000)][] = $index;
+        }
+        \ksort($ranks);
+        $edge = null;
+        foreach ($ranks as $members) {
+            $widest = \max(\array_map(fn (int $index): float => $this->tables[$index][0]->size()[0], $members));
+            $start = null === $edge ? \min(\array_map(static fn (int $index): float => $corners[$index][0], $members)) : \round($edge + self::RANK_SEPARATION + 1);
+            foreach ($members as $index) {
+                $corners[$index][0] = $start + (($widest - $this->tables[$index][0]->size()[0]) / 2);
+            }
+            $edge = $start + $widest;
+        }
+
+        return $corners;
     }
 
     /** Where across its node a row's port stands, from -0.5 at the first row's edge to 0.5 at the last's. */
