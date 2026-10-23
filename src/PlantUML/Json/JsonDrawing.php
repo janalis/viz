@@ -49,7 +49,8 @@ final class JsonDrawing
         yield from $work;
         [$marks, $width, $height] = $work->getReturn();
 
-        return PlantUmlFrame::drawing($diagram->document, $marks, $width, $height);
+        // As PlantUML sizes it, as measured on its output: 2 past what it draws, rounded down.
+        return PlantUmlFrame::roundedDown($diagram->document, $marks, $width + 2, $height + 2);
     }
 
     /** @param list<JsonHighlight> $highlights */
@@ -102,10 +103,8 @@ final class JsonDrawing
         }
         [$width, $height] = [0.0, 0.0];
         foreach ($marks as $mark) {
-            // As PlantUML's limit finder, which takes a stroked shape to reach half its stroke further.
-            $half = MarkKind::Text === $mark->kind ? 0.0 : $mark->strokeWidth / 2;
             foreach ($mark->points as [$x, $y]) {
-                [$width, $height] = [\max($width, $x + $half), \max($height, $y + $half)];
+                [$width, $height] = [\max($width, $x), \max($height, $y)];
             }
         }
 

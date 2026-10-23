@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\PlantUML\Chart;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\PlantUML\Chart\ChartKind;
@@ -20,6 +21,18 @@ use PHPUnit\Framework\TestCase;
 
 final class ChartReaderTest extends TestCase
 {
+    public function testTheChartIsSizedAsPlantUmlSizesIt(): void
+    {
+        $size = static function (string $source): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing($source));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sizes it: rounded down to whole points, and 1 more.
+        $this->assertSame([501.0, 431.0], $size("@startchart\nh-axis [Q1, Q2, Q3, Q4]\nv-axis 0 --> 100\nbar \"Revenue\" [40, 55, 70, 85]\nline \"Target\" [50, 60, 65, 80]\n@endchart"));
+    }
+
     public function testAnAxisStretchesToItsValuesUntilARangeIsGiven(): void
     {
         $chart = self::read("h-axis [a, b]\nbar [-20, 150]\nv2-axis 0 --> 10\nline [5, 50] v2");

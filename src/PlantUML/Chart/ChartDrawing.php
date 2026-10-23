@@ -116,7 +116,8 @@ final class ChartDrawing
             }
         }
 
-        return PlantUmlFrame::drawing($this->chart->document, $this->marks, \max($width, $this->reach[0] - 10), \max($height, $this->reach[1] - 10));
+        // As PlantUML sizes a chart, as measured on its output: rounded down, and 1 more.
+        return PlantUmlFrame::roundedDown($this->chart->document, $this->marks, \max($width, $this->reach[0] - 10), \max($height, $this->reach[1] - 10), past: 1.0);
     }
 
     /**

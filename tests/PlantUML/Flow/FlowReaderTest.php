@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\PlantUML\Flow;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Model\Graph\Edge;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
@@ -40,7 +41,8 @@ final class FlowReaderTest extends TestCase
         $dots = \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && '#a80036' === $mark->fill);
 
         $this->assertCount(2, $dots);
-        $this->assertEqualsWithDelta(70.0 / 400.0, $drawing->height / $drawing->width, 0.001);
+        // Its cells, and 1 more each way, as PlantUML sizes it.
+        $this->assertEqualsWithDelta([401.0, 71.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT], 0.001);
     }
 
     public function testTheModelJoinsBoxesByTheirPaths(): void

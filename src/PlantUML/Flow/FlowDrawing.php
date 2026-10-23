@@ -54,7 +54,8 @@ final class FlowDrawing
             $marks[] = DescriptionBox::ellipse($x2 - 3, $y2 - 3, 7.0, 7.0, self::LINE, self::LINE, 1.0);
         }
 
-        return PlantUmlFrame::bare($flow->document, $marks, ($right - $left + 1) * self::CELL_WIDTH, ($bottom - $top + 1) * self::CELL_HEIGHT);
+        // As PlantUML sizes it, as measured on its output: 1 wider and taller than its cells.
+        return PlantUmlFrame::bare($flow->document, $marks, (($right - $left + 1) * self::CELL_WIDTH) + 1, (($bottom - $top + 1) * self::CELL_HEIGHT) + 1);
     }
 
     /** @return array{float, float} as `ActivityBox`: its label and 10 all round */

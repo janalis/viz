@@ -25,6 +25,18 @@ use PHPUnit\Framework\TestCase;
 
 final class JsonReaderTest extends TestCase
 {
+    public function testTheDiagramIsAsTallAsPlantUmlMakesIt(): void
+    {
+        $size = static function (string $source): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing($source));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sizes it: 2 past what it draws, rounded down.
+        $this->assertSame(93.0, $size("@startjson\n{\"fruit\":\"Apple\",\"size\":\"Large\",\"color\": [\"Red\", \"Green\"]}\n@endjson")[1]);
+    }
+
     public function testJsonKeepsOrderDuplicatesNumbersAsWrittenAndComments(): void
     {
         $node = JsonParser::parse("{\n \"b\": 1.50, // one\n \"a\": [true, null, -2e3],\n \"b\": \"x\\ty\\u00e9\"\n}");

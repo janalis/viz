@@ -37,13 +37,13 @@ final class PlantUmlFrame
     }
 
     /**
-     * A diagram as {@see drawing()} frames it, its size rounded down to whole points, as PlantUML is seen to round a board's.
+     * A diagram as {@see drawing()} frames it, its size rounded down to whole points, and some points past, as PlantUML is seen to round a board's, and a chart's 1 past.
      *
      * @param list<Mark> $marks the diagram's, in points, its top left at the origin
      */
-    public static function roundedDown(PlantUmlDocument $document, array $marks, float $width, float $height): Drawing
+    public static function roundedDown(PlantUmlDocument $document, array $marks, float $width, float $height, float $past = 0.0): Drawing
     {
-        return self::framed($document, $marks, $width, $height, [self::MARGIN, self::MARGIN, self::MARGIN, self::MARGIN], \floor(...));
+        return self::framed($document, $marks, $width, $height, [self::MARGIN, self::MARGIN, self::MARGIN, self::MARGIN], static fn (float $size): float => \floor($size) + $past);
     }
 
     /**
