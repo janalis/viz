@@ -247,6 +247,19 @@ final class ActivityDrawingTest extends TestCase
         $this->assertEqualsWithDelta([16.0, 16.031, 17.297, 21.094], [$top(8), $top(12), $top(18), $top(36)], 1e-3);
     }
 
+    public function testALabelOnAnArrowToTheNextStepTakesTheRoomPlantUmlsLimitsGiveIt(): void
+    {
+        $baseline = static function (int $size): float {
+            $marks = self::draw("<style>\narrow {\n FontSize {$size}\n}\n</style>\n:one;\n-> lbl;\n:two;")->marks;
+            $two = \array_values(\array_filter($marks, static fn (Mark $mark): bool => 'two' === $mark->text));
+
+            return $two[0]->points[0][1] / Units::POINT;
+        };
+
+        // As the jar sets them: the label as tall as its line, and its descent past 1.5, 2.5 at most.
+        $this->assertEqualsWithDelta([109.422, 113.01, 125.289, 137.066], [$baseline(8), $baseline(11), $baseline(20), $baseline(30)], 1e-3);
+    }
+
     public function testABreakInAnotherSwimlaneThanItsRepeatLeavesByNoArrow(): void
     {
         $shown = \array_map(

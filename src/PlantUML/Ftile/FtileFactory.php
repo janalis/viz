@@ -47,10 +47,13 @@ final readonly class FtileFactory
         return Pen::of($this->styles->arrow());
     }
 
-    /** @param ?list<string> $lines a label on an arrow, none when not written */
-    public function label(?array $lines): ?TextBlock
+    /**
+     * @param ?list<string> $lines a label on an arrow, none when not written
+     * @param bool $drawn whether it is measured as drawn, as the label on an arrow from one step to the next is
+     */
+    public function label(?array $lines, bool $drawn = false): ?TextBlock
     {
-        return null === $lines ? null : new Label($lines, $this->styles->arrow());
+        return null === $lines ? null : new Label($lines, $this->styles->arrow(), drawn: $drawn);
     }
 
     /** @param list<string> $lines */
@@ -142,7 +145,8 @@ final readonly class FtileFactory
     /** One tile above another, 35 apart — more for the label on the arrow between them — the arrow drawn when the first leaves. */
     public function assembly(Ftile $tile1, Ftile $tile2): Ftile
     {
-        $label = $this->label($tile2->inLink()->display);
+        // As PlantUML, a label on an arrow down to the next step in the same swimlane is measured as drawn.
+        $label = $this->label($tile2->inLink()->display, drawn: FtileLane::out($tile1) === FtileLane::in($tile2));
         $space = FtileMarged::bottom($tile1, 35 + ($label?->size()[1] ?? 0.0));
         $result = new FtileAssembly($space, $tile2);
         $geometry = $tile1->geometry();
