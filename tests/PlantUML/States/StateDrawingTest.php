@@ -53,6 +53,8 @@ final class StateDrawingTest extends TestCase
         // As the jar sizes them: the start's and the end's circles from their near sides, a label's room in whole points.
         $this->assertSame([150.0, 153.0], [$height('[*] --> A'), $height('A --> [*]')]);
         $this->assertSame(361.0, $height("[*] --> Idle\nIdle --> Running : start\nRunning --> Idle : stop\nRunning --> [*]"));
+        // 251.31 its lowest box's foot, a point short, and 15: 265.31, rounded down.
+        $this->assertSame(265.0, $height("[*] --> Idle\nIdle --> Busy\nnote \"Shared note\" as N1"));
     }
 
     public function testStatesAndPseudostatesTakePlantUmlsSizes(): void

@@ -49,7 +49,8 @@ final class ClassDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        return PlantUmlFrame::svek($classes->document, $drawing->paint($placement), trail: 15.0);
+        // As PlantUML is seen to leave a class diagram 1 more room past it.
+        return PlantUmlFrame::svek($classes->document, $drawing->paint($placement), trail: 16.0);
     }
 
     /** @return array{float, float} svek's separations, or those `skinparam nodesep` and `ranksep` set */

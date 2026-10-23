@@ -24,7 +24,7 @@ final class PlantUmlFrame
     /** Where svek moves what it draws, from the top left, as its limit finder measures it. */
     private const float SVEK_INSET = 6.0;
     /** How much room svek leaves past what it draws. */
-    private const float SVEK_TRAIL = 14.0;
+    private const float SVEK_TRAIL = 15.0;
     /** How much room svek leaves past an image it lays out within a diagram. */
     private const float SVEK_IMAGE_TRAIL = 15.0;
     /** How much of that room lies past the document's captions, below and to the right of everything. */
@@ -87,9 +87,9 @@ final class PlantUmlFrame
 
     /**
      * A diagram laid out by svek, as PlantUML sets one: what it draws moved to stand 6 in from
-     * the top left, as PlantUML's limit finder measures it, 9 more room past it — 10 past a
-     * class or a state diagram's, as measured on PlantUML's output — and 5 more past everything,
-     * its captions included.
+     * the top left, as PlantUML's limit finder measures it, 10 more room past it — 11 past a
+     * class diagram's — and 5 more past everything, its captions included, its size rounded
+     * down to whole points: as measured on PlantUML's output.
      *
      * @param list<Mark> $marks the diagram's, in points
      * @param float $trail the room past what it draws, the 5 past everything included
@@ -104,6 +104,7 @@ final class PlantUmlFrame
             $maxX - $minX + self::SVEK_INSET + $trail - self::SVEK_OUTER,
             $maxY - $minY + self::SVEK_INSET + $trail - self::SVEK_OUTER,
             [0.0, self::SVEK_OUTER, self::SVEK_OUTER, 0.0],
+            \floor(...),
         );
     }
 

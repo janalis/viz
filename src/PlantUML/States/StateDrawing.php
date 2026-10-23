@@ -50,7 +50,7 @@ final class StateDrawing
         yield from $scope;
         $marks = $scope->getReturn();
 
-        return PlantUmlFrame::svek($states->document, $marks, trail: 15.0);
+        return PlantUmlFrame::svek($states->document, $marks);
     }
 
     /**
