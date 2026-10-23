@@ -173,7 +173,8 @@ final class FtileWithNote extends AbstractFtile
     {
         foreach ($notes as $note) {
             [$noteWidth, $noteHeight] = $note->size();
-            $canvas->add(...$note->shapes($x + (($width - $noteWidth - 20) / 2) + 10, $y + 10));
+            // As PlantUML's compression is seen to take them, stacked notes take their room 10 clear all round.
+            $canvas->add(Shape::empty($x, $y, $width, $noteHeight + 20), ...$note->shapes($x + (($width - $noteWidth - 20) / 2) + 10, $y + 10));
             $y += $noteHeight + 20;
         }
     }

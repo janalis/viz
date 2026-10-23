@@ -354,6 +354,26 @@ final class ActivityDrawingTest extends TestCase
         $this->assertEqualsWithDelta([100.455, 143.557, 231.689], [$at('left'), $at('one'), $at('after')], 1e-3);
     }
 
+    public function testStackedNotesBesideASwitchKeepTheirRoomFromCompression(): void
+    {
+        $three = static function (string $notes): float {
+            $marks = self::draw("start\nswitch (again?)\n{$notes}\ncase (C)\n  :three;\ncase (D)\n  :four;\nendswitch")->marks;
+
+            return \array_values(\array_filter($marks, static fn (Mark $mark): bool => 'three' === $mark->text))[0]->points[0][1] / Units::POINT;
+        };
+
+        // As the jar sets them: notes on both sides keep 10 clear below them, which holds the cases where they were laid out.
+        $this->assertEqualsWithDelta(
+            [144.214, 148.512, 148.512],
+            [
+                $three("note left: a\nnote right: b"),
+                $three("note left\na\nb\nend note\nnote right: d"),
+                $three("note left: a\nnote right\nc\nd\nend note"),
+            ],
+            1e-3,
+        );
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
