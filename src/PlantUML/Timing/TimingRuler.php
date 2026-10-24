@@ -58,6 +58,12 @@ final class TimingRuler
         return (($time - $this->min()) / $this->unit()) * $this->interval;
     }
 
+    /** Whether no moment is written: its one tick is then of no time. */
+    public function empty(): bool
+    {
+        return [] === $this->times;
+    }
+
     public function interval(): float
     {
         return $this->interval;

@@ -45,6 +45,8 @@ final class TimingDrawing
 
     public static function draw(PlantUmlTiming $diagram): Drawing
     {
+        // Read before its panels are made, which set the axis's moments.
+        $unwritten = $diagram->ruler->empty();
         $drawing = new self($diagram);
         [$marks, $width, $height] = $drawing->paint();
         $marks = \array_map(static fn (Mark $mark): Mark => Units::moved($mark, self::AROUND, self::AROUND), $marks);
@@ -57,6 +59,8 @@ final class TimingDrawing
                 [$right, $bottom] = [\max($right, $x + self::AROUND), \max($bottom, $y + self::AROUND)];
             }
         }
+        // With no moment written, PlantUML is seen to keep room for a tick more than it draws.
+        $right += $unwritten ? $diagram->ruler->interval() : 0.0;
 
         return PlantUmlFrame::drawing($diagram->document, $marks, \floor($right) + 1 - (2 * self::AROUND), \floor($bottom) + 1 - (2 * self::AROUND));
     }

@@ -31,6 +31,9 @@ final class TimingDrawingTest extends TestCase
         yield 'a player with no title' => ["concise \" \" as W\n@0\nW is A", [101.0, 93.0]];
         yield 'a scale whose ticks span 0' => ["scale 10 as 50 pixels\nconcise \"W\" as W\n@-15\nW is A\n@25\nW is B", [301.0, 110.0]];
         yield 'a second state at the same moment' => ["concise \"W\" as W\n@0\nW is A\nW is B", [101.0, 110.0]];
+        yield 'no moment written, a tick more kept' => ["concise \"W\" as W\nW is Idle", [197.0, 110.0]];
+        yield 'no moment written to a robust player' => ["robust \"R\" as R\nR is A", [199.0, 99.0]];
+        yield 'a message at no moment' => ["concise \"W\" as W\nW -> W : m", [151.0, 110.0]];
     }
 
     /** @param array{float, float} $size */
