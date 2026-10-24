@@ -92,7 +92,8 @@ final readonly class DescriptionBox
             : PlantUmlText::styled(\array_map(static fn (string $label): string => '«'.$label.'»', $element->stereotypes), $stereoStyle);
         [$textWidth, $textHeight] = $text->size();
         [$stereoWidth, $stereoHeight] = null === $stereotypes ? [0.0, 0.0] : $stereotypes->size();
-        $labelWidth = \max($textWidth, $stereoWidth);
+        // As PlantUML is seen to measure it, a stereotype takes 2 more than its text.
+        $labelWidth = \max($textWidth, null === $stereotypes ? 0.0 : $stereoWidth + 2);
         $labelHeight = $textHeight + $stereoHeight;
         [$width, $height] = match (true) {
             'usecase' === $element->symbol => self::inEllipse($labelWidth, $labelHeight),

@@ -53,6 +53,22 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertEqualsWithDelta([54.0, 58.0, 18.0, 18.0], [$interface->width, $interface->height, $interface->beside()->width, $interface->beside()->height], 1e-9);
     }
 
+    public function testAStereotypeWiderThanItsNameTakesTwoMore(): void
+    {
+        $width = static function (string $name, string $symbol, string $stereotype): float {
+            $element = new DescriptionElement('E', [$name], $symbol);
+            $element->stereotypes = [$stereotype];
+
+            return DescriptionBox::of($element, StyleSheet::skin())->width;
+        };
+
+        // As the jar draws them: a stereotype the widest text 2 wider, an underscore measured as Java sets it; a name the widest as it is.
+        $this->assertEqualsWithDelta(103.599, $width(name: 'Billing', symbol: 'component', stereotype: 'service'), 2e-3);
+        $this->assertEqualsWithDelta(138.198, $width(name: 'R', symbol: 'rectangle', stereotype: 'longstereotype'), 2e-3);
+        $this->assertEqualsWithDelta(146.981, $width(name: 'R', symbol: 'rectangle', stereotype: 'external_system'), 2e-3);
+        $this->assertEqualsWithDelta(129.648, $width(name: 'Long name here', symbol: 'rectangle', stereotype: 's'), 2e-3);
+    }
+
     public function testANodeContainerIsTakenTenWiderEitherSide(): void
     {
         $width = static fn (string $symbol): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$symbol} Server {\n  [App]\n}\n@enduml"))->width / Units::POINT;

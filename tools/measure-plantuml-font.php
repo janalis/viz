@@ -24,8 +24,13 @@ $measured = [];
 foreach (['sans' => null, 'serif' => 'serif', 'monospaced' => 'monospaced'] as $family => $font) {
 foreach (['plain' => ['', ''], 'bold' => ['<b>', '</b>'], 'italic' => ['<i>', '</i>'], 'bolditalic' => ['<b><i>', '</i></b>']] as $face => [$open, $close]) {
     [$open, $close] = null === $font ? [$open, $close] : ['<font:'.$font.'>'.$open, $close.'</font>'];
-    $lines = \array_map(static fn (string $char): string => $open.'.'.\str_repeat('~' === $char ? '~~' : $char, 20).'.'.$close, ['', ...$characters]);
-    $source = "@startuml\nlegend\n".\implode("\n", \array_map(static fn (string $line): string => \str_replace('\\', '\\\\', $line), $lines))."\nendlegend\n@enduml\n";
+    // Creole's markup characters escaped, a tilde written as its entity, to be drawn as they are.
+    $lines = \array_map(static fn (string $char): string => $open.'.'.\str_repeat(match ($char) {
+        '~' => '&#126;',
+        '"', '*', '-', '/', '_' => '~'.$char,
+        default => $char,
+    }, 20).'.'.$close, ['', ...$characters]);
+    $source = "@startuml\nlegend\n".\implode("\n", $lines)."\nendlegend\n@enduml\n";
     $process = \proc_open(['java', '-Djava.awt.headless=true', '-jar', $jar, '-tsvg', '-pipe'], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
     if (!\is_resource($process)) {
         exit(1);
