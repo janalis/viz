@@ -254,7 +254,8 @@ final class PlantUmlFrame
         $align = $caption->horizontal ?? \strtolower($style->value('HorizontalAlignment', 'center'));
         \array_push($marks, ...$text->marks($marginLeft + $padLeft, $marginTop + $padTop, $textWidth, $align));
 
-        return [$marks, $boxWidth + $marginLeft + $marginRight, $boxHeight + $marginTop + $marginBottom, $align];
+        // As PlantUML is seen to take its width, as measured on its output: rounded up to whole points.
+        return [$marks, \ceil($boxWidth + $marginLeft + $marginRight), $boxHeight + $marginTop + $marginBottom, $align];
     }
 
     private static function moved(Mark $mark, float $x, float $y): Mark

@@ -89,6 +89,14 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertSame([194.0, 242.0, 291.0, 155.0], [$height('1'), $height('1.25'), $height('1.5'), $height('0.8')]);
     }
 
+    public function testATitleWiderThanASvekDiagramIsTakenInWholePointsRoundedUp(): void
+    {
+        $width = static fn (string $title): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\ntitle {$title}\n[*] --> On\n@enduml"))->width / Units::POINT;
+
+        // As the jar sizes them: its title's width rounded up, though the diagram is then rounded down.
+        $this->assertSame([78.0, 86.0, 94.0, 103.0], [$width('Machin'), $width('Machine'), $width('Machines'), $width('MachinesX')]);
+    }
+
     public function testAnEmptyDocumentKeepsItsMargin(): void
     {
         $document = PlantUmlDocument::read(PlantUmlSource::parse("@startuml\nskinparam backgroundColor transparent\n@enduml"));
