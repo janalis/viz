@@ -121,7 +121,7 @@ final class PlantUmlDocumentTest extends TestCase
         yield 'mainframe' => ['mainframe Frame'];
         yield 'newpage' => ['newpage'];
         yield 'other skin' => ['skin debug'];
-        yield 'scale to size' => ['scale 200 width'];
+        yield 'scale to a size in units' => ['scale 200 px'];
         yield 'zero scale' => ['scale 0'];
         yield 'bad scale' => ['scale 1.2.3'];
         yield 'zero divisor' => ['scale 1/0'];

@@ -33,6 +33,8 @@ final readonly class PlantUmlDocument
         public array $pragmas = [],
         /** The block's kind, as `@start…` names it. */
         public string $kind = 'uml',
+        /** @var ?array{?float, ?float, bool} the width and height `scale` fits the drawing to, either or both, and whether it only shrinks it, as `scale max` does; null for none */
+        public ?array $fit = null,
     ) {}
 
     /** @throws Unsupported on a shared command left to PlantUML */
@@ -48,13 +50,23 @@ final readonly class PlantUmlDocument
         return $this->params[\strtolower($name)] ?? $default;
     }
 
-    /** What the drawing is scaled by, as PlantUML's exporter scales it: `scale`, and `skinparam dpi` against 96. */
-    public function scaleFactor(): float
+    /**
+     * What the drawing is scaled by, as PlantUML's exporter scales it: `scale` — by a factor, or
+     * to fit a width, a height or both from its size unscaled, the smaller of the two, as `scale
+     * max` only to shrink it — and `skinparam dpi` against 96.
+     */
+    public function scaleFactor(float $width = 0.0, float $height = 0.0): float
     {
         $dpi = \trim($this->param('dpi'));
         $dpi = 1 === \preg_match('/^[+-]?\d{1,9}$/', $dpi) && (int) $dpi > 0 ? (int) $dpi : 96;
+        $scale = $this->scale;
+        if (null !== $this->fit && $width > 0 && $height > 0) {
+            [$wide, $tall, $max] = $this->fit;
+            $scale = \min(null === $wide ? \INF : $wide / $width, null === $tall ? \INF : $tall / $height);
+            $scale = $max ? \min(1.0, $scale) : $scale;
+        }
 
-        return ($this->scale * $dpi) / 96;
+        return ($scale * $dpi) / 96;
     }
 
     /** The text after a keyword such as `title`, quoted or not; null when the line holds none. */

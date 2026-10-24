@@ -26,6 +26,8 @@ final class PlantUmlDocumentReader
     /** @var array<string, PlantUmlCaption> */
     private array $captions = [];
     private float $scale = 1.0;
+    /** @var ?array{?float, ?float, bool} */
+    private ?array $fit = null;
     /** @var list<string> */
     private array $kept = [];
 
@@ -62,7 +64,7 @@ final class PlantUmlDocumentReader
             }
         }
 
-        return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas, $kind);
+        return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas, $kind, $this->fit);
     }
 
     /**
@@ -265,7 +267,7 @@ final class PlantUmlDocumentReader
         return \explode("\n", \str_replace(['\\n', '\\l', '\\r'], replace: "\n", subject: $text));
     }
 
-    /** `scale 1.5` or `scale 2/3`; scales to a size are left to PlantUML, and a timing diagram's scale to its diagram. */
+    /** `scale 1.5`, `scale 2/3`, or to a size — `200 width`, `100 height`, `200*300`, `max` before any — the last written; a timing diagram's scale is its diagram's. */
     private function scaled(string $line): bool
     {
         $match = [];
@@ -277,6 +279,18 @@ final class PlantUmlDocumentReader
                 throw new Unsupported('The PlantUML scale '.$match[0].' is not a number');
             }
             $this->scale = $scale / $divisor;
+            $this->fit = null;
+
+            return true;
+        }
+        if (1 === \preg_match('/^scale[\s\x{a0}]+(max[\s\x{a0}]+)?(?:(\d+)[\s\x{a0}]+(width|height)|(\d+)[\s\x{a0}]*\*[\s\x{a0}]*(\d+))[\s\x{a0}]*$/iu', $line, $match)) {
+            $sizes = \array_map(static fn (string $size): ?float => \is_numeric($size) && (float) $size > 0 ? (float) $size : null, [$match[2] ?? '', $match[4] ?? '', $match[5] ?? '']);
+            $this->fit = match (true) {
+                'width' === \strtolower($match[3] ?? '') => [$sizes[0], null, '' !== ($match[1] ?? '')],
+                'height' === \strtolower($match[3] ?? '') => [null, $sizes[0], '' !== ($match[1] ?? '')],
+                default => [$sizes[1], $sizes[2], '' !== ($match[1] ?? '')],
+            };
+            $this->scale = 1.0;
 
             return true;
         }
@@ -285,7 +299,7 @@ final class PlantUmlDocumentReader
             return false;
         }
         if (1 === \preg_match('/^scale\b/i', $line)) {
-            throw new Unsupported('The native PlantUML renderer leaves scaling to a size to PlantUML');
+            throw new Unsupported('The native PlantUML renderer leaves the scale '.$line.' to PlantUML');
         }
 
         return false;

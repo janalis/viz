@@ -207,9 +207,11 @@ final class PlantUmlFrame
             }
             $y += $blockHeight;
         }
-        $scale = Units::POINT * $document->scaleFactor();
+        // Fitted to a size, a drawing rounded down to whole points, as svek's, is fitted from that size, any other from its own, as measured on PlantUML's output.
+        $basis = $whole ?? static fn (float $size): float => $size;
+        $factor = $document->scaleFactor($basis($full + $left + $right), $basis($y + $bottom));
+        $scale = Units::POINT * $factor;
         $whole ??= \ceil(...);
-        $factor = $document->scaleFactor();
         // As PlantUML writes its image's size: in whole points as it is unscaled, then scaled and rounded down.
         $sized = static fn (float $size): float => \max(1.0, \floor(($whole($size) * $factor) + 1e-9) * Units::POINT);
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');

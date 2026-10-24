@@ -51,6 +51,32 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertEqualsWithDelta([126 * Units::POINT, 72 * Units::POINT], [$drawing->width, $drawing->height], 1e-9);
     }
 
+    public function testAScaleToASizeFitsTheDrawingAsPlantUmlFitsIt(): void
+    {
+        $size = static function (string $scale, string $body): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$scale}\n{$body}\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+        $sequence = 'Alice -> Bob : hi';
+        $classes = "class Order {\n +id : int\n}\nclass Item\nOrder --> Item";
+
+        // As the jar sizes them: from the size unscaled, a svek diagram's rounded down first; both ways, the smaller; `max` only shrinking; the last scale written.
+        $this->assertSame(
+            [[201.0, 225.0], [89.0, 100.0], [201.0, 225.0], [50.0, 56.0], [117.0, 131.0], [234.0, 262.0], [300.0, 632.0], [71.0, 150.0]],
+            [
+                $size('scale 200 width', $sequence),
+                $size('scale 100 height', $sequence),
+                $size('scale 200*300', $sequence),
+                $size('scale max 50 width', $sequence),
+                $size('scale max 500 width', $sequence),
+                $size("scale 200 width\nscale 2", $sequence),
+                $size('scale 300 width', $classes),
+                $size('scale 150*150', $classes),
+            ],
+        );
+    }
+
     public function testAScaledSvekDiagramIsItsSizeRoundedDownScaledAndRoundedDownAsPlantUmlWritesIt(): void
     {
         $height = static function (string $scale): float {
