@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Draw;
 
+use Janalis\Viz\Text\DisplayWidth;
 use Janalis\Viz\Text\FontFace;
 
 /**
@@ -11,7 +12,7 @@ use Janalis\Viz\Text\FontFace;
  * monospaced fonts its Creole sets text in, in each face, from the advances
  * tools/measure-plantuml-font.php took from the jar: to lay it out and wrap it where PlantUML
  * does, each character of the bundled font drawn in the middle of its own room. A character
- * not measured counts as an `n`.
+ * not measured counts as an `n`, a wide one as its whole size.
  */
 final class PlantUmlMetrics
 {
@@ -40,7 +41,8 @@ final class PlantUmlMetrics
                 default => 'plain',
             }] ?? $faces['plain'];
 
-        return \array_map(static fn (string $char): float => ($advances[$char] ?? $advances['n'] ?? 0.55) * $size, \mb_str_split($text));
+        // A wide character not measured, as an ideograph, takes its whole size, as Java sets it.
+        return \array_map(static fn (string $char): float => ($advances[$char] ?? (2 === DisplayWidth::of($char) ? 1.0 : $advances['n'] ?? 0.55)) * $size, \mb_str_split($text));
     }
 
     /** @return array<string, array<string, array<string, float>>> */

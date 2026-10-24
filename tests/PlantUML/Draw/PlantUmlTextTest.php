@@ -25,6 +25,8 @@ final class PlantUmlTextTest extends TestCase
         $this->assertSame(['bold', 'italic', 'both', 'plain'], \array_map(static fn (Mark $mark): string => $mark->text, $marks));
         $this->assertSame([FontFace::Bold, FontFace::Italic, FontFace::Bold, FontFace::Regular], \array_map(static fn (Mark $mark): FontFace => $mark->font, $marks));
         $this->assertSame('#ff0000', $marks[0]->stroke);
+        // An ideograph as wide as its size, as the jar sets 日本語のテキスト at 12 points 96 wide.
+        $this->assertEqualsWithDelta(96.0, PlantUmlMetrics::width('日本語のテキスト', 12.0), 1e-9);
         // As wide as its widest line in PlantUML's font, each in its face.
         $this->assertEqualsWithDelta([PlantUmlMetrics::width('plain', 12.0), 5 * PlantUmlText::lineHeight(12.0)], $text->size(), 1e-9);
     }
