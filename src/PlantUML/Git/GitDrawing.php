@@ -87,7 +87,8 @@ final class GitDrawing
             $marks[] = new Mark(MarkKind::Polygon, PlantUmlArrow::head($kept[\count($kept) - 1], $tip), stroke: $line, fill: $line, strokeWidth: 1.0);
         }
 
-        return PlantUmlFrame::drawing($git->document, $marks, $right, $bottom);
+        // As PlantUML sizes it, as measured on its output: rounded down to whole points, and 1 more.
+        return PlantUmlFrame::roundedDown($git->document, $marks, $right, $bottom, past: 1.0);
     }
 
     /** @return array{float, float} as `MagicBox`'s `getBigDim`, rounded as dot rounds a node's size */

@@ -80,6 +80,18 @@ final class GitReaderTest extends TestCase
         $this->assertSame([['m', 'a'], ['m', 'b'], ['m', 'c']], \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to], $graph->edges));
     }
 
+    public function testALogIsSizedAsPlantUmlSizesIt(): void
+    {
+        $size = static function (string $log): array {
+            $drawing = Work::run(self::read($log)->drawing());
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sizes them: rounded down to whole points, and 1 more.
+        $this->assertSame([[38.0, 106.0], [73.0, 122.0]], [$size("* a\n* b"), $size("* a (c)\n| * b\n|/\n* c")]);
+    }
+
     public function testALogWithNoCommitIsAPointInItsMargin(): void
     {
         $drawing = Work::run(self::read('| x')->drawing());
