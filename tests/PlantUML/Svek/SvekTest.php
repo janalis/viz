@@ -34,6 +34,21 @@ final class SvekTest extends TestCase
         $this->assertSame($turned->endpoints['a']->x, $turned->endpoints['c']->x);
     }
 
+    public function testALoopWrittenAfterAnotherLinkIsDrawnAndBoundedAsItsOwn(): void
+    {
+        $svek = new Svek();
+        $svek->node('A', 42.0, 48.0);
+        $svek->node('B', 40.0, 48.0);
+        $svek->edge('A', 'B', 2);
+        $loop = $svek->edge('A', 'A', 2);
+
+        $placement = Work::run($svek->place());
+
+        // Its curve its own, not the other link's; the drawing as wide as svek's 35 past the node.
+        $this->assertGreaterThan(2, \count($placement->routes[$loop]));
+        $this->assertGreaterThanOrEqual(42.0 + 35.0, $placement->graph->width);
+    }
+
     public function testAClusterLabelIsItsHeadersSizeInWholePointsFiveShort(): void
     {
         $this->assertSame([0.0, 0.0], Svek::label(0.0, 14.0), 'no title, no label');

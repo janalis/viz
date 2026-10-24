@@ -18,9 +18,10 @@ final readonly class DotLoops
 {
     /**
      * @param array<int, GraphNode> $nodes the placed nodes, by layer node
+     * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      * @return array{array<int, list<array{float, float}>>, array<int, array{float, float}>} each loop's curve and its label's centre, by original edge
      */
-    public static function place(LayoutGraph $graph, DotLayers $layers, array $nodes): array
+    public static function place(LayoutGraph $graph, DotLayers $layers, array $nodes, array $edgeIndexes): array
     {
         $labels = [];
         foreach ($graph->edges as $edge) {
@@ -30,7 +31,8 @@ final readonly class DotLoops
         $reached = [];
         $seen = [];
         [$curves, $centres] = [[], []];
-        foreach ($layers->loops as [$node, $original]) {
+        foreach ($layers->loops as [$node, $layered]) {
+            $original = $edgeIndexes[$layered];
             $placed = $nodes[$node];
             $seen[$node] = ($seen[$node] ?? 0) + 1;
             $at = $seen[$node];

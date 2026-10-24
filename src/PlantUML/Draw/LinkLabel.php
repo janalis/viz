@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Draw;
 
 use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Style\Style;
@@ -68,13 +70,16 @@ final readonly class LinkLabel
         return $this->across() ? [$textWidth + $noteWidth, \max($textHeight, $noteHeight)] : [\max($textWidth, $noteWidth), $textHeight + $noteHeight];
     }
 
-    /** @return list<Mark> with its top left at a point, its parts centred within it */
-    public function marks(float $x, float $y, float $width): array
+    /**
+     * @param float $room how far either side of its text PlantUML's limit finder is seen to take a label, as measured on its output: the room svek leaves around it
+     * @return list<Mark> with its top left at a point, its parts centred within it
+     */
+    public function marks(float $x, float $y, float $width, float $room = 0.0): array
     {
         [$totalWidth, $totalHeight] = $this->size();
         [$textWidth, $textHeight] = $this->textSize();
         if (null === $this->note) {
-            return $this->text->marks($x + $this->lead, $y, $width - $this->lead);
+            return [...$this->text->marks($x + $this->lead, $y, $width - $this->lead), ...$this->room($x, $y, $room)];
         }
         [$noteWidth, $noteHeight] = $this->note->size();
         [$textAt, $noteAt] = match ($this->position) {
@@ -86,8 +91,27 @@ final readonly class LinkLabel
 
         return [
             ...$this->text->marks($textAt[0] + $this->lead, $textAt[1], $textWidth - $this->lead),
+            ...$this->room($textAt[0], $textAt[1], $room),
             ...$this->note->marks($noteAt[0], $noteAt[1], new Area($noteWidth, $noteHeight), Layer::Foreground),
         ];
+    }
+
+    /** @return list<Mark> an outline, drawn nothing, as far either side of the text as the room taken around it */
+    private function room(float $x, float $y, float $room): array
+    {
+        if ($this->text->empty() || $room <= 0) {
+            return [];
+        }
+        [$width, $height] = $this->textSize();
+
+        return [new Mark(
+            MarkKind::Polygon,
+            [[$x - $room, $y], [$x + $width + $room, $y], [$x + $width + $room, $y + $height], [$x - $room, $y + $height]],
+            stroke: 'none',
+            fill: 'none',
+            strokeWidth: 0.0,
+            outline: Outline::Path,
+        )];
     }
 
     /** @return array{float, float} the text's size, with the room before it */

@@ -58,7 +58,7 @@ final class LinkPainter
             // As PlantUML, from the corner of the box svek wrote, its room around it, in whole points.
             $margin = Svek::labelMargin($link->from, $link->to);
             $top = \array_key_exists($edge, $placement->labels) ? $y - (\floor($height + $margin) / 2) + ($margin / 2) : $y - ($height / 2);
-            \array_push($marks, ...$label->marks($x - ($width / 2), $top, $width));
+            \array_push($marks, ...$label->marks($x - ($width / 2), $top, $width, $margin / 2));
             \array_push($marks, ...self::labelArrow($link, $from, $to, $x - ($width / 2) + 3, $y, $color));
         }
         \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes, $placement->directions[''] ?? Direction::TopBottom));

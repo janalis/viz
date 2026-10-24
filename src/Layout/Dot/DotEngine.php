@@ -279,14 +279,14 @@ final readonly class DotEngine implements LayoutEngine
             }
         }
 
-        [$loops, $loopLabels] = DotLoops::place($graph, $layers, $nodes);
+        [$loops, $loopLabels] = DotLoops::place($graph, $layers, $nodes, $edgeIndexes);
         $splines += $loops;
         $routes += $loops;
         $labels += $loopLabels;
         $placement = new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines, $pieces);
 
         // Stretched to an aspect, a drawing keeps the bounds it was stretched to.
-        return null !== $graph->aspect && $graph->aspect > 0 ? $placement : DotBounds::bounded($graph, $layers, $placement);
+        return null !== $graph->aspect && $graph->aspect > 0 ? $placement : DotBounds::bounded($graph, $layers, $placement, $edgeIndexes);
     }
 
     /**

@@ -37,6 +37,33 @@ final class LinkLabelTest extends TestCase
         $this->assertGreaterThan($centres['right']['label'][0], $centres['right']['note'][0], 'on the right');
     }
 
+    public function testItsRoomIsTakenEitherSideOfItsTextNotOfItsNote(): void
+    {
+        $style = new Style(['FontSize' => '12']);
+        $plain = LinkLabel::of(['label'], $style, [], $style);
+        $noted = LinkLabel::of(['label'], $style, [new PlantUmlNote('n', ['a much longer note'])], $style);
+        $reach = static function (LinkLabel $label): array {
+            $xs = \array_merge(...\array_map(
+                static fn (Mark $mark): array => \array_column($mark->points, 0),
+                \array_filter($label->marks(0.0, 0.0, $label->size()[0], 6.0), static fn (Mark $mark): bool => 'none' === $mark->fill),
+            ));
+
+            return [\min($xs), \max($xs)];
+        };
+
+        // As PlantUML's limit finder is seen to take a loop's label: 6 either side of its text.
+        $this->assertEqualsWithDelta([-6.0, $plain->size()[0] + 6.0], $reach($plain), 1e-9);
+        [$left, $right] = $reach($noted);
+        $this->assertEqualsWithDelta($plain->size()[0] + 12.0, $right - $left, 1e-9);
+        $this->assertSame(
+            [],
+            \array_filter(
+                LinkLabel::of([], $style, [new PlantUmlNote('n', ['note'])], $style)->marks(0.0, 0.0, 10.0, 6.0),
+                static fn (Mark $mark): bool => 'none' === $mark->fill && 'none' === $mark->stroke,
+            ),
+        );
+    }
+
     public function testALabelWithoutANoteIsItsTextAlone(): void
     {
         $style = new Style([]);

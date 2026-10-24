@@ -50,10 +50,11 @@ final class DotEdgePaths
         $route = $this->placement->routes[$index] ?? null;
         $spline = $this->placement->splines[$index] ?? null;
         $polyline = $this->placement->polylines[$index] ?? $route;
-        // Only a loop has no route; an edge between ranks has its spline, bent to any port.
+        // A loop is drawn on its node's right; an edge between ranks has its spline, bent to any port.
+        $loop = $edge->tail === $edge->head;
         $points = match (true) {
-            null === $route && 'ortho' === $splines => self::squareLoop($tail),
-            null === $route => self::loop($tail, ...$this->loopReach($index)),
+            ($loop || null === $route) && 'ortho' === $splines => self::squareLoop($tail),
+            $loop || null === $route => self::loop($tail, ...$this->loopReach($index)),
             'ortho' === $splines => $this->ortho()->path($index),
             \in_array($splines, ['line', 'false'], strict: true) => $this->ported([$route[0], $route[\count($route) - 1]], $edge),
             'polyline' === $splines && null !== $polyline => $this->bent($polyline, $edge),

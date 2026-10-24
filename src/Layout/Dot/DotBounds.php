@@ -18,8 +18,10 @@ final class DotBounds
      * `dot` is seen to bound a drawing: by its nodes, the loops beside them, its clusters with 8
      * around them, its edges' labels and its edges themselves, out to whole points — not by the
      * room the layout kept around them.
+     *
+     * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      */
-    public static function bounded(LayoutGraph $graph, DotLayers $layers, Placement $placement): Placement
+    public static function bounded(LayoutGraph $graph, DotLayers $layers, Placement $placement, array $edgeIndexes): Placement
     {
         $lines = [...\array_diff_key($placement->routes, $placement->splines), ...$placement->splines];
         foreach ($placement->pieces as $runs) {
@@ -27,7 +29,7 @@ final class DotBounds
                 $lines[] = $run[0];
             }
         }
-        [$dx, $dy, $width, $height] = self::bounds($graph, $layers, $placement->graph->nodes, $placement->graph->clusters, $placement->labels, $lines);
+        [$dx, $dy, $width, $height] = self::bounds($graph, $layers, $edgeIndexes, $placement->graph->nodes, $placement->graph->clusters, $placement->labels, $lines);
         $nodes = \array_map(static fn (GraphNode $node): GraphNode => $node->at($node->x + $dx, $node->y + $dy), $placement->graph->nodes);
         $endpoints = [];
         foreach ($graph->nodes as $id => $node) {
@@ -88,13 +90,14 @@ final class DotBounds
      * its edges' labels and its edges themselves, 8 around its clusters, out to whole points —
      * not by the room the layout kept around them.
      *
+     * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      * @param array<int, GraphNode> $nodes
      * @param list<GraphCluster> $clusters
      * @param array<int, array{float, float}> $labels each label's centre, by original index
      * @param array<array-key, list<array{float, float}>> $lines
      * @return array{float, float, float, float}
      */
-    private static function bounds(LayoutGraph $graph, DotLayers $layers, array $nodes, array $clusters, array $labels, array $lines): array
+    private static function bounds(LayoutGraph $graph, DotLayers $layers, array $edgeIndexes, array $nodes, array $clusters, array $labels, array $lines): array
     {
         $box = [\INF, \INF, -\INF, -\INF];
         $take = static function (float $x0, float $y0, float $x1, float $y1) use (&$box): void {
@@ -105,8 +108,8 @@ final class DotBounds
             $sizes[$edge->index] = [$edge->labelWidth, $edge->labelHeight];
         }
         $loops = [];
-        foreach ($layers->loops as [$node, $original]) {
-            $loops[$node] = ($loops[$node] ?? 0.0) + $graph->spacing->nodeGap + ($sizes[$original][0] ?? 0.0);
+        foreach ($layers->loops as [$node, $layered]) {
+            $loops[$node] = ($loops[$node] ?? 0.0) + $graph->spacing->nodeGap + ($sizes[$edgeIndexes[$layered]][0] ?? 0.0);
         }
         foreach ($nodes as $id => $node) {
             $take($node->x - ($node->w / 2), $node->y - ($node->h / 2), $node->x + ($node->w / 2) + ($loops[$id] ?? 0.0), $node->y + ($node->h / 2));
