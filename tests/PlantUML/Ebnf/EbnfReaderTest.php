@@ -203,6 +203,11 @@ final class EbnfReaderTest extends TestCase
         yield 'a group left open' => ['(a', 'PARENTHESIS_OPEN'];
         yield 'a group closed twice' => ['a)', 'unbalanced )'];
         yield 'nothing' => ['', 'The regex diagram is empty'];
+        yield 'a group named with no letters' => ['(?<1x>a)', 'nothing to quantify'];
+        yield 'a group named and never closed' => ['(?<abc', 'nothing to quantify'];
+        yield 'an octal escape cut short' => ['\\01', 'Unexpected end of data'];
+        yield 'a unicode class never closed' => ['\\p{L', 'Unexpected end of data'];
+        yield 'a command it does not draw' => ["a\nhide empty description", 'does not draw: hide empty description'];
     }
 
     #[DataProvider('badRegexes')]
@@ -212,6 +217,78 @@ final class EbnfReaderTest extends TestCase
         $this->expectExceptionMessage($message);
 
         PlantUmlPipeline::native()->diagram("@startregex\n".$line."\n@endregex");
+    }
+
+    public function testAGroupOnEitherSideJoinsTheTermsBesideIt(): void
+    {
+        $style = new EbnfStyle(StyleSheet::skin());
+
+        // As PlantUML's engine, a group alternated or concatenated with a term takes it in.
+        $this->assertInstanceOf(CirclesTile::class, EbnfExpression::read('a = (b | c) | d;')->tile($style));
+        $this->assertInstanceOf(CirclesTile::class, EbnfExpression::read('a = (b, c), d;')->tile($style));
+        $this->assertInstanceOf(CirclesTile::class, EbnfExpression::read('a = (b | c) * d;')->tile($style), 'a count that is no word counts as ?');
+        $this->assertNull(EbnfExpression::read('a = b = c;')->tile($style), 'a definition within a definition');
+    }
+
+    public function testNotesAroundTermsOptionsAndRulesAreDrawn(): void
+    {
+        $texts = static fn (string $lines): array => \array_values(\array_map(
+            static fn ($mark): string => $mark->text,
+            \array_filter(Work::run(self::ebnf($lines)->drawing())->marks, static fn ($mark): bool => MarkKind::Text === $mark->kind),
+        ));
+
+        // As PlantUML writes them, each note as written between its marks.
+        $this->assertSame(['a', 'x', ' note '], $texts('a = (* note *) "x";'));
+        $this->assertSame(['a', 'x', ' up ', ' down '], $texts('a = (* up *) [ "x" ] (* down *);'));
+        $this->assertSame([' above ', 'rule', 'a'], $texts('(* above *) rule = "a";'));
+        $this->assertSame(['a'], $texts('a = "";'), 'an empty string is a blank box');
+    }
+
+    public function testBlankLinesCommentsAndNothingAreReadAsPlantUmlReadsThem(): void
+    {
+        $diagram = self::ebnf("(* a\nb *)\n\nrule = \"x\";");
+
+        $this->assertSame(['a', 'b'], $diagram->items[0]);
+        $this->assertCount(2, $diagram->items);
+        $texts = \array_map(static fn ($mark): string => $mark->text, Work::run(self::ebnf('')->drawing())->marks);
+        $this->assertSame(['Syntax error!'], $texts, 'nothing at all is a syntax error');
+    }
+
+    public function testItLeavesToPlantUmlTheCommandsItDoesNotDraw(): void
+    {
+        $this->expectException(Unsupported::class);
+        $this->expectExceptionMessage('does not draw: hide empty description');
+
+        self::ebnf("a = \"x\";\nhide empty description");
+    }
+
+    public function testRegexGroupsJoinTheTermsBesideThem(): void
+    {
+        $texts = static function (string $regex): array {
+            $texts = \array_values(\array_map(
+                static fn ($mark): string => $mark->text,
+                \array_filter(Work::run(self::regex($regex)->drawing())->marks, static fn ($mark): bool => MarkKind::Text === $mark->kind),
+            ));
+            \sort($texts);
+
+            return $texts;
+        };
+
+        // As PlantUML runs them, a group alternated takes the other in, letters run together across a group's first, a comment leaves nothing.
+        $this->assertSame(['a', 'b', 'c'], $texts('(a|b)|c'));
+        $this->assertSame(['a', 'b', 'c'], $texts('a|(b|c)'));
+        $this->assertSame(['ab', 'c'], $texts('a(?:bc*)'));
+        $this->assertSame(['ab'], $texts('a(?#x)b'));
+        $this->assertSame(['4', '\0123', '\u0042'], $texts('\01234\u0042'));
+    }
+
+    public function testTheRegexModelIsOneBoxAsWritten(): void
+    {
+        $graph = self::regex("title Mail\na+b")->model();
+
+        $this->assertInstanceOf(Graph::class, $graph);
+        $this->assertSame([['n0', 'a+b']], \array_map(static fn (Node $node): array => [$node->id, $node->label], $graph->nodes));
+        $this->assertSame('Mail', $graph->title);
     }
 
     private static function ebnf(string $lines): PlantUmlEbnf

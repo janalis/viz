@@ -14,6 +14,7 @@ use Janalis\Viz\PlantUML\NwDiag\NwReader;
 use Janalis\Viz\PlantUML\NwDiag\NwServer;
 use Janalis\Viz\PlantUML\NwDiag\PlantUmlNwDiag;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
+use Janalis\Viz\PlantUML\PlantUmlRefusal;
 use Janalis\Viz\Render\Work;
 use Janalis\Viz\Source\Unsupported;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -64,6 +65,61 @@ final class NwReaderTest extends TestCase
         $this->assertSame($diagram->networks[1], $diagram->servers[1]->main());
     }
 
+    public function testServersDeclaredBeforeTheFirstNetworkJoinOneMadeUpAboveIt(): void
+    {
+        $diagram = self::read("a;\nb;\nnetwork n {\n  c;\n}");
+
+        $this->assertSame([false, true], \array_map(static fn (NwNetwork $network): bool => $network->visible, $diagram->networks));
+        $this->assertSame([$diagram->networks[0], $diagram->networks[0], $diagram->networks[1]], \array_map(static fn (NwServer $server): ?NwNetwork => $server->main(), $diagram->servers));
+    }
+
+    public function testALinkFromAServerNotDeclaredMakesItsNetwork(): void
+    {
+        $diagram = self::read('a -- b');
+
+        // As PlantUML: the network named after the first, the second on it.
+        $this->assertSame(['a'], \array_map(static fn (NwNetwork $network): string => $network->displayName(), $diagram->networks));
+        $this->assertSame(['b'], \array_map(static fn (NwServer $server): string => $server->name, $diagram->servers));
+    }
+
+    public function testALinkBetweenTwoDeclaredServersGoesThroughAHiddenNetworkTheModelJoinsThemAcross(): void
+    {
+        $diagram = self::read("a;\nb;\na -- b");
+        $graph = $diagram->model();
+
+        $this->assertSame([false, false], \array_map(static fn (NwNetwork $network): bool => $network->visible, $diagram->networks));
+        $this->assertInstanceOf(Graph::class, $graph);
+        $this->assertSame(['a', 'b'], \array_map(static fn (Node $node): ?string => $node->label, $graph->nodes), 'no node for a network not drawn');
+        $this->assertSame([['n0', 'n1']], \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to], $graph->edges), 'the servers on it joined to each other');
+    }
+
+    public function testAServerDescribedOutsideANetworkLearnsItsAddressOnTheFirstWithNone(): void
+    {
+        $diagram = self::read("network n {\n  a [address = \"1\"];\n  a;\n}\nnetwork m {\n  a;\n}\na [address = \"2\"];");
+        [$n, $m] = $diagram->networks;
+
+        $this->assertSame(['1', '2'], [$diagram->servers[0]->address($n), $diagram->servers[0]->address($m)]);
+    }
+
+    public function testWhatHoldsNothingDrawsNothing(): void
+    {
+        $polygons = static fn (string $lines): int => \count(\array_filter(Work::run(self::read($lines)->drawing())->marks, static fn ($mark): bool => MarkKind::Polygon === $mark->kind));
+
+        // An empty group is not shaded, a colour outside any block goes nowhere, a network with no server is its bar alone.
+        $this->assertSame($polygons("network n {\n  a;\n}"), $polygons("color = \"red\"\ngroup {\n}\nnetwork n {\n  a;\n}"));
+        $this->assertSame(1, $polygons("network n {\n}"));
+        // A shape PlantUML does not know is a rectangle.
+        $this->assertSame($polygons('a;'), $polygons('a [shape = foo];'));
+    }
+
+    public function testADiagramWiderThanAHundredColumnsIsRefusedAsPlantUmlRefusesIt(): void
+    {
+        $this->expectException(PlantUmlRefusal::class);
+        $this->expectExceptionMessage('The network diagram is too wide');
+
+        Work::run(self::read("network n {\n".\implode("\n", \array_map(static fn (int $index): string => 's'.$index.';', \range(start: 0, end: 101)))."\n}")->drawing());
+    }
+
     public function testGroupsShadeTheirServersWithTheirDescriptionAbove(): void
     {
         $drawing = Work::run(self::read("group {\n  color = \"#FFAAAA\"\n  description = \"Web\"\n  a;\n  b;\n}\nnetwork n {\n  a;\n  b;\n}")->drawing());
@@ -108,6 +164,8 @@ final class NwReaderTest extends TestCase
         yield 'a server in two groups' => ["group {\na;\n}\ngroup {\na;\n}", 'Element already in another group.'];
         yield 'a link from nowhere' => ["network n {\na;\n}\nb -- c", 'what about b'];
         yield 'a shape drawn by PlantUML' => ['a [shape = actor];', 'shape actor'];
+        yield 'a description outside any network' => ['description = x', 'A description outside any network'];
+        yield 'a command left to PlantUML' => ["hide empty description\na;", 'does not draw: hide empty description'];
     }
 
     #[DataProvider('failures')]

@@ -207,18 +207,14 @@ final readonly class DotCentring
     {
         \usort($anchors, static fn (array $a, array $b): int => $a[0] <=> $b[0]);
         $total = \array_sum(\array_column($anchors, 1));
-        $sum = 0;
-        foreach ($anchors as $index => [$x, $weight]) {
-            $sum += $weight;
-            if ((2 * $sum) === $total) {
-                return [$x, $anchors[$index + 1][0]];
-            }
-            if ((2 * $sum) > $total) {
-                return [$x, $x];
-            }
+        // The first anchor that brings the weights to half their total or more: alone past half, with the next at half.
+        [$index, $sum] = [0, $anchors[0][1]];
+        while ((2 * $sum) < $total) {
+            $sum += $anchors[++$index][1];
         }
+        $x = $anchors[$index][0];
 
-        return [0, 0];
+        return [$x, (2 * $sum) === $total ? $anchors[$index + 1][0] ?? $x : $x];
     }
 
     /** @param list<int> $values whether a node stands its least room from a neighbour on its rank */

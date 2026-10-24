@@ -139,7 +139,7 @@ final class ChenDrawing
     }
 
     /**
-     * @param list<array{float, float}> $points
+     * @param list<array{float, float}> $points two at least, as a clipped path keeps
      * @return array{array{float, float}, float} the point half way along a line, and the line's angle there
      */
     private static function middle(array $points): array
@@ -149,17 +149,13 @@ final class ChenDrawing
             $lengths[] = \hypot($points[$index][0] - $points[$index - 1][0], $points[$index][1] - $points[$index - 1][1]);
         }
         $half = \array_sum($lengths) / 2;
-        foreach ($lengths as $index => $length) {
-            if ($half > $length && $index < (\count($lengths) - 1)) {
-                $half -= $length;
-                continue;
-            }
-            [$a, $b] = [$points[$index], $points[$index + 1]];
-            $part = $length > 0 ? \min(1.0, $half / $length) : 0.0;
-
-            return [[$a[0] + (($b[0] - $a[0]) * $part), $a[1] + (($b[1] - $a[1]) * $part)], \atan2($b[1] - $a[1], $b[0] - $a[0])];
+        $index = 0;
+        while ($half > $lengths[$index] && $index < (\count($lengths) - 1)) {
+            $half -= $lengths[$index++];
         }
+        [$a, $b, $length] = [$points[$index], $points[$index + 1], $lengths[$index]];
+        $part = $length > 0 ? \min(1.0, $half / $length) : 0.0;
 
-        return [$points[0], 0.0];
+        return [[$a[0] + (($b[0] - $a[0]) * $part), $a[1] + (($b[1] - $a[1]) * $part)], \atan2($b[1] - $a[1], $b[0] - $a[0])];
     }
 }

@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\PlantUML\Salt;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
@@ -68,6 +69,30 @@ final class SaltReaderTest extends TestCase
         $this->assertContains('****', \array_map(static fn (Mark $mark): string => $mark->text, $drawing->marks));
     }
 
+    public function testABorderLeavesOutTheSidesItDoesNotName(): void
+    {
+        $drawing = Work::run(self::read("{\nN= | north\n}")->drawing());
+
+        // As the jar draws it: the north side alone, 42 by 27.
+        $this->assertSame(['north'], \array_map(static fn (Mark $mark): string => $mark->text, $drawing->marks));
+        $this->assertSame([42.0, 27.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
+    public function testATreeOfAPlusIsRuledAround(): void
+    {
+        $drawing = Work::run(self::read("{\n{T+\n+ World\n++ Europe\n}\n}")->drawing());
+        $lines = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind));
+
+        // As the jar draws it: the branch to Europe, then the four rules around the tree.
+        $this->assertCount(6, $lines);
+        $this->assertSame([75.0, 41.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
+    public function testABlankLineIsPassedOver(): void
+    {
+        $this->assertEquals(self::read("{\na\n}")->root, self::read("{\n\na\n}")->root);
+    }
+
     public function testTheModelListsEachWidgetsText(): void
     {
         $graph = self::read("{\n{T\n+ World\n++ Europe\n}\n[OK] | * \n}")->model();
@@ -86,6 +111,9 @@ final class SaltReaderTest extends TestCase
         yield 'a lone quote' => ["{\n\"\n}", 'nothing inside'];
         yield 'a star first' => ["{\n* | a\n}", 'A * with no widget before it'];
         yield 'a menu item of no entry' => ["{\n{* File\n Edit | x\n}\n}", 'No menu entry Edit'];
+        yield 'a border side of no name' => ["{\nN= | north\nX= | x\n}", 'No side X to a salt border'];
+        yield 'a picture of rows of other lengths' => ["{\n<<a\nXX.\nX\n>>\n}", 'A salt picture with rows of other lengths'];
+        yield 'a command salt does not read' => ['set namespaceSeparator ::', 'does not draw: set namespaceSeparator ::'];
     }
 
     #[DataProvider('failures')]

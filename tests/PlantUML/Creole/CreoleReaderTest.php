@@ -61,6 +61,23 @@ final class CreoleReaderTest extends TestCase
         $this->assertSame(['Not **bold** but «stereo» ©'], \array_map(static fn (Mark $mark): string => $mark->text, self::texts('Not ~**bold~** but <<stereo>> &#169;')));
     }
 
+    public function testASpriteAndALinkWithNothingToShowDrawNothing(): void
+    {
+        // As PlantUML: a sprite a Creole block cannot define is left out; a link with neither label nor target shows nothing.
+        $this->assertSame(['a ', ' b'], \array_map(static fn (Mark $mark): string => $mark->text, self::texts('a <#red$sprite> b')));
+        $this->assertSame(['a ', ' b'], \array_map(static fn (Mark $mark): string => $mark->text, self::texts('a [[ {} ]] b')));
+    }
+
+    public function testACellsEscapedBackslashIsOne(): void
+    {
+        $this->assertSame(['a\\b'], \array_map(static fn (Mark $mark): string => \trim($mark->text), self::texts('| a\\\\b |')));
+    }
+
+    public function testASheetStandsOnItsFoot(): void
+    {
+        $this->assertSame(0.0, CreoleReader::sheet(['a'], new CreoleFont())->altitude());
+    }
+
     public function testATableRowIsAsHighAsItsHighestCell(): void
     {
         $sheet = CreoleReader::sheet(['| a | one\ntwo |', '| b | c |'], new CreoleFont());

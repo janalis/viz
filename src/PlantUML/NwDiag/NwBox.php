@@ -19,9 +19,6 @@ final class NwBox implements NwStaged
 
     public function add(NwBar $bar): void
     {
-        if (\in_array($bar, $this->bars, strict: true)) {
-            return;
-        }
         $this->bars[] = $bar;
         $this->tetris->add($bar);
     }

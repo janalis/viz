@@ -61,6 +61,16 @@ final class FilesReaderTest extends TestCase
         $this->assertEqualsWithDelta($texts[1]->points[0][1] - $texts[0]->points[0][1], $texts[2]->points[0][1] - $texts[1]->points[0][1], 0.001);
     }
 
+    public function testANameBreaksAtNewlinesItsFirstLineBesideTheEmoji(): void
+    {
+        $drawing = Work::run(self::read('/two\nlines')->drawing());
+        [$first, $second] = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind));
+
+        $this->assertSame(['two', 'lines'], [$first->text, $second->text]);
+        $this->assertGreaterThan($first->points[0][1], $second->points[0][1]);
+        $this->assertLessThan($first->points[0][0], $second->points[0][0], 'the next line from the emoji\'s left');
+    }
+
     public function testTheModelJoinsEachEntryToItsFolder(): void
     {
         $graph = self::read("/src/main.php\n<note>\nleft out\n</note>")->model();

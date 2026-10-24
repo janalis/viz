@@ -34,9 +34,7 @@ final class PlantUmlIcon
                 $x + ($point[0] * $scale),
                 $y + ($point[1] * $scale),
             ], $outline), SvgPath::outlines($data));
-            if ([] === $outlines) {
-                continue;
-            }
+            // Each of the icons' paths draws one outline at least.
             $marks[] = new Mark(MarkKind::Polygon, $outlines[0], stroke: 'none', fill: $color, strokeWidth: 0.0, subpaths: \array_slice($outlines, offset: 1));
         }
 

@@ -24,12 +24,10 @@ final class SaltTokens
     {
         foreach ($lines as $line) {
             $escaped = \str_replace(['\|', '\{', '\}'], ["\u{e000}", "\u{e001}", "\u{e002}"], $line);
-            $pieces = \preg_split('/([|}])/', $escaped, flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
-            if (false === $pieces) {
-                continue;
-            }
+            // A split this simple never fails.
+            $pieces = (array) \preg_split('/([|}])/', $escaped, flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
             foreach ($pieces as $index => $piece) {
-                $word = \trim($piece);
+                $word = \trim((string) $piece);
                 if ('|' === $word) {
                     continue;
                 }
@@ -56,12 +54,9 @@ final class SaltTokens
     /** A token, each block opening in it one of its own, only the last of them ending the line the token ends. */
     private function split(string $word, bool $ends): void
     {
-        $pieces = \preg_split('/('.self::BLOCK.')/', $word, flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
-        if (false === $pieces) {
-            return;
-        }
+        $pieces = (array) \preg_split('/('.self::BLOCK.')/', $word, flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
         foreach ($pieces as $index => $piece) {
-            $this->add($piece, $ends && ($index + 1) === \count($pieces));
+            $this->add((string) $piece, $ends && ($index + 1) === \count($pieces));
         }
     }
 

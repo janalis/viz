@@ -95,6 +95,12 @@ final class DotShapeTest extends TestCase
         // As `dot` draws them: the outer diamond's sides 4 outside the inner's, its corners where they meet.
         $this->assertEqualsWithDelta([[0.0, -22.47], [44.94, 0.0]], [$shape->peripheries[0][0], $shape->peripheries[0][1]], 0.01);
         $this->assertEqualsWithDelta([72.0, 36.0], DotShape::inner('diamond', 89.89, 44.94, 2), 0.01);
+        // Where an outline turns straight back, as a diamond with no width does at its tips, its ring stands its distance off it.
+        $this->assertEqualsWithDelta(
+            [[-4.0, -5.0], [4.0, 5.0]],
+            [DotShape::of('diamond', 0.0, 10.0, peripheries: 2)->peripheries[0][0], DotShape::of('diamond', 0.0, 10.0, peripheries: 2)->peripheries[0][2]],
+            1e-9,
+        );
     }
 
     public function testRegularPolygonsReachTheirBoxAsDotDrawsThem(): void

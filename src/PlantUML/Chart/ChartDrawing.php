@@ -109,6 +109,11 @@ final class ChartDrawing
             $this->annotation($annotation, $left, $top);
         }
         $this->legend($left, $top);
+        // As PlantUML's SVG writer, which leaves out what stands at no number, as on a flat axis.
+        $this->marks = \array_values(\array_filter(
+            $this->marks,
+            static fn (Mark $mark): bool => [] === \array_filter($mark->points, static fn (array $point): bool => !\is_finite($point[0]) || !\is_finite($point[1])),
+        ));
         // As PlantUML's SVG writer, which makes room for whatever it draws past the chart's size, 10 in from its margin.
         foreach ($this->marks as $mark) {
             foreach (MarkKind::Text === $mark->kind ? [] : $mark->points as [$x, $y]) {
@@ -371,9 +376,6 @@ final class ChartDrawing
         $this->text($text, $x - ($width / 2), $textTop, 'left');
         $from = $above ? $textTop + $height + 5 : $textTop - 5;
         $to = $above ? $y - 5 : $y + 5;
-        if (($above ? $to - $from : $from - $to) <= 0) {
-            return;
-        }
         $color = $style->color('LineColor', '#000000');
         $this->line([$x, $from], [$x, $to], $style);
         $back = $above ? -8.0 : 8.0;

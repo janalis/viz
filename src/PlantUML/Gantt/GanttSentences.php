@@ -198,8 +198,8 @@ final class GanttSentences
             \str_starts_with($action, 'SubjectDayOfWeek$') => self::weekdayAction($chart, (int) \substr($action, offset: 17), \is_int($who) ? $who : 1, $words),
             'SubjectSeparator$1' === $action => $chart->separatorsBefore[self::date($chart, $words)] = true,
             'SubjectSeparator$2' === $action => $chart->separatorsBefore[self::date($chart, $words) + 1] = true,
-            'SubjectSeparator$3' === $action => $chart->separatorsBefore[GanttTime::day(self::instant($chart, $words)->at())] = true,
-            default => throw new Unsupported('The native PlantUML renderer does not read the Gantt sentence of '.$action),
+            // The last of the actions the grammar names: a separator just at an instant.
+            default => $chart->separatorsBefore[GanttTime::day(self::instant($chart, $words)->at())] = true,
         };
     }
 
@@ -228,8 +228,8 @@ final class GanttSentences
             21 => self::pause($task, [self::date($chart, $words)]),
             22 => $task->pausedWeekdays[GanttTime::weekdayNamed($words['COMPLEMENT'] ?? '')] = true,
             23 => null,
-            24 => $task->displayString = $words['ANYTHING'] ?? '',
-            default => throw new Unsupported('The native PlantUML renderer does not read this Gantt task sentence'),
+            // The last of the phrases the grammar names: is displayed as.
+            default => $task->displayString = $words['ANYTHING'] ?? '',
         };
     }
 
@@ -245,8 +245,8 @@ final class GanttSentences
             5 => $calendar->closeWeekday(GanttTime::weekdayNamed($words['COMPLEMENT'] ?? '')),
             6 => $calendar->closeDay(self::date($chart, $words)),
             7 => \array_map($calendar->openDay(...), self::interval($chart, $words)),
-            8 => $calendar->openDay(self::date($chart, $words)),
-            default => throw new Unsupported('The native PlantUML renderer does not read this Gantt resource sentence'),
+            // The last of the phrases the grammar names: is on a day.
+            default => $calendar->openDay(self::date($chart, $words)),
         };
     }
 
@@ -260,12 +260,12 @@ final class GanttSentences
         $many = \str_starts_with($action, 'SubjectDaysAsDates');
         $task = self::forTask($words['CLOSED'] ?? $words['OPEN'] ?? '');
         foreach ($days as $day) {
-            match ($many ? ['1' => 'close', '2' => 'open', '3' => 'color', '4' => 'name'][$kind] ?? '' : ['1' => 'open', '2' => 'close', '3' => 'color'][$kind] ?? '') {
+            // The phrases the grammar names: closed, opened, coloured, and for days together named.
+            match ($many ? ['1' => 'close', '2' => 'open', '3' => 'color'][$kind] ?? 'name' : ['1' => 'open', '2' => 'close'][$kind] ?? 'color') {
                 'close' => '' === $task ? $chart->calendar->closeDay($day) : $chart->taskCalendar($task)->closeDay($day),
                 'open' => '' === $task ? $chart->calendar->openDay($day) : $chart->taskCalendar($task)->openDay($day),
                 'color' => $chart->colors[$day] = self::colors($words, 'COMPLEMENT1', 'COMPLEMENT2')[0] ?? '#ffffff',
-                'name' => $chart->names[$day] = $words['COMPLEMENT'] ?? '',
-                default => throw new Unsupported('The native PlantUML renderer does not read this Gantt day sentence'),
+                default => $chart->names[$day] = $words['COMPLEMENT'] ?? '',
             };
         }
     }
@@ -278,8 +278,8 @@ final class GanttSentences
             // As PlantUML, which opens a weekday for a task alone, but closes it for every task.
             1 => '' === $task ? $chart->calendar->openWeekday($weekday) : $chart->taskCalendar($task)->openWeekday($weekday),
             2 => $chart->calendar->closeWeekday($weekday),
-            3 => $chart->weekdayColors[$weekday] = self::colors($words, 'COMPLEMENT1', 'COMPLEMENT2')[0] ?? '#ffffff',
-            default => throw new Unsupported('The native PlantUML renderer does not read this Gantt weekday sentence'),
+            // The last of the phrases the grammar names: coloured.
+            default => $chart->weekdayColors[$weekday] = self::colors($words, 'COMPLEMENT1', 'COMPLEMENT2')[0] ?? '#ffffff',
         };
     }
 

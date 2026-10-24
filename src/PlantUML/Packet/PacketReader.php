@@ -42,7 +42,8 @@ final class PacketReader
     {
         $value = static fn (string $slot): int => (int) $command->get($slot);
         match ($command->name) {
-            'CommandNope', 'CommandPacketDiagStart', 'CommandPacketDiagEnd' => null,
+            // As PlantUML, which reads `hide` here and draws nothing different.
+            'CommandNope', 'CommandPacketDiagStart', 'CommandPacketDiagEnd', 'CommandHideEmptyDescription', 'CommandHideShowByVisibility', 'CommandHideShowByGender' => null,
             'CommandColWidth' => $this->columns = $value('WIDTH') > 0 ? $value('WIDTH') : $this->columns,
             'CommandNodeHeight' => $this->bitHeight = (float) \max(0, $value('HEIGHT')),
             'CommandScaleDirection' => $this->rightToLeft = 'rtl' === \strtolower((string) $command->get('DIR')),

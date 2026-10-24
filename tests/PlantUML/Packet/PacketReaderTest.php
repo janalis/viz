@@ -11,6 +11,8 @@ use Janalis\Viz\Model\Graph\Node;
 use Janalis\Viz\PlantUML\Packet\PlantUmlPacket;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\Render\Work;
+use Janalis\Viz\Source\Unsupported;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class PacketReaderTest extends TestCase
@@ -66,6 +68,46 @@ final class PacketReaderTest extends TestCase
         );
 
         $this->assertSame(['A ...'], $texts);
+    }
+
+    public function testAFieldOfNoBitsIsNotDrawn(): void
+    {
+        $drawing = Work::run(self::read("0-1: B\n2: A [len = 0]")->drawing());
+        $texts = \array_map(static fn ($mark): string => $mark->text, \array_values(\array_filter($drawing->marks, static fn ($mark): bool => MarkKind::Text === $mark->kind)));
+
+        // As the jar draws it: B's box alone, A neither boxed nor written.
+        $this->assertSame(['0', 'B'], $texts);
+        $this->assertCount(1, \array_filter($drawing->marks, static fn ($mark): bool => MarkKind::Polygon === $mark->kind));
+    }
+
+    public function testAScaleOfNoLineColourIsNumberedButNotTicked(): void
+    {
+        $drawing = Work::run(self::read("<style>\npacketdiagDiagram {\nLineColor none\n}\n</style>\n0-3: A")->drawing());
+
+        $this->assertSame([], \array_values(\array_filter($drawing->marks, static fn ($mark): bool => MarkKind::Polyline === $mark->kind)));
+        $this->assertContains('0', \array_map(static fn ($mark): string => $mark->text, $drawing->marks));
+    }
+
+    public function testHidingIsReadAndChangesNothing(): void
+    {
+        $this->assertSame(self::read('0-3: A')->fields, self::read("hide empty description\n0-3: A")->fields);
+    }
+
+    /** @return iterable<string, array{string, string}> */
+    public static function refusals(): iterable
+    {
+        yield 'a command packets do not read' => ['set namespaceSeparator ::', 'does not draw: set namespaceSeparator ::'];
+        yield 'a first row of no bits, which PlantUML fails on' => ['0: A [len = 0]', 'first row is no bit wide'];
+        yield 'a first field ending before it starts' => ['3-1: A', 'first row is no bit wide'];
+    }
+
+    #[DataProvider('refusals')]
+    public function testItLeavesToPlantUmlWhatItDoesNotDraw(string $lines, string $message): void
+    {
+        $this->expectException(Unsupported::class);
+        $this->expectExceptionMessage($message);
+
+        Work::run(PlantUmlPipeline::native()->drawing("@startpacketdiag\n".$lines."\n@endpacketdiag"));
     }
 
     public function testTheModelListsTheFields(): void

@@ -14,6 +14,7 @@ use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
 use Janalis\Viz\PlantUML\Style\Style;
+use Janalis\Viz\Source\Unsupported;
 
 /**
  * A packet diagram laid out and drawn as PlantUML's `PacketDiagram` does: its fields in rows
@@ -38,6 +39,7 @@ final class PacketDrawing
         private readonly float $bitWidth,
     ) {}
 
+    /** @throws Unsupported where PlantUML fails: a first row no bit wide */
     public static function draw(PlantUmlPacket $diagram): Drawing
     {
         $styles = $diagram->document->styles;
@@ -48,7 +50,10 @@ final class PacketDrawing
         return PlantUmlFrame::drawing($diagram->document, $drawing->marks, $width, $height);
     }
 
-    /** @return array{float, float} the size PlantUML gives the diagram: the scale's and the rows' */
+    /**
+     * @return array{float, float} the size PlantUML gives the diagram: the scale's and the rows'
+     * @throws Unsupported where PlantUML fails: a first row no bit wide
+     */
     private function paint(): array
     {
         $diagram = $this->diagram;
@@ -58,6 +63,9 @@ final class PacketDrawing
         $first = 0;
         foreach ($rows[0] ?? [] as [$bitsWide]) {
             $first += $bitsWide;
+        }
+        if ([] !== $rows && $first <= 0) {
+            throw new Unsupported('PlantUML fails on a packet whose first row is no bit wide');
         }
         $columns = [] === $rows ? $diagram->columns : \min($first, $diagram->columns);
         $quarter = $columns >= 4 ? \intdiv($columns, num2: 4) : $columns;
@@ -167,7 +175,8 @@ final class PacketDrawing
         $label = PlantUmlText::styled(ClassReader::split($this->shortened($text, $width)), $this->box);
         [, $labelHeight] = $label->size();
         $height = \max($tall, $labelHeight + (2 * self::MARGIN));
-        if ($width <= 0 || $height <= 0) {
+        // As PlantUML, a field of no bits, or fewer, is not drawn.
+        if ($width <= 0) {
             return $height;
         }
         $box = ClassBox::rectangle(

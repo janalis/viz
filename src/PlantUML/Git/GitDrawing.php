@@ -45,8 +45,9 @@ final class GitDrawing
         $style = $git->document->styles->style(['root', 'element', 'gitDiagram']);
         $line = $style->color('LineColor', '#181818');
         $font = $style->color('FontColor', '#000000');
+        // With no commit, as measured on PlantUML's output: a point, its margin round it.
         if ([] === $git->nodes) {
-            return PlantUmlFrame::drawing($git->document, [], 0.0, 0.0);
+            return PlantUmlFrame::drawing($git->document, [], 1.0, 1.0);
         }
         $nodes = [];
         $edges = [];

@@ -58,9 +58,6 @@ final readonly class GitArea
         $parents = [];
         foreach ($candidates as [$cx, $cy]) {
             [$dx, $dy] = $this->down($cx, $cy);
-            if (!$this->matches($dx, $dy, '* ') && !$this->matches($dx, $dy, '*-')) {
-                throw new PlantUmlRefusal('No commit at ('.($dx + 1).','.($dy + 1).')');
-            }
             $parents[] = self::name(\substr($this->line($dy), $dx));
         }
 
@@ -79,7 +76,8 @@ final readonly class GitArea
     }
 
     /**
-     * As PlantUML's `getDownFromInternal`: down the graph, sign after sign, to a `* `.
+     * As PlantUML's `getDownFromInternal`: down the graph, sign after sign, to a `* `. Each sign
+     * leads down, or left along its line, so the way ends: at a commit, or where no sign leads on.
      *
      * @return array{int, int}
      */
@@ -110,7 +108,7 @@ final readonly class GitArea
             ['/', [[-1, 1, '* ']], -1, 1],
             ['/', [[-1, 1, '|']], -1, 1],
         ];
-        for ($count = 0; $count < 100_000; ++$count) {
+        while (true) {
             if ($this->matches($x, $y, '* ')) {
                 return [$x, $y];
             }
@@ -129,8 +127,6 @@ final readonly class GitArea
 
             throw new PlantUmlRefusal('The git graph cannot be followed at ('.($x + 1).','.($y + 1).')');
         }
-
-        throw new PlantUmlRefusal('The git graph does not end');
     }
 
     private function matches(int $x, int $y, string $prefix): bool

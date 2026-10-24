@@ -31,9 +31,6 @@ final class FlowDrawing
 
     public static function draw(PlantUmlFlow $flow): Drawing
     {
-        if ([] === $flow->tiles) {
-            return PlantUmlFrame::bare($flow->document, [], 0.0, 0.0);
-        }
         $left = \min(\array_map(static fn (FlowTile $tile): int => $tile->xmin, $flow->tiles));
         $top = \min(\array_map(static fn (FlowTile $tile): int => $tile->ymin, $flow->tiles));
         $right = \max(\array_map(static fn (FlowTile $tile): int => $tile->xmax(), $flow->tiles));

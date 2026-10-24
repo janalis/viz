@@ -26,6 +26,13 @@ final class BoxClipTest extends TestCase
         $this->assertSame([[1.0, 1.0], [2.0, 2.0]], BoxClip::clipped([[1.0, 1.0], [2.0, 2.0]], $a, $a));
     }
 
+    public function testABoxOfNoSizeHoldsNothing(): void
+    {
+        $point = new GraphNode(0, 'p', '', 0.0, 0.0, 0.0, 0.0, null, null, dashed: false);
+
+        $this->assertSame([[0.0, 0.0], [0.0, 50.0]], BoxClip::clipped([[0.0, 0.0], [0.0, 50.0]], $point, self::box(500.0, 500.0)));
+    }
+
     private static function box(float $x, float $y): GraphNode
     {
         return new GraphNode(0, 'n', '', $x, $y, 20.0, 20.0, null, null, dashed: false);

@@ -116,9 +116,8 @@ final class HclParser
     /** `name(args)`: an object of `name()` and its arguments, or `name()` alone without any. */
     private function call(string $name): JsonNode
     {
-        if ('(' !== $this->next()[0]) {
-            throw new PlantUmlRefusal('Expected (');
-        }
+        // Its `(`, which always follows a function's name.
+        $this->next();
         $arguments = [];
         while (true) {
             $value = $this->value();

@@ -10,11 +10,9 @@ final readonly class GanttRate
     public int $num;
     public int $den;
 
+    /** A denominator above 0, as every rate is written. */
     public function __construct(int $num, int $den = 1)
     {
-        if ($den < 0) {
-            [$num, $den] = [-$num, -$den];
-        }
         $gcd = self::gcd(\abs($num), $den);
         [$this->num, $this->den] = [\intdiv($num, \max(1, $gcd)), \intdiv($den, \max(1, $gcd))];
     }
@@ -37,11 +35,6 @@ final readonly class GanttRate
     public function plus(self $other): self
     {
         return new self(($this->num * $other->den) + ($other->num * $this->den), $this->den * $other->den);
-    }
-
-    public function max(self $other): self
-    {
-        return ($this->num * $other->den) >= ($other->num * $this->den) ? $this : $other;
     }
 
     public function zeroed(): bool

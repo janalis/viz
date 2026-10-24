@@ -182,9 +182,6 @@ final class TimingDrawing
             if ('manual' === $diagram->axis) {
                 $marks[] = self::line($x + $ruler->x($time), $y, $x + $ruler->x($time), $y + 5, $color, $thickness);
             }
-            if ('' === $label) {
-                continue;
-            }
             $text = $this->parts->text($label, 'timeline');
             \array_push($marks, ...$text->marks($x + $ruler->x($time) - ($text->size()[0] / 2), $y + 6));
         }
@@ -281,7 +278,7 @@ final class TimingDrawing
         foreach ($this->diagram->players as $player) {
             $top += $this->frame($player);
             if ($player === $target) {
-                return $top;
+                break;
             }
             $top += $this->panels[\spl_object_id($player)]->height();
         }

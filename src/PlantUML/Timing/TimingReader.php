@@ -132,9 +132,6 @@ final class TimingReader
     private function define(string $code, array $states): void
     {
         foreach ($states as $state) {
-            if ('' === $state) {
-                continue;
-            }
             $this->labelled($code, $state, $state);
         }
     }

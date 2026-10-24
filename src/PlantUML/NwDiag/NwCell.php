@@ -53,10 +53,10 @@ final class NwCell
     public function size(): array
     {
         $network = $this->server->main();
-        [$firstWidth, $firstHeight] = $this->text($this->address($network))?->size() ?? [0.0, 0.0];
+        [$firstWidth, $firstHeight] = $this->text($this->address($network) ?? '')->size();
         $index = \array_search($network, $this->networks, strict: true);
         $next = false === $index ? null : $this->networks[$index + 1] ?? null;
-        [$secondWidth, $secondHeight] = null === $next ? [0.0, 0.0] : $this->text($this->address($next))?->size() ?? [0.0, 0.0];
+        [$secondWidth, $secondHeight] = null === $next ? [0.0, 0.0] : $this->text($this->address($next) ?? '')->size();
 
         return [
             \max($firstWidth + (2 * self::LINK_MARGIN), $this->box->width + (2 * self::BOX_MARGIN), $secondWidth + (2 * self::LINK_MARGIN)),
@@ -103,7 +103,7 @@ final class NwCell
                     : self::line($left + $centre + $network->shift(), $top, $top + $alpha, [], $color),
             );
         }
-        \array_push($marks, ...$this->centred($this->text($this->address($network)), $left + $centre + $network->shift(), $top + (($alpha - $this->topMargin + self::MAGIC) / 2)));
+        \array_push($marks, ...$this->centred($this->text($this->address($network) ?? ''), $left + $centre + $network->shift(), $top + (($alpha - $this->topMargin + self::MAGIC) / 2)));
         $x = $centre - (((\count($this->links) - 2) * self::APART) / 2);
         $first = true;
         foreach ($this->links as [$other, $address]) {
@@ -112,7 +112,7 @@ final class NwCell
             }
             \array_push($marks, ...self::line($left + $x - $other->shift(), $top + $middle + ($this->box->height / 2), $other->y, $skip, $color));
             $text = $this->text($address);
-            $textX = $first && \count($this->links) > 2 ? $x - (($text?->size()[0] ?? 0.0) / 2) : $x;
+            $textX = $first && \count($this->links) > 2 ? $x - ($text->size()[0] / 2) : $x;
             \array_push($marks, ...$this->centred($text, $left + $textX - $other->shift(), $other->y - ($alpha / 2)));
             $x += self::APART;
             $first = false;
@@ -132,12 +132,9 @@ final class NwCell
         return null;
     }
 
-    /** As PlantUML's `toTextBlock`: none for no address, an empty one for an empty address, each `, ` a new line. */
-    private function text(?string $address): ?PlantUmlText
+    /** As PlantUML's `toTextBlock`: an empty one for an empty address, each `, ` a new line. */
+    private function text(string $address): PlantUmlText
     {
-        if (null === $address) {
-            return null;
-        }
         if ('' === $address) {
             return new PlantUmlText([]);
         }
@@ -146,11 +143,8 @@ final class NwCell
     }
 
     /** @return list<Mark> */
-    private function centred(?PlantUmlText $text, float $x, float $y): array
+    private function centred(PlantUmlText $text, float $x, float $y): array
     {
-        if (null === $text) {
-            return [];
-        }
         [$width, $height] = $text->size();
 
         return $text->marks($x - ($width / 2), $y - ($height / 2), $width, 'left');

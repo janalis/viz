@@ -45,6 +45,19 @@ final class WireReaderTest extends TestCase
         $this->assertSame([[10.0, 20.0], [10.0, 140.0], [300.0, 20.0]], \array_map(static fn ($block): array => $block->absolute(), $root->children));
     }
 
+    public function testAnIndentedMoveOrGotoMovesTheCursorWithinTheBlock(): void
+    {
+        $outer = self::read("* outer [200x200]\n\t* a [40x20]\n\tmove(0, 30)\n\t* b [40x20]\n\tgoto(100, 10)\n\t* c [40x20]")->root->children[0];
+
+        // As the jar draws them, 10 further right and down in its margin.
+        $this->assertSame([[20.0, 40.0], [20.0, 110.0], [110.0, 40.0]], \array_map(static fn ($block): array => $block->absolute(), $outer->children));
+    }
+
+    public function testABlankLineIsPassedOver(): void
+    {
+        $this->assertEquals(self::read("* a\n* b")->root, self::read("* a\n\n* b")->root);
+    }
+
     public function testPrintedLinesMoveTheCursorALineEach(): void
     {
         $board = self::read("* board\n\tprint(\"one\\ntwo\")\n\tprint(\"\")\n\t* chip")->root->children[0];
@@ -106,6 +119,7 @@ final class WireReaderTest extends TestCase
         yield 'an indented spot' => ["* a\n  spot a", 'Syntax Error?'];
         yield 'a link to nothing' => ["* a\na -> b", 'No such element b'];
         yield 'an unknown colour' => ['* a #nosuchcolour', 'No such color'];
+        yield 'a command wires do not read' => ['set namespaceSeparator ::', 'does not draw: set namespaceSeparator ::'];
     }
 
     #[DataProvider('failures')]

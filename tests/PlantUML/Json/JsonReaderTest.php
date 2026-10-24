@@ -47,6 +47,13 @@ final class JsonReaderTest extends TestCase
         $this->assertSame(["\u{2611} true", "\u{2400}", '-2e3'], \array_map(static fn (array $member): string => $member[1]->short(), $node->members[1][1]->members));
     }
 
+    public function testEscapesStandForWhatJsonSaysTheyDo(): void
+    {
+        $node = JsonParser::parse('["\\"\\/\\\\\\b\\f\\n\\r\\t"]');
+
+        $this->assertSame("\"/\\\x08\f\n\r\t", $node->members[0][1]->text);
+    }
+
     /** @return iterable<string, array{string, string}> */
     public static function badJson(): iterable
     {
@@ -57,6 +64,12 @@ final class JsonReaderTest extends TestCase
         yield 'bad escape' => ['["\\x"]', 'Expected valid escape sequence'];
         yield 'unclosed' => ['{"a": 1', 'Unexpected end of input'];
         yield 'single slash' => ['{"a": 1 /}', 'Error'];
+        yield 'control character' => ["[\"a\x01\"]", 'Expected valid string character'];
+        yield 'unclosed string' => ['["a', 'Unexpected end of input'];
+        yield 'short unicode' => ['["\\u12g4"]', 'Expected hexadecimal digit'];
+        yield 'minus alone' => ['[-x]', 'Expected digit'];
+        yield 'misspelt' => ['[nul]', "Expected 'l'"];
+        yield 'too deep' => [\str_repeat('[', times: 1001), 'Nesting too deep'];
     }
 
     #[DataProvider('badJson')]
@@ -124,6 +137,12 @@ final class JsonReaderTest extends TestCase
         yield 'folded' => [['a: >', '  b']];
         yield 'nothing' => [['# only a comment']];
         yield 'an item in a map' => [['a: 1', '- b']];
+        yield 'a block in an item' => [['- a: |', '  text']];
+        yield 'a key after a list' => [['- a', '- b', 'c: 1']];
+        yield 'a list in a list' => [['-', '  - a']];
+        yield 'less indented than the first' => [['  a: 1', 'b: 2']];
+        yield 'a key under a list item' => [['- c', '  b:']];
+        yield 'a list closed past its root' => [['- c', '  - c', '  -', 'a: 1']];
     }
 
     /** @param list<string> $lines */
@@ -169,6 +188,53 @@ final class JsonReaderTest extends TestCase
         $this->assertSame('#ffc0cb', $diagram->document->styles->style(['root', 'element', 'jsonDiagram', 'node'])->color('BackGroundColor'));
     }
 
+    public function testScaleSkinAndSkinparamBlocksBeforeTheDataAreReadAsPlantUmlReadsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startjson\n{$lines}\n@endjson"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sizes them: 59 by 42 unscaled, 88 by 63 at 1.5, 39 by 28 at 2/3; blank lines, a skin and a block of skinparams changing nothing.
+        $this->assertSame([[59.0, 42.0], [88.0, 63.0], [39.0, 28.0], [59.0, 42.0]], [
+            $size("\n{\"a\": 1}"),
+            $size("scale 1.5\n{\"a\": 1}"),
+            $size("scale 2/3\n{\"a\": 1}"),
+            $size("skin rose\nskinparam {\n  monochrome true\n}\n\n{\"a\": 1}"),
+        ]);
+    }
+
+    public function testATransparentArrowOrSeparatorIsNotDrawnAndCellsAlignAsTheNodeSays(): void
+    {
+        $marks = static function (string $style): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startjson\n<style>\njsonDiagram {\n{$style}\n}\n</style>\n{\"key\": {\"b\": 1}, \"longer key\": 2}\n@endjson"));
+
+            return $drawing->marks;
+        };
+        $lines = static fn (array $marks): int => \count(\array_filter($marks, static fn ($mark): bool => MarkKind::Polyline === $mark->kind));
+        $x = static fn (array $marks): float => \array_values(\array_filter($marks, static fn ($mark): bool => 'key' === $mark->text))[0]->points[0][0];
+
+        $plain = $marks('');
+        $this->assertLessThan($lines($plain), $lines($marks("arrow {\nLineColor transparent\n}")), 'no arrow');
+        $this->assertLessThan($lines($plain), $lines($marks("node {\nseparator {\nLineColor transparent\n}\n}")), 'no separators');
+        $this->assertLessThan($x($marks("node {\nHorizontalAlignment center\n}")), $x($plain));
+        $this->assertLessThan($x($marks("node {\nHorizontalAlignment right\n}")), $x($marks("node {\nHorizontalAlignment center\n}")));
+    }
+
+    public function testQuotesKeepColonsAndCommentsAndFlowItemsTheirCommas(): void
+    {
+        $node = YamlParser::parse(['"a:b": "it\'s # here" # gone', "'c:d': [x\\, y, z]"]);
+        $item = YamlParser::parse(['- e: [1, 2]']);
+
+        $this->assertSame(['a:b', 'c:d'], \array_column($node->members, 0));
+        $values = \array_column($node->members, 1, 0);
+        $this->assertSame("it's # here", $values['a:b']->text);
+        $this->assertSame(['x, y', 'z'], \array_map(static fn (array $member): string => $member[1]->text, $values['c:d']->members));
+        // A list item's key holds its flow sequence.
+        $this->assertSame(['1', '2'], \array_map(static fn (array $member): string => $member[1]->text, $item->members[0][1]->members[0][1]->members));
+    }
+
     public function testALoneValueOrAnEmptyContainerStandsInAnArray(): void
     {
         $this->assertSame([JsonKind::Array, 'x'], [self::read('json', '"x"')->root->kind, self::read('json', '"x"')->root->members[0][1]->text]);
@@ -182,6 +248,7 @@ final class JsonReaderTest extends TestCase
         yield 'bad yaml' => ['yaml', 'text', 'PlantUML does not read this YAML data'];
         yield 'handwritten' => ['json', "skinparam handwritten true\n{}", 'handwritten'];
         yield 'scaled to a size' => ['json', "scale 200 width\n{}", 'scaling to a size'];
+        yield 'scaled by nothing' => ['json', "scale 0\n{}", 'The PlantUML scale scale 0 is not a number'];
         yield 'another skin' => ['yaml', "skin debug\na: 1", 'does not have the debug skin'];
     }
 

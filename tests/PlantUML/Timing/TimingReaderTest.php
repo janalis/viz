@@ -40,6 +40,52 @@ final class TimingReaderTest extends TestCase
         $this->assertSame(10.0, $diagram->codes['start']->time);
     }
 
+    public function testAStateNamedLongTicksAndALongNoteAreRead(): void
+    {
+        $diagram = self::read("robust \"W\" as W\nW has \"Very long\" as L\nW ticks num on multiple 5\n@0\nW is L\nnote top of W\n  first\n  second\nend note");
+        $player = $diagram->players['W'];
+
+        $this->assertSame(['L' => 'Very long'], $player->labels);
+        $this->assertSame(['first', 'second'], $player->notes[0]->lines);
+    }
+
+    public function testHoursAndDatesAreMomentsTheAxisWritesSo(): void
+    {
+        $hours = self::read("concise \"W\" as W\n@1:00:00\nW is A\n@1:30:00\nW is B");
+        $dates = self::read("concise \"W\" as W\n@2024/03/15\nW is A");
+
+        $this->assertSame([3600.0, 5400.0], \array_map(static fn (TimingChange $change): ?float => $change->when?->time, $hours->players['W']->changes()));
+        $this->assertSame('hour', $hours->ruler->format);
+        $this->assertSame((float) \gmmktime(hour: 0, minute: 0, second: 0, month: 3, day: 15, year: 2024), $dates->players['W']->changes()[0]->when?->time);
+        $this->assertSame('date', $dates->ruler->format);
+    }
+
+    public function testAScaleSetsHowFarApartTicksStandInItsUnit(): void
+    {
+        $x = static fn (string $unit, int $seconds): float => self::read("scale 1{$unit} as 50 pixels\nconcise \"W\" as W\n@0\nW is A")->ruler->x($seconds);
+
+        $this->assertSame([50.0, 50.0, 50.0, 50.0, 50.0], [$x('', seconds: 1), $x('m', seconds: 60), $x('h', seconds: 3600), $x('d', seconds: 86_400), $x('y', seconds: 3600 * 8766)]);
+    }
+
+    public function testAColouredArrowTakesItsColour(): void
+    {
+        $diagram = self::read("concise A\nconcise B\n@0\nA -[#red]> B");
+
+        $this->assertSame('#ff0000', $diagram->messages[0]->color);
+    }
+
+    public function testARulerCountsOneTickWithNoMomentAndZeroBeforeAny(): void
+    {
+        $ruler = new TimingRuler();
+        $this->assertSame([1, 0.0], [$ruler->ticks(), $ruler->firstNotNegative()]);
+        $ruler->add(new TimingTick(-10));
+        $this->assertSame(0.0, $ruler->firstNotNegative(), 'no moment after 0');
+        $ruler->add(new TimingTick(10));
+        $ruler->ensureNotEmpty();
+        // As PlantUML, moments spanning 0 put it among them.
+        $this->assertSame([-10.0, 0.0, 10.0], $ruler->times());
+    }
+
     public function testABinaryPlayerIsHighOrLow(): void
     {
         $diagram = self::read("binary \"B\" as B\n@0\nB is high\n@5\nB is 0\n@10\nB is {0,1}");
@@ -98,6 +144,8 @@ final class TimingReaderTest extends TestCase
         yield 'an unknown moment' => ["concise \"W\" as W\n@:nope\nW is A", 'What time?'];
         yield 'an analog player' => ["analog \"A\" as A\n@0\nA is 3", 'does not draw: analog'];
         yield 'a dashed message' => ["concise A\nconcise B\n@0\nA -[dashed]> B", 'styled dashed'];
+        yield 'a constraint on a clock' => ["clock \"C\" as C with period 10\nC@0 <-> @10", 'A clock takes no constraint'];
+        yield 'a scale of nothing' => ["scale 0 as 50 pixels\nconcise \"W\" as W\n@0\nW is A", 'Bad value'];
     }
 
     #[DataProvider('failures')]

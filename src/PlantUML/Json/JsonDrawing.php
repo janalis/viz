@@ -219,12 +219,6 @@ final class JsonDrawing
      */
     private static function solve(\Closure $function, float $low, float $high): float
     {
-        if ($function($high) < 0) {
-            return $high;
-        }
-        if ($function($low) > 0) {
-            return $low;
-        }
         for ($step = 0; $step < 40; ++$step) {
             $middle = ($low + $high) / 2;
             [$low, $high] = $function($middle) < 0 ? [$middle, $high] : [$low, $middle];

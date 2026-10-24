@@ -76,11 +76,12 @@ final class GanttTime
         return false === $index ? 1 : $index + 1;
     }
 
-    /** A month by its name's first three letters, as PlantUML's `MonthUtils.fromString`. */
+    /** A month by its name's first three letters, as PlantUML's `MonthUtils.fromString`; January for any other. */
     public static function monthNamed(string $name): int
     {
-        $index = \array_search(\strtolower(\substr($name, offset: 0, length: 3)), ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'], strict: true);
-
-        return false === $index ? 1 : $index + 1;
+        return (
+            ['feb' => 2, 'mar' => 3, 'apr' => 4, 'may' => 5, 'jun' => 6, 'jul' => 7, 'aug' => 8, 'sep' => 9, 'oct' => 10, 'nov' => 11, 'dec' => 12][\strtolower(\substr($name, offset: 0, length: 3))]
+            ?? 1
+        );
     }
 }

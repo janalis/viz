@@ -113,9 +113,6 @@ final class WbsDrawing
         $line = [$from[0] + ($from[2] / 2), $from[1] + ($from[3] / 2), $to[0] + ($to[2] / 2), $to[1] + ($to[3] / 2)];
         $start = self::edge($from, $line);
         $end = self::edge($to, $line);
-        if (null === $start || null === $end) {
-            return [];
-        }
         $angle = self::round(\atan2($end[1] - $start[1], $end[0] - $start[0]));
         [$cos, $sin] = [\cos($angle), \sin($angle)];
         $head = [];
@@ -130,18 +127,20 @@ final class WbsDrawing
     }
 
     /**
-     * Where a line crosses a box's sides, top, right, bottom then left, as PlantUML's `XRectangle2D::intersect`.
+     * Where a line crosses a box's sides, top, right, bottom then left, as PlantUML's `XRectangle2D::intersect`:
+     * the first side it crosses, which there is, the line running from the middle of one box to another's.
      *
      * @param array{float, float, float, float} $box
      * @param array{float, float, float, float} $line
-     * @return ?array{float, float}
+     * @return array{float, float}
      */
-    private static function edge(array $box, array $line): ?array
+    private static function edge(array $box, array $line): array
     {
         [$x, $y, $width, $height] = $box;
         $corners = [[$x, $y], [$x + $width, $y], [$x + $width, $y + $height], [$x, $y + $height]];
         [$x1, $y1, $x2, $y2] = $line;
         [$s1x, $s1y] = [$x2 - $x1, $y2 - $y1];
+        $crossings = [];
         foreach ($corners as $index => [$x3, $y3]) {
             [$x4, $y4] = $corners[($index + 1) % 4];
             [$s2x, $s2y] = [$x4 - $x3, $y4 - $y3];
@@ -152,11 +151,11 @@ final class WbsDrawing
             $s = ((-$s1y * ($x1 - $x3)) + ($s1x * ($y1 - $y3))) / $denominator;
             $t = (($s2x * ($y1 - $y3)) - ($s2y * ($x1 - $x3))) / $denominator;
             if ($s >= 0 && $s <= 1 && $t >= 0 && $t <= 1) {
-                return [$x1 + ($t * $s1x), $y1 + ($t * $s1y)];
+                $crossings[] = [$x1 + ($t * $s1x), $y1 + ($t * $s1y)];
             }
         }
 
-        return null;
+        return $crossings[0];
     }
 
     /** An angle within 0.05° of a right angle made one, as PlantUML's `Extremity::manageround`. */

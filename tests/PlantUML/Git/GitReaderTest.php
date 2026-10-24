@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\PlantUML\Git;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Model\Graph\Edge;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Node;
@@ -60,6 +61,31 @@ final class GitReaderTest extends TestCase
         $this->assertInstanceOf(Graph::class, $graph);
         $this->assertSame([['b', 'b'], ['a', 'a']], \array_map(static fn (Node $node): array => [$node->id, $node->text()], $graph->nodes));
         $this->assertSame([['b', 'a']], \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to], $graph->edges));
+    }
+
+    public function testACommitRightBelowAnotherIsItsParent(): void
+    {
+        $graph = self::read("* b\n* a")->model();
+
+        $this->assertInstanceOf(Graph::class, $graph);
+        $this->assertSame([['b', 'a']], \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to], $graph->edges));
+    }
+
+    public function testAnOctopusMergeLeadsDownEachOfItsDotsToo(): void
+    {
+        $graph = self::read("*-.   m\n|\\ \\  \n| | * c\n| * b\n* a")->model();
+
+        // As the jar draws it: an arrow from m to each of a, b and c.
+        $this->assertInstanceOf(Graph::class, $graph);
+        $this->assertSame([['m', 'a'], ['m', 'b'], ['m', 'c']], \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to], $graph->edges));
+    }
+
+    public function testALogWithNoCommitIsAPointInItsMargin(): void
+    {
+        $drawing = Work::run(self::read('| x')->drawing());
+
+        // As the jar sizes it: 21 by 21.
+        $this->assertSame([21.0, 21.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
 
     public function testAGraphLeadingNowhereIsRefused(): void

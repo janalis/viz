@@ -96,6 +96,7 @@ final class WbsReaderTest extends TestCase
         yield 'too deep' => ["* a\n*** b", 'Bad tree structure'];
         yield 'no label' => ["* a\n**", 'Missing label for WBS node.'];
         yield 'unknown code' => ["* a\n**(b) b\nb -> c", 'No such node c'];
+        yield 'an arrow to itself, which PlantUML fails on' => ["* a\n**(b) b\nb -> b", 'an arrow from an element to itself: b -> b'];
         yield 'unreadable indentation' => ["* a\n ++ b", 'type=< ++>[*]'];
         yield 'not drawn' => ["* a\nset separator ::", 'The native PlantUML renderer does not draw: set separator ::'];
     }
@@ -162,6 +163,16 @@ final class WbsReaderTest extends TestCase
         $drawing = Work::run(self::read("<style>\nwbsDiagram {\n arrow {\n  LineColor transparent\n }\n}\n</style>\n* a\n** b\n** c")->drawing());
 
         $this->assertSame([], \array_filter($drawing->marks, static fn ($mark): bool => MarkKind::Polyline === $mark->kind));
+    }
+
+    public function testATransparentArrowIsNotDrawn(): void
+    {
+        $red = Work::run(self::read("* Root\n**(a) A\n**(b) B\na -> b #red")->drawing());
+        $transparent = Work::run(self::read("* Root\n**(a) A\n**(b) B\na -> b #transparent")->drawing());
+
+        // As PlantUML strokes it with none: neither its line nor its head shows.
+        $this->assertCount(\count($red->marks) - 2, $transparent->marks);
+        $this->assertSame([], \array_filter($transparent->marks, static fn ($mark): bool => 'none' === $mark->stroke));
     }
 
     /**

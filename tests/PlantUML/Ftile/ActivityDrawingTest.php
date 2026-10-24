@@ -268,6 +268,19 @@ final class ActivityDrawingTest extends TestCase
         $this->assertEqualsWithDelta([109.422, 113.01, 125.289, 137.066], [$baseline(8), $baseline(11), $baseline(20), $baseline(30)], 1e-3);
     }
 
+    public function testTheLastCaseJustPastTheLowerDiamondReachesItFromItsRight(): void
+    {
+        $drawing = self::draw("start\nswitch (t?)\ncase (yy)\n  :a long action;\ncase (bb)\n  :x;\ncase (very very long action label)\n  :bb;\nendswitch\n:after;");
+        $points = static fn (Mark $mark): array => \array_map(static fn (array $point): array => [
+            \round($point[0] / Units::POINT, precision: 3),
+            \round($point[1] / Units::POINT, precision: 3),
+        ], $mark->points);
+        $arrows = \array_map($points, \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind)));
+
+        // As the jar draws it: down, 12 right, down, then back left into the diamond's right point.
+        $this->assertContains([[186.619, 149.043], [186.619, 173.043], [198.619, 173.043], [198.619, 181.043], [178.188, 181.043]], $arrows);
+    }
+
     public function testALabelAtTheEndOfABranchStandsAsPlantUmlDrawsIt(): void
     {
         $at = static function (string $lines, string $text): float {

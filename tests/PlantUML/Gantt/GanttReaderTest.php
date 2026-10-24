@@ -99,6 +99,22 @@ final class GanttReaderTest extends TestCase
         yield 'over 20 years' => ['[A] lasts 9000 days', 'Gantt diagrams cannot last more than 20 years'];
         yield 'no group to end' => ['end group', 'No group to be closed'];
         yield 'working hours' => ["from 9:00 to 17:00 are working hours\n[A] lasts 1 day", 'working hours'];
+        yield 'another language' => ['language fr', 'English only'];
+        yield 'a completion over 100' => ['task default completion to 120', 'Completetion must between 0 and 100'];
+        yield 'a command not drawn' => ["Project starts 2020-01-01\nprint between 2020-01-01 and 2020-02-01", 'does not draw: print between'];
+        yield 'an arrow from no task' => ["[A] lasts 1 day\nX -> A", 'No such task X'];
+        yield 'an arrow of a thickness' => ["[A] lasts 1 day\n[B] lasts 1 day\n[A] -[thickness=3]-> [B]", 'styled thickness=3'];
+        yield 'no such task to colour' => ['[X] #red', 'No such task X'];
+        yield 'no such colour' => ["[A] lasts 1 day\n[A] #notacolor", 'No such color notacolor'];
+        yield 'no such border colour' => ["[A] lasts 1 day\n[A] #red/notacolor", 'No such color notacolor'];
+        yield 'an empty note' => ["[A] lasts 1 day\nnote bottom\nend note", 'No note defined'];
+        yield 'it before any task' => ['it lasts 2 days', 'Not sure what are you refering to?'];
+        yield 'he before any resource' => ['he is off on tuesday', 'Not sure who are you refering to?'];
+        yield 'no verb after and' => ['[A] lasts 2 days and flies', 'No matching verb phrase'];
+        yield 'a resource at no share' => ['[A] on {Bob:0%} lasts 1 day', 'Bad argument for resource'];
+        yield 'a resource on no task' => ["Project starts 2020-01-06\n{Bob} works on [Z]", 'No such task [Z]'];
+        yield 'a resource off for ever' => ["Project starts 2020-01-06\n[A] on {Bob} lasts 3 days\n{Bob} is off after 2020-01-07", 'Infinite loop'];
+        yield 'a resource off before it all' => ["Project starts 2020-01-06\n[A] on {Bob} lasts 3 days\n{Bob} is off before 2020-01-20\n[A] ends 2020-01-10", 'Infinite loop'];
     }
 
     #[DataProvider('failures')]

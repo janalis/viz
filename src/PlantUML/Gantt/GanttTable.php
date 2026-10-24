@@ -30,8 +30,8 @@ final readonly class GanttTable
         $edges = [0.0];
         foreach ($chart->columns as $column) {
             $width = $this->text(self::header($column))->width();
-            foreach ($this->rows() as $bar) {
-                $width = \max($width, $this->text($this->value($column, $bar->entry))->width());
+            foreach ($this->rows() as [, $task]) {
+                $width = \max($width, $this->text($this->value($column, $task))->width());
             }
             $edges[] = $edges[\count($edges) - 1] + $width + (2 * self::PADDING);
         }
@@ -58,19 +58,27 @@ final readonly class GanttTable
         foreach ($this->chart->columns as $index => $column) {
             \array_push($marks, ...$this->cell($this->edges[$index], $this->headerHeight / 2, self::header($column)));
         }
-        foreach ($this->rows() as $bar) {
+        foreach ($this->rows() as [$bar, $task]) {
             foreach ($this->chart->columns as $index => $column) {
-                \array_push($marks, ...$this->cell($this->edges[$index], $bar->y + ($bar->height() / 2), $this->value($column, $bar->entry)));
+                \array_push($marks, ...$this->cell($this->edges[$index], $bar->y + ($bar->height() / 2), $this->value($column, $task)));
             }
         }
 
         return $marks;
     }
 
-    /** @return list<GanttBar> the tasks', milestones included */
+    /** @return list<array{GanttBar, GanttTask}> the tasks' bars, milestones included, each with its task */
     private function rows(): array
     {
-        return \array_values(\array_filter($this->bars, static fn (GanttBar $bar): bool => $bar->entry instanceof GanttTask));
+        $rows = [];
+        foreach ($this->bars as $bar) {
+            if (!$bar->entry instanceof GanttTask) {
+                continue;
+            }
+            $rows[] = [$bar, $bar->entry];
+        }
+
+        return $rows;
     }
 
     /** @return list<Mark> */
@@ -91,12 +99,8 @@ final readonly class GanttTable
         return ['TASK' => 'Task', 'START' => 'Start', 'END' => 'End', 'DURATION' => 'Duration'][$column] ?? $column;
     }
 
-    private function value(string $column, GanttEntry $entry): string
+    private function value(string $column, GanttTask $entry): string
     {
-        if (!$entry instanceof GanttTask) {
-            return '';
-        }
-
         return match ($column) {
             'TASK' => $entry->display,
             'START' => $this->withTime($entry->start()),

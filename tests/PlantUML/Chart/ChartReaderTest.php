@@ -116,6 +116,44 @@ final class ChartReaderTest extends TestCase
         $this->assertSame('Sales', $graph->title);
     }
 
+    public function testAFlatAxisDrawsItsTicksAndNothingAtNoNumber(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startchart\nh-axis [a]\nv-axis 5 --> 5 grid\nbar [5]\n@endchart"));
+        $lines = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text !== $mark->kind));
+
+        // As the jar draws it: the axes and their ticks, every one 5, no grid and no bar.
+        $this->assertSame([501.0, 431.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertCount(9, $lines);
+        $this->assertSame([MarkKind::Polyline], \array_values(\array_unique(\array_map(static fn (Mark $mark): MarkKind => $mark->kind, $lines), \SORT_REGULAR)));
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function drawn(): iterable
+    {
+        yield 'no series' => ['h-axis [a, b]'];
+        yield 'stacked bars short of the categories' => ["stackMode stacked\nh-axis [a, b, c]\nbar [1, 2, 3]\nbar [3]"];
+        yield 'grouped bars short of the categories' => ["h-axis [a, b, c]\nbar [1, 2, 3]\nbar [3]"];
+        yield 'a line past the categories' => ["h-axis [a, b]\nline [1, 2, 3]"];
+        yield 'a grid up and down from the axis' => ["h-axis [a, b] grid\nbar [-1, 2]"];
+        yield 'a grid across a range' => ["h-axis 3 --> 47 grid\nscatter [(5, 1), (40, 2)]"];
+        yield 'an annotation at no category' => ["h-axis [a, b]\nbar [1, 2]\nannotation \"x\" at (zz, 1)"];
+        yield 'an annotation on its side' => ["orientation horizontal\nv-axis [a, b]\nbar [1, 2]\nannotation \"x\" at (a, 1) <<arrow>>"];
+        yield 'a blank line' => ["h-axis [a]\n\nbar [1]"];
+        yield 'no labels' => ["h-axis []\nbar [1]"];
+        yield 'no values' => ["h-axis [a]\nbar []"];
+        yield 'a comma at the end' => ["h-axis [a, b]\nbar [1, 2,]"];
+    }
+
+    #[DataProvider('drawn')]
+    public function testWhatPlantUmlDrawsIsDrawn(string $lines): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startchart\n".$lines."\n@endchart"));
+
+        // As the jar sizes a chart, whatever it holds: 500 by 430 at least, and 1 more.
+        $this->assertGreaterThanOrEqual(501.0, $drawing->width / Units::POINT);
+        $this->assertNotEmpty($drawing->marks);
+    }
+
     /** @return iterable<string, array{string, string}> */
     public static function failures(): iterable
     {
@@ -129,6 +167,8 @@ final class ChartReaderTest extends TestCase
         yield 'ticks without labels' => ['v-axis ticks [0:Low]', 'Invalid tick format'];
         yield 'no spacing' => ['h-axis [a] spacing 0', 'X-axis spacing must be greater than 0'];
         yield 'no colour' => ["h-axis [a]\nbar [1] #nocolour", 'No such color'];
+        yield 'no tick spacing' => ["h-axis [a]\nv-axis 0 --> 10 spacing 0\nbar [1]", 'Tick spacing must be greater than 0'];
+        yield 'a command it does not draw' => ["h-axis [a]\nbar [1]\nhide empty description", 'does not draw: hide empty description'];
     }
 
     #[DataProvider('failures')]

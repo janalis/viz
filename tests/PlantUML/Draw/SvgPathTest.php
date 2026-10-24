@@ -30,6 +30,27 @@ final class SvgPathTest extends TestCase
         $this->assertCount(17, $outline);
     }
 
+    public function testAQuadraticCurveAndItsSmoothFollowerMirrorTheirControl(): void
+    {
+        $outline = SvgPath::outlines('M0 0Q1 1 2 0T4 0')[0];
+
+        // Half way along each: towards (1, 1), then towards its mirror, (3, -1).
+        $this->assertEqualsWithDelta([[1.0, 0.5], [2.0, 0.0], [3.0, -0.5], [4.0, 0.0]], [$outline[4], $outline[8], $outline[12], $outline[16]], 1e-9);
+    }
+
+    public function testAnArcOfNoRadiusIsALineAndAnArcSweptTheOtherWayRunsBelow(): void
+    {
+        $this->assertSame([[[0.0, 0.0], [2.0, 0.0]]], SvgPath::outlines('M0 0a0 1 0 0 1 2 0'));
+        $outline = SvgPath::outlines('M0 0a1 1 0 0 0 2 0')[0];
+        // Swept counter-clockwise from the left of its centre, under it.
+        $this->assertEqualsWithDelta([1.0, 1.0], $outline[4], 1e-9);
+    }
+
+    public function testAPathCutShortTakesWhatIsMissingAsNought(): void
+    {
+        $this->assertSame([[[1.0, 1.0], [0.0, 0.0]]], SvgPath::outlines('M1 1L'));
+    }
+
     public function testAnArcWithFlagsRunTogetherReachesItsEndAroundItsCentre(): void
     {
         $outline = SvgPath::outlines('M0 0a1 1 0 012 0')[0];

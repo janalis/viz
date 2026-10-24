@@ -555,6 +555,17 @@ final class DotDrawingTest extends TestCase
         $this->assertEqualsWithDelta(116.0, $drawing->width / Units::POINT, 1e-6);
     }
 
+    public function testLoopsOfAnotherLayoutStandOneBesideTheOtherTheirLabelPastThem(): void
+    {
+        $drawing = self::draw('digraph { layout=circo; a [shape=box]; a -> a; a -> a [label=x] }');
+        $loops = \array_values(\array_filter(self::kinds($drawing, MarkKind::Polyline), static fn (Mark $mark): bool => \count($mark->points) > 2));
+        $label = \array_values(\array_filter(self::texts($drawing), static fn (Mark $mark): bool => 'x' === $mark->text))[0];
+
+        // Laid out by circo, each loop 18 beyond the one before, past the box's right at 58; the label past the last.
+        $this->assertSame([76.0, 94.0], \array_map(static fn (Mark $mark): float => \round(\max(\array_column($mark->points, 0)) / Units::POINT, precision: 2), $loops));
+        $this->assertGreaterThan(94.0, $label->points[0][0] / Units::POINT);
+    }
+
     private static function draw(string $source): Drawing
     {
         return Work::run(new DotPipeline()->drawing($source));

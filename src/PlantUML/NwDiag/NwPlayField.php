@@ -32,11 +32,6 @@ final class NwPlayField
             $box->add($bar);
             $bar->parent = $box;
             $this->boxes[] = $box;
-
-            return;
-        }
-        if (!\in_array($bar->parent, $this->boxes, strict: true)) {
-            $this->boxes[] = $bar->parent;
         }
     }
 

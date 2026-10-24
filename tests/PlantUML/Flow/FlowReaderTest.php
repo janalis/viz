@@ -35,6 +35,14 @@ final class FlowReaderTest extends TestCase
         $this->assertSame([['a', 2], ['b', 4], ['c', 0]], \array_map(static fn (FlowTile $tile): array => [$tile->id, $tile->xmin], $flow->tiles));
     }
 
+    public function testOnlyWhatStandsAsFarEastAndDownMovesEast(): void
+    {
+        $flow = self::read("a \"A\"\nb \"B\"\ne c \"C\"\nw d \"D\"");
+
+        // d takes b's cell: b and c, as far east and down, move on; a, above, stays.
+        $this->assertSame([['a', 0, 0], ['b', 2, 2], ['c', 4, 2], ['d', 0, 2]], \array_map(static fn (FlowTile $tile): array => [$tile->id, $tile->xmin, $tile->ymin], $flow->tiles));
+    }
+
     public function testTheFieldIsAsBigAsItsCellsWithNoMargin(): void
     {
         $drawing = Work::run(self::read("a \"A\"\ne b \"B\"\nw a")->drawing());

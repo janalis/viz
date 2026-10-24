@@ -7,7 +7,6 @@ namespace Janalis\Viz\PlantUML\Flow;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\PlantUmlRefusal;
-use Janalis\Viz\Source\Unsupported;
 
 /**
  * A flow diagram's lines carried out as PlantUML's `FlowDiagram` and `TilesField` carry them
@@ -25,8 +24,7 @@ final class FlowReader
     private ?FlowTile $last = null;
 
     /**
-     * @param list<PlantUmlCommand> $commands
-     * @throws Unsupported when a command is not drawn natively
+     * @param list<PlantUmlCommand> $commands a flow's, a box or a link each, as its family reads them
      * @throws PlantUmlRefusal when PlantUML fails to carry out a command
      */
     public static function read(PlantUmlDocument $document, array $commands): PlantUmlFlow
@@ -34,11 +32,9 @@ final class FlowReader
         $reader = new self();
         foreach ($commands as $command) {
             $side = \strtolower($command->get('ORIENTATION') ?? 's');
-            match ($command->name) {
-                'CommandLineSimple' => $reader->box($side, (string) $command->get('ID_DEST'), (string) $command->get('LABEL')),
-                'CommandLink' => $reader->link($side, (string) $command->get('ID_DEST')),
-                default => throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line()),
-            };
+            'CommandLink' === $command->name
+                ? $reader->link($side, (string) $command->get('ID_DEST'))
+                : $reader->box($side, (string) $command->get('ID_DEST'), (string) $command->get('LABEL'));
         }
 
         return new PlantUmlFlow($document, $reader->tiles, $reader->paths);

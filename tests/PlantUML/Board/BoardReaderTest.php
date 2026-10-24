@@ -71,6 +71,19 @@ final class BoardReaderTest extends TestCase
         $this->assertSame([['n0', 'n1'], ['n1', 'n2']], \array_map(static fn (Edge $edge): array => [$edge->from, $edge->to], $graph->edges));
     }
 
+    public function testABlankLineIsPassedOver(): void
+    {
+        $this->assertEquals(self::read("A\n+B")->activities, self::read("A\n\n+B")->activities);
+    }
+
+    public function testACommandBoardsDoNotReadIsRefused(): void
+    {
+        $this->expectException(Unsupported::class);
+        $this->expectExceptionMessage('The native PlantUML renderer does not draw: set namespaceSeparator ::');
+
+        self::read("A\nset namespaceSeparator ::");
+    }
+
     public function testAReleaseBeforeAnyActivityIsRefused(): void
     {
         $this->expectException(Unsupported::class);

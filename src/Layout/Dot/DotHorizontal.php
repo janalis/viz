@@ -143,11 +143,9 @@ final class DotHorizontal
         if (DotLayers::LABEL !== $this->layers->kind[$node]) {
             return null;
         }
+        // A label node stands on its edge's path, which its layers make with it.
         $this->labelled ??= \array_flip($this->layers->labels);
-        $path = $this->layers->paths[$this->labelled[$node] ?? -1] ?? null;
-        if (null === $path) {
-            return null;
-        }
+        $path = $this->layers->paths[$this->labelled[$node]];
         [$first, $last] = [$path[0], $path[\count($path) - 1]];
 
         return [\min($first, $last), \max($first, $last)];

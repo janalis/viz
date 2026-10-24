@@ -11,6 +11,7 @@ use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\PlantUmlRefusal;
 use Janalis\Viz\Render\Work;
 use Janalis\Viz\Source\Unsupported;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class HclParserTest extends TestCase
@@ -48,11 +49,32 @@ final class HclParserTest extends TestCase
         HclParser::parse(['b {', 'count = 2', 'name = "x"', '}']);
     }
 
-    public function testDataPlantUmlCannotReadIsRefused(): void
+    public function testBlocksInArraysAndEscapedQuotesAreReadAsPlantUmlReadsThem(): void
+    {
+        $node = HclParser::parse(['b {', 'x = [{ y = "1" }, "z"]', 'q = "a\\"b"', '}']);
+        [[, $array], [, $quoted]] = $node->members;
+
+        $this->assertSame([JsonKind::Object, JsonKind::String], \array_map(static fn (array $member): JsonKind => $member[1]->kind, $array->members));
+        $this->assertSame('a"b', $quoted->text);
+    }
+
+    /** @return iterable<string, array{list<string>, string}> */
+    public static function unreadable(): iterable
+    {
+        yield 'unclosed' => [['b {', 'x = "1"'], 'The HCL ends too soon'];
+        yield 'no separator' => [['b {', 'x , "1"', '}'], 'Unexpected ,'];
+        yield 'no value' => [['b {', 'x = ,', '}'], 'Unexpected ,'];
+        yield 'a bracket with no function' => [['b {', 'x = (', '}'], 'A ( with no function'];
+    }
+
+    /** @param list<string> $lines */
+    #[DataProvider('unreadable')]
+    public function testDataPlantUmlCannotReadIsRefused(array $lines, string $message): void
     {
         $this->expectException(PlantUmlRefusal::class);
+        $this->expectExceptionMessage($message);
 
-        HclParser::parse(['b {', 'x = "1"']);
+        HclParser::parse($lines);
     }
 
     public function testTheDiagramSaysSo(): void

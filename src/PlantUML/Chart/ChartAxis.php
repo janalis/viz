@@ -46,7 +46,8 @@ final class ChartAxis
     /** How far up a value stands, from 0 at the axis' minimum to 1 at its maximum. */
     public function ratio(float $value): float
     {
-        return ($value - $this->min) / ($this->max - $this->min);
+        // As Java divides a double, a flat axis setting every value at no number.
+        return \fdiv($value - $this->min, $this->max - $this->min);
     }
 
     /** As `valueToPixel`: a value's place between two ends, the first for a flat axis. */

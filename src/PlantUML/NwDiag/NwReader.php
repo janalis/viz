@@ -111,10 +111,8 @@ final class NwReader
         if ([] === $this->networks && [] === $this->groups) {
             // The servers declared before any network, joined on a network PlantUML makes up.
             $first = null;
+            // Before any network, every server is alone.
             foreach ($this->servers as $server) {
-                if (!$server->alone()) {
-                    continue;
-                }
                 if (null === $first) {
                     $first = $this->network('');
                     $first->visible = false;

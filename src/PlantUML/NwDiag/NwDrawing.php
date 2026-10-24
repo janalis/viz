@@ -320,9 +320,6 @@ final class NwDrawing
     /** @return array{float, float} */
     private function gridSize(): array
     {
-        if ([] === $this->grid) {
-            return [0.0, 0.0];
-        }
         $width = \array_sum(\array_map($this->columnWidth(...), \array_keys($this->grid[0])));
         $height = \array_sum(\array_map($this->lineHeight(...), \array_keys($this->grid)));
 
