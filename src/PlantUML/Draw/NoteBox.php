@@ -29,7 +29,7 @@ final readonly class NoteBox
     {
         [$width, $height] = $this->text->size();
 
-        return [$width + 12 + self::FOLD, $height + 10];
+        return [$width + 11 + self::FOLD, $height + 10];
     }
 
     /**

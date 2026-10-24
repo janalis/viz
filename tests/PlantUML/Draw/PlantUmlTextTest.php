@@ -139,7 +139,8 @@ final class PlantUmlTextTest extends TestCase
         $note = new NoteBox(new PlantUmlText(['hello'], 12.0), new Style(), '#ffffff');
 
         [$width, $height] = $note->size();
-        $this->assertEqualsWithDelta([PlantUmlMetrics::width('hello', 12.0) + 22, PlantUmlText::lineHeight(12.0) + 10], [$width, $height], 1e-9);
+        // As the jar draws it: 21 wider than its text, 10 taller.
+        $this->assertEqualsWithDelta([PlantUmlMetrics::width('hello', 12.0) + 21, PlantUmlText::lineHeight(12.0) + 10], [$width, $height], 1e-9);
         $marks = $note->marks(0.0, 0.0);
         $this->assertCount(5, $marks[0]->points);
         $this->assertSame('#ffffff', $marks[0]->fill);
