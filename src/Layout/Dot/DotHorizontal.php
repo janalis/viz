@@ -27,6 +27,8 @@ final class DotHorizontal
     private array $edges = [];
     /** @var non-negative-int */
     private int $count;
+    /** @var ?array<int, int> each label node's original edge */
+    private ?array $labelled = null;
     private readonly int $rootLeft;
     private readonly int $rootRight;
 
@@ -105,7 +107,7 @@ final class DotHorizontal
                 continue;
             }
             $previous = $nodes[$index - 1];
-            $this->edges[] = [$previous, $node, self::length($layers->right[$previous] + $this->after($previous) + $this->gap($previous, $node) + $this->before($node) + $layers->left[$node]), 0];
+            $this->edges[] = [$previous, $node, self::length($this->apart($previous, $node)), 0];
             $shared = $layers->common($layers->cluster[$previous], $layers->cluster[$node]);
             $from = $this->outermostRight($previous, $shared);
             $to = $this->outermostLeft($node, $shared);
@@ -114,6 +116,41 @@ final class DotHorizontal
                 $this->edges[] = [$from, $to, self::length($gap), 0];
             }
         }
+    }
+
+    /**
+     * How far apart two neighbours stand, as `dot` is seen to set them: their sides, the room
+     * each keeps, and the gap between; on a rank between nodes' ranks, the label nodes of two
+     * edges joining the same two nodes, the label between them and 4.
+     */
+    private function apart(int $left, int $right): float
+    {
+        $layers = $this->layers;
+        if (1 === ($layers->rank[$left] % 2) && null !== ($ends = $this->ends($left)) && $ends === $this->ends($right)) {
+            return ($layers->mirrored ? $layers->left[$right] : $layers->right[$left]) + 4;
+        }
+
+        return $layers->right[$left] + $this->after($left) + $this->gap($left, $right) + $this->before($right) + $layers->left[$right];
+    }
+
+    /**
+     * The two nodes a label node's edge joins, lowest first; null for any other node.
+     *
+     * @return ?array{int, int}
+     */
+    private function ends(int $node): ?array
+    {
+        if (DotLayers::LABEL !== $this->layers->kind[$node]) {
+            return null;
+        }
+        $this->labelled ??= \array_flip($this->layers->labels);
+        $path = $this->layers->paths[$this->labelled[$node] ?? -1] ?? null;
+        if (null === $path) {
+            return null;
+        }
+        [$first, $last] = [$path[0], $path[\count($path) - 1]];
+
+        return [\min($first, $last), \max($first, $last)];
     }
 
     /**
