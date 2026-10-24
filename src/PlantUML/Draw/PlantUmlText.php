@@ -312,8 +312,13 @@ final readonly class PlantUmlText
         $parts = (array) \preg_split('/'.self::SPRITE.'/u', $text, flags: \PREG_SPLIT_DELIM_CAPTURE);
         $atoms = [];
         for ($at = 0, $count = \count($parts); $at < $count; $at += 4) {
-            if ('' !== (string) $parts[$at]) {
-                $atoms[] = [(string) $parts[$at], null, 0.0, null];
+            // As PlantUML's Creole sets them, each stretch of bold or italic markup in its own face.
+            foreach ((array) \preg_split(
+                '/(\*\*.+?\*\*|<b>.+?<\/b>|\/\/.+?\/\/|<i>.+?<\/i>|<&[\w-]+>)/iu',
+                (string) $parts[$at],
+                flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY,
+            ) as $stretch) {
+                $atoms[] = [(string) $stretch, null, 0.0, null];
             }
             $sprite = $this->sprites[(string) ($parts[$at + 2] ?? '')] ?? null;
             if (null === $sprite) {
@@ -457,6 +462,10 @@ final readonly class PlantUmlText
     /** As wide as the bundled font draws a stretch, each piece at its size. */
     private static function shown(string $text, float $size, FontFace $face): float
     {
+        // An OpenIconic icon, not drawn, takes the room PlantUML gives it: two thirds of the size, and 2, as measured on its output.
+        if (1 === \preg_match('/^<&[\w-]+>$/', $text)) {
+            return ((2 * $size) / 3) + 2;
+        }
         if (!\str_contains(\strtolower($text), '<size')) {
             return PlantUmlMetrics::width(self::plain($text), $size, $face);
         }
@@ -526,7 +535,7 @@ final readonly class PlantUmlText
         $depth = self::heading($line)[0];
 
         return self::face(match (true) {
-            $depth < 0 => self::heading($line)[1],
+            $depth < 0 => $text,
             $depth < 3 => '**'.$text.'**',
             default => '//'.$text.'//',
         }, $this->face);

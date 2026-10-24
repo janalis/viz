@@ -35,7 +35,7 @@ final class ActivityDrawingTest extends TestCase
     /** @return iterable<string, array{string, list<string>}> */
     public static function diagrams(): iterable
     {
-        yield 'actions' => [":Hello world;\n:This is defined on\nseveral **lines**;", ['Hello world', 'several lines']];
+        yield 'actions' => [":Hello world;\n:This is defined on\nseveral **lines**;", ['Hello world', 'lines']];
         yield 'a decision' => [
             "start\nif (Graphviz installed?) then (yes)\n  :process all\\ndiagrams;\nelse (no)\n  :process only\n  __sequence__ diagrams;\nendif\nstop",
             ['Graphviz installed?', 'yes', 'no', 'diagrams', 'sequence diagrams'],

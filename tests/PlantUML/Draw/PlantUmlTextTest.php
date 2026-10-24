@@ -88,6 +88,23 @@ final class PlantUmlTextTest extends TestCase
         $this->assertEqualsWithDelta(20.0, $small->size()[1], 1e-9);
     }
 
+    public function testBoldStretchesAndIconsTakeTheirOwnRoom(): void
+    {
+        $text = new PlantUmlText(['with <b>bold</b>'], 12.0);
+        $marks = $text->marks(0.0, 0.0, 100.0, 'left');
+
+        // As PlantUML's Creole sets them: each stretch in its own face; an icon two thirds of the size and 2 wide, as the jar sizes it.
+        $this->assertSame(
+            [
+                ['with ', FontFace::Regular],
+                ['bold',  FontFace::Bold],
+            ],
+            \array_map(static fn (Mark $mark): array => [$mark->text, $mark->font], $marks),
+        );
+        $this->assertEqualsWithDelta(PlantUmlMetrics::width('with ', 12.0) + PlantUmlMetrics::width('bold', 12.0, FontFace::Bold), $text->size()[0], 1e-9);
+        $this->assertEqualsWithDelta([10.0, 15.333], [new PlantUmlText(['<&flag>'], 12.0)->size()[0], new PlantUmlText(['<&flag>'], 20.0)->size()[0]], 1e-3);
+    }
+
     public function testLinesSetLeftCentredOrRight(): void
     {
         $text = new PlantUmlText(['ab'], 12.0, FontFace::BoldItalic);
