@@ -47,7 +47,8 @@ final class PacketDrawing
         $drawing = new self($diagram, $style, $styles->style(['root', 'element', 'packetdiagDiagram', 'rectangle']), $style->fontSize() * 3);
         [$width, $height] = $drawing->paint();
 
-        return PlantUmlFrame::drawing($diagram->document, $drawing->marks, $width, $height);
+        // As PlantUML sizes it, as measured on its output: rounded down to whole points, and 1 more.
+        return PlantUmlFrame::roundedDown($diagram->document, $drawing->marks, $width, $height, past: 1.0);
     }
 
     /**

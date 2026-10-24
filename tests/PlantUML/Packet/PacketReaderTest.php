@@ -38,6 +38,18 @@ final class PacketReaderTest extends TestCase
         $this->assertSame([8, 40.0, 8, true, true], [$packet->columns, $packet->bitHeight, $packet->interval, $packet->rightToLeft, $packet->sameHeight]);
     }
 
+    public function testItIsSizedAsPlantUmlSizesIt(): void
+    {
+        $size = static function (int $font, string $fields): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startpacketdiag\nskinparam defaultFontSize {$font}\n{$fields}\n@endpacketdiag"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sizes them: rounded down to whole points, and 1 more.
+        $this->assertSame([[237.0, 95.0], [171.0, 96.0], [735.0, 142.0]], [$size(8, fields: '0-7: A'), $size(10, fields: '0-3: A'), $size(14, fields: '0-31: A')]);
+    }
+
     public function testAFieldPastARowsEndIsCarriedOn(): void
     {
         $drawing = Work::run(self::read("colwidth = 4\n0-1: A\n2-11: B")->drawing());
