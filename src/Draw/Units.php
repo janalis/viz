@@ -33,8 +33,7 @@ final class Units
      */
     public static function scaled(Mark $mark, float $scale): Mark
     {
-        return $mark->with([
-            'points' => \array_map(static fn (array $point): array => [$point[0] * $scale, $point[1] * $scale], $mark->points),
+        return $mark->mapped(static fn (array $point): array => [$point[0] * $scale, $point[1] * $scale])->with([
             'strokeWidth' => $mark->strokeWidth * $scale,
             'fontScale' => MarkKind::Text === $mark->kind ? $mark->fontScale * $scale : $mark->fontScale,
             'dashes' => null === $mark->dashes ? null : \array_map(static fn (float $length): float => $length * $scale, $mark->dashes),
@@ -45,7 +44,7 @@ final class Units
     /** A mark moved by an offset, in its own unit. */
     public static function moved(Mark $mark, float $x, float $y): Mark
     {
-        return $mark->with(['points' => \array_map(static fn (array $point): array => [$point[0] + $x, $point[1] + $y], $mark->points)]);
+        return $mark->mapped(static fn (array $point): array => [$point[0] + $x, $point[1] + $y]);
     }
 
     /**
@@ -55,8 +54,7 @@ final class Units
      */
     public static function turned(Mark $mark, float $width): Mark
     {
-        return $mark->with([
-            'points' => \array_map(static fn (array $point): array => [$point[1], $width - $point[0]], $mark->points),
+        return $mark->mapped(static fn (array $point): array => [$point[1], $width - $point[0]])->with([
             'angle' => $mark->angle - 90.0,
             'gradientAngle' => $mark->gradientAngle + 90.0,
         ]);

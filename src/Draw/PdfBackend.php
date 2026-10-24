@@ -92,6 +92,17 @@ final readonly class PdfBackend
         if ($polygon) {
             $canvas->close();
         }
+        // A polygon with other outlines, its holes, is filled even-odd as one path.
+        if ($polygon && [] !== $mark->subpaths && $filled) {
+            foreach ($mark->subpaths as $outline) {
+                $canvas->polyline($outline);
+                $canvas->close();
+            }
+            $canvas->fillEvenOdd();
+            $canvas->restore();
+
+            return;
+        }
         $canvas->paint($filled, $stroked);
         $canvas->restore();
     }

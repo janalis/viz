@@ -131,7 +131,7 @@ final readonly class Shape
      */
     public function mapped(\Closure $x, \Closure $y): self
     {
-        $marks = \array_map(static fn (Mark $mark): Mark => self::withPoints($mark, \array_map(static fn (array $point): array => [$x($point[0]), $y($point[1])], $mark->points)), $this->marks);
+        $marks = \array_map(static fn (Mark $mark): Mark => $mark->mapped(static fn (array $point): array => [$x($point[0]), $y($point[1])]), $this->marks);
         $anchor = null === $this->anchor ? null : [$x($this->anchor[0]), $y($this->anchor[1])];
 
         return new self($this->kind, $marks, $x($this->minX), $y($this->minY), $x($this->maxX), $y($this->maxY), $this->ignoreX, $this->ignoreY, $anchor, $this->span, $this->rise, $this->overhang);
@@ -155,12 +155,6 @@ final readonly class Shape
 
     private static function movedMark(Mark $mark, float $dx, float $dy): Mark
     {
-        return self::withPoints($mark, \array_map(static fn (array $point): array => [$point[0] + $dx, $point[1] + $dy], $mark->points));
-    }
-
-    /** @param list<array{float, float}> $points */
-    private static function withPoints(Mark $mark, array $points): Mark
-    {
-        return $mark->with(['points' => $points]);
+        return $mark->mapped(static fn (array $point): array => [$point[0] + $dx, $point[1] + $dy]);
     }
 }

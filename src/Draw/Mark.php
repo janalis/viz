@@ -38,6 +38,8 @@ final readonly class Mark
         public Outline $outline = Outline::Box,
         /** @var ?list<float> a text mark's room for each of its characters along its line, in units, each drawn in the middle of its own; null sets them as its font does */
         public ?array $slots = null,
+        /** @var list<list<array{float, float}>> a polygon's other outlines, filled with it even-odd: its holes, and what stands in them */
+        public array $subpaths = [],
     ) {}
 
     /**
@@ -62,6 +64,19 @@ final readonly class Mark
         }
 
         return $centres;
+    }
+
+    /**
+     * The mark with each of its points, its other outlines' too, moved through a function.
+     *
+     * @param \Closure(array{float, float}): array{float, float} $point
+     */
+    public function mapped(\Closure $point): self
+    {
+        return $this->with([
+            'points' => \array_map($point, $this->points),
+            'subpaths' => \array_map(static fn (array $outline): array => \array_map($point, $outline), $this->subpaths),
+        ]);
     }
 
     /** @param array<string, mixed> $changes properties to change, by name */

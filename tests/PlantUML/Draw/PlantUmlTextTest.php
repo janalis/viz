@@ -105,6 +105,20 @@ final class PlantUmlTextTest extends TestCase
         $this->assertEqualsWithDelta([10.0, 15.333], [new PlantUmlText(['<&flag>'], 12.0)->size()[0], new PlantUmlText(['<&flag>'], 20.0)->size()[0]], 1e-3);
     }
 
+    public function testAnIconIsDrawnAsPlantUmlDrawsIt(): void
+    {
+        $marks = new PlantUmlText(['<&cog>'], 14.0, color: '#123456')->marks(0.0, 0.0, 100.0, 'left');
+
+        // As the jar draws it: two thirds of the size, 1 into its room, its foot 0.039 of the size above the baseline, its hole left out.
+        $this->assertCount(1, $marks);
+        $this->assertSame('#123456', $marks[0]->fill);
+        $this->assertCount(1, $marks[0]->subpaths, 'the cog\'s hole');
+        $xs = \array_column($marks[0]->points, 0);
+        $ys = \array_column($marks[0]->points, 1);
+        $this->assertEqualsWithDelta([1.0, 1.0 + 9.333, 3.655, 3.655 + 9.333], [\min($xs), \max($xs), \min($ys), \max($ys)], 0.05);
+        $this->assertSame([], new PlantUmlText(['<&no-such-icon>'], 14.0)->marks(0.0, 0.0, 100.0));
+    }
+
     public function testLinesSetLeftCentredOrRight(): void
     {
         $text = new PlantUmlText(['ab'], 12.0, FontFace::BoldItalic);

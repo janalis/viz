@@ -79,7 +79,9 @@ final readonly class PngBackend
             if ('none' !== $mark->fill && null === $mark->gradient) {
                 // GD fills with scanlines: a previous thick stroke would blend each row repeatedly.
                 \imagesetthickness($canvas, thickness: 1);
-                \imagefilledpolygon($canvas, \array_merge(...$points), self::color($mark->fill, $mark->fillOpacity * $mark->opacity));
+                [] === $mark->subpaths
+                    ? \imagefilledpolygon($canvas, \array_merge(...$points), self::color($mark->fill, $mark->fillOpacity * $mark->opacity))
+                    : self::evenOdd($canvas, [$mark->points, ...$mark->subpaths], $scale, self::color($mark->fill, $mark->fillOpacity * $mark->opacity));
             }
             if (null !== $mark->gradient) {
                 \imagesetthickness($canvas, thickness: 1);
@@ -98,6 +100,38 @@ final readonly class PngBackend
         $count = \count($points);
         for ($index = 1; $index < $count; ++$index) {
             \imageline($canvas, $points[$index - 1][0], $points[$index - 1][1], $points[$index][0], $points[$index][1], $color);
+        }
+    }
+
+    /**
+     * Outlines filled even-odd, row by row: each row between every other crossing of their sides.
+     *
+     * @param list<list<array{float, float}>> $outlines
+     */
+    private static function evenOdd(\GdImage $canvas, array $outlines, float $scale, int $color): void
+    {
+        $ys = \array_merge(...\array_map(static fn (array $outline): array => \array_column($outline, 1), $outlines));
+        for ($row = (int) \floor(\min($ys) * $scale); $row <= (int) \ceil(\max($ys) * $scale); ++$row) {
+            $y = $row + 0.5;
+            $crossings = [];
+            foreach ($outlines as $outline) {
+                $count = \count($outline);
+                for ($index = 0; $index < $count; ++$index) {
+                    [$x1, $y1] = [$outline[$index][0] * $scale, $outline[$index][1] * $scale];
+                    [$x2, $y2] = [$outline[($index + 1) % $count][0] * $scale, $outline[($index + 1) % $count][1] * $scale];
+                    if ($y1 <= $y !== $y2 <= $y) {
+                        $crossings[] = $x1 + ((($y - $y1) * ($x2 - $x1)) / ($y2 - $y1));
+                    }
+                }
+            }
+            \sort($crossings);
+            for ($index = 0; ($index + 1) < \count($crossings); $index += 2) {
+                $from = (int) \round($crossings[$index]);
+                $to = (int) \round($crossings[$index + 1]) - 1;
+                if ($to >= $from) {
+                    \imageline($canvas, $from, $row, $to, $row, $color);
+                }
+            }
         }
     }
 

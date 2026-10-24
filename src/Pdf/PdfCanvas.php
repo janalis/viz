@@ -109,6 +109,12 @@ final class PdfCanvas
         $this->content .= "h\n";
     }
 
+    /** Fills the current path even-odd, its holes left out, ending it. */
+    public function fillEvenOdd(): void
+    {
+        $this->content .= "f*\n";
+    }
+
     /** Fills (nonzero winding, as SVG does), strokes, both or neither, ending the current path. */
     public function paint(bool $fill, bool $stroke): void
     {

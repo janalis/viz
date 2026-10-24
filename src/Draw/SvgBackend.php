@@ -114,12 +114,20 @@ final class SvgBackend
         $points = \implode(' ', \array_map(static fn (array $point): string => $point[0].','.$point[1], $mark->points));
         $tag = MarkKind::Polygon === $mark->kind ? 'polygon' : 'polyline';
         $fill = MarkKind::Polygon === $mark->kind ? $fill : 'none';
+        // A polygon with other outlines, its holes, is one path filled even-odd.
+        $shape =
+            MarkKind::Polygon === $mark->kind && [] !== $mark->subpaths
+                ? 'path d="'
+                .\implode(' ', \array_map(static fn (array $outline): string => 'M'.\implode(' L', \array_map(static fn (array $point): string => $point[0].','.$point[1], $outline)).' Z', [
+                    $mark->points,
+                    ...$mark->subpaths,
+                ]))
+                .'" fill-rule="evenodd'
+                : $tag.' points="'.$points;
 
         return (
             '<'
-            .$tag
-            .' points="'
-            .$points
+            .$shape
             .'" stroke="'
             .self::escape($mark->stroke)
             .'" fill="'

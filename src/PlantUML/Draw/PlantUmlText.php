@@ -428,7 +428,12 @@ final readonly class PlantUmlText
             };
             $tallest = $this->tallestOf($atoms, $size);
             foreach ($atoms as [$text, $sprite, $scale, $color]) {
-                [$mark, $advance] = null === $sprite ? $this->word($line, $text, $size, $left, $foot - self::below($tallest)) : $this->picture($sprite, $scale, $color, $left, $foot);
+                $icon = [];
+                [$mark, $advance] = match (true) {
+                    null !== $sprite => $this->picture($sprite, $scale, $color, $left, $foot),
+                    1 === \preg_match('/^<&([\w-]+)>$/', $text, $icon) => [PlantUmlIcon::marks($icon[1], $left, $foot - self::below($tallest), $size, $this->color), PlantUmlIcon::width($size)],
+                    default => $this->word($line, $text, $size, $left, $foot - self::below($tallest)),
+                };
                 \array_push($marks, ...$mark);
                 $left += $advance;
             }
@@ -462,9 +467,8 @@ final readonly class PlantUmlText
     /** As wide as the bundled font draws a stretch, each piece at its size. */
     private static function shown(string $text, float $size, FontFace $face): float
     {
-        // An OpenIconic icon, not drawn, takes the room PlantUML gives it: two thirds of the size, and 2, as measured on its output.
         if (1 === \preg_match('/^<&[\w-]+>$/', $text)) {
-            return ((2 * $size) / 3) + 2;
+            return PlantUmlIcon::width($size);
         }
         if (!\str_contains(\strtolower($text), '<size')) {
             return PlantUmlMetrics::width(self::plain($text), $size, $face);
