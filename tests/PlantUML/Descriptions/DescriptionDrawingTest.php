@@ -53,6 +53,14 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertEqualsWithDelta([54.0, 58.0, 18.0, 18.0], [$interface->width, $interface->height, $interface->beside()->width, $interface->beside()->height], 1e-9);
     }
 
+    public function testANodeContainerIsTakenTenWiderEitherSide(): void
+    {
+        $width = static fn (string $symbol): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$symbol} Server {\n  [App]\n}\n@enduml"))->width / Units::POINT;
+
+        // As the jar sizes them: a node 162 wide, a frame round the same 121.
+        $this->assertSame([162.0, 121.0], [$width('node'), $width('frame')]);
+    }
+
     public function testAContainersTitleAndContentStandWherePlantUmlDrawsThem(): void
     {
         $at = static function (string $symbol): array {

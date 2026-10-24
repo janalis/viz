@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Descriptions;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
@@ -174,6 +175,17 @@ final class DescriptionDrawing
                     ? DescriptionShapes::frame($box->x0, $box->y0, $width, $height, $line, $back, $thickness, ...$title->size())
                     : DescriptionShapes::outline($group->symbol, $box->x0, $box->y0, $width, $height, $line, $back, $thickness, 0.0),
             );
+            // As PlantUML's limit finder is seen to take a node, as measured on its output: 10 wider either side than it draws it.
+            if ('node' === $group->symbol) {
+                $marks[] = new Mark(
+                    MarkKind::Polygon,
+                    [[$box->x0 - 10, $box->y0], [$box->x1 + 10, $box->y0], [$box->x1 + 10, $box->y1], [$box->x0 - 10, $box->y1]],
+                    stroke: 'none',
+                    fill: 'none',
+                    strokeWidth: 0.0,
+                    outline: Outline::Path,
+                );
+            }
             // A package's, a folder's or a frame's title sits in its tab; any other container's is centred at its top, lower for the symbols PlantUML draws it lower in.
             $tabbed = \in_array($group->symbol, ['package', 'folder', 'frame'], strict: true);
             [$tabX, $tabY] = 'frame' === $group->symbol ? [3.0, 1.0] : [4.0, 2.0];
