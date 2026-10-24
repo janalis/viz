@@ -21,6 +21,19 @@ use PHPUnit\Framework\TestCase;
 
 final class ClassDrawingTest extends TestCase
 {
+    public function testAGenericStandsInABoxPastTheClasssTopRightCorner(): void
+    {
+        $entity = new ClassEntity('Box', ['Box']);
+        $entity->generic = 'T';
+        $box = ClassBox::of($entity, StyleSheet::skin(), new ClassPortions([]));
+        $generic = \array_values(\array_filter($box->marks(0.0, 0.0), static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && $mark->dashed))[0];
+        $xs = \array_column($generic->points, 0);
+        $ys = \array_column($generic->points, 1);
+
+        // As the jar draws it: its 12-point text and 2, 3 past the class's right and top.
+        $this->assertEqualsWithDelta([$box->width + 3 - 9.588, $box->width + 3, -3.0, 13.133], [\min($xs), \max($xs), \min($ys), \max($ys)], 0.01);
+    }
+
     public function testAnEmptyClassIsAHeaderAndTwoEmptyCompartments(): void
     {
         $box = ClassBox::of(new ClassEntity('Dog', ['Dog']), StyleSheet::skin(), new ClassPortions([]));

@@ -92,7 +92,9 @@ final readonly class ClassBox
                 self::stereotyped($sheet->style(['root', 'element', 'classDiagram', 'class', 'stereotype'], $entity->stereotypes)),
                 FontFace::Italic,
             );
-        $generic = null === $entity->generic ? null : PlantUmlText::styled([$entity->generic], $sheet->style(['root', 'element', 'classDiagram', 'class', 'stereotype']), FontFace::Italic);
+        $generic = null === $entity->generic
+            ? null
+            : PlantUmlText::styled([$entity->generic], self::stereotyped($sheet->style(['root', 'element', 'classDiagram', 'class', 'stereotype'])), FontFace::Italic);
         if (\in_array($entity->type, ['circle', 'diamond'], strict: true)) {
             // As svek writes them, and dot sizes them: a circle in a cell 18 across, its name's height above and below and as wide as its name, in whole points, 4 around, 54 wide at least; a diamond 24 across, nameless.
             $plain = PlantUmlText::styled($entity->display, $headerStyle);
@@ -206,10 +208,19 @@ final readonly class ClassBox
         }
         \array_push($marks, ...$this->name->marks($left, $textTop + $stereoHeight, $middle));
         if (null !== $this->generic) {
+            // As PlantUML draws it: a box 2 bigger than its text, 3 past the class's top right corner, its text 1 in.
             [$width, $height] = $this->generic->size();
-            $boxLeft = $x + $this->width - $width - 2;
-            $marks[] = new Mark(MarkKind::Polygon, self::corners($boxLeft - 2, $y - 4, $width + 4, $height + 2), stroke: '#181818', fill: '#ffffff', dashed: true, strokeWidth: 0.5);
-            \array_push($marks, ...$this->generic->marks($boxLeft, $y - 3, $width));
+            $boxLeft = $x + $this->width + 3 - ($width + 2);
+            $marks[] = new Mark(
+                MarkKind::Polygon,
+                self::corners($boxLeft, $y - 3, $width + 2, $height + 2),
+                stroke: '#181818',
+                fill: '#ffffff',
+                dashed: true,
+                strokeWidth: 0.5,
+                outline: Outline::Path,
+            );
+            \array_push($marks, ...$this->generic->marks($boxLeft + 1, $y - 2, $width));
         }
 
         return $marks;
