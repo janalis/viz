@@ -221,21 +221,7 @@ final readonly class DotEngine implements LayoutEngine
                 default => [$x, $y],
             };
         };
-        $nodes = [];
-        $endpoints = [];
-        foreach ($graph->nodes as $id => $node) {
-            [$x, $y] = $point($position->x[$id], $position->y[$layers->rank[$id]]);
-            $placed = new GraphNode($id, $node->id, $node->label, $x, $y, $node->width, $node->height, null, null, dashed: false);
-            $nodes[$id] = $placed;
-            $endpoints[$node->id] = $placed;
-        }
-        $clusters = [];
-        foreach ($graph->clusters as $index => $cluster) {
-            [$left, $top, $right, $bottom] = $position->boxes[$index];
-            [$x0, $y0] = $point($left, $top);
-            [$x1, $y1] = $point($right, $bottom);
-            $clusters[] = new GraphCluster($cluster->id, $cluster->label, \min($x0, $x1), \min($y0, $y1), \max($x0, $x1), \max($y0, $y1), null, null);
-        }
+        [$nodes, $endpoints, $clusters] = self::placed($graph, $layers, $position, $point);
         $routes = [];
         $labels = [];
         $splines = [];
@@ -245,13 +231,14 @@ final readonly class DotEngine implements LayoutEngine
         $offsets = self::spread($layers, $graph->concentrate ? 0.0 : $graph->spacing->nodeGap * DotSplines::SPREAD);
         foreach ($edgeIndexes as $layered => $original) {
             $path = $layers->paths[$layered] ?? null;
+            $spline = [];
             if (null !== $path) {
                 $routes[$original] = \array_map(static fn (int $node): array => $point($position->x[$node], $position->y[$layers->rank[$node]]), $path);
                 [$spline, $corners] = $router->route($path, $offsets[$layered]);
                 $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $spline);
                 $polylines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $corners);
             }
-            $label = self::label($layers, $position, $router, $layered, $labelSizes[$original] ?? null);
+            $label = self::label($layers, $position, $router, $layered, $labelSizes[$original] ?? null, $spline);
             if (null !== $label) {
                 $labels[$original] = $point(...$label);
             }
@@ -290,18 +277,50 @@ final readonly class DotEngine implements LayoutEngine
     }
 
     /**
-     * Where a layered edge's label stands, as laid out before it is turned: right of its label
-     * node; or, on an edge to the next rank, which has no rank between for one, hung by its top
-     * right corner from its spline's middle, as `dot` is seen to hang it.
+     * The nodes and clusters where the layout set them, turned as the graph's direction asks.
+     *
+     * @param \Closure(float, float): array{float, float} $point
+     * @return array{array<int, GraphNode>, array<string, GraphNode>, list<GraphCluster>} the nodes by layout index and by name, and the clusters
+     */
+    private static function placed(LayoutGraph $graph, DotLayers $layers, DotPosition $position, \Closure $point): array
+    {
+        $nodes = [];
+        $endpoints = [];
+        foreach ($graph->nodes as $id => $node) {
+            [$x, $y] = $point($position->x[$id], $position->y[$layers->rank[$id]]);
+            $placed = new GraphNode($id, $node->id, $node->label, $x, $y, $node->width, $node->height, null, null, dashed: false);
+            $nodes[$id] = $placed;
+            $endpoints[$node->id] = $placed;
+        }
+        $clusters = [];
+        foreach ($graph->clusters as $index => $cluster) {
+            [$left, $top, $right, $bottom] = $position->boxes[$index];
+            [$x0, $y0] = $point($left, $top);
+            [$x1, $y1] = $point($right, $bottom);
+            $clusters[] = new GraphCluster($cluster->id, $cluster->label, \min($x0, $x1), \min($y0, $y1), \max($x0, $x1), \max($y0, $y1), null, null);
+        }
+
+        return [$nodes, $endpoints, $clusters];
+    }
+
+    /**
+     * Where a layered edge's label stands, as laid out before it is turned: right of its line
+     * where it crosses its label node's rank, as `dot` is seen to set it, or of the label node;
+     * or, on an edge to the next rank, which has no rank between for one, hung by its top right
+     * corner from its spline's middle, as `dot` is seen to hang it.
      *
      * @param ?array{float, float} $size the label's width and height as laid out, null for none
+     * @param list<array{float, float}> $spline the line drawn for the edge, as laid out, none for none
      * @return ?array{float, float} null for an edge without a label
      */
-    private static function label(DotLayers $layers, DotPosition $position, DotSplines $router, int $layered, ?array $size): ?array
+    private static function label(DotLayers $layers, DotPosition $position, DotSplines $router, int $layered, ?array $size, array $spline): ?array
     {
         $node = $layers->labels[$layered] ?? null;
         if (null !== $node) {
-            return [$layers->mirrored ? $position->x[$node] - ($layers->left[$node] / 2) : $position->x[$node] + ($layers->right[$node] / 2), $position->y[$layers->rank[$node]]];
+            $y = $position->y[$layers->rank[$node]];
+            $x = self::crossing($spline, $y) ?? $position->x[$node];
+
+            return [$layers->mirrored ? $x - ($layers->left[$node] / 2) : $x + ($layers->right[$node] / 2), $y];
         }
         $path = $layers->paths[$layered] ?? null;
         if (null === $path || null === $size) {
@@ -310,6 +329,24 @@ final readonly class DotEngine implements LayoutEngine
         [$x, $y] = $router->middle($path);
 
         return [$x - ($size[0] / 2), $y + ($size[1] / 2)];
+    }
+
+    /**
+     * Where a drawn line first crosses a height, if it does.
+     *
+     * @param list<array{float, float}> $line
+     */
+    private static function crossing(array $line, float $y): ?float
+    {
+        $x = null;
+        for ($index = 1, $count = \count($line); null === $x && $index < $count; ++$index) {
+            [[$ax, $ay], [$bx, $by]] = [$line[$index - 1], $line[$index]];
+            if ((($ay - $y) * ($by - $y)) <= 0 && $ay !== $by) {
+                $x = $ax + ((($bx - $ax) * ($y - $ay)) / ($by - $ay));
+            }
+        }
+
+        return $x;
     }
 
     /**

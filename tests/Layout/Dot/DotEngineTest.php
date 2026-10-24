@@ -87,6 +87,34 @@ final class DotEngineTest extends TestCase
         $this->assertSame(36.0, $placement->endpoints['c']->x - $placement->endpoints['b']->x - 54.0);
     }
 
+    public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
+    {
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 14, 50), new LayoutNode('b', 'b', 14, 50), new LayoutNode('c', 'c', 14, 50)],
+            [new LayoutEdge(0, 'a', 'b', labelWidth: 50, labelHeight: 17), new LayoutEdge(1, 'a', 'c', labelWidth: 20, labelHeight: 17)],
+            [],
+            Direction::TopBottom,
+            new Spacing(35, 60, 4),
+        )));
+        $crossing = static function (array $line, float $y): float {
+            for ($index = 1; $index < \count($line); ++$index) {
+                [[$ax, $ay], [$bx, $by]] = [$line[$index - 1], $line[$index]];
+                if ((($ay - $y) * ($by - $y)) <= 0 && $ay !== $by) {
+                    return $ax + ((($bx - $ax) * ($y - $ay)) / ($by - $ay));
+                }
+            }
+
+            return \NAN;
+        };
+
+        // As `dot` is seen to set them: each label's left side on its line, which cuts the corner its chain turns.
+        foreach ([0 => 50.0, 1 => 20.0] as $edge => $width) {
+            [$x, $y] = $placement->labels[$edge];
+            $this->assertEqualsWithDelta($crossing($placement->splines[$edge], $y), $x - ($width / 2), 1e-6);
+        }
+        $this->assertLessThan($placement->endpoints['c']->x, $placement->labels[1][0] - 10.0, 'left of the chain\'s turn below its head');
+    }
+
     public function testAClusterKeepsItsMarginAndTheGraphKeepsOneAroundIt(): void
     {
         $placement = self::place(['e', 'b'], [], [new LayoutCluster('x', 'X', labelHeight: 16.5)], ['e' => 'x']);
