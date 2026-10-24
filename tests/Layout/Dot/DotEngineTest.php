@@ -163,7 +163,8 @@ final class DotEngineTest extends TestCase
         $this->assertCount(3, $placement->routes[0], 'its chain runs through the label rank');
         $this->assertSame($placement->routes[1], $placement->routes[2], 'parallel edges share one chain');
         $this->assertCount(2, $placement->routes[4], 'a flat edge runs straight between its ends');
-        $this->assertArrayNotHasKey(3, $placement->routes, 'a loop has no route of its own');
+        // As dot draws it, a loop runs out a node separation past its node's right and back to its centre.
+        $this->assertEqualsWithDelta($placement->endpoints['b']->x + ($placement->endpoints['b']->w / 2) + 6, \max(\array_column($placement->splines[3], 0)), 1e-9, 'a loop has its curve');
         $this->assertArrayNotHasKey(5, $placement->routes, 'an edge to no node is dropped');
         $this->assertSame($placement->endpoints['b']->x, $placement->endpoints['c']->x, 'b and c share a rank');
     }

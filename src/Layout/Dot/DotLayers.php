@@ -70,6 +70,8 @@ final class DotLayers
         private readonly float $spread = 0.0,
         private readonly Concentration $concentration = Concentration::Apart,
         public readonly bool $mirrored = false,
+        /** How far each loop reaches past the one before, besides its label: a node separation, as `dot` is seen to draw them. */
+        private readonly float $loop = self::LOOP,
     ) {
         $this->parents = $parents;
         foreach ($ranks as $node => $rank) {
@@ -82,7 +84,7 @@ final class DotLayers
             if ($tail === $head) {
                 // Loops are drawn to a node's right, one beside the other: the node is as wide as they reach.
                 $this->loops[] = [$tail, $index];
-                $this->right[$tail] += self::LOOP + $labelWidth;
+                $this->right[$tail] += $this->loop + $labelWidth;
                 continue;
             }
             if ($ranks[$tail] === $ranks[$head]) {

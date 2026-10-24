@@ -102,6 +102,7 @@ final readonly class DotEngine implements LayoutEngine
             $graph->spacing->nodeGap * DotSplines::SPREAD,
             $graph->concentrate ? Concentration::Merged : Concentration::Apart,
             $turned,
+            $graph->spacing->nodeGap,
         );
         $constrained = \array_column(\array_map(static fn ($edge): array => [$edge->index, $edge->constraint], $graph->edges), 1, 0);
         $loose = \array_keys(\array_filter(\array_keys($edges), static fn (int $original): bool => !$constrained[$original]));
@@ -278,6 +279,10 @@ final readonly class DotEngine implements LayoutEngine
             }
         }
 
+        [$loops, $loopLabels] = DotLoops::place($graph, $layers, $nodes);
+        $splines += $loops;
+        $routes += $loops;
+        $labels += $loopLabels;
         $placement = new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines, $pieces);
 
         // Stretched to an aspect, a drawing keeps the bounds it was stretched to.

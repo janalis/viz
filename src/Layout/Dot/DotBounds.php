@@ -106,7 +106,7 @@ final class DotBounds
         }
         $loops = [];
         foreach ($layers->loops as [$node, $original]) {
-            $loops[$node] = ($loops[$node] ?? 0.0) + DotLayers::LOOP + ($sizes[$original][0] ?? 0.0);
+            $loops[$node] = ($loops[$node] ?? 0.0) + $graph->spacing->nodeGap + ($sizes[$original][0] ?? 0.0);
         }
         foreach ($nodes as $id => $node) {
             $take($node->x - ($node->w / 2), $node->y - ($node->h / 2), $node->x + ($node->w / 2) + ($loops[$id] ?? 0.0), $node->y + ($node->h / 2));
