@@ -19,6 +19,18 @@ use PHPUnit\Framework\TestCase;
 
 final class CreoleReaderTest extends TestCase
 {
+    public function testTextIsAsWideAsJavaSetsItInItsFamilyAndFace(): void
+    {
+        $line = '.'.\str_repeat('a', times: 20).'.';
+
+        // As the jar writes their lengths: in Java's serif, its monospaced, and its serif bold.
+        $this->assertEqualsWithDelta(
+            [131.277, 185.432, 147.0],
+            [new CreoleFont(14.0, 'serif')->width($line), new CreoleFont(14.0, 'monospaced')->width($line), new CreoleFont(14.0, 'serif', bold: true)->width($line)],
+            0.01,
+        );
+    }
+
     public function testMarkupSetsEachStretchInItsFontInOrder(): void
     {
         $this->assertSame(

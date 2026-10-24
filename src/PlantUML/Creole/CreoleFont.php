@@ -7,7 +7,7 @@ namespace Janalis\Viz\PlantUML\Creole;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
-use Janalis\Viz\Text\DisplayWidth;
+use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\Text\FontFace;
 
 /**
@@ -72,17 +72,30 @@ final readonly class CreoleFont
         return $this->metrics()[1] * $this->drawn();
     }
 
-    /** As wide as the bundled font draws the text, its tabs to stops 8 spaces apart. */
+    /** As wide as Java sets the text in its family and face, its tabs to stops 8 spaces apart. */
     public function width(string $text): float
     {
-        $cell = Units::cell($this->drawn());
+        return \array_sum($this->slots($text));
+    }
+
+    /**
+     * Each character's room along the line, as Java sets it in its family and face: a tab's to the next stop 8 spaces on.
+     *
+     * @return list<float>
+     */
+    public function slots(string $text): array
+    {
+        $family = \in_array($this->family, ['serif', 'monospaced'], strict: true) ? $this->family : 'sans';
+        $tab = 8 * PlantUmlMetrics::width(' ', $this->drawn(), $this->face(), $family);
+        $slots = [];
         $x = 0.0;
-        foreach ((array) \preg_split("/(\t)/", $text, flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY) as $part) {
-            $part = (string) $part;
-            $x = "\t" === $part ? $x + (8 * $cell) - \fmod($x, 8 * $cell) : $x + (DisplayWidth::of($part) * $cell);
+        foreach (\mb_str_split($text) as $character) {
+            $slot = "\t" === $character ? $tab - \fmod($x, $tab) : PlantUmlMetrics::width($character, $this->drawn(), $this->face(), $family);
+            $slots[] = $slot;
+            $x += $slot;
         }
 
-        return $x;
+        return $slots;
     }
 
     public function face(): FontFace
@@ -122,6 +135,7 @@ final readonly class CreoleFont
                 stroke: $this->color,
                 font: $this->face(),
                 fontScale: Units::fontScale($this->drawn()) / Units::POINT,
+                slots: $this->slots($text),
             );
         }
         foreach ([[$this->underline, 1.0], [$this->strike, -0.3 * $this->drawn()]] as [$color, $dy]) {
