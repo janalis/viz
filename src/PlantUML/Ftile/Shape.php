@@ -80,7 +80,8 @@ final readonly class Shape
         [$x, $y] = [$shape->maxX + (2 * $distance) - 1, $shape->maxY + (2 * $distance) - 1];
 
         return [
-            new self(ShapeKind::Polygon, $marks, $shape->minX + $distance, $shape->minY + $distance, $shape->maxX + $distance, $shape->maxY + $distance, ignoreX: true, ignoreY: true),
+            // Taken as drawn, as PlantUML's limit finder takes a shadow it draws by a filter: no wider than it is.
+            new self(ShapeKind::Path, $marks, $shape->minX + $distance, $shape->minY + $distance, $shape->maxX + $distance, $shape->maxY + $distance, ignoreX: true, ignoreY: true),
             new self(ShapeKind::Line, [], $x, $y, $x, $y),
             $shape,
         ];
