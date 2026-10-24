@@ -8,6 +8,7 @@ use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\PlantUmlRefusal;
+use Janalis\Viz\PlantUML\Style\PlantUmlColor;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -128,13 +129,18 @@ final class WbsReader
     {
         $from = (string) $command->get('CODE1');
         $to = (string) $command->get('CODE2');
+        // As PlantUML, which reads an arrow's colour before its ends: a plain colour it does not know is refused.
+        $color = $command->get('COLOR');
+        if (null !== $color && !\str_contains($color, ':') && !\str_contains($color, ';') && null === PlantUmlColor::parse($color)) {
+            throw new PlantUmlRefusal('No such color');
+        }
         if ($from === $to) {
             throw new PlantUmlRefusal('PlantUML fails on an arrow from an element to itself: '.$command->line());
         }
         $this->links[] = [
             $this->codes[$from] ?? throw new PlantUmlRefusal('No such node '.$from),
             $this->codes[$to] ?? throw new PlantUmlRefusal('No such node '.$to),
-            $command->get('COLOR'),
+            $color,
             $command->get('STEREOTYPE'),
         ];
     }

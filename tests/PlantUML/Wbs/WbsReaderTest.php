@@ -97,6 +97,7 @@ final class WbsReaderTest extends TestCase
         yield 'no label' => ["* a\n**", 'Missing label for WBS node.'];
         yield 'unknown code' => ["* a\n**(b) b\nb -> c", 'No such node c'];
         yield 'an arrow to itself, which PlantUML fails on' => ["* a\n**(b) b\nb -> b", 'an arrow from an element to itself: b -> b'];
+        yield 'an arrow of a colour PlantUML does not know, read before its ends' => ["* a\n**(b) b\nb -> c #nosuch", 'No such color'];
         yield 'unreadable indentation' => ["* a\n ++ b", 'type=< ++>[*]'];
         yield 'not drawn' => ["* a\nset separator ::", 'The native PlantUML renderer does not draw: set separator ::'];
     }
