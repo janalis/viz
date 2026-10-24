@@ -59,14 +59,14 @@ final class LinkPainter
             $margin = Svek::labelMargin($link->from, $link->to);
             $top = \array_key_exists($edge, $placement->labels) ? $y - (\floor($height + $margin) / 2) + ($margin / 2) : $y - ($height / 2);
             \array_push($marks, ...$label->marks($x - ($width / 2), $top, $width));
-            \array_push($marks, ...self::labelArrow($link, $from, $to, $x - ($width / 2) - 8, $y, $color));
+            \array_push($marks, ...self::labelArrow($link, $from, $to, $x - ($width / 2) + 3, $y, $color));
         }
         \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes, $placement->directions[''] ?? Direction::TopBottom));
 
         return $marks;
     }
 
-    /** @return list<Mark> the small triangle before a label written `label >` or `< label`, pointing the way the label reads */
+    /** @return list<Mark> the small triangle a label written `label >` or `< label` starts with, pointing the way the label reads: 9 long and 6 wide, as measured on PlantUML's output */
     private static function labelArrow(PlantUmlLink $link, GraphNode $from, GraphNode $to, float $x, float $y, string $color): array
     {
         if (null === $link->labelArrow) {
@@ -77,7 +77,7 @@ final class LinkPainter
 
         return [new Mark(
             MarkKind::Polygon,
-            [[$x + (4 * $dx), $y + (4 * $dy)], [$x - (4 * $dx) - (3 * $dy), $y - (4 * $dy) + (3 * $dx)], [$x - (4 * $dx) + (3 * $dy), $y - (4 * $dy) - (3 * $dx)]],
+            [[$x + (4.52 * $dx), $y + (4.52 * $dy)], [$x - (4.52 * $dx) - (2.94 * $dy), $y - (4.52 * $dy) + (2.94 * $dx)], [$x - (4.52 * $dx) + (2.94 * $dy), $y - (4.52 * $dy) - (2.94 * $dx)]],
             stroke: $color,
             fill: $color,
             strokeWidth: 0.5,

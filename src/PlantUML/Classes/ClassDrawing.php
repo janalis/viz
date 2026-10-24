@@ -138,12 +138,18 @@ final class ClassDrawing
         $styles = $this->classes->document->styles;
         $notes = \array_values(\array_filter($this->classes->notes, static fn (PlantUmlNote $note): bool => $note->link === $index));
 
-        return LinkLabel::of(null === $link->label ? [] : ClassReader::split($link->label), $styles->style(['root', 'element', 'classDiagram', 'arrow']), $notes, $styles->style([
-            'root',
-            'element',
-            'classDiagram',
-            'note',
-        ]));
+        return LinkLabel::of(
+            null === $link->label ? [] : ClassReader::split($link->label),
+            $styles->style(['root', 'element', 'classDiagram', 'arrow']),
+            $notes,
+            $styles->style([
+                'root',
+                'element',
+                'classDiagram',
+                'note',
+            ]),
+            lead: null === $link->labelArrow ? 0.0 : LinkLabel::POINTED,
+        );
     }
 
     /** @return list<Mark> */

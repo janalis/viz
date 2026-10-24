@@ -20,10 +20,15 @@ use Janalis\Viz\PlantUML\Teoz\Rose\RoseText;
  */
 final readonly class LinkLabel
 {
+    /** The room before a pointed label's text, for its small triangle, as measured on PlantUML's output. */
+    public const float POINTED = 12.0;
+
     private function __construct(
         private PlantUmlText $text,
         private ?NoteShape $note,
         private string $position,
+        /** The room before the text: for the small triangle a label written `label >` or `< label` starts with. */
+        private float $lead = 0.0,
     ) {}
 
     /**
@@ -31,8 +36,9 @@ final readonly class LinkLabel
      *
      * @param list<string> $lines
      * @param list<PlantUmlNote> $notes the notes on this link
+     * @param float $lead the room before the text: {@see POINTED} for a label written `label >` or `< label`, none else
      */
-    public static function of(array $lines, Style $arrow, array $notes, Style $noteStyle): self
+    public static function of(array $lines, Style $arrow, array $notes, Style $noteStyle, float $lead = 0.0): self
     {
         $note = [] === $notes ? null : $notes[\count($notes) - 1];
         // As svek, the note is Rose's note component, padded 5 around its sheet.
@@ -45,7 +51,7 @@ final readonly class LinkLabel
                 ClassColors::back($note->color) ?? $noteStyle->color('BackGroundColor', '#feffdd'),
             );
 
-        return new self(PlantUmlText::styled($lines, $arrow), $box, $note->position ?? 'bottom');
+        return new self(PlantUmlText::styled($lines, $arrow), $box, $note->position ?? 'bottom', $lead);
     }
 
     public function empty(): bool
@@ -56,7 +62,7 @@ final readonly class LinkLabel
     /** @return array{float, float} */
     public function size(): array
     {
-        [$textWidth, $textHeight] = $this->text->size();
+        [$textWidth, $textHeight] = $this->textSize();
         [$noteWidth, $noteHeight] = $this->note?->size() ?? [0.0, 0.0];
 
         return $this->across() ? [$textWidth + $noteWidth, \max($textHeight, $noteHeight)] : [\max($textWidth, $noteWidth), $textHeight + $noteHeight];
@@ -66,9 +72,9 @@ final readonly class LinkLabel
     public function marks(float $x, float $y, float $width): array
     {
         [$totalWidth, $totalHeight] = $this->size();
-        [$textWidth, $textHeight] = $this->text->size();
+        [$textWidth, $textHeight] = $this->textSize();
         if (null === $this->note) {
-            return $this->text->marks($x, $y, $width);
+            return $this->text->marks($x + $this->lead, $y, $width - $this->lead);
         }
         [$noteWidth, $noteHeight] = $this->note->size();
         [$textAt, $noteAt] = match ($this->position) {
@@ -78,7 +84,18 @@ final readonly class LinkLabel
             default => [[$x + (($totalWidth - $textWidth) / 2), $y], [$x + (($totalWidth - $noteWidth) / 2), $y + $textHeight + $this->gap()]],
         };
 
-        return [...$this->text->marks($textAt[0], $textAt[1], $textWidth), ...$this->note->marks($noteAt[0], $noteAt[1], new Area($noteWidth, $noteHeight), Layer::Foreground)];
+        return [
+            ...$this->text->marks($textAt[0] + $this->lead, $textAt[1], $textWidth - $this->lead),
+            ...$this->note->marks($noteAt[0], $noteAt[1], new Area($noteWidth, $noteHeight), Layer::Foreground),
+        ];
+    }
+
+    /** @return array{float, float} the text's size, with the room before it */
+    private function textSize(): array
+    {
+        [$width, $height] = $this->text->size();
+
+        return [$this->text->empty() ? 0.0 : $width + $this->lead, $height];
     }
 
     /** How far below a label the note under it is drawn, or a label below the note over it, past the room the two take, as measured on PlantUML's output: 1, none without a label. */
