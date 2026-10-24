@@ -17,8 +17,17 @@ if (!\is_file($jar)) {
     exit(1);
 }
 $characters = [];
-foreach ([...\range(0x20, 0x7E), ...\range(0xA0, 0xFF)] as $code) {
-    $characters[] = \mb_chr($code);
+// Latin, Greek and Cyrillic, punctuation, arrows, mathematical operators, control pictures —
+// PlantUML draws a JSON null as one — geometric shapes and symbols, as its checkboxes.
+$blocks = [[0x20, 0x7E], [0xA0, 0x17F], [0x370, 0x3FF], [0x400, 0x4FF], [0x2010, 0x205E], [0x2190, 0x21FF], [0x2200, 0x22FF], [0x2400, 0x2426], [0x25A0, 0x25FF], [0x2600, 0x26FF]];
+foreach ($blocks as [$first, $last]) {
+    foreach (\range($first, $last) as $code) {
+        // As unassigned, a combining mark or a control — but a soft hyphen — has no advance of its own to measure.
+        $char = \mb_chr($code);
+        if (false !== $char && 1 === \preg_match('/^[\p{L}\p{N}\p{P}\p{S}\p{Zs}\x{AD}]$/u', $char)) {
+            $characters[] = $char;
+        }
+    }
 }
 $measured = [];
 foreach (['sans' => null, 'serif' => 'serif', 'monospaced' => 'monospaced'] as $family => $font) {

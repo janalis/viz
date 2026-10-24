@@ -134,6 +134,16 @@ final class PlantUmlTextTest extends TestCase
         $this->assertSame(FontFace::Italic, PlantUmlText::styled(['x'], new Style(['FontStyle' => 'italic', 'FontSize' => '9']))->face);
     }
 
+    public function testMarkupCharactersAndSymbolsAreMeasuredAsJavaSetsThem(): void
+    {
+        // As the jar writes their lengths: a JSON checkbox, a stretch of Creole's markup characters, Greek and an arrow.
+        $this->assertEqualsWithDelta(47.913, PlantUmlMetrics::width('☐ false', 14.0), 2e-3);
+        $this->assertEqualsWithDelta(43.504, PlantUmlMetrics::width('☑ true', 14.0), 2e-3);
+        $this->assertEqualsWithDelta(7.0, PlantUmlMetrics::width('_', 14.0), 1e-3);
+        $this->assertNotEqualsWithDelta(PlantUmlMetrics::width('n', 14.0), PlantUmlMetrics::width('λ', 14.0), 1e-3);
+        $this->assertNotEqualsWithDelta(PlantUmlMetrics::width('n', 14.0), PlantUmlMetrics::width('→', 14.0), 1e-3);
+    }
+
     public function testANoteFoldsItsCorner(): void
     {
         $note = new NoteBox(new PlantUmlText(['hello'], 12.0), new Style(), '#ffffff');
