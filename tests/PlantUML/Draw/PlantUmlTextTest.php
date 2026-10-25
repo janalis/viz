@@ -15,6 +15,17 @@ use PHPUnit\Framework\TestCase;
 
 final class PlantUmlTextTest extends TestCase
 {
+    public function testEachLineIsMeasuredWithHowFarAboveItsTopItIsTaken(): void
+    {
+        $text = new PlantUmlText(['Hello', '| a | b |', '| c | d |'], 14.0);
+        [$line, $table] = $text->rows();
+
+        // As PlantUML takes a line, 1.5 below its top less what it keeps below its baseline; a table as its box.
+        $this->assertEqualsWithDelta([PlantUmlMetrics::width('Hello', 14.0), PlantUmlText::lineHeight(14.0), 1.453], $line, 0.001);
+        $this->assertSame(0.0, $table[2]);
+        $this->assertSame([], new PlantUmlText([], 14.0)->rows());
+    }
+
     public function testCreoleMarkupIsTakenOutAndWholeLinesTakeItsFace(): void
     {
         $this->assertSame('bold italic mono ', PlantUmlText::plain('**bold** //italic// ""mono"" <&x>'));

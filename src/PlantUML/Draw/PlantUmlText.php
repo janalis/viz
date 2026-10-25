@@ -226,6 +226,30 @@ final readonly class PlantUmlText
         return [] === $this->lines || (1 === \count($this->lines) && '' === \trim($this->lines[0]));
     }
 
+    /**
+     * Each line's size, and how far above its top PlantUML takes it when it measures where it
+     * is drawn: 1.5 below its top less what it keeps below its baseline; a table its own box.
+     *
+     * @return list<array{float, float, float}> each line's width, height and how far above its top it is taken
+     */
+    public function rows(): array
+    {
+        if ($this->empty()) {
+            return [];
+        }
+        $rows = [];
+        foreach ($this->blocks() as $block) {
+            if ($block instanceof PlantUmlTable) {
+                $rows[] = [...$block->size(), 0.0];
+                continue;
+            }
+            $atoms = $this->atoms($block);
+            $rows[] = [...$this->lineSize($atoms, $this->fontSize($block), $block), self::below($this->tallestOf($atoms, $this->fontSize($block))) - 1.5];
+        }
+
+        return $rows;
+    }
+
     /** @return array{float, float} */
     public function size(): array
     {

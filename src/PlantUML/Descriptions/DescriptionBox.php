@@ -72,6 +72,8 @@ final readonly class DescriptionBox
         private bool $alone = false,
         /** A package's title, its name in its tab, 6 room either side. */
         private ?PlantUmlText $title = null,
+        /** How far below a use case's top its text starts. */
+        private float $textTop = 0.0,
     ) {}
 
     /** An interface as svek writes one a link joins beside another: its circle alone, 18 across, its name hanging 8 below. */
@@ -100,12 +102,12 @@ final readonly class DescriptionBox
         $labelWidth = \max($textWidth, null === $stereotypes ? 0.0 : $stereoWidth + 2);
         $labelHeight = $textHeight + $stereoHeight;
         [$width, $height] = match (true) {
-            'usecase' === $element->symbol => self::inEllipse($labelWidth, $labelHeight),
+            'usecase' === $element->symbol => self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()]),
             // As PlantUML: its flat sides as wide as its text, its points half as far again, 5 above and below.
             'hexagon' === $element->symbol => [2 * $labelWidth, $labelHeight + 10],
             'person' === $element->symbol => self::person($labelWidth + 20, $labelHeight + 20),
-            // As svek writes an interface, and dot sizes it: its circle in a cell 18 across, its name's height above and below and as wide as its name, in whole points, 4 around, 54 wide at least.
-            \in_array($element->symbol, ['interface', 'circle'], strict: true) => [\max(54.0, 18 + (2 * \round(\max(0.5, ($labelWidth - 18) / 2))) + 8), (2 * \round($labelHeight)) + 26],
+            // As svek writes an interface, and dot sizes it: its circle in a cell 18 across, its name's height above and below and as wide as its name, in whole points, 4 around, 54 wide at least; its stereotypes outside it.
+            \in_array($element->symbol, ['interface', 'circle'], strict: true) => [\max(54.0, 18 + (2 * \round(\max(0.5, ($labelWidth - 18) / 2))) + 8), (2 * \floor($textHeight)) + 26],
             \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight],
             // As PlantUML, a folder keeps room for a title it does not show, 40 by 15, above its label.
             'folder' === $element->symbol => self::boxed($element->symbol, \max(self::FOLDER_TITLE[0], $labelWidth), self::FOLDER_TITLE[1] + $labelHeight),
@@ -113,7 +115,17 @@ final readonly class DescriptionBox
             default => self::boxed($element->symbol, $labelWidth, $labelHeight),
         };
 
-        return new self($element, $style, $text, $stereotypes, $width, $height, $flushLeft, title: $title);
+        return new self(
+            $element,
+            $style,
+            $text,
+            $stereotypes,
+            $width,
+            $height,
+            $flushLeft,
+            title: $title,
+            textTop: 'usecase' === $element->symbol ? self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()])[2] : 0.0,
+        );
     }
 
     /** @return array{float, float} */
@@ -146,7 +158,7 @@ final readonly class DescriptionBox
             ? [self::ellipse($x, $y, $this->width, $this->height, $line, $back, $stroke)]
             : DescriptionShapes::outline($symbol, $x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'), $this->tab());
         [$labelLeft, $labelTop, $labelWidth] = match ($symbol) {
-            'usecase' => [$x, $y + (($this->height - $this->labelHeight()) / 2), $this->width],
+            'usecase' => [$x, $y + $this->textTop, $this->width],
             'hexagon' => [$x + ($this->width / 4), $y + 5, $this->width / 2],
             'person' => [$x + $left, $y + (2 * DescriptionShapes::head($this->width, $this->height)) + $top, $this->width - $left - $right],
             default => [$x + $left, $y + $top + $this->tab()[1], $this->width - $left - $right],
@@ -167,9 +179,14 @@ final readonly class DescriptionBox
         };
     }
 
-    /** @return list<Mark> an icon above its centred name */
+    /** @return list<Mark> an icon above its centred name, under its stereotypes but an interface's */
     private function icon(string $symbol, float $x, float $y, string $line, string $back, float $stroke): array
     {
+        // As PlantUML's simple symbols stack them: the stereotypes, the icon, the name; an interface's stereotypes ending 17 above its circle's centre, as its name starts 17 below.
+        $interface = \in_array($symbol, ['interface', 'circle'], strict: true);
+        $stereoHeight = null === $this->stereotypes ? 0.0 : $this->stereotypes->size()[1];
+        $stereotypes = null === $this->stereotypes ? [] : $this->stereotypes->marks($x, $interface ? $y + ($this->height / 2) - 17 - $stereoHeight : $y, $this->width);
+        $y += $interface ? 0.0 : $stereoHeight;
         $centre = $x + ($this->width / 2);
         $marks = match ($symbol) {
             'actor' => self::stickman($centre, $y, $line, $back, $stroke),
@@ -203,7 +220,7 @@ final readonly class DescriptionBox
             default => self::ICONS[$symbol][1],
         };
 
-        return [...$marks, ...$this->label($x, $top, $this->width)];
+        return [...$stereotypes, ...$marks, ...$this->name($x, $top, $this->width)];
     }
 
     /**
@@ -220,27 +237,66 @@ final readonly class DescriptionBox
         return [(2 * $half) + 6, (2 * $half * $aspect) + 6];
     }
 
+    /**
+     * The ellipse PlantUML's `TextBlockInEllipse` fits around lines centred one under another,
+     * as its `Footprint` and `ContainingEllipse` find it: the smallest around each line's corners,
+     * as flat as the lines but between a fifth and four fifths as tall as wide, 6 bigger; the
+     * lines drawn from its centre, 2 higher.
+     *
+     * @param list<array{float, float, float}> $rows each line's width, height and how far above its top it is taken
+     * @return array{float, float, float} its width, its height, and how far below its top the lines start
+     */
+    private static function footprint(array $rows): array
+    {
+        [$width, $height] = [[] === $rows ? 0.0 : \max(\array_column($rows, 0)), \array_sum(\array_column($rows, 1))];
+        $aspect = $width > 0 ? \min(0.8, \max(0.2, $height / $width)) : 0.8;
+        // Each line's half width, and its top and bottom as measured, from the first line's top.
+        $spans = [];
+        $top = 0.0;
+        foreach ($rows as [$rowWidth, $rowHeight, $above]) {
+            $spans[] = [$rowWidth / 2, $top - $above, $top + $rowHeight - $above];
+            $top += $rowHeight;
+        }
+        // The lines centred, the circle's centre on their middle line: where, down it, the farthest corner is nearest.
+        $farthest = static function (float $centre) use ($spans, $aspect): float {
+            $far = 0.0;
+            foreach ($spans as [$half, $from, $to]) {
+                $far = \max($far, $half ** 2 + (\max(\abs($from - $centre), \abs($to - $centre)) / $aspect) ** 2);
+            }
+
+            return $far;
+        };
+        [$low, $high] = [[] === $spans ? 0.0 : \min(\array_column($spans, 1)), [] === $spans ? 0.0 : \max(\array_column($spans, 2))];
+        for ($step = 0; $step < 100; ++$step) {
+            [$one, $two] = [$low + (($high - $low) / 3), $high - (($high - $low) / 3)];
+            [$low, $high] = $farthest($one) < $farthest($two) ? [$low, $two] : [$one, $high];
+        }
+        $centre = ($low + $high) / 2;
+        $radius = \sqrt($farthest($centre));
+
+        return [(2 * $radius) + 6, (2 * $radius * $aspect) + 6, ($radius * $aspect) + 3 - $centre - 2];
+    }
+
     /** @return list<Mark> the stereotypes above the text, both centred within a width */
     private function label(float $x, float $y, float $width): array
     {
-        $marks = [];
-        if (null !== $this->stereotypes) {
-            \array_push($marks, ...$this->stereotypes->marks($x, $y, $width));
-            $y += $this->stereotypes->size()[1];
+        if (null === $this->stereotypes) {
+            return $this->name($x, $y, $width);
         }
 
+        return [...$this->stereotypes->marks($x, $y, $width), ...$this->name($x, $y + $this->stereotypes->size()[1], $width)];
+    }
+
+    /** @return list<Mark> the text alone, centred within a width */
+    private function name(float $x, float $y, float $width): array
+    {
         if ($this->flushLeft) {
             $textWidth = $this->text->size()[0];
 
-            return [...$marks, ...$this->text->marks($x + (($width - $textWidth) / 2), $y, $textWidth, 'left')];
+            return $this->text->marks($x + (($width - $textWidth) / 2), $y, $textWidth, 'left');
         }
 
-        return [...$marks, ...$this->text->marks($x, $y, $width)];
-    }
-
-    private function labelHeight(): float
-    {
-        return $this->text->size()[1] + (null === $this->stereotypes ? 0.0 : $this->stereotypes->size()[1]);
+        return $this->text->marks($x, $y, $width);
     }
 
     /** @return list<Mark> PlantUML's stick figure, its head at the top */

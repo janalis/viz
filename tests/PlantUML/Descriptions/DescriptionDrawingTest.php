@@ -126,6 +126,26 @@ final class DescriptionDrawingTest extends TestCase
         ], [$texts['P'], $texts['Hello']]);
     }
 
+    public function testStereotypesStandWherePlantUmlsSymbolsSetThem(): void
+    {
+        $drawing = static fn (string $symbol): Drawing => Work::run(PlantUmlPipeline::native()->drawing(
+            "@startuml\n{$symbol} \"A longer name\\nand two lines\" as X <<stereo>>\nrectangle R\nX --> R\n@enduml",
+        ));
+        $size = static fn (string $symbol): array => [$drawing($symbol)->width / Units::POINT, $drawing($symbol)->height / Units::POINT];
+
+        // As the jar sizes them: an icon's stereotypes above it; an interface's outside its node, above its circle; a use case's ellipse around each line's corners.
+        $this->assertSame([[120.0, 199.0], [120.0, 227.0], [120.0, 196.0], [151.0, 184.0]], [$size('boundary'), $size('actor'), $size('interface'), $size('usecase')]);
+        $baselines = [];
+        foreach ($drawing('usecase')->marks as $mark) {
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
+            $baselines[] = \round($mark->points[0][1] / Units::POINT, precision: 3);
+        }
+        // Its lines drawn from the ellipse's centre, 2 higher, as the jar draws them.
+        $this->assertSame([25.392, 41.88, 58.368], \array_slice($baselines, offset: 0, length: 3));
+    }
+
     public function testAFoldersTabIsAsPlantUmlsFolderDrawsIt(): void
     {
         $outline = static function (string $source): array {
