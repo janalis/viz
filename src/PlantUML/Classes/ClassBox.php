@@ -129,6 +129,12 @@ final readonly class ClassBox
     /** @return list<Mark> the box with its top left at a point */
     public function marks(float $x, float $y): array
     {
+        return [...$this->bare($x, $y), ...$this->genericMarks($x, $y)];
+    }
+
+    /** @return list<Mark> the box with its top left at a point, without its type parameters */
+    public function bare(float $x, float $y): array
+    {
         $line = $this->style->color('LineColor', '#181818');
         $back = ClassColors::back($this->entity->color) ?? $this->style->color('BackGroundColor', '#f1f1f1');
         $stroke = $this->style->number('LineThickness', 0.5);
@@ -206,10 +212,20 @@ final readonly class ClassBox
             \array_push($marks, ...$this->stereotypes->marks($left, $textTop, $middle));
         }
         \array_push($marks, ...$this->name->marks($left, $textTop + $stereoHeight, $middle));
-        if (null !== $this->generic) {
+
+        return $marks;
+    }
+
+    /** @return list<Mark> its type parameters, if it has any and is drawn as a box */
+    private function genericMarks(float $x, float $y): array
+    {
+        $marks = [];
+        if (null !== $this->generic && !\in_array($this->entity->type, ['circle', 'diamond'], strict: true)) {
             // As PlantUML draws it: a box 2 bigger than its text, 3 past the class's top right corner, its text 1 in.
             [$width, $height] = $this->generic->size();
             $boxLeft = $x + $this->width + 3 - ($width + 2);
+            // As PlantUML's limit finder is seen to take it: 1 bigger all round.
+            $marks[] = new Mark(MarkKind::Polygon, self::corners($boxLeft - 1, $y - 4, $width + 4, $height + 4), stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
             $marks[] = new Mark(
                 MarkKind::Polygon,
                 self::corners($boxLeft, $y - 3, $width + 2, $height + 2),

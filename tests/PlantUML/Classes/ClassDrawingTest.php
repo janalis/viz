@@ -50,6 +50,20 @@ final class ClassDrawingTest extends TestCase
         $this->assertEqualsWithDelta(27.0, $left('skinparam circledCharacterFontSize 8.9'), 0.01);
     }
 
+    public function testTypeParametersAreMeasuredOneBiggerAndNotAtAllOnALoneClass(): void
+    {
+        $size = static function (string $source): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nclass Box<T> {\n  + get() : T\n}\n{$source}\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sizes them: alone, as without them; linked, 4 wider than without them, and 3 taller where they stand at the top.
+        $this->assertEqualsWithDelta([99.0, 84.0], $size(''), 1e-9);
+        $this->assertEqualsWithDelta([105.0, 194.0], $size("class Shelf\nShelf --> Box"), 1e-9);
+        $this->assertEqualsWithDelta([205.0, 89.0], $size("class Shelf\nShelf -> Box"), 1e-9);
+    }
+
     public function testAnEmptyClassIsAHeaderAndTwoEmptyCompartments(): void
     {
         $box = ClassBox::of(new ClassEntity('Dog', ['Dog']), StyleSheet::skin(), new ClassPortions([]));

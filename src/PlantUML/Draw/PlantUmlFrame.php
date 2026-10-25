@@ -92,10 +92,11 @@ final class PlantUmlFrame
      *
      * @param list<Mark> $marks the diagram's, in points
      * @param float $trail the room past what it draws, the 5 past everything included
+     * @param ?list<Mark> $measured what its limit finder takes, where not all it draws
      */
-    public static function svek(PlantUmlDocument $document, array $marks, float $trail = self::SVEK_TRAIL): Drawing
+    public static function svek(PlantUmlDocument $document, array $marks, float $trail = self::SVEK_TRAIL, ?array $measured = null): Drawing
     {
-        [$minX, $minY, $maxX, $maxY] = self::limits($marks);
+        [$minX, $minY, $maxX, $maxY] = self::limits($measured ?? $marks);
 
         return self::framed(
             $document,

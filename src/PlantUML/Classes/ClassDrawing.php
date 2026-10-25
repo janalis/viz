@@ -49,10 +49,11 @@ final class ClassDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        // As PlantUML is seen to leave a lone class, which it lays out without dot, 2 less room past it.
+        // As PlantUML is seen to leave a lone class, which it lays out without dot, 2 less room past it, and to measure it without its type parameters.
         $alone = 1 === \count($placement->graph->nodes) && [] === $placement->graph->clusters;
+        $marks = $drawing->paint($placement);
 
-        return PlantUmlFrame::svek($classes->document, $drawing->paint($placement), trail: $alone ? 13.0 : 15.0);
+        return PlantUmlFrame::svek($classes->document, $marks, trail: $alone ? 13.0 : 15.0, measured: $alone ? $drawing->bare($placement) : null);
     }
 
     /** @return array{float, float} svek's separations, or those `skinparam nodesep` and `ranksep` set */
@@ -177,6 +178,22 @@ final class ClassDrawing
         }
 
         return $this->marks;
+    }
+
+    /**
+     * The classes as drawn, without their type parameters.
+     *
+     * @return list<Mark>
+     */
+    private function bare(Placement $placement): array
+    {
+        $marks = [];
+        foreach ($this->boxes as $id => $box) {
+            $node = $placement->endpoints[$id];
+            \array_push($marks, ...$box->bare($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+        }
+
+        return $marks;
     }
 
     /** A package: its frame with the tab its title sits in. */
