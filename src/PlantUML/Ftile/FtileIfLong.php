@@ -154,7 +154,7 @@ final class FtileIfLong extends AbstractFtile
         if (0 === $outs) {
             return;
         }
-        foreach ($canvas->measuring() ? [] : $this->lines($canvas->lane()) as $lane => [$min, $max]) {
+        foreach ($canvas->measuring() ? $this->measured($canvas->lane()) : $this->lines($canvas->lane()) as $lane => [$min, $max]) {
             $snake = Snake::through($this->after, null, [[$min, $internal->height], [$max, $internal->height]])->withMerge(MergeStrategy::None);
             '' === $lane ? $canvas->snake($snake) : $canvas->link($snake, $lane, $lane, $none);
         }
@@ -206,6 +206,30 @@ final class FtileIfLong extends AbstractFtile
         }
 
         return $lines;
+    }
+
+    /**
+     * The line across as PlantUML measures it: in every swimlane the step stands in, from its
+     * middle and its way out to every way out, whatever swimlane each leaves in.
+     *
+     * @return array<string, array{float, float}> each swimlane's stretch, by name, `''` for no swimlane
+     */
+    private function measured(?string $own): array
+    {
+        $internal = $this->internal();
+        $xs = [$internal->width / 2, $internal->left];
+        foreach ($this->couples as $index => $couple) {
+            if (!$couple->geometry()->hasOut()) {
+                continue;
+            }
+            $xs[] = $this->coupleAt($index)[0] + $couple->geometry()->left;
+        }
+        if ($this->tile2->geometry()->hasOut()) {
+            $xs[] = $this->tile2At()[0] + $this->tile2->geometry()->left;
+        }
+        $lanes = \array_values(\array_unique([...(null === $own ? [] : [$own]), ...FtileLane::all($this)]));
+
+        return \array_fill_keys([] === $lanes ? [''] : $lanes, [\min($xs), \max($xs)]);
     }
 
     /** @return array{float, float} the middle of a diamond's left side */

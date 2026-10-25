@@ -324,6 +324,17 @@ final class ActivityDrawingTest extends TestCase
         $this->assertContains('d', $shown);
     }
 
+    public function testTheLineUnderElseIfsIsMeasuredInEverySwimlaneTheyStandIn(): void
+    {
+        $lines = \array_filter(
+            self::draw("|A|\nstart\nif (a?) then\n  :one;\nelseif (b?) then\n  |B|\n  :two;\n  |A|\nelse\n  |B|\n  :four;\nendif\n|A|\n:after;\nstop")->marks,
+            static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && \abs(($mark->points[0][1] / Units::POINT) - 17.297) < 1e-3,
+        );
+
+        // As the jar draws them: the second swimlane as wide as the line across, from the decision's middle to its last way out.
+        $this->assertEqualsWithDelta([20.0, 166.0, 280.246], \array_values(\array_map(static fn (Mark $mark): float => $mark->points[0][0] / Units::POINT, $lines)), 1e-3);
+    }
+
     public function testDecisionsClosedByALineAcrossSwimlanesAreLeftToPlantUml(): void
     {
         $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw a decision closed by a line across swimlanes'));
