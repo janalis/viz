@@ -144,6 +144,17 @@ final class ChenReaderTest extends TestCase
         $this->assertEqualsWithDelta([123.0, 220.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT], 1e-9);
     }
 
+    public function testAnEntitysAttributesStandWhereDotSetsThem(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing(
+            "@startchen\nentity PERSON {\n  Id <<key>>\n  Name\n}\nentity CAR {\n  Plate <<key>>\n}\nrelationship OWNS {\n}\nPERSON -1- OWNS\nOWNS =N= CAR\n@endchen",
+        ));
+        $x = static fn (string $text): float => \array_values(\array_filter($drawing->marks, static fn ($mark): bool => $text === $mark->text))[0]->points[0][0] / Units::POINT;
+
+        // As dot sets them, midway between two points: 40 left of their entity and 41 right, as the jar draws them.
+        $this->assertEqualsWithDelta([-40.0, 41.0], [$x('Id') - $x('PERSON'), $x('Name') - $x('PERSON')], 1e-6);
+    }
+
     public function testLinksStopAtTheOutlinesOfOvalsAndDiamonds(): void
     {
         $drawing = Work::run(self::read("entity E {\nAttribute\n}")->drawing());

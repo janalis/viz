@@ -138,7 +138,8 @@ final readonly class DotCentring
         if (($high - $low) < 2 || $first < $low || $first > $high) {
             return $values;
         }
-        $delta = \intdiv($low + $high, num2: 2) - $first;
+        // Midway falling between two points, a block standing on either is left where it stands, as `dot` is seen to leave it.
+        $delta = 1 === \abs((2 * $first) - $low - $high) ? 0 : \intdiv($low + $high, num2: 2) - $first;
         $moved = $values;
         foreach ($block as $node) {
             $moved[$node] += $delta;
