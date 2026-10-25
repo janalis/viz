@@ -23,7 +23,7 @@ use Janalis\Viz\PlantUML\Teoz\Rose\RoseText;
 final readonly class LinkLabel
 {
     /** The room before a pointed label's text, for its small triangle, as measured on PlantUML's output. */
-    public const float POINTED = 12.0;
+    public const float POINTED = 13.0;
 
     private function __construct(
         private PlantUmlText $text,

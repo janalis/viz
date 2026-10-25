@@ -184,6 +184,26 @@ final class ClassDrawingTest extends TestCase
         $this->assertEqualsWithDelta(174.535, $baseline, 0.005);
     }
 
+    public function testAPointedLabelStandsAsPlantUmlDrawsIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nclass Author\nclass Book\nAuthor \"1..*\" -- \"0..*\" Book : writes >\n@enduml"));
+        $text = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => 'writes' === $mark->text))[0];
+        $triangle = \array_values(\array_filter(
+            $drawing->marks,
+            static fn (Mark $mark): bool => (
+                MarkKind::Polygon === $mark->kind
+                && 3 === \count(\array_unique(\array_map(static fn (array $point): string => \implode(',', $point), $mark->points), \SORT_STRING))
+            ),
+        ))[0];
+        $left = ($text->points[0][0] / Units::POINT) - (PlantUmlMetrics::width('writes', 13.0) / 2);
+        $xs = \array_map(static fn (array $point): float => $point[0] / Units::POINT, $triangle->points);
+
+        // As the jar draws it: its text 13 in from where its room starts, its triangle centred 4 in, 114 wide in all.
+        $this->assertEqualsWithDelta(60.3, $left, 0.01);
+        $this->assertEqualsWithDelta(51.3, (\min($xs) + \max($xs)) / 2, 0.01);
+        $this->assertSame(114.0, $drawing->width / Units::POINT);
+    }
+
     public function testEndLabelsStandWhereDotSetsThem(): void
     {
         $baselines = [];
