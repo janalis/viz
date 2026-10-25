@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\PlantUML\LegacyActivities;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\Model\Graph\Shape;
@@ -117,6 +118,16 @@ final class LegacyActivityReaderTest extends TestCase
         $this->assertSame(['Outer', 'Outer', 'Inner', 'Elsewhere', 'Outer', 'Outer', null], \array_map(static fn (LegacyEntity $entity): ?string => $entity->group, \array_values($diagram->entities)));
         $this->assertSame([['multi', 'long', 'line'], '<<x>>', '#yellow'], [$diagram->entities['M']->display, $diagram->entities['M']->stereotype, $diagram->entities['M']->color]);
         $this->assertSame(['more'], $diagram->entities['more']->display);
+    }
+
+    public function testAPartitionIsTakenTenWiderEitherSideAsPlantUmlTakesIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\npartition P {\n(*) --> \"Climbs\"\n}\n@enduml"));
+        $folder = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 'none' !== $mark->stroke))[0];
+
+        // As the jar draws it: the partition from 16 to 108, the diagram 133 by 166.
+        $this->assertEqualsWithDelta([16.0, 108.0], [\min(\array_column($folder->points, 0)) / Units::POINT, \max(\array_column($folder->points, 0)) / Units::POINT], 0.01);
+        $this->assertEqualsWithDelta([133.0, 166.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT], 1e-9);
     }
 
     public function testNotesStandBesideTheLastEntityOrOnTheLastLink(): void

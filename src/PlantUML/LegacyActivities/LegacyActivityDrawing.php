@@ -166,6 +166,8 @@ final class LegacyActivityDrawing
             // As PlantUML's folder: a tab as wide as the title and 6 more, slanting 7 across to its foot, as tall as the title and 6 more.
             [$x0, $y0, $x1, $y1, $tab, $foot] = [$box->x0, $box->y0, $box->x1, $box->y1, $box->x0 + $titleWidth + 6, $box->y0 + $titleHeight + 6];
             $thickness = $style->number('LineThickness', 1.5);
+            // As PlantUML's limit finder is seen to take a partition: 10 wider either side, as tall.
+            $marks[] = new Mark(MarkKind::Polygon, [[$x0 - 10, $y0], [$x1 + 10, $y0], [$x1 + 10, $y1], [$x0 - 10, $y1]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
             $marks[] = new Mark(
                 MarkKind::Polygon,
                 [[$x0, $y0], [$tab, $y0], [$tab + 7, $foot], [$x1, $foot], [$x1, $y1], [$x0, $y1]],
