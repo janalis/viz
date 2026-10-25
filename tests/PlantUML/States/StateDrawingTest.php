@@ -33,6 +33,16 @@ final class StateDrawingTest extends TestCase
         $this->assertSame([98.535, 140.291], [$baselines['Player'], $baselines['H']]);
     }
 
+    public function testACompositeStatesAnchorIsTakenAsPlantUmlTakesIt(): void
+    {
+        $width = static fn (string $lines): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"))->width / Units::POINT;
+        $player = "state Player {\n  Stopped --> Playing\n  Playing --> Paused\n  Paused --> Playing\n}\nPlayer --> Off\nOff --> Player[H]";
+
+        // As the jar sizes them: the anchor a hundredth of an inch across, and taken 14 either side.
+        $this->assertSame(227.0, $width("[*] --> Player\n".$player));
+        $this->assertSame(213.0, $width("state P {\n  state Q\n  Q --> R\n}\nA --> P\nP --> B\nB --> P[H]"));
+    }
+
     public function testALabelAndItsNoteStandAsPlantUmlDrawsThem(): void
     {
         $baselines = [];

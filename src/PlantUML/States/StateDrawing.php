@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\States;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
@@ -37,6 +38,8 @@ final class StateDrawing
     /** Dot's own node and rank separations, a quarter and half an inch. */
     private const float DOT_NODESEP = 18.0;
     private const float DOT_RANKSEP = 36.0;
+    /** How far either side of a composite state's anchor PlantUML's limit finder is seen to reach. */
+    private const float ANCHOR = 14.0;
 
     private function __construct(
         private readonly PlantUmlStates $states,
@@ -380,6 +383,20 @@ final class StateDrawing
         }
         $style = $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'arrow']);
         $background = $this->states->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
+        // As PlantUML's limit finder is seen to take the point its links to a composite state end at, as measured on its output: 14 either side of it.
+        foreach ($clusters as $node) {
+            $anchor = $placement->endpoints[self::anchor($node->id)] ?? null;
+            if (null !== $anchor) {
+                $marks[] = new Mark(
+                    MarkKind::Polygon,
+                    [[$anchor->x - self::ANCHOR, $anchor->y], [$anchor->x + self::ANCHOR, $anchor->y]],
+                    stroke: 'none',
+                    fill: 'none',
+                    strokeWidth: 0.0,
+                    outline: Outline::Path,
+                );
+            }
+        }
         $placement = self::framed($placement);
         foreach ($edges as $index => $edge) {
             \array_push($marks, ...LinkPainter::marks($this->states->links[$index], $placement, $edge, $this->label($index), $style, $background));

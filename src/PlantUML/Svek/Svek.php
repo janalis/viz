@@ -70,7 +70,8 @@ final class Svek
      */
     public function point(string $id, string $cluster): void
     {
-        $this->nodes[$id] = [$id, 1.0, 1.0, $cluster];
+        // As svek writes it: a point a hundredth of an inch across.
+        $this->nodes[$id] = [$id, 0.72, 0.72, $cluster];
         $this->points[$id] = true;
         $this->linked[$cluster] = true;
     }
