@@ -53,15 +53,15 @@ final class LinkPainter
         }
         $marks[] = new Mark(MarkKind::Polyline, $points, stroke: $color, dashed: $link->dashed || $link->dotted, strokeWidth: $stroke, dashes: self::dashes($link));
         if (!$label->empty()) {
-            [$width, $height] = $label->size();
-            [$x, $y] = $placement->labels[$edge] ?? $points[\intdiv(\count($points), num2: 2)];
-            // As PlantUML, from the corner of the box svek wrote, its room around it, in whole points.
             $margin = Svek::labelMargin($link->from, $link->to);
+            [$width, $height] = $label->size($margin);
+            [$x, $y] = $placement->labels[$edge] ?? $points[\intdiv(\count($points), num2: 2)];
+            // As PlantUML, from the corner of the box svek wrote, in whole points.
             [$left, $top] = \array_key_exists($edge, $placement->labels)
-                ? [$x - (\floor($width + $margin) / 2) + ($margin / 2), $y - (\floor($height + $margin) / 2) + ($margin / 2)]
+                ? [$x - (\floor($width) / 2), $y - (\floor($height) / 2)]
                 : [$x - ($width / 2), $y - ($height / 2)];
-            \array_push($marks, ...$label->marks($left, $top, $width, $margin / 2));
-            \array_push($marks, ...self::labelArrow($link, $from, $to, $left + 4, $y, $color));
+            \array_push($marks, ...$label->marks($left, $top, $margin));
+            \array_push($marks, ...self::labelArrow($link, $from, $to, $left + ($margin / 2) + 4, $y, $color));
         }
         \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes, $placement->directions[''] ?? Direction::TopBottom));
 

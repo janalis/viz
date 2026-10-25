@@ -116,14 +116,14 @@ final class ClassDrawing
             if (!\array_key_exists($link->from, $this->boxes) || !\array_key_exists($link->to, $this->boxes)) {
                 continue;
             }
-            [$width, $height] = $this->label($index)->size();
+            [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
             // Svek keeps a margin around a label, so it stands clear of the line.
             $this->edges[$index] = $svek->edge(
                 $link->from,
                 $link->to,
                 $link->length,
-                $width > 0 ? $width + Svek::labelMargin($link->from, $link->to) : 0.0,
-                $height > 0 ? $height + Svek::labelMargin($link->from, $link->to) : 0.0,
+                $width,
+                $height,
                 !$link->norank,
                 $link->reversed,
             );

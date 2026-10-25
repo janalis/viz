@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Sequences;
 
+use Janalis\Viz\PlantUML\Activities\ActivityReader;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
@@ -400,7 +401,7 @@ final class SequenceReader
             default => [$this->participantNamed((string) $command->get('PARTICIPANT'))],
         };
         $position = null !== $command->get('ACROSS') ? 'across' : \strtolower($command->get('POSITION') ?? 'over');
-        $text = null === $command->get('NOTE') ? $command->body() : self::lines((string) $command->get('NOTE'));
+        $text = null === $command->get('NOTE') ? ActivityReader::columns($command->body()) : self::lines((string) $command->get('NOTE'));
         $note = new SequenceNote($participants, \str_starts_with($position, 'over') ? 'over' : $position, $text, \strtolower($command->get('STYLE') ?? 'note'), $command->get('COLOR'));
         if (null !== $command->get('PARALLEL')) {
             throw new Unsupported('The native PlantUML renderer does not draw parallel notes: '.$command->line());
@@ -434,7 +435,7 @@ final class SequenceReader
         if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo) {
             throw new PlantUmlRefusal('A note on an arrow needs an arrow before it');
         }
-        $text = null === $command->get('NOTE') ? $command->body() : self::lines((string) $command->get('NOTE'));
+        $text = null === $command->get('NOTE') ? ActivityReader::columns($command->body()) : self::lines((string) $command->get('NOTE'));
         $last->notes[] = new SequenceNote([], \strtolower($command->get('POSITION') ?? 'right'), $text, \strtolower($command->get('STYLE') ?? 'note'), $command->get('COLOR'));
     }
 

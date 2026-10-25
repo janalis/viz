@@ -70,13 +70,13 @@ final class LegacyActivityDrawing
             $svek->node($entity->id, $box->width, $box->height, $entity->group, $box->shape());
         }
         foreach ($this->diagram->links as $index => $link) {
-            [$width, $height] = $this->label($index)->size();
+            [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
             $this->edges[$index] = $svek->edge(
                 $link->from,
                 $link->to,
                 $link->length,
-                $width > 0 ? $width + Svek::labelMargin($link->from, $link->to) : 0.0,
-                $height > 0 ? $height + Svek::labelMargin($link->from, $link->to) : 0.0,
+                $width,
+                $height,
                 !$link->norank,
                 $link->reversed,
             );

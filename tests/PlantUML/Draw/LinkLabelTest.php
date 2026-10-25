@@ -20,7 +20,7 @@ final class LinkLabelTest extends TestCase
             $label = LinkLabel::of(['label'], $style, [new PlantUmlNote('n', ['note'], position: $position)], $style);
             [$width, $height] = $label->size();
             $at = [];
-            foreach ($label->marks(0.0, 0.0, $width) as $mark) {
+            foreach ($label->marks(0.0, 0.0) as $mark) {
                 if ('' === $mark->text) {
                     continue;
                 }
@@ -42,23 +42,27 @@ final class LinkLabelTest extends TestCase
         $style = new Style(['FontSize' => '12']);
         $plain = LinkLabel::of(['label'], $style, [], $style);
         $noted = LinkLabel::of(['label'], $style, [new PlantUmlNote('n', ['a much longer note'])], $style);
+        $noteOnly = LinkLabel::of([], $style, [new PlantUmlNote('n', ['note'])], $style);
         $reach = static function (LinkLabel $label): array {
             $xs = \array_merge(...\array_map(
                 static fn (Mark $mark): array => \array_column($mark->points, 0),
-                \array_filter($label->marks(0.0, 0.0, $label->size()[0], 6.0), static fn (Mark $mark): bool => 'none' === $mark->fill),
+                \array_filter($label->marks(0.0, 0.0, 12.0), static fn (Mark $mark): bool => 'none' === $mark->fill),
             ));
 
             return [\min($xs), \max($xs)];
         };
 
         // As PlantUML's limit finder is seen to take a loop's label: 6 either side of its text.
-        $this->assertEqualsWithDelta([-6.0, $plain->size()[0] + 6.0], $reach($plain), 1e-9);
+        $this->assertEqualsWithDelta([0.0, $plain->size()[0] + 12.0], $reach($plain), 1e-9);
         [$left, $right] = $reach($noted);
         $this->assertEqualsWithDelta($plain->size()[0] + 12.0, $right - $left, 1e-9);
+        // As svek writes the box: the room around the text, not the note.
+        $this->assertEqualsWithDelta([$plain->size()[0] + 2, $plain->size()[1] + 2], $plain->size(2.0), 1e-9);
+        $this->assertSame($noteOnly->size(), $noteOnly->size(2.0));
         $this->assertSame(
             [],
             \array_filter(
-                LinkLabel::of([], $style, [new PlantUmlNote('n', ['note'])], $style)->marks(0.0, 0.0, 10.0, 6.0),
+                $noteOnly->marks(0.0, 0.0, 12.0),
                 static fn (Mark $mark): bool => 'none' === $mark->fill && 'none' === $mark->stroke,
             ),
         );
@@ -70,6 +74,6 @@ final class LinkLabelTest extends TestCase
         $label = LinkLabel::of([], $style, [], $style);
 
         $this->assertTrue($label->empty());
-        $this->assertSame([], \array_map(static fn (Mark $mark): string => $mark->text, $label->marks(0.0, 0.0, 0.0)));
+        $this->assertSame([], \array_map(static fn (Mark $mark): string => $mark->text, $label->marks(0.0, 0.0)));
     }
 }

@@ -174,8 +174,8 @@ final class DescriptionReaderTest extends TestCase
             [
                 new PlantUmlNote('note#0', ['beside'], 'N', 'left'),
                 new PlantUmlNote('note#1', ['last'], 'N', 'right'),
-                new PlantUmlNote('M', ['  floating']),
-                new PlantUmlNote('note#3', ['    under'], 'Q', 'bottom', group: 'P'),
+                new PlantUmlNote('M', ['floating']),
+                new PlantUmlNote('note#3', ['under'], 'Q', 'bottom', group: 'P'),
                 new PlantUmlNote('note#4', ['linked'], position: 'bottom', link: 0),
             ],
             $diagram->notes,

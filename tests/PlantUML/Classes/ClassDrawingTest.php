@@ -256,6 +256,27 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([61.0, 186.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
 
+    public function testANoteOnALinkStandsInTheBoxSvekWritesForIt(): void
+    {
+        $at = static function (string $position, string $label): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nclass A\nclass B\nA --> B{$label}\nnote {$position} on link\n  a note\nend note\n@enduml"));
+            $note = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && '#feffdd' === $mark->fill))[0];
+
+            return [
+                \round($drawing->width / Units::POINT, precision: 2),
+                \round($drawing->height / Units::POINT, precision: 2),
+                \round(\min(\array_column($note->points, 0)) / Units::POINT, precision: 2),
+                \round(\min(\array_column($note->points, 1)) / Units::POINT, precision: 2),
+            ];
+        };
+
+        // As the jar draws them: its lines without the columns they share, svek's room around the label's text alone, the note taken as the path it is drawn as.
+        $this->assertSame([107.0, 213.0, 32.83, 90.0], $at('bottom', label: ''));
+        $this->assertSame([107.0, 230.0, 32.83, 107.31], $at('bottom', label: ' : lbl'));
+        $this->assertSame([125.0, 213.0, 50.53, 90.0], $at('right', label: ' : lbl'));
+        $this->assertSame([107.0, 230.0, 32.83, 90.0], $at('top', label: ' : lbl'));
+    }
+
     public function testALoneNoteIsDrawnSevenInAsPlantUmlDrawsIt(): void
     {
         $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nnote \"hello\" as N\n@enduml"));

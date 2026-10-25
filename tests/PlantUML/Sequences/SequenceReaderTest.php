@@ -300,7 +300,7 @@ final class SequenceReaderTest extends TestCase
         $this->assertTrue($groups[7]->parallel);
         $notes = \array_values(\array_filter($events, static fn ($event): bool => $event instanceof SequenceNote || $event instanceof SequenceNotes));
         $this->assertEquals(new SequenceNote(['A'], 'left', ['left']), $notes[0]);
-        $this->assertEquals(new SequenceNote(['A'], 'right', ['  right'], color: '#yellow'), $notes[1]);
+        $this->assertEquals(new SequenceNote(['A'], 'right', ['right'], color: '#yellow'), $notes[1]);
         $this->assertInstanceOf(SequenceNotes::class, $notes[2]);
         $this->assertEquals(
             [new SequenceNote(['A', 'B'], 'over', ['both'], 'hnote'), new SequenceNote(['B'], 'over', ['beside'], 'rnote'), new SequenceNote(['A'], 'over', ['third'])],
@@ -308,7 +308,7 @@ final class SequenceReaderTest extends TestCase
         );
         $this->assertEquals(new SequenceNote([], 'across', ['everywhere']), $notes[3]);
         $message = \array_values(\array_filter($events, static fn ($event): bool => $event instanceof SequenceMessage))[2];
-        $this->assertEquals([new SequenceNote([], 'right', ['on arrow']), new SequenceNote([], 'left', ['  over two lines'])], $message->notes);
+        $this->assertEquals([new SequenceNote([], 'right', ['on arrow']), new SequenceNote([], 'left', ['over two lines'])], $message->notes);
         $marks = \array_values(\array_filter($events, static fn ($event): bool => $event instanceof SequenceMark));
         $this->assertEquals(
             [

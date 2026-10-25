@@ -164,12 +164,12 @@ final class ClassReaderTest extends TestCase
         $this->assertEquals(
             [
                 new PlantUmlNote('N1', ['floating']),
-                new PlantUmlNote('N2', ['  several', '  lines']),
+                new PlantUmlNote('N2', ['several', 'lines']),
                 new PlantUmlNote('note#2', ['beside'], 'Server', 'left'),
                 new PlantUmlNote('note#3', ['on the last one'], 'Server', 'top'),
-                new PlantUmlNote('note#4', ['  over', '  two'], 'A', 'right'),
+                new PlantUmlNote('note#4', ['over', 'two'], 'A', 'right'),
                 new PlantUmlNote('note#5', ['on the link'], position: 'bottom', link: 0),
-                new PlantUmlNote('note#6', ['  link note'], position: 'bottom', link: 0),
+                new PlantUmlNote('note#6', ['link note'], position: 'bottom', link: 0),
             ],
             $classes->notes,
         );

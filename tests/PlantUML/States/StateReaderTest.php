@@ -166,10 +166,10 @@ final class StateReaderTest extends TestCase
                 new PlantUmlNote('note#0', ['beside'], 'A', 'left'),
                 new PlantUmlNote('note#1', ['the last'], 'A', 'right'),
                 new PlantUmlNote('N', ['floating']),
-                new PlantUmlNote('M', ['  several']),
-                new PlantUmlNote('note#4', ['    inside'], 'C', 'top', group: 'B'),
+                new PlantUmlNote('M', ['several']),
+                new PlantUmlNote('note#4', ['inside'], 'C', 'top', group: 'B'),
                 new PlantUmlNote('note#5', ['on it'], position: 'bottom', link: 0),
-                new PlantUmlNote('note#6', ['  link note'], position: 'left', link: 0),
+                new PlantUmlNote('note#6', ['link note'], position: 'left', link: 0),
             ],
             $states->notes,
         );

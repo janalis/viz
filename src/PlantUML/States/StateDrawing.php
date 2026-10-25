@@ -102,14 +102,14 @@ final class StateDrawing
             if (!\array_key_exists($link->from, $placed) || !\array_key_exists($link->to, $placed)) {
                 continue;
             }
-            [$width, $height] = $this->label($index)->size();
+            [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
             $ends = \array_map(static fn (string $id): string => \in_array($id, $anchored, strict: true) ? self::anchor($id) : $id, [$link->from, $link->to]);
             $edges[$index] = $svek->edge(
                 $ends[0],
                 $ends[1],
                 $link->length,
-                $width > 0 ? $width + Svek::labelMargin($link->from, $link->to) : 0.0,
-                $height > 0 ? $height + Svek::labelMargin($link->from, $link->to) : 0.0,
+                $width,
+                $height,
                 !$link->norank,
                 $link->reversed,
             );

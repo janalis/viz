@@ -61,39 +61,64 @@ final readonly class LinkLabel
         return $this->text->empty() && null === $this->note;
     }
 
-    /** @return array{float, float} */
-    public function size(): array
+    /**
+     * The box svek writes for it: its text with the room given around it, the note merged
+     * below, above or beside it, each centred, as PlantUML's `SvekEdge` merges them.
+     *
+     * @param float $room the room around the text, both sides together: {@see Svek::labelMargin()}
+     * @return array{float, float}
+     */
+    public function size(float $room = 0.0): array
     {
-        [$textWidth, $textHeight] = $this->textSize();
-        [$noteWidth, $noteHeight] = $this->note?->size() ?? [0.0, 0.0];
+        [$width, $height] = $this->layout($room);
 
-        return $this->across() ? [$textWidth + $noteWidth, \max($textHeight, $noteHeight)] : [\max($textWidth, $noteWidth), $textHeight + $noteHeight];
+        return [$width, $height];
     }
 
     /**
-     * @param float $room how far either side of its text PlantUML's limit finder is seen to take a label, as measured on its output: the room svek leaves around it
-     * @return list<Mark> with its top left at a point, its parts centred within it
+     * @param float $room the room around the text, both sides together
+     * @return list<Mark> with the top left of the box svek writes for it at a point
      */
-    public function marks(float $x, float $y, float $width, float $room = 0.0): array
+    public function marks(float $x, float $y, float $room = 0.0): array
     {
-        [$totalWidth, $totalHeight] = $this->size();
-        [$textWidth, $textHeight] = $this->textSize();
+        [, , [$textX, $textY], [$noteX, $noteY]] = $this->layout($room);
+        [$textWidth] = $this->textSize();
+        $marks = [...$this->text->marks($x + $textX + $this->lead, $y + $textY, $textWidth - $this->lead), ...$this->room($x + $textX, $y + $textY, $room / 2)];
         if (null === $this->note) {
-            return [...$this->text->marks($x + $this->lead, $y, $width - $this->lead), ...$this->room($x, $y, $room)];
+            return $marks;
         }
         [$noteWidth, $noteHeight] = $this->note->size();
-        [$textAt, $noteAt] = match ($this->position) {
-            'top' => [[$x + (($totalWidth - $textWidth) / 2), $y + $noteHeight + $this->gap()], [$x + (($totalWidth - $noteWidth) / 2), $y]],
-            'left' => [[$x + $noteWidth, $y + (($totalHeight - $textHeight) / 2)], [$x, $y + (($totalHeight - $noteHeight) / 2)]],
-            'right' => [[$x, $y + (($totalHeight - $textHeight) / 2)], [$x + $textWidth, $y + (($totalHeight - $noteHeight) / 2)]],
-            default => [[$x + (($totalWidth - $textWidth) / 2), $y], [$x + (($totalWidth - $noteWidth) / 2), $y + $textHeight + $this->gap()]],
+
+        // As svek draws a note on a link: as paths, which PlantUML's limit finder takes as they run.
+        $note = \array_map(
+            static fn (Mark $mark): Mark => MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => Outline::Path]) : $mark,
+            $this->note->marks($x + $noteX, $y + $noteY, new Area($noteWidth, $noteHeight), Layer::Foreground),
+        );
+
+        return [...$marks, ...$note];
+    }
+
+    /**
+     * @return array{float, float, array{float, float}, array{float, float}} its width and height, and where its text and its note stand in it
+     */
+    private function layout(float $room): array
+    {
+        [$textWidth, $textHeight] = $this->textSize();
+        // As PlantUML, the room is around the text alone.
+        [$blockWidth, $blockHeight] = $this->text->empty() ? [0.0, 0.0] : [$textWidth + $room, $textHeight + $room];
+        $inset = $this->text->empty() ? 0.0 : $room / 2;
+        [$noteWidth, $noteHeight] = $this->note?->size() ?? [0.0, 0.0];
+        $across = null !== $this->note && \in_array($this->position, ['left', 'right'], strict: true);
+        [$width, $height] = $across ? [$blockWidth + $noteWidth, \max($blockHeight, $noteHeight)] : [\max($blockWidth, $noteWidth), $blockHeight + $noteHeight];
+        [$block, $note] = match (true) {
+            null === $this->note => [[0.0, 0.0], [0.0, 0.0]],
+            'top' === $this->position => [[($width - $blockWidth) / 2, $noteHeight], [($width - $noteWidth) / 2, 0.0]],
+            'left' === $this->position => [[$noteWidth, ($height - $blockHeight) / 2], [0.0, ($height - $noteHeight) / 2]],
+            'right' === $this->position => [[0.0, ($height - $blockHeight) / 2], [$blockWidth, ($height - $noteHeight) / 2]],
+            default => [[($width - $blockWidth) / 2, 0.0], [($width - $noteWidth) / 2, $blockHeight]],
         };
 
-        return [
-            ...$this->text->marks($textAt[0] + $this->lead, $textAt[1], $textWidth - $this->lead),
-            ...$this->room($textAt[0], $textAt[1], $room),
-            ...$this->note->marks($noteAt[0], $noteAt[1], new Area($noteWidth, $noteHeight), Layer::Foreground),
-        ];
+        return [$width, $height, [$block[0] + $inset, $block[1] + $inset], $note];
     }
 
     /** @return list<Mark> an outline, drawn nothing, as far either side of the text as the room taken around it */
@@ -120,16 +145,5 @@ final readonly class LinkLabel
         [$width, $height] = $this->text->size();
 
         return [$this->text->empty() ? 0.0 : $width + $this->lead, $height];
-    }
-
-    /** How far below a label the note under it is drawn, or a label below the note over it, past the room the two take, as measured on PlantUML's output: 1, none without a label. */
-    private function gap(): float
-    {
-        return $this->text->empty() || null === $this->note ? 0.0 : 1.0;
-    }
-
-    private function across(): bool
-    {
-        return \in_array($this->position, ['left', 'right'], strict: true) && null !== $this->note;
     }
 }

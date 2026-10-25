@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Classes;
 
 use Janalis\Viz\Model\Direction;
+use Janalis\Viz\PlantUML\Activities\ActivityReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
@@ -176,7 +177,7 @@ final class ClassReader
 
     private function floating(PlantUmlCommand $command): void
     {
-        $lines = 'CommandFactoryNote$1' === $command->name ? self::split((string) $command->get('DISPLAY')) : $command->body();
+        $lines = 'CommandFactoryNote$1' === $command->name ? self::split((string) $command->get('DISPLAY')) : ActivityReader::columns($command->body());
         $this->notes[] = new PlantUmlNote((string) $command->get('CODE'), $lines, color: $command->get('COLOR'), group: $this->current());
     }
 
@@ -187,7 +188,7 @@ final class ClassReader
         if (null === $entity) {
             throw new PlantUmlRefusal('The PlantUML note has no entity to stand beside: '.$command->line());
         }
-        $lines = 'CommandFactoryNoteOnEntity$1' === $command->name ? self::split((string) $command->get('NOTE')) : $command->body();
+        $lines = 'CommandFactoryNoteOnEntity$1' === $command->name ? self::split((string) $command->get('NOTE')) : ActivityReader::columns($command->body());
         $this->notes[] = new PlantUmlNote('note#'.\count($this->notes), $lines, $entity, \strtolower((string) $command->get('POSITION')), color: $command->get('COLOR'), group: $this->current());
     }
 
@@ -196,7 +197,7 @@ final class ClassReader
         if ([] === $this->links) {
             throw new PlantUmlRefusal('The PlantUML note has no link to stand on: '.$command->line());
         }
-        $lines = 'CommandFactoryNoteOnLink$2' === $command->name ? self::split((string) $command->get('NOTE')) : $command->body();
+        $lines = 'CommandFactoryNoteOnLink$2' === $command->name ? self::split((string) $command->get('NOTE')) : ActivityReader::columns($command->body());
         $this->notes[] = new PlantUmlNote(
             'note#'.\count($this->notes),
             $lines,
