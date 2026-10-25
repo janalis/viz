@@ -173,11 +173,11 @@ final readonly class DescriptionBox
         $centre = $x + ($this->width / 2);
         $marks = match ($symbol) {
             'actor' => self::stickman($centre, $y, $line, $back, $stroke),
-            // As PlantUML 1.2026 draws them, each a circle 24 across 16 below its node's top: beside a bar 24 tall, over a line, under an arrowhead.
+            // As PlantUML 1.2026 draws them, 4 in from their node's sides, each a circle 24 across 16 below its node's top: beside a bar 24 tall, over a line, under an arrowhead.
             'boundary' => [
-                StateBox::disc($centre + 4.5, $y + 16, 12.0, $line, $back),
-                new Mark(MarkKind::Polyline, [[$centre - 24.5, $y + 4], [$centre - 24.5, $y + 28]], stroke: $line, strokeWidth: $stroke),
-                new Mark(MarkKind::Polyline, [[$centre - 24.5, $y + 16], [$centre - 7.5, $y + 16]], stroke: $line, strokeWidth: $stroke),
+                StateBox::disc($centre + 8.5, $y + 16, 12.0, $line, $back),
+                new Mark(MarkKind::Polyline, [[$centre - 20.5, $y + 4], [$centre - 20.5, $y + 28]], stroke: $line, strokeWidth: $stroke),
+                new Mark(MarkKind::Polyline, [[$centre - 20.5, $y + 16], [$centre - 3.5, $y + 16]], stroke: $line, strokeWidth: $stroke),
             ],
             'control' => [
                 StateBox::disc($centre, $y + 16, 12.0, $line, $back),
@@ -187,7 +187,8 @@ final readonly class DescriptionBox
                     stroke: $line,
                     fill: $line,
                     strokeWidth: $stroke,
-                    outline: Outline::Path,
+                    // As PlantUML draws it, a polygon, its limit finder taking it 10 wider either side.
+                    outline: Outline::Polygon,
                 ),
             ],
             'entity' => [StateBox::disc($centre, $y + 16, 12.0, $line, $back), new Mark(MarkKind::Polyline, [[$centre - 12, $y + 30], [$centre + 12, $y + 30]], stroke: $line, strokeWidth: $stroke)],

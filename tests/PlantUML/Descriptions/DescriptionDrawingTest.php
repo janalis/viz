@@ -88,6 +88,9 @@ final class DescriptionDrawingTest extends TestCase
 
         // As the jar sizes them: a node, a hexagon, an action and a process, which it draws as polygons, 20 wider than a rectangle.
         $this->assertSame([120.0, 119.0, 110.0, 120.0, 80.0], [$width('node'), $width('hexagon'), $width('action'), $width('process'), $width('rectangle')]);
+        // A boundary drawn 4 in from its node's sides, a control's arrowhead a polygon too.
+        $beside = static fn (string $symbol): float => $size("{$symbol} X\nrectangle R\nX -> R")[0];
+        $this->assertSame([128.0, 113.0], [$beside('boundary'), $beside('control')]);
         // A lone element as its box, 7 in from its sides; but a hexagon, which PlantUML lays out with the others.
         $this->assertSame([[99.0, 66.0], [81.0, 49.0], [119.0, 47.0]], [$size('node Thing'), $size('usecase Thing'), $size('hexagon Thing')]);
     }
