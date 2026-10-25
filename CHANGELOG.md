@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- The native dot engine widens the virtual nodes of a chain that edges share by a node separation for each edge after the first, as `dot` is seen to; it widened them by 0.74 of one, how far apart the edges are drawn. On 300 random graphs, 17 come out closer to `dot`, 3 exactly as it sets them.
 - The native dot engine keeps a node's `ordering=out` or `ordering=in` in the order its edges were written, as `dot` does; it kept them in the order the ordering meets them, by the order their other ends were made.
 - The native dot engine transposes each initial order once before its first median sweep, as `dot` is seen to begin ordering: of two orders crossing no edges, it found the one `dot` does not. On 300 random graphs of fixed-size nodes, the nodes stand 6.4 points from where `dot` sets them on average, where they stood 12.2, and 44 pairs of nodes on a rank stand the other way round, where 92 did. `tools/random-dot-graphs.php` writes such graphs, for `tools/compare-dot-layout.php`.
 - A PlantUML class's type parameters are taken 1 bigger all round than their box when the diagram is measured, as PlantUML's limit finder is seen to take them, and not at all on a class alone, as PlantUML lays one out: a class with type parameters was 1 too narrow, and 1 too short where they stood at the top; alone, 3 too wide and 2 too tall.

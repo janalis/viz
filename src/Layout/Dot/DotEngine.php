@@ -99,7 +99,8 @@ final readonly class DotEngine implements LayoutEngine
             $owner,
             $parents,
             \array_values($edges),
-            $graph->spacing->nodeGap * DotSplines::SPREAD,
+            // Each edge after the first sharing a chain widens its virtual nodes by a node separation, as `dot` is seen to.
+            $graph->spacing->nodeGap,
             $graph->concentrate ? Concentration::Merged : Concentration::Apart,
             $turned,
             $graph->spacing->nodeGap,

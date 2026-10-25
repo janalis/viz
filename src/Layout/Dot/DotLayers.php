@@ -57,7 +57,7 @@ final class DotLayers
      * @param list<int> $owner each real node's innermost cluster, -1 for none
      * @param list<int> $parents each cluster's parent, -1 for none
      * @param list<array{0: int, 1: int, 2: int, 3: float, 4: float, 5?: float, 6?: float}> $edges tail, head, weight, label width, label height, and where across its tail and its head it ends, in authored order
-     * @param float $spread how far apart edges sharing a chain run: each widens its virtual nodes by as much
+     * @param float $spread how much each edge after the first sharing a chain widens its virtual nodes
      * @param Concentration $concentration whether edges merge their chains, as dot's `concentrate`
      * @param bool $mirrored whether label nodes hold their label on their left, as `dot` is seen to set them in a layout to be turned left to right
      */

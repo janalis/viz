@@ -269,6 +269,14 @@ final class DotEngineTest extends TestCase
         $this->assertSame([[58.0, 22.0], [86.0, 94.0], [31.0, 166.0], [58.0, 238.0]], self::centres($placement));
     }
 
+    public function testEachEdgeAfterTheFirstWidensTheChainTheyShareByASeparation(): void
+    {
+        $placement = self::place(['a', 'b', 'c', 'd'], [['a', 'b'], ['c', 'd'], ['b', 'c'], ['a', 'c'], ['a', 'c']]);
+
+        // As dot sets them: the two edges from a to c share a chain 64 right of b, 27 + 18 + 9 + 1 and a separation's half.
+        $this->assertSame([31.0, 95.0], [$placement->endpoints['b']->x, $placement->endpoints['c']->x]);
+    }
+
     public function testOrderingKeepsANodesEdgesInTheirOrder(): void
     {
         $order = static function (?string $ordering, LayoutEdge ...$edges): array {
