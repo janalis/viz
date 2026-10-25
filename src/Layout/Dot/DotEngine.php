@@ -110,7 +110,7 @@ final readonly class DotEngine implements LayoutEngine
             $layers,
             turned: \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true),
             loose: $loose,
-            kept: self::ordered($graph, $layers),
+            kept: self::ordered($graph, $layers, \array_keys($edges)),
         )->order();
         yield from $order;
         // Laid out top-down to be turned left to right, a cluster keeps its label's band on its left, which becomes its top.
@@ -153,10 +153,17 @@ final readonly class DotEngine implements LayoutEngine
      * As dot's `ordering`, the order a node keeps its edges in: the next node along each of its
      * edges out, or back along each of its edges in, on the rank beside it, each before the next.
      *
+     * @param list<int> $written each layered edge's index as written
      * @return list<array{int, int}> pairs of nodes, the first kept before the second
      */
-    private static function ordered(LayoutGraph $graph, DotLayers $layers): array
+    private static function ordered(LayoutGraph $graph, DotLayers $layers, array $written): array
     {
+        // The edges as they were written, not as the ordering meets them.
+        $paths = [];
+        foreach ($layers->paths as $edge => $path) {
+            $paths[$written[$edge]] = $path;
+        }
+        \ksort($paths);
         $kept = [];
         foreach ($graph->nodes as $node => $layout) {
             if (null === $layout->ordering) {
@@ -164,7 +171,7 @@ final readonly class DotEngine implements LayoutEngine
             }
             $out = 'out' === $layout->ordering;
             $next = [];
-            foreach ($layers->paths as $path) {
+            foreach ($paths as $path) {
                 $end = $out ? $path : \array_reverse($path);
                 if ($end[0] !== $node || $layers->rank[$end[1]] !== ($layers->rank[$node] + ($out ? 1 : -1))) {
                     continue;
