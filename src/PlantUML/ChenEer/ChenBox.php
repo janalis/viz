@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\ChenEer;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
@@ -76,6 +77,15 @@ final readonly class ChenBox
             ChenKind::Relationship => [
                 self::rhombus($x, $y, $this->width, $this->height, $line, $back, $stroke),
                 ...($element->has('identifying') ? [self::rhombus($x + 10, $y + 5, $this->width - 20, $this->height - 10, $line, $back, $stroke)] : []),
+                // As PlantUML's limit finder is seen to take a relationship, as measured on its output: 10 wider either side than it is drawn, as tall.
+                new Mark(
+                    MarkKind::Polygon,
+                    [[$x - 10, $y], [$x + $this->width + 10, $y], [$x + $this->width + 10, $y + $this->height], [$x - 10, $y + $this->height]],
+                    stroke: 'none',
+                    fill: 'none',
+                    strokeWidth: 0.0,
+                    outline: Outline::Path,
+                ),
             ],
             ChenKind::Attribute, ChenKind::Circle => [
                 self::oval($x, $y, $this->width, $this->height, $line, $back, $stroke),

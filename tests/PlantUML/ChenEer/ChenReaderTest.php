@@ -136,6 +136,14 @@ final class ChenReaderTest extends TestCase
         $this->assertNotEmpty(\array_filter($sizes, static fn (array $size): bool => \abs($size[0] - (2 * $size[1])) < 0.02 && $size[0] > 25));
     }
 
+    public function testARelationshipIsTakenTenWiderEitherSideAsPlantUmlTakesIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startchen\nentity PARENT {\n}\nrelationship HAS {\n}\nPARENT -- HAS\n@endchen"));
+
+        // As the jar sizes it: the diamond 10 past either side, and as tall as it is drawn.
+        $this->assertEqualsWithDelta([123.0, 220.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT], 1e-9);
+    }
+
     public function testLinksStopAtTheOutlinesOfOvalsAndDiamonds(): void
     {
         $drawing = Work::run(self::read("entity E {\nAttribute\n}")->drawing());
