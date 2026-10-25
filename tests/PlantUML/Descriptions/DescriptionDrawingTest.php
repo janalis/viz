@@ -77,6 +77,20 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([162.0, 121.0], [$width('node'), $width('frame')]);
     }
 
+    public function testPolygonsAreTakenTenWiderEitherSideAsPlantUmlsLimitFinderTakesThem(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
+            $drawing->width / Units::POINT,
+            $drawing->height / Units::POINT,
+        ])(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")));
+        $width = static fn (string $symbol): float => $size("{$symbol} Thing\nrectangle R\nR --> Thing")[0];
+
+        // As the jar sizes them: a node, a hexagon, an action and a process, which it draws as polygons, 20 wider than a rectangle.
+        $this->assertSame([120.0, 119.0, 110.0, 120.0, 80.0], [$width('node'), $width('hexagon'), $width('action'), $width('process'), $width('rectangle')]);
+        // A lone element as its box, 7 in from its sides; but a hexagon, which PlantUML lays out with the others.
+        $this->assertSame([[99.0, 66.0], [81.0, 49.0], [119.0, 47.0]], [$size('node Thing'), $size('usecase Thing'), $size('hexagon Thing')]);
+    }
+
     public function testAContainersTitleAndContentStandWherePlantUmlDrawsThem(): void
     {
         $at = static function (string $symbol): array {

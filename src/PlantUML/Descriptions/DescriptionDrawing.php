@@ -7,8 +7,8 @@ namespace Janalis\Viz\PlantUML\Descriptions;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
-use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Layout\Engine\Placement;
+use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
@@ -47,10 +47,19 @@ final class DescriptionDrawing
         $placing = $drawing->graph()->place($diagram->direction);
         yield from $placing;
         $placement = $placing->getReturn();
-        // As PlantUML is seen to leave a lone element, which it lays out without dot, 1 less room past it.
-        $alone = 1 === \count($placement->graph->nodes) && [] === $placement->graph->clusters;
+        // As PlantUML, which draws a lone element but a hexagon without dot, as its box 7 in from its sides: 1 less room past it, and measured as its box alone.
+        $nodes = $placement->graph->nodes;
+        $alone = 1 === \count($nodes) && [] === $placement->graph->clusters && 'hexagon' !== ($diagram->elements[$nodes[0]->name] ?? null)?->symbol;
+        $box = $alone
+            ? [new Mark(
+                MarkKind::Polygon,
+                ClassBox::corners($nodes[0]->x - ($nodes[0]->w / 2), $nodes[0]->y - ($nodes[0]->h / 2), $nodes[0]->w, $nodes[0]->h),
+                stroke: 'none',
+                fill: 'none',
+                strokeWidth: 0.0,
+            )] : null;
 
-        return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement), trail: $alone ? 14.0 : 15.0);
+        return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement), trail: $alone ? 14.0 : 15.0, measured: $box);
     }
 
     /** The room PlantUML's symbols keep around a container's title for their shape: a node's depth, a database's lid. */
@@ -175,17 +184,6 @@ final class DescriptionDrawing
                     ? DescriptionShapes::frame($box->x0, $box->y0, $width, $height, $line, $back, $thickness, ...$title->size())
                     : DescriptionShapes::outline($group->symbol, $box->x0, $box->y0, $width, $height, $line, $back, $thickness, 0.0),
             );
-            // As PlantUML's limit finder is seen to take a node, as measured on its output: 10 wider either side than it draws it.
-            if ('node' === $group->symbol) {
-                $marks[] = new Mark(
-                    MarkKind::Polygon,
-                    [[$box->x0 - 10, $box->y0], [$box->x1 + 10, $box->y0], [$box->x1 + 10, $box->y1], [$box->x0 - 10, $box->y1]],
-                    stroke: 'none',
-                    fill: 'none',
-                    strokeWidth: 0.0,
-                    outline: Outline::Path,
-                );
-            }
             // A package's, a folder's or a frame's title sits in its tab; any other container's is centred at its top, lower for the symbols PlantUML draws it lower in.
             $tabbed = \in_array($group->symbol, ['package', 'folder', 'frame'], strict: true);
             [$tabX, $tabY] = 'frame' === $group->symbol ? [3.0, 1.0] : [4.0, 2.0];

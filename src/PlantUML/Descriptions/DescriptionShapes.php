@@ -44,7 +44,9 @@ final readonly class DescriptionShapes
         };
         // As PlantUML, which draws these as paths, its limit finder taking them as they run, not as boxes.
         if (\in_array($symbol, ['node', 'database', 'queue', 'folder', 'file', 'package', 'hexagon', 'action', 'process'], strict: true)) {
-            $outline = \array_map(static fn (Mark $mark): Mark => MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => Outline::Path]) : $mark, $outline);
+            // A node's, a hexagon's, an action's and a process's, which PlantUML draws as polygons, 10 wider either side.
+            $taken = \in_array($symbol, ['node', 'hexagon', 'action', 'process'], strict: true) ? Outline::Polygon : Outline::Path;
+            $outline = \array_map(static fn (Mark $mark): Mark => MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => $taken]) : $mark, $outline);
         }
 
         return [...$room, ...$outline];

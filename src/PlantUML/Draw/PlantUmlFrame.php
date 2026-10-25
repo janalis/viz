@@ -166,11 +166,13 @@ final class PlantUmlFrame
                 Outline::Path => [0.0, 0.0],
                 Outline::Ellipse => [0.0, 1.0],
                 Outline::Block => [1.0, 0.0],
+                Outline::Polygon => [0.0, 0.0],
             };
             $xs = \array_column($mark->points, 0);
             $ys = \array_column($mark->points, 1);
+            $wider = Outline::Polygon === $mark->outline ? 10.0 : 0.0;
 
-            return [[\min($xs) - $near, \min($ys) - $near], [\max($xs) - $far, \max($ys) - $far]];
+            return [[\min($xs) - $near - $wider, \min($ys) - $near], [\max($xs) - $far + $wider, \max($ys) - $far]];
         }
 
         return $mark->points;

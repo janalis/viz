@@ -15,4 +15,6 @@ enum Outline
     case Ellipse;
     /** A box, its far sides taken as drawn, as PlantUML's limit finder takes a class. */
     case Block;
+    /** A polygon, as PlantUML's limit finder takes one: 10 wider either side than it runs. */
+    case Polygon;
 }
