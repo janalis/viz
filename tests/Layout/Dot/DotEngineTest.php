@@ -115,6 +115,34 @@ final class DotEngineTest extends TestCase
         $this->assertLessThan($placement->endpoints['c']->x, $placement->labels[1][0] - 10.0, 'left of the chain\'s turn below its head');
     }
 
+    public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void
+    {
+        // PlantUML's web --> app : REST, app --> data : SQL, web ..> data : cache, as svek writes it.
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('web', 'web', 68.59, 46.49), new LayoutNode('app', 'app', 67.28, 46.49), new LayoutNode('data', 'data', 51.19, 45.49)],
+            [
+                new LayoutEdge(0, 'web', 'app', labelWidth: 32, labelHeight: 17),
+                new LayoutEdge(1, 'app', 'data', labelWidth: 26, labelHeight: 17),
+                new LayoutEdge(2, 'web', 'data', labelWidth: 37, labelHeight: 17),
+            ],
+            [],
+            Direction::TopBottom,
+            new Spacing(60, 35, 4),
+        )));
+        [$web, $app] = [$placement->endpoints['web'], $placement->endpoints['app']];
+        $y = $placement->labels[0][1];
+        $line = $placement->splines[0];
+        $at = 0;
+        while ($line[$at + 1][1] < $y) {
+            ++$at;
+        }
+        [[$ax, $ay], [$bx, $by]] = [$line[$at], $line[$at + 1]];
+
+        // As `dot` sets it: Web's 52 right of App, as they stand, REST's line half way between them on its label's rank.
+        $this->assertEqualsWithDelta(52.0, $web->x - $app->x, 1e-9);
+        $this->assertEqualsWithDelta(($web->x + $app->x) / 2, $ax + ((($bx - $ax) * ($y - $ay)) / ($by - $ay)), 2.0);
+    }
+
     public function testAClusterKeepsItsMarginAndTheGraphKeepsOneAroundIt(): void
     {
         $placement = self::place(['e', 'b'], [], [new LayoutCluster('x', 'X', labelHeight: 16.5)], ['e' => 'x']);

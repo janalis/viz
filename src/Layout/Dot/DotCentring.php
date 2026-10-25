@@ -20,8 +20,9 @@ final readonly class DotCentring
      * The positions with each real node free to slide between equal pulls set as `dot` is seen
      * to set it: the chains of virtual nodes it starts down straight from their far ends, and it
      * midway between its neighbours above and those ends; a block of source nodes held their least
-     * room apart midway between the far ends they are pulled down to — where the ranks keep their
-     * room. Left alone in graphs with clusters, flat edges or ports.
+     * room apart midway between the far ends they are pulled down to; the one node of an edge's
+     * chain between two real nodes midway between them — where the ranks keep their room. Left
+     * alone in graphs with clusters, flat edges or ports.
      *
      * @param list<int> $values
      * @return list<int>
@@ -64,6 +65,9 @@ final readonly class DotCentring
             }
             $values = $this->midway($node, $anchors, $chains, $values);
         }
+        foreach ($layers->rank as $node => $_) {
+            $values = $this->between($node, $up, $down, $values);
+        }
         foreach ($layers->ranks as $nodes) {
             foreach ($this->blocks($nodes, $values) as $block) {
                 $values = $this->shifted($block, $up, $down, $values);
@@ -71,6 +75,35 @@ final readonly class DotCentring
         }
 
         return $values;
+    }
+
+    /**
+     * The one node of an edge's chain between two real nodes moved midway between them, where it
+     * stands between them and the ranks keep their room, as `dot` is seen to set it.
+     *
+     * @param array<int, list<array{int, int}>> $up
+     * @param array<int, list<array{int, int}>> $down
+     * @param list<int> $values
+     * @return list<int>
+     */
+    private function between(int $node, array $up, array $down, array $values): array
+    {
+        $kind = $this->layers->kind;
+        if (DotLayers::REAL === $kind[$node] || 1 !== \count($up[$node] ?? []) || 1 !== \count($down[$node] ?? [])) {
+            return $values;
+        }
+        [$tail, $head] = [$up[$node][0][0], $down[$node][0][0]];
+        if (DotLayers::REAL !== $kind[$tail] || DotLayers::REAL !== $kind[$head]) {
+            return $values;
+        }
+        [$low, $high] = [\min($values[$tail], $values[$head]), \max($values[$tail], $values[$head])];
+        if ($values[$node] < $low || $values[$node] > $high) {
+            return $values;
+        }
+        $moved = $values;
+        $moved[$node] = \intdiv($low + $high, num2: 2);
+
+        return $this->roomy($moved) ? $moved : $values;
     }
 
     /**
