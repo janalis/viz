@@ -32,7 +32,7 @@ final class StateReaderTest extends TestCase
             state Split <<fork>> <<custom>>
             state Merge <<join>> #pink
             state Done : finished
-            Done : really
+            Done : really\nand truly
             "Quoted" : once more
             left to right direction
             hide empty description
@@ -46,7 +46,7 @@ final class StateReaderTest extends TestCase
         ]);
         $this->assertSame(['choice', 'fork', 'join'], [$states->nodes['Pick']->kind, $states->nodes['Split']->kind, $states->nodes['Merge']->kind]);
         $this->assertSame([['custom'], '#pink'], [$states->nodes['Split']->stereotypes, $states->nodes['Merge']->color]);
-        $this->assertSame(['finished', 'really'], $states->nodes['Done']->description);
+        $this->assertSame(['finished', 'really', 'and truly'], $states->nodes['Done']->description);
         $this->assertSame(['once more'], $states->nodes['Quoted']->description);
         $this->assertSame([Direction::LeftRight, true], [$states->direction, $states->hideEmptyDescription]);
     }

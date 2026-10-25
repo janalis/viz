@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\States;
 
+use Janalis\Viz\PlantUML\Classes\ClassReader;
+
 /**
  * A state as a PlantUML state diagram declares it — or a pseudostate: `start` and `end` for
  * a scope's `[*]`, `choice`, `fork`, `join`, `history` and `deephistory` — in the composite
@@ -25,4 +27,10 @@ final class StateNode
         public readonly ?string $group = null,
         public readonly int $region = 0,
     ) {}
+
+    /** Adds the lines of a `State : text`, broken at each `\n`, as PlantUML breaks them. */
+    public function describe(string $text): void
+    {
+        \array_push($this->description, ...ClassReader::split($text));
+    }
 }

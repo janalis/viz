@@ -73,7 +73,7 @@ final class StateReader
             'CommandCreatePackageState' => $this->composite($command),
             'CommandEndState' => \array_pop($this->open),
             'CommandConcurrentState' => $this->region((string) $command->get('TYPE')),
-            'CommandAddField' => $this->state((string) ($command->get('CODE3') ?? $command->get('CODE4')))->description[] = (string) $command->get('FIELD'),
+            'CommandAddField' => $this->state((string) ($command->get('CODE3') ?? $command->get('CODE4')))->describe((string) $command->get('FIELD')),
             'CommandLinkState', 'CommandLinkStateReverse' => $this->link($command),
             'CommandFactoryNote$1', 'CommandFactoryNote$2' => $this->floating($command),
             'CommandFactoryNoteOnEntity$1', 'CommandFactoryNoteOnEntity$2' => $this->beside($command),
@@ -97,7 +97,7 @@ final class StateReader
         $state->color = $command->get('COLOR') ?? $state->color;
         $field = $command->get('ADDFIELD');
         if (null !== $field) {
-            $state->description[] = $field;
+            $state->describe($field);
         }
         $this->last = $state->id;
 
