@@ -261,6 +261,14 @@ final class DotEngineTest extends TestCase
         $this->assertSame([206.0, 188.0], [$placement->graph->width, $placement->graph->height], 'dot: 198 by 180, and the pad');
     }
 
+    public function testAnInitialOrderIsTransposedBeforeItsFirstSweep(): void
+    {
+        $placement = self::place(['a', 'b', 'c', 'd'], [['a', 'b'], ['b', 'c'], ['c', 'd'], ['a', 'c'], ['b', 'd']]);
+
+        // As dot sets it: a's long edge left of b, which its swap with b uncrosses before any sweep, and c under it.
+        $this->assertSame([[58.0, 22.0], [86.0, 94.0], [31.0, 166.0], [58.0, 238.0]], self::centres($placement));
+    }
+
     public function testOrderingKeepsANodesEdgesInTheirOrder(): void
     {
         $order = static function (?string $ordering, LayoutEdge ...$edges): array {
@@ -273,13 +281,14 @@ final class DotEngineTest extends TestCase
 
             return $names;
         };
-        $down = [new LayoutEdge(0, 'a', 'b'), new LayoutEdge(1, 'a', 'c'), new LayoutEdge(2, 'd', 'b')];
-        $up = [new LayoutEdge(0, 'b', 'a'), new LayoutEdge(1, 'c', 'a'), new LayoutEdge(2, 'b', 'd')];
+        $down = [new LayoutEdge(0, 'a', 'c'), new LayoutEdge(1, 'a', 'b'), new LayoutEdge(2, 'd', 'b')];
+        $up = [new LayoutEdge(0, 'c', 'a'), new LayoutEdge(1, 'b', 'a'), new LayoutEdge(2, 'b', 'd')];
 
-        $this->assertSame(['c', 'b'], $order(null, ...$down), 'unordered, b goes by d');
-        $this->assertSame(['b', 'c'], $order('out', ...$down), 'as dot: b, then c, as a\'s edges out come');
-        $this->assertSame(['b', 'c'], $order('in', ...$up), 'and as its edges in come');
-        $this->assertSame(['c', 'b'], $order('in', ...$down), 'in orders nothing below');
+        // As dot sets them.
+        $this->assertSame(['b', 'c'], $order(null, ...$down), 'unordered, as the nodes were made');
+        $this->assertSame(['c', 'b'], $order('out', ...$down), 'c, then b, as a\'s edges out were written');
+        $this->assertSame(['c', 'b'], $order('in', ...$up), 'and as its edges in were');
+        $this->assertSame(['b', 'c'], $order('in', ...$down), 'in orders nothing below');
     }
 
     public function testEveryStepYields(): void

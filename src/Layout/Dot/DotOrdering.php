@@ -9,7 +9,7 @@ namespace Janalis\Viz\Layout\Dot;
  * et al. Each connected component is ordered on its own, then the components stand side by
  * side in the order a depth-first search meets them. Within one, an initial order comes from
  * a breadth-first search from the nodes with nothing above, in that same visit order, or from
- * the nodes with nothing below; sweeps then sort each rank by the weighted median position
+ * the nodes with nothing below, transposed once, as `dot` is seen to begin; sweeps then sort each rank by the weighted median position
  * of its neighbours on the rank before, nodes with none staying put, each sweep followed by
  * transposing neighbours while that removes crossings. Two short passes from the two initial
  * orders, then a long one from the best order seen.
@@ -84,6 +84,7 @@ final class DotOrdering
             $cross = $bestCross;
             if (null !== $start) {
                 $this->initial($scope, $start);
+                $this->transpose($scope, Ties::Keep);
                 $cross = $this->crossings->total($this->position);
                 [$best, $bestCross] = $cross <= $bestCross ? [$this->layers->ranks, $cross] : [$best, $bestCross];
             }
