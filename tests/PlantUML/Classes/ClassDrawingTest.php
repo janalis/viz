@@ -200,6 +200,13 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([56.0, 57.0], [$height('rectangle A'), $height("rectangle A\nrectangle B")]);
     }
 
+    public function testALinksEndIsTakenAsPlantUmlsLimitFinderTakesTheShapeItIsDrawnAs(): void
+    {
+        $width = static fn (string $link): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\nhide circle\nclass X\nclass Y\nX {$link} Y\n@enduml"))->width / Units::POINT;
+
+        // As the jar sizes them: an arrow, a diamond or a triangle drawn as a polygon, 10 wider either side; a parenthesis as its whole circle; lines as they run.
+        $this->assertSame([49.0, 49.0, 53.0, 47.0, 38.0, 36.0, 36.0], \array_map($width, ['-->', '--*', '--|>', '-->>', '--(', '--||', '--x']));
+    }
     public function testALoneNoteIsDrawnSevenInAsPlantUmlDrawsIt(): void
     {
         $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nnote \"hello\" as N\n@enduml"));
