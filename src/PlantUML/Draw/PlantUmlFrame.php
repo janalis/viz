@@ -104,6 +104,8 @@ final class PlantUmlFrame
             $maxY - $minY + self::SVEK_INSET + $trail - self::SVEK_OUTER,
             [0.0, self::SVEK_OUTER, self::SVEK_OUTER, 0.0],
             \floor(...),
+            // As PlantUML is seen to take them, rounding the diagram down: its captions 1 wider.
+            captionRoom: 1.0,
         );
     }
 
@@ -177,19 +179,20 @@ final class PlantUmlFrame
      * @param list<Mark> $marks
      * @param array{float, float, float, float} $margins top, right, bottom and left, around everything, unless the document's style sets them
      * @param ?\Closure(float): float $whole how its size unscaled is rounded to whole points: up by default, as PlantUML writes it
+     * @param float $captionRoom how much wider than they are its captions are taken
      */
-    private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, array $margins, ?\Closure $whole = null): Drawing
+    private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, array $margins, ?\Closure $whole = null, float $captionRoom = 0.0): Drawing
     {
         // A margin the document's style sets, as a theme's `root` does, stands for the diagram's own.
         $style = $document->styles->style(['root', 'document']);
         [$top, $right, $bottom, $left] = '' === \trim($style->value('Margin')) ? $margins : $style->sides('Margin');
         $blocks = [];
         foreach (['header', 'title'] as $kind) {
-            $blocks[] = self::block($document, $kind);
+            $blocks[] = self::block($document, $kind, $captionRoom);
         }
         $blocks[] = [[], $width, $height, 'center'];
         foreach (['legend', 'caption', 'footer'] as $kind) {
-            $blocks[] = self::block($document, $kind);
+            $blocks[] = self::block($document, $kind, $captionRoom);
         }
         $full = \max(\array_map(static fn (array $block): float => $block[1], $blocks));
         $placed = [];
@@ -225,7 +228,7 @@ final class PlantUmlFrame
     }
 
     /** @return array{list<Mark>, float, float, string} a caption's marks from the origin, its size, and how it aligns */
-    private static function block(PlantUmlDocument $document, string $kind): array
+    private static function block(PlantUmlDocument $document, string $kind, float $room): array
     {
         $caption = $document->captions[$kind] ?? null;
         if (!$caption instanceof PlantUmlCaption) {
@@ -254,8 +257,7 @@ final class PlantUmlFrame
         $align = $caption->horizontal ?? \strtolower($style->value('HorizontalAlignment', 'center'));
         \array_push($marks, ...$text->marks($marginLeft + $padLeft, $marginTop + $padTop, $textWidth, $align));
 
-        // As PlantUML is seen to take its width, as measured on its output: rounded up to whole points.
-        return [$marks, \ceil($boxWidth + $marginLeft + $marginRight), $boxHeight + $marginTop + $marginBottom, $align];
+        return [$marks, $boxWidth + $marginLeft + $marginRight + $room, $boxHeight + $marginTop + $marginBottom, $align];
     }
 
     private static function moved(Mark $mark, float $x, float $y): Mark

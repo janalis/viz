@@ -28,8 +28,17 @@ final class ActivityDrawingTest extends TestCase
         $this->assertEqualsWithDelta([19.0, 56.0], self::centre($marks[1]), 1e-9);
         $line = \array_values(\array_filter($marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind))[0];
         $this->assertEqualsWithDelta([[19.0, 25.0], [19.0, 45.0]], $line->points, 1e-9);
-        $this->assertEqualsWithDelta(63.0, $drawing->width / Units::POINT, 1e-9);
-        $this->assertEqualsWithDelta(96.0, $drawing->height / Units::POINT, 1e-9);
+        // 64 by 97, as the jar sizes it: 1 past its size rounded down.
+        $this->assertEqualsWithDelta(64.0, $drawing->width / Units::POINT, 1e-9);
+        $this->assertEqualsWithDelta(97.0, $drawing->height / Units::POINT, 1e-9);
+    }
+
+    public function testItsSizeIsRoundedDownAndOneMoreAsPlantUmlSizesIt(): void
+    {
+        $width = static fn (string $text): float => self::draw("start\n:{$text};\nstop")->width / Units::POINT;
+
+        // As the jar sizes them: a step 32, 44 or 61.063 wide, its diagram 1 past it rounded down.
+        $this->assertSame([68.0, 80.0, 97.0], [$width('日'), $width('日本'), $width('WWWW')]);
     }
 
     /** @return iterable<string, array{string, list<string>}> */

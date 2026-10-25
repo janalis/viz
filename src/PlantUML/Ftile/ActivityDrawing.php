@@ -53,6 +53,6 @@ final class ActivityDrawing
             \array_push($marks, ...$shape->moved(5 - $minX, 5 - $minY)->marks);
         }
 
-        return PlantUmlFrame::drawing($activity->document, $marks, $maxX - $minX + 15, $maxY - $minY + 15);
+        return PlantUmlFrame::roundedDown($activity->document, $marks, $maxX - $minX + 15, $maxY - $minY + 15, past: 1.0);
     }
 }
