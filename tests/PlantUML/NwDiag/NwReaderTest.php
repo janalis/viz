@@ -101,6 +101,20 @@ final class NwReaderTest extends TestCase
         $this->assertSame(['1', '2'], [$diagram->servers[0]->address($n), $diagram->servers[0]->address($m)]);
     }
 
+    public function testANetworkMadeUpIsNamedWithASpaceAndOneWithNoNameTakesNoLine(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(self::read($lines)->drawing());
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sizes them: a network made up names itself with a no-break space, as wide as a space; a network of no name has no line for one.
+        $this->assertSame([109.0, 120.0], $size('web01;'));
+        $this->assertSame([105.0, 113.0], $size("network {\n  web01;\n}"));
+        $this->assertSame([113.0, 120.0], $size("network n {\n  web01;\n}"));
+    }
+
     public function testWhatHoldsNothingDrawsNothing(): void
     {
         $polygons = static fn (string $lines): int => \count(\array_filter(Work::run(self::read($lines)->drawing())->marks, static fn ($mark): bool => MarkKind::Polygon === $mark->kind));

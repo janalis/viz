@@ -117,10 +117,10 @@ final class NwDrawing
         $labelWidth = 0.0;
         $shift = 0.0;
         foreach ($diagram->networks as $index => $network) {
-            $text = PlantUmlText::styled([...ClassReader::split($network->displayName()), ...(null === $network->address ? [] : [$network->address])], $networkStyle);
+            // As PlantUML names a network it makes up, with a no-break space, which takes its room.
+            $name = $network->visible ? $network->displayName() : "\u{A0}";
+            $text = PlantUmlText::styled([...ClassReader::split($name), ...(null === $network->address ? [] : [$network->address])], $networkStyle);
             [$width, $height] = $text->size();
-            // As PlantUML, a network with no name still takes a line.
-            $height = $text->empty() ? $text->line() : $height;
             if (0 === $index) {
                 $shift = ($height - self::THIN) / 2;
             }
