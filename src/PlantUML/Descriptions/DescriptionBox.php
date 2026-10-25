@@ -45,7 +45,7 @@ final readonly class DescriptionBox
         'queue' => [5, 15, 5, 5],
         'rectangle' => [10, 10, 10, 10],
         'agent' => [10, 10, 10, 10],
-        'package' => [10, 10, 10, 10],
+        'package' => [10, 20, 13, 10],
         'stack' => [25, 25, 10, 10],
         'storage' => [10, 10, 10, 10],
     ];
@@ -70,6 +70,8 @@ final readonly class DescriptionBox
         private bool $flushLeft = false,
         /** Whether an interface is its circle alone, its name hanging below, as svek writes one linked beside another. */
         private bool $alone = false,
+        /** A package's title, its name in its tab, 6 room either side. */
+        private ?PlantUmlText $title = null,
     ) {}
 
     /** An interface as svek writes one a link joins beside another: its circle alone, 18 across, its name hanging 8 below. */
@@ -85,7 +87,9 @@ final readonly class DescriptionBox
     public static function of(DescriptionElement $element, StyleSheet $sheet, ?Style $style = null, bool $flushLeft = false): self
     {
         $style ??= $sheet->style(['root', 'element', 'componentDiagram', $element->symbol], $element->stereotypes);
-        $text = PlantUmlText::styled($element->display, $style);
+        // As PlantUML, a package shows its name in its tab, and its text below only where it is not its name.
+        $title = 'package' === $element->symbol ? PlantUmlText::styled([$element->id], $sheet->style(['root', 'element', 'componentDiagram', 'package', 'title'], $element->stereotypes)) : null;
+        $text = PlantUmlText::styled(null !== $title && [$element->id] === $element->display ? [] : $element->display, $style);
         $stereoStyle = $sheet->style(['root', 'element', 'componentDiagram', $element->symbol, 'stereotype'], $element->stereotypes);
         $stereotypes = [] === $element->stereotypes || !$element->stereotypeShown
             ? null
@@ -105,10 +109,11 @@ final readonly class DescriptionBox
             \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight],
             // As PlantUML, a folder keeps room for a title it does not show, 40 by 15, above its label.
             'folder' === $element->symbol => self::boxed($element->symbol, \max(self::FOLDER_TITLE[0], $labelWidth), self::FOLDER_TITLE[1] + $labelHeight),
+            null !== $title => self::boxed($element->symbol, \max($title->size()[0] + 12, $labelWidth), $title->size()[1] + $labelHeight),
             default => self::boxed($element->symbol, $labelWidth, $labelHeight),
         };
 
-        return new self($element, $style, $text, $stereotypes, $width, $height, $flushLeft);
+        return new self($element, $style, $text, $stereotypes, $width, $height, $flushLeft, title: $title);
     }
 
     /** @return array{float, float} */
@@ -139,15 +144,27 @@ final readonly class DescriptionBox
         [$left, $right, $top] = self::MARGINS[$symbol] ?? [10, 10, 10, 10];
         $outline = 'usecase' === $symbol
             ? [self::ellipse($x, $y, $this->width, $this->height, $line, $back, $stroke)]
-            : DescriptionShapes::outline($symbol, $x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'));
+            : DescriptionShapes::outline($symbol, $x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'), $this->tab());
         [$labelLeft, $labelTop, $labelWidth] = match ($symbol) {
             'usecase' => [$x, $y + (($this->height - $this->labelHeight()) / 2), $this->width],
             'hexagon' => [$x + ($this->width / 4), $y + 5, $this->width / 2],
             'person' => [$x + $left, $y + (2 * DescriptionShapes::head($this->width, $this->height)) + $top, $this->width - $left - $right],
-            default => [$x + $left, $y + $top + ('folder' === $symbol ? self::FOLDER_TITLE[1] : 0.0), $this->width - $left - $right],
+            default => [$x + $left, $y + $top + $this->tab()[1], $this->width - $left - $right],
         };
+        // A package's title 4 in and 3 down, in its tab.
+        $title = null === $this->title ? [] : $this->title->marks($x + 4, $y + 3, $this->tab()[0]);
 
-        return [...Shadow::cast($outline, $this->style->number('Shadowing')), ...$this->label($labelLeft, $labelTop, $labelWidth)];
+        return [...Shadow::cast($outline, $this->style->number('Shadowing')), ...$title, ...$this->label($labelLeft, $labelTop, $labelWidth)];
+    }
+
+    /** @return array{float, float} the title a folder's or a package's tab holds: a package's name and 6 either side, the 40 by 15 a folder keeps for one it does not show */
+    private function tab(): array
+    {
+        return match (true) {
+            null !== $this->title => [$this->title->size()[0] + 12, $this->title->size()[1]],
+            'folder' === $this->element->symbol => self::FOLDER_TITLE,
+            default => [0.0, 0.0],
+        };
     }
 
     /** @return list<Mark> an icon above its centred name */

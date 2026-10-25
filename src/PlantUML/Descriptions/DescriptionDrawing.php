@@ -182,7 +182,7 @@ final class DescriptionDrawing
                 $marks,
                 ...'frame' === $group->symbol
                     ? DescriptionShapes::frame($box->x0, $box->y0, $width, $height, $line, $back, $thickness, ...$title->size())
-                    : DescriptionShapes::outline($group->symbol, $box->x0, $box->y0, $width, $height, $line, $back, $thickness, 0.0),
+                    : DescriptionShapes::outline($group->symbol, $box->x0, $box->y0, $width, $height, $line, $back, $thickness, $style->number('RoundCorner'), $title->size()),
             );
             // A package's, a folder's or a frame's title sits in its tab; any other container's is centred at its top, lower for the symbols PlantUML draws it lower in.
             $tabbed = \in_array($group->symbol, ['package', 'folder', 'frame'], strict: true);

@@ -15,6 +15,7 @@ use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Render\Work;
+use Janalis\Viz\Text\FontFace;
 use PHPUnit\Framework\TestCase;
 
 final class DescriptionDrawingTest extends TestCase
@@ -89,6 +90,54 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([120.0, 119.0, 110.0, 120.0, 80.0], [$width('node'), $width('hexagon'), $width('action'), $width('process'), $width('rectangle')]);
         // A lone element as its box, 7 in from its sides; but a hexagon, which PlantUML lays out with the others.
         $this->assertSame([[99.0, 66.0], [81.0, 49.0], [119.0, 47.0]], [$size('node Thing'), $size('usecase Thing'), $size('hexagon Thing')]);
+    }
+
+    public function testAPackageShowsItsNameInItsTabAndItsTextBelowAsPlantUmlDrawsIt(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
+            $drawing->width / Units::POINT,
+            $drawing->height / Units::POINT,
+        ])(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")));
+
+        // As the jar sizes them: its name in bold, 6 either side, in its tab; its text below, where it is not its name; 10 before, 20 past, 13 above and 10 below.
+        $this->assertSame([72.0, 155.0], $size("package X\nrectangle R\nX --> R"));
+        $this->assertSame([[192.0, 76.0], [172.0, 76.0], [146.0, 93.0]], [
+            $size("package \"Hello World\" as P\nrectangle R\nP -> R"),
+            $size("package X <<stereo>>\nrectangle R\nX -> R"),
+            $size("package \"A\\nBBBB\" as P\nrectangle R\nP -> R"),
+        ]);
+        // Alone, laid out as any other, with dot.
+        $this->assertSame([71.0, 59.0], $size('package X'));
+        $texts = [];
+        foreach (Work::run(PlantUmlPipeline::native()->drawing("@startuml\npackage \"Hello\" as P\nrectangle R\nP -> R\n@enduml"))->marks as $mark) {
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
+            $texts[$mark->text] = [$mark->font, \round($mark->points[0][1] / Units::POINT, precision: 3)];
+        }
+        $this->assertSame([
+            [FontFace::Bold,    22.535],
+            [FontFace::Regular, 49.023],
+        ], [$texts['P'], $texts['Hello']]);
+    }
+
+    public function testAFoldersTabIsAsPlantUmlsFolderDrawsIt(): void
+    {
+        $outline = static function (string $source): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml"));
+            // The line under its tab: the highest across.
+            $lines = \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && 2 === \count($mark->points) && $mark->points[0][1] === $mark->points[1][1]);
+            \usort($lines, static fn (Mark $a, Mark $b): int => $a->points[0][1] <=> $b->points[0][1]);
+            $tab = $lines[0];
+
+            return [\round($drawing->width / Units::POINT, precision: 3), \round(($tab->points[1][0] - $tab->points[0][0]) / Units::POINT, precision: 3)];
+        };
+
+        // As the jar draws them: a folder's tab under the 40 by 15 it keeps for a title, 6 more, and its slant 7; a container's as its title; unrounded, a polygon taken 10 wider either side.
+        $this->assertSame([153.0, 53.0], $outline("folder X\nrectangle R\nX -> R"));
+        $this->assertSame([123.0, 99.475], $outline("folder \"Some folder\" as F {\nrectangle A\n}"));
+        $this->assertSame([165.0, 53.0], $outline("skinparam roundCorner 0\nfolder X\nrectangle R\nR -> X"));
+        $this->assertSame(103.0, $outline("skinparam roundCorner 0\nfolder \"F\" as F {\nrectangle A\n}")[0]);
     }
 
     public function testAContainersTitleAndContentStandWherePlantUmlDrawsThem(): void

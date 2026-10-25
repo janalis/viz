@@ -19,8 +19,11 @@ final readonly class DescriptionShapes
         private float $stroke,
     ) {}
 
-    /** @return list<Mark> */
-    public static function outline(string $symbol, float $x, float $y, float $width, float $height, string $line, string $back, float $stroke, float $round): array
+    /**
+     * @param array{float, float} $title the size of the title a folder's or a package's tab holds, a folder element's the 40 by 15 PlantUML keeps for one it does not show
+     * @return list<Mark>
+     */
+    public static function outline(string $symbol, float $x, float $y, float $width, float $height, string $line, string $back, float $stroke, float $round, array $title = [40.0, 15.0]): array
     {
         $pen = new self($line, $back, $stroke);
         // As PlantUML, a node and a database take 10 more room past a bottom corner, drawing nothing there.
@@ -31,7 +34,8 @@ final readonly class DescriptionShapes
         };
         $outline = match ($symbol) {
             'component', 'node', 'frame', 'stack', 'collections' => $pen->framed($symbol, $x, $y, $width, $height, $round),
-            'folder', 'file', 'artifact', 'package' => $pen->tabbed($symbol, $x, $y, $width, $height),
+            'folder', 'package' => $pen->folder($x, $y, $width, $height, $round, ...$title),
+            'file', 'artifact' => $pen->tabbed($x, $y, $width, $height),
             'hexagon', 'action', 'process' => [$pen->polygon(self::pointed($symbol, $x, $y, $width, $height))],
             'database' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke),
             'queue' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke, across: 1),
@@ -44,8 +48,10 @@ final readonly class DescriptionShapes
         };
         // As PlantUML, which draws these as paths, its limit finder taking them as they run, not as boxes.
         if (\in_array($symbol, ['node', 'database', 'queue', 'folder', 'file', 'package', 'hexagon', 'action', 'process'], strict: true)) {
-            // A node's, a hexagon's, an action's and a process's, which PlantUML draws as polygons, 10 wider either side.
-            $taken = \in_array($symbol, ['node', 'hexagon', 'action', 'process'], strict: true) ? Outline::Polygon : Outline::Path;
+            // A node's, a hexagon's, an action's and a process's, which PlantUML draws as polygons, 10 wider either side; a folder's and a package's too, when not rounded.
+            $taken = \in_array($symbol, ['node', 'hexagon', 'action', 'process'], strict: true) || (0.0 === $round && \in_array($symbol, ['folder', 'package'], strict: true))
+                ? Outline::Polygon
+                : Outline::Path;
             $outline = \array_map(static fn (Mark $mark): Mark => MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => $taken]) : $mark, $outline);
         }
 
@@ -138,24 +144,69 @@ final readonly class DescriptionShapes
         return [$pen->polygon(ClassBox::corners($x, $y, $width, $height)), $pen->polyline([[$x + $tab, $y], [$x + $tab, $y + $tall - $corner], [$x + $tab - $corner, $y + $tall], [$x, $y + $tall]])];
     }
 
-    /** @return list<Mark> a box with a tab or a folded corner: a folder, a package, a file, an artifact */
-    private function tabbed(string $symbol, float $x, float $y, float $width, float $height): array
+    /**
+     * A folder or a package as PlantUML's folder symbol draws one: a box under a tab 6 wider and
+     * taller than its title — or with no title, a quarter of the box wide, at least 30, and 10
+     * tall — its side slanting 7 down to the box, a line under it; its corners rounded half the
+     * rounding given, the tab's top right one a half more, as PlantUML draws them.
+     *
+     * @return list<Mark>
+     */
+    private function folder(float $x, float $y, float $width, float $height, float $round, float $titleWidth, float $titleHeight): array
+    {
+        [$tab, $tall] = 0.0 === $titleWidth ? [\max(30.0, $width / 4), 10.0] : [$titleWidth + 6, $titleHeight + 6];
+        [$right, $bottom, $r] = [$x + $width, $y + $height, $round / 2];
+        $points = 0.0 === $round
+            ? [[$x, $y], [$x + $tab, $y], [$x + $tab + 7, $y + $tall], [$right, $y + $tall], [$right, $bottom], [$x, $bottom]]
+            : [
+                [$x + $r, $y],
+                ...self::arc([$x + $tab - $r, $y], [$x + $tab, $y + $r], $r * 1.5),
+                [$x + $tab + 7, $y + $tall],
+                ...self::arc([$right - $r, $y + $tall], [$right, $y + $tall + $r], $r),
+                ...self::arc([$right, $bottom - $r], [$right - $r, $bottom], $r),
+                ...self::arc([$x + $r, $bottom], [$x, $bottom - $r], $r),
+                ...self::arc([$x, $y + $r], [$x + $r, $y], $r),
+            ];
+
+        return [$this->polygon($points), $this->polyline([[$x, $y + $tall], [$x + $tab + 7, $y + $tall]])];
+    }
+
+    /**
+     * The points of a circle's arc from one point to another, turning clockwise, as SVG's arc
+     * with its sweep set draws the shorter one.
+     *
+     * @param array{float, float} $from
+     * @param array{float, float} $to
+     * @return list<array{float, float}> from the first point to the last
+     */
+    private static function arc(array $from, array $to, float $radius): array
+    {
+        [$dx, $dy] = [$to[0] - $from[0], $to[1] - $from[1]];
+        $chord = \hypot($dx, $dy);
+        $rise = \sqrt(\max(0.0, $radius ** 2 - ($chord / 2) ** 2));
+        [$cx, $cy] = [(($from[0] + $to[0]) / 2) - (($dy / $chord) * $rise), (($from[1] + $to[1]) / 2) + (($dx / $chord) * $rise)];
+        $start = \atan2($from[1] - $cy, $from[0] - $cx);
+        $turn = \fmod(\atan2($to[1] - $cy, $to[0] - $cx) - $start + (4 * \M_PI), 2 * \M_PI);
+        $points = [];
+        for ($step = 0; $step <= 4; ++$step) {
+            $angle = $start + (($turn * $step) / 4);
+            $points[] = [$cx + ($radius * \cos($angle)), $cy + ($radius * \sin($angle))];
+        }
+        [$points[0], $points[4]] = [$from, $to];
+
+        return $points;
+    }
+
+    /** @return list<Mark> a box with a folded corner: a file, an artifact */
+    private function tabbed(float $x, float $y, float $width, float $height): array
     {
         $right = $x + $width;
         $bottom = $y + $height;
-        $tab = \min('folder' === $symbol ? 50.0 : 40.0, $width / 3);
 
-        return match ($symbol) {
-            'folder' => [
-                $this->polygon([[$x, $y], [$x + $tab, $y], [$x + $tab + 5, $y + 8], [$right, $y + 8], [$right, $bottom], [$x, $bottom]]),
-                $this->polyline([[$x, $y + 8], [$x + $tab + 5, $y + 8]]),
-            ],
-            'package' => [$this->polygon([[$x, $y], [$x + $tab, $y], [$x + $tab, $y + 8], [$right, $y + 8], [$right, $bottom], [$x, $bottom]])],
-            default => [
-                $this->polygon([[$x, $y], [$right - 10, $y], [$right, $y + 10], [$right, $bottom], [$x, $bottom]]),
-                $this->polyline([[$right - 10, $y], [$right - 10, $y + 10], [$right, $y + 10]]),
-            ],
-        };
+        return [
+            $this->polygon([[$x, $y], [$right - 10, $y], [$right, $y + 10], [$right, $bottom], [$x, $bottom]]),
+            $this->polyline([[$right - 10, $y], [$right - 10, $y + 10], [$right, $y + 10]]),
+        ];
     }
 
     /** @return list<array{float, float}> a hexagon, an action's arrow, a process's chevron */
