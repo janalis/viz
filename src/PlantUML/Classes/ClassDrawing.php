@@ -52,6 +52,13 @@ final class ClassDrawing
         // As PlantUML is seen to leave a lone class, which it lays out without dot, 2 less room past it, and to measure it without its type parameters.
         $alone = 1 === \count($placement->graph->nodes) && [] === $placement->graph->clusters;
         $marks = $drawing->paint($placement);
+        if ($alone && [] !== $drawing->notes) {
+            // As PlantUML draws a lone note: as its box 7 in from its sides.
+            $node = $placement->graph->nodes[0];
+            $box = new Mark(MarkKind::Polygon, ClassBox::corners($node->x - ($node->w / 2), $node->y - ($node->h / 2), $node->w, $node->h), stroke: 'none', fill: 'none', strokeWidth: 0.0);
+
+            return PlantUmlFrame::svek($classes->document, $marks, trail: 14.0, measured: [$box]);
+        }
 
         return PlantUmlFrame::svek($classes->document, $marks, trail: $alone ? 13.0 : 15.0, measured: $alone ? $drawing->bare($placement) : null);
     }

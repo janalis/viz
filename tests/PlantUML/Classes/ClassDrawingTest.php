@@ -200,6 +200,16 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([56.0, 57.0], [$height('rectangle A'), $height("rectangle A\nrectangle B")]);
     }
 
+    public function testALoneNoteIsDrawnSevenInAsPlantUmlDrawsIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nnote \"hello\" as N\n@enduml"));
+        $corner = $drawing->marks[0]->points[0];
+
+        // As the jar draws it: its box 7 in from its sides.
+        $this->assertSame([71.0, 45.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertEqualsWithDelta([7.0, 7.0], [$corner[0] / Units::POINT, $corner[1] / Units::POINT], 1e-9);
+    }
+
     public function testACircleAndADiamondStandAsPlantUmlDrawsThem(): void
     {
         $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\ndiamond D\nclass A\nclass B\nA -- D\nD -- B\n@enduml"));
