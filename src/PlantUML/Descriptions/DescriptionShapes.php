@@ -35,7 +35,8 @@ final readonly class DescriptionShapes
         $outline = match ($symbol) {
             'component', 'node', 'frame', 'stack', 'collections' => $pen->framed($symbol, $x, $y, $width, $height, $round),
             'folder', 'package' => $pen->folder($x, $y, $width, $height, $round, ...$title),
-            'file', 'artifact' => $pen->tabbed($x, $y, $width, $height),
+            'file' => $pen->tabbed($x, $y, $width, $height),
+            'artifact' => $pen->artifact($x, $y, $width, $height, $round),
             'hexagon', 'action', 'process' => [$pen->polygon(self::pointed($symbol, $x, $y, $width, $height))],
             'database' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke),
             'queue' => self::cylinder($x, $y, $width, $height, $line, $back, $stroke, across: 1),
@@ -197,7 +198,24 @@ final readonly class DescriptionShapes
         return $points;
     }
 
-    /** @return list<Mark> a box with a folded corner: a file, an artifact */
+    /**
+     * An artifact as PlantUML draws one: a box, a document 12 by 14 with its corner folded 6, 5
+     * in from the box's top right, taken as the polygon it is drawn as, 10 wider either side.
+     *
+     * @return list<Mark>
+     */
+    private function artifact(float $x, float $y, float $width, float $height, float $round): array
+    {
+        [$left, $top] = [$x + $width - 17, $y + 5];
+
+        return [
+            ClassBox::rectangle($x, $y, $width, $height, $this->line, $this->back, $this->stroke, $round),
+            $this->polygon([[$left, $top], [$left, $top + 14], [$left + 12, $top + 14], [$left + 12, $top + 6], [$left + 6, $top]])->with(['outline' => Outline::Polygon]),
+            $this->polyline([[$left + 6, $top], [$left + 6, $top + 6], [$left + 12, $top + 6]]),
+        ];
+    }
+
+    /** @return list<Mark> a box with a folded corner: a file */
     private function tabbed(float $x, float $y, float $width, float $height): array
     {
         $right = $x + $width;

@@ -91,6 +91,8 @@ final class DescriptionDrawingTest extends TestCase
         // A boundary drawn 4 in from its node's sides, a control's arrowhead a polygon too.
         $beside = static fn (string $symbol): float => $size("{$symbol} X\nrectangle R\nX -> R")[0];
         $this->assertSame([128.0, 113.0], [$beside('boundary'), $beside('control')]);
+        // An artifact's document, a polygon 5 in from its top right, 10 wider either side.
+        $this->assertSame([[65.0, 156.0], [58.0, 59.0]], [$size("artifact X\nrectangle R\nX --> R"), $size('artifact X')]);
         // A lone element as its box, 7 in from its sides; but a hexagon, which PlantUML lays out with the others.
         $this->assertSame([[99.0, 66.0], [81.0, 49.0], [119.0, 47.0]], [$size('node Thing'), $size('usecase Thing'), $size('hexagon Thing')]);
     }
