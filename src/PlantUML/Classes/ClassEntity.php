@@ -10,6 +10,8 @@ final class ClassEntity
     /** @var list<string> */
     public array $stereotypes = [];
     public ?string $generic = null;
+    /** @var ?array{string, ?string} the character a stereotype's `(C, colour)` circles, and the circle's colour */
+    public ?array $spot = null;
     /** @var list<string> the body's lines as written: members, and separators such as `--` and `..` */
     public array $body = [];
     public ?string $visibility = null;

@@ -11,6 +11,7 @@ use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\PlantUmlRefusal;
+use Janalis\Viz\PlantUML\Style\PlantUmlColor;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -21,6 +22,9 @@ use Janalis\Viz\Source\Unsupported;
  */
 final class ClassReader
 {
+    /** A stereotype's circled character and its colour, as PlantUML's `StereotypeDecoration` reads them: `(C)` or `(C, colour)`, then its label. */
+    private const string SPOT = '/^\(\s*(\S)(?:\s*,\s*(#[0-9a-fA-F]{6}|\w+)\s*)?\)\s*,?(.*)$/s';
+
     /** @var array<string, ClassEntity> */
     private array $entities = [];
     /** @var list<PlantUmlLink> */
@@ -69,7 +73,7 @@ final class ClassReader
             'CommandCreateClassMultilines' => $this->create($command, $command->body()),
             'CommandAddMethod' => $this->member($command),
             'CommandLinkClass' => $this->link($command),
-            'CommandStereotype' => $this->entity((string) $command->get('NAME'))->stereotypes = self::stereotypes((string) $command->get('STEREO')),
+            'CommandStereotype' => self::stereotyped($this->entity((string) $command->get('NAME')), (string) $command->get('STEREO')),
             'CommandPackage', 'CommandNamespace', 'CommandNamespace2', 'CommandTogether' => $this->open[] = $this->group($command),
             'CommandPackageEmpty', 'CommandNamespaceEmpty' => $this->group($command),
             'CommandEndPackage' => \array_pop($this->open),
@@ -101,7 +105,9 @@ final class ClassReader
         }
         $entity->type = $type;
         $entity->visibility = $command->get('VISIBILITY');
-        $entity->stereotypes = null === $command->get('STEREO') ? $entity->stereotypes : self::stereotypes((string) $command->get('STEREO'));
+        if (null !== $command->get('STEREO')) {
+            self::stereotyped($entity, (string) $command->get('STEREO'));
+        }
         $entity->generic = $command->lazy('DISPLAY', 1) ?? $command->get('GENERIC') ?? $entity->generic;
         $entity->color = $command->get('COLOR') ?? $entity->color;
         $entity->body = [...$entity->body, ...$body];
@@ -252,12 +258,32 @@ final class ClassReader
         return \explode("\n", \str_replace(['\\n', '\\l', '\\r'], replace: "\n", subject: $text));
     }
 
-    /** @return list<string> the labels of `<<a>> <<b, c>>` */
+    /** @return list<string> the labels of `<<a>> <<b, c>>`, each without the character `<<(C, colour) a>>` circles */
     public static function stereotypes(string $text): array
     {
         $match = [];
         \preg_match_all('/<<\s*(.*?)\s*>>/', $text, $match);
+        $labels = \array_map(static fn (string $label): string => null === self::spot($label) ? $label : (string) \preg_replace(self::SPOT, replacement: '$3', subject: $label), $match[1]);
 
-        return \array_values(\array_filter(\array_map(\trim(...), \explode(',', \implode(',', $match[1]))), static fn (string $label): bool => '' !== $label));
+        return \array_values(\array_filter(\array_map(\trim(...), \explode(',', \implode(',', $labels))), static fn (string $label): bool => '' !== $label));
+    }
+
+    /** @return ?array{string, ?string} the character a stereotype `(C, colour) label` circles, and its colour, as PlantUML reads them; null for any other */
+    private static function spot(string $label): ?array
+    {
+        $match = [];
+
+        return 1 === \preg_match(self::SPOT, $label, $match) ? [$match[1], '' === $match[2] ? null : PlantUmlColor::parse($match[2])] : null;
+    }
+
+    /** An entity's stereotypes, and the character the last of them to circle one circles. */
+    private static function stereotyped(ClassEntity $entity, string $text): void
+    {
+        $entity->stereotypes = self::stereotypes($text);
+        $match = [];
+        \preg_match_all('/<<\s*(.*?)\s*>>/', $text, $match);
+        foreach ($match[1] as $label) {
+            $entity->spot = self::spot($label) ?? $entity->spot;
+        }
     }
 }

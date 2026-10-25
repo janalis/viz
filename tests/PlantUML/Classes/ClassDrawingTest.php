@@ -12,6 +12,7 @@ use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassEntity;
 use Janalis\Viz\PlantUML\Classes\ClassPortions;
+use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
@@ -115,7 +116,7 @@ final class ClassDrawingTest extends TestCase
                     && \count($mark->points) === 2
                     && 0.5 === $mark->strokeWidth
                     && $mark->points[0][1] === $mark->points[1][1]
-                    && $mark->points[0][0] > 0.0
+                    && $mark->points[0][0] > 1.0
                 ),
             ),
             'a static member underlined',
@@ -206,6 +207,53 @@ final class ClassDrawingTest extends TestCase
 
         // As the jar sizes them: an arrow, a diamond or a triangle drawn as a polygon, 10 wider either side; a parenthesis as its whole circle; lines as they run.
         $this->assertSame([49.0, 49.0, 53.0, 47.0, 38.0, 36.0, 36.0], \array_map($width, ['-->', '--*', '--|>', '-->>', '--(', '--||', '--x']));
+    }
+
+    public function testAStereotypesSpotCirclesItsOwnCharacterInItsOwnColour(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nclass A <<Entity>>\nclass B <<(S,#FF7700) Singleton>>\nA --> B\n@enduml"));
+        $texts = \array_map(static fn (Mark $mark): string => $mark->text, \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)));
+
+        // As the jar draws them: the spot's character in its colour, its label alone the stereotype, 1 wider either side than its text.
+        $this->assertSame(['C', '«Entity»', 'A', 'S', '«Singleton»', 'B'], $texts);
+        $this->assertContains('#ff7700', \array_map(static fn (Mark $mark): ?string => $mark->fill, $drawing->marks));
+        $this->assertSame([116.0, 195.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertSame(['Singleton'], ClassReader::stereotypes('<<(S,#FF7700) Singleton>>'));
+        $this->assertSame(['a', 'b'], ClassReader::stereotypes('<<(X) a, b>>'));
+    }
+
+    public function testSeparatorsAreDrawnAsPlantUmlsHorizontalLinesDrawThem(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nclass A {\n  a\n  --\n  b\n  ..\n  c\n  ==\n  d\n  __ title __\n  e\n}\n@enduml"));
+        $rules = [];
+        foreach ($drawing->marks as $mark) {
+            if (MarkKind::Polyline !== $mark->kind) {
+                continue;
+            }
+            $rules[] = [
+                \round($mark->points[0][0] / Units::POINT, precision: 3),
+                \round($mark->points[0][1] / Units::POINT, precision: 3),
+                \round($mark->points[1][0] / Units::POINT, precision: 3),
+                $mark->dashed,
+            ];
+        }
+        $title = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => 'title' === $mark->text))[0];
+
+        // As the jar draws them, 1 in from the sides: `==` twice, 2 apart; a titled line half its title's height lower, either side of its title.
+        $this->assertSame(
+            [
+                [8.0,    39.0,    47.659, false],
+                [8.0,    63.488,  47.659, false],
+                [8.0,    87.977,  47.659, true],
+                [8.0,    112.465, 47.659, false],
+                [8.0,    114.465, 47.659, false],
+                [8.0,    145.197, 14.646, false],
+                [41.013, 145.197, 47.659, false],
+            ],
+            $rules,
+        );
+        $this->assertEqualsWithDelta(149.988, $title->points[0][1] / Units::POINT, 0.001);
+        $this->assertSame([61.0, 186.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
 
     public function testALoneNoteIsDrawnSevenInAsPlantUmlDrawsIt(): void

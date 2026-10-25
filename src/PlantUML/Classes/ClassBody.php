@@ -11,7 +11,7 @@ namespace Janalis\Viz\PlantUML\Classes;
  */
 final readonly class ClassBody
 {
-    /** @param list<array{list<string>, string, string}> $compartments each one's lines, the separator above it, and that separator's title */
+    /** @param list<array{list<string>, string, string}> $compartments each one's lines, the separator above it — none for the line PlantUML draws between its compartments itself — and that separator's title */
     public function __construct(
         public array $compartments,
     ) {}
@@ -30,7 +30,7 @@ final readonly class ClassBody
             if (!$portions->shown($entity, $portion, \count($members))) {
                 continue;
             }
-            $compartments[] = [$members, '--', ''];
+            $compartments[] = [$members, '', ''];
         }
 
         return new self($compartments);
@@ -55,7 +55,7 @@ final readonly class ClassBody
      */
     private static function blocks(array $lines): array
     {
-        $blocks = [[[], '--', '']];
+        $blocks = [[[], '', '']];
         foreach ($lines as $line) {
             $match = [];
             if (1 === \preg_match('/^\s*(--|\.\.|==|__)(.*?)(?:--|\.\.|==|__)?\s*$/', $line, $match)) {

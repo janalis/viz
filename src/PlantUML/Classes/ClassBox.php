@@ -116,11 +116,13 @@ final readonly class ClassBox
         $width = $headerWidth;
         $height = $header;
         $line = $name->line();
-        foreach ($compartments as [$lines]) {
+        foreach ($compartments as [$lines, , $title]) {
             $text = new PlantUmlText(\array_map(self::text(...), $lines), $style->fontSize(), sprites: $style->sprites);
             [$textWidth] = $text->size();
-            $width = \max($width, $textWidth + 12 + ($iconSize > 0 && $visibility ? self::room($letter) : 0.0));
-            $height += 8 + (\count($lines) * $line);
+            [$titleWidth, $titleHeight] = self::title($title, $style)?->size() ?? [0.0, 0.0];
+            // As PlantUML, a compartment under a titled line 8 wider than its title at least, and half its title's height above and below the line.
+            $width = \max($width, $textWidth + 12 + ($iconSize > 0 && $visibility ? self::room($letter) : 0.0), '' === $title ? 0.0 : $titleWidth + 8);
+            $height += ('' === $title ? 8 : $titleHeight + 4) + (\count($lines) * $line);
         }
 
         return new self($entity, $style, $sheet, $name, $stereotypes, $generic, $circle ? $diameter : 0.0, $compartments, $iconSize > 0 && $visibility, $width, $height, $header, $letter);
@@ -162,11 +164,12 @@ final readonly class ClassBox
                 background: $back,
             );
             $left = $x + 6 + ($this->icons ? self::room($this->letter) : 0.0);
+            $above = '' === $title ? 4.0 : self::title($title, $this->style)?->size()[1] ?? 0.0;
             foreach ($lines as $index => $member) {
-                $rowTop = $top + 4 + ($index * $text->line());
+                $rowTop = $top + $above + ($index * $text->line());
                 \array_push($marks, ...$this->member($member, $left, $rowTop, $text));
             }
-            $top += 8 + (\count($lines) * $text->line());
+            $top += $above + 4 + (\count($lines) * $text->line());
         }
 
         return $marks;
@@ -182,7 +185,8 @@ final readonly class ClassBox
     private static function header(PlantUmlText $name, ?PlantUmlText $stereotypes, ?PlantUmlText $generic, float $circle): array
     {
         [$nameWidth, $nameHeight] = $name->size();
-        [$stereoWidth, $stereoHeight] = null === $stereotypes ? [0.0, 0.0] : $stereotypes->size();
+        // As PlantUML, its stereotypes 1 wider either side than their text.
+        [$stereoWidth, $stereoHeight] = null === $stereotypes ? [0.0, 0.0] : [$stereotypes->size()[0] + 2, $stereotypes->size()[1]];
         [$genericWidth, $genericHeight] = null === $generic ? [0.0, 0.0] : $generic->size();
         $circleWidth = $circle > 0 ? $circle + 4 : 0.0;
         $circleHeight = $circle > 0 ? $circle + 10 : 0.0;
@@ -195,7 +199,7 @@ final readonly class ClassBox
     private function headerMarks(float $x, float $y): array
     {
         [$nameWidth, $nameHeight] = $this->name->size();
-        [$stereoWidth, $stereoHeight] = null === $this->stereotypes ? [0.0, 0.0] : $this->stereotypes->size();
+        [$stereoWidth, $stereoHeight] = null === $this->stereotypes ? [0.0, 0.0] : [$this->stereotypes->size()[0] + 2, $this->stereotypes->size()[1]];
         $circleWidth = $this->circle > 0 ? $this->circle + 4 : 0.0;
         $middle = \max($stereoWidth, $nameWidth + 6);
         $genericWidth = null === $this->generic ? 0.0 : $this->generic->size()[0] + 4;
@@ -246,6 +250,8 @@ final readonly class ClassBox
     {
         [$character, $name] = self::SPOTS[$this->entity->type] ?? ['C', 'spotClass'];
         $style = $this->sheet->style(['root', 'element', 'spot', $name]);
+        // As PlantUML, a stereotype's `(C, colour)` circles its own character, in its own colour.
+        [$character, $back] = [$this->entity->spot[0] ?? $character, $this->entity->spot[1] ?? $style->color('BackGroundColor', '#add1b2')];
         $circle = [];
         for ($step = 0; $step < 24; ++$step) {
             $angle = (2 * \M_PI * $step) / 24;
@@ -254,7 +260,7 @@ final readonly class ClassBox
         $font = $this->letter;
 
         return [
-            new Mark(MarkKind::Polygon, $circle, stroke: $style->color('LineColor', '#181818'), fill: $style->color('BackGroundColor', '#add1b2'), strokeWidth: 1.0),
+            new Mark(MarkKind::Polygon, $circle, stroke: $style->color('LineColor', '#181818'), fill: $back, strokeWidth: 1.0),
             new Mark(
                 MarkKind::Text,
                 [[$x, $y + ((0.35 * Units::line($font)) / 2)]],
@@ -323,22 +329,38 @@ final readonly class ClassBox
     }
 
     /** @return list<Mark> the line above a compartment, and its title */
+    /**
+     * A separator as PlantUML's horizontal line draws one, 1 in from the box's sides: `--` and
+     * `==` a point thick, `==` twice, 2 apart, `..` dotted, `__` and the line under the header
+     * as thick as the box's line; a titled one half its title's height lower, its two halves
+     * either side of its title, the title half a point above its middle.
+     *
+     * @return list<Mark>
+     */
     private static function separator(float $x, float $y, float $width, string $kind, string $title, string $color, float $stroke, Style $style): array
     {
-        $marks = match ($kind) {
-            '..' => [self::rule($x, $y, $width, $color, $stroke, [1.0, 2.0])],
-            '==' => [self::rule($x, $y - 1, $width, $color, $stroke), self::rule($x, $y + 1, $width, $color, $stroke)],
-            '__' => [self::rule($x, $y, $width, $color, $stroke * 3)],
-            default => [self::rule($x, $y, $width, $color, $stroke)],
-        };
-        if ('' === $title) {
-            return $marks;
+        $text = self::title($title, $style);
+        [$textWidth, $textHeight] = $text?->size() ?? [0.0, 0.0];
+        $y += $textHeight / 2;
+        [$start, $end] = [$x + 1, $x + $width - 1];
+        $half = null === $text ? $end - $start : ($end - $start - $textWidth) / 2;
+        $marks = [];
+        foreach (null === $text ? [$start] : [$start, $end - $half] as $from) {
+            \array_push($marks, ...match ($kind) {
+                '..' => [self::rule($from, $y, $half, $color, 1.0, [1.0, 2.0])],
+                '==' => [self::rule($from, $y, $half, $color, 1.0), self::rule($from, $y + 2, $half, $color, 1.0)],
+                '--' => [self::rule($from, $y, $half, $color, 1.0)],
+                default => [self::rule($from, $y, $half, $color, $stroke)],
+            });
         }
-        $text = new PlantUmlText([$title], $style->fontSize(), color: $style->color('FontColor', '#000000'));
-        [$textWidth, $textHeight] = $text->size();
-        $marks[] = self::rectangle($x + (($width - $textWidth) / 2) - 2, $y - ($textHeight / 2), $textWidth + 4, $textHeight, 'none', $style->color('BackGroundColor', '#f1f1f1'), 0.0, 0.0);
 
-        return [...$marks, ...$text->marks($x, $y - ($textHeight / 2), $width)];
+        return null === $text ? $marks : [...$marks, ...$text->marks($start, $y - ($textHeight / 2) - 0.5, $end - $start)];
+    }
+
+    /** A separator's title, in the class's font; null for none. */
+    private static function title(string $title, Style $style): ?PlantUmlText
+    {
+        return '' === $title ? null : new PlantUmlText([$title], $style->fontSize(), color: $style->color('FontColor', '#000000'));
     }
 
     /** @param ?list<float> $dashes */
