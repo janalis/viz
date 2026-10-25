@@ -82,10 +82,10 @@ final class ClassDrawing
             $linked[$link->from] = true;
             $linked[$link->to] = true;
         }
-        // As PlantUML, the circled character takes its own size, else the document's default, else 17.
+        // As PlantUML, the circled character takes its own size, else the document's default, else — or for a size not in whole points — 17.
         $document = $this->classes->document;
         $letter = $document->param('circledCharacterFontSize', $document->param('defaultFontSize'));
-        $letter = \is_numeric($letter) && (float) $letter > 0 ? (float) $letter : 17.0;
+        $letter = 1 === \preg_match('/^\d+$/', $letter) && (int) $letter > 0 ? (int) $letter : 17;
         foreach ($this->classes->entities as $entity) {
             if ($portions->hidden($entity, \array_key_exists($entity->id, $linked))) {
                 continue;

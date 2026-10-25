@@ -34,6 +34,22 @@ final class ClassDrawingTest extends TestCase
         $this->assertEqualsWithDelta([$box->width + 3 - 9.588, $box->width + 3, -3.0, 13.133], [\min($xs), \max($xs), \min($ys), \max($ys)], 0.01);
     }
 
+    public function testAMembersIconKeepsRoomByTheCircledCharactersSize(): void
+    {
+        $left = static function (string $skin): float {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$skin}\nclass Order {\n  +id : int\n}\n@enduml"));
+            $text = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && 'id : int' === $mark->text))[0];
+
+            return ($text->points[0][0] - (\array_sum($text->slots ?? []) / 2)) / Units::POINT;
+        };
+
+        // As the jar sets the field: 20 past the class's left at 17, 23 at 24 and 15 at 2 — hidden or not — and a size not in whole points as 17.
+        $this->assertEqualsWithDelta(27.0, $left(''), 0.01);
+        $this->assertEqualsWithDelta(30.0, $left('skinparam circledCharacterFontSize 24'), 0.01);
+        $this->assertEqualsWithDelta(22.0, $left("skinparam circledCharacterFontSize 2\nhide circle"), 0.01);
+        $this->assertEqualsWithDelta(27.0, $left('skinparam circledCharacterFontSize 8.9'), 0.01);
+    }
+
     public function testAnEmptyClassIsAHeaderAndTwoEmptyCompartments(): void
     {
         $box = ClassBox::of(new ClassEntity('Dog', ['Dog']), StyleSheet::skin(), new ClassPortions([]));

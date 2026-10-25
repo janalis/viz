@@ -23,7 +23,6 @@ use Janalis\Viz\Text\FontFace;
  */
 final readonly class ClassBox
 {
-    private const float RADIUS = 11.0;
     /** A circle entity's radius, as PlantUML draws one. */
     public const float DOT = 8.0;
     /**
@@ -120,7 +119,7 @@ final readonly class ClassBox
         foreach ($compartments as [$lines]) {
             $text = new PlantUmlText(\array_map(self::text(...), $lines), $style->fontSize(), sprites: $style->sprites);
             [$textWidth] = $text->size();
-            $width = \max($width, $textWidth + 12 + ($iconSize > 0 && $visibility ? self::RADIUS + 3 : 0.0));
+            $width = \max($width, $textWidth + 12 + ($iconSize > 0 && $visibility ? self::room($letter) : 0.0));
             $height += 8 + (\count($lines) * $line);
         }
 
@@ -156,7 +155,7 @@ final readonly class ClassBox
                 sprites: $this->style->sprites,
                 background: $back,
             );
-            $left = $x + 6 + ($this->icons ? self::RADIUS + 3 : 0.0);
+            $left = $x + 6 + ($this->icons ? self::room($this->letter) : 0.0);
             foreach ($lines as $index => $member) {
                 $rowTop = $top + 4 + ($index * $text->line());
                 \array_push($marks, ...$this->member($member, $left, $rowTop, $text));
@@ -251,13 +250,22 @@ final readonly class ClassBox
         ];
     }
 
+    /**
+     * The room a member's visibility icon keeps before its text: 3 more than the circled
+     * character's radius, as measured on PlantUML's output, whether or not the circle is drawn.
+     */
+    private static function room(float $letter): float
+    {
+        return \round(($letter + 17) / 3) + 3;
+    }
+
     /** @return list<Mark> a member: its visibility's icon, then its text, underlined when static */
     private function member(string $member, float $left, float $top, PlantUmlText $text): array
     {
         $marks = [];
         $visibility = \ltrim($member)[0] ?? '';
         if ($this->icons && \array_key_exists($visibility, self::ICONS)) {
-            \array_push($marks, ...self::icon(self::ICONS[$visibility], ClassBody::method($member) ? 2 : 1, $left - self::RADIUS + 1, $top + ($text->line() / 2)));
+            \array_push($marks, ...self::icon(self::ICONS[$visibility], ClassBody::method($member) ? 2 : 1, $left - self::room($this->letter) + 4, $top + ($text->line() / 2)));
         }
         $row = new PlantUmlText(
             [self::text($member)],
