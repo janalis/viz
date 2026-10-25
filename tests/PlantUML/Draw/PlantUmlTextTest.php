@@ -144,6 +144,14 @@ final class PlantUmlTextTest extends TestCase
         $this->assertNotEqualsWithDelta(PlantUmlMetrics::width('n', 14.0), PlantUmlMetrics::width('→', 14.0), 1e-3);
     }
 
+    public function testMonospacedStretchesAreMeasuredInTheMonospacedFont(): void
+    {
+        // As the jar sets `and ""mono"" text`: `mono` 28.898 long, the whole line 81.14.
+        $text = new PlantUmlText(['and ""mono"" text'], 12.0);
+        $this->assertEqualsWithDelta(81.14, $text->size()[0], 2e-2);
+        $this->assertEqualsWithDelta(28.898, \array_sum($text->marks(0.0, 0.0, 0.0)[1]->slots ?? []), 2e-2);
+    }
+
     public function testANoteFoldsItsCorner(): void
     {
         $note = new NoteBox(new PlantUmlText(['hello'], 12.0), new Style(), '#ffffff');

@@ -312,9 +312,9 @@ final readonly class PlantUmlText
         $parts = (array) \preg_split('/'.self::SPRITE.'/u', $text, flags: \PREG_SPLIT_DELIM_CAPTURE);
         $atoms = [];
         for ($at = 0, $count = \count($parts); $at < $count; $at += 4) {
-            // As PlantUML's Creole sets them, each stretch of bold or italic markup in its own face.
+            // As PlantUML's Creole sets them, each stretch of bold, italic or monospaced markup in its own face.
             foreach ((array) \preg_split(
-                '/(\*\*.+?\*\*|<b>.+?<\/b>|\/\/.+?\/\/|<i>.+?<\/i>|<&[\w-]+>)/iu',
+                '/(\*\*.+?\*\*|<b>.+?<\/b>|\/\/.+?\/\/|<i>.+?<\/i>|"".+?""|<&[\w-]+>)/iu',
                 (string) $parts[$at],
                 flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY,
             ) as $stretch) {
@@ -470,15 +470,22 @@ final readonly class PlantUmlText
         if (1 === \preg_match('/^<&[\w-]+>$/', $text)) {
             return PlantUmlIcon::width($size);
         }
+        $family = self::family($text);
         if (!\str_contains(\strtolower($text), '<size')) {
-            return PlantUmlMetrics::width(self::plain($text), $size, $face);
+            return PlantUmlMetrics::width(self::plain($text), $size, $face, $family);
         }
         $width = 0.0;
         foreach (self::stretches($text, $size) as [$part, $at]) {
-            $width += PlantUmlMetrics::width($part, $at, $face);
+            $width += PlantUmlMetrics::width($part, $at, $face, $family);
         }
 
         return $width;
+    }
+
+    /** The font family a stretch is measured in: the monospaced one in `""` markup, as PlantUML's Creole sets it, else its own. */
+    private static function family(string $text): string
+    {
+        return 1 === \preg_match('/^"".+""$/su', $text) ? 'monospaced' : 'sans';
     }
 
     /** @return array{list<Mark>, float} a stretch of text's mark, standing on its baseline, and its width */
@@ -503,7 +510,7 @@ final readonly class PlantUmlText
             stroke: $color,
             font: $face,
             fontScale: Units::fontScale($size) / Units::POINT,
-            slots: self::slots($plain, $size, $face, $shown),
+            slots: self::slots($plain, $size, $face, $shown, self::family($text)),
         );
 
         return [[$mark], $shown];
@@ -525,9 +532,9 @@ final readonly class PlantUmlText
      *
      * @return list<float>
      */
-    private static function slots(string $plain, float $size, FontFace $face, float $shown): array
+    private static function slots(string $plain, float $size, FontFace $face, float $shown, string $family): array
     {
-        $slots = PlantUmlMetrics::slots($plain, $size, $face);
+        $slots = PlantUmlMetrics::slots($plain, $size, $face, $family);
         $sum = \array_sum($slots);
 
         return $sum > 0 ? \array_map(static fn (float $slot): float => ($slot * $shown) / $sum, $slots) : $slots;
