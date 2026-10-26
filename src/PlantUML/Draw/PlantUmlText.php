@@ -75,7 +75,7 @@ final readonly class PlantUmlText
     {
         $wrapped = [];
         foreach ($this->lines as $line) {
-            if (PlantUmlTable::row($line)) {
+            if (PlantUmlTable::row($line) || null !== PlantUmlRule::of($line, $this)) {
                 $wrapped[] = $line;
                 continue;
             }
@@ -239,7 +239,7 @@ final readonly class PlantUmlText
         }
         $rows = [];
         foreach ($this->blocks() as $block) {
-            if ($block instanceof PlantUmlTable) {
+            if ($block instanceof PlantUmlTable || $block instanceof PlantUmlRule) {
                 $rows[] = [...$block->size(), 0.0];
                 continue;
             }
@@ -259,7 +259,7 @@ final readonly class PlantUmlText
         $widest = 0.0;
         $height = 0.0;
         foreach ($this->blocks() as $block) {
-            [$blockWidth, $blockHeight] = $block instanceof PlantUmlTable ? $block->size() : $this->lineSize($this->atoms($block), $this->fontSize($block), $block);
+            [$blockWidth, $blockHeight] = $block instanceof PlantUmlTable || $block instanceof PlantUmlRule ? $block->size() : $this->lineSize($this->atoms($block), $this->fontSize($block), $block);
             $widest = \max($widest, $blockWidth);
             $height += $blockHeight;
         }
@@ -268,9 +268,9 @@ final readonly class PlantUmlText
     }
 
     /**
-     * The lines, each run of table rows in it a table, as PlantUML's Creole reads them.
+     * The lines, each run of table rows in it a table and each rule a rule, as PlantUML's Creole reads them.
      *
-     * @return list<string|PlantUmlTable>
+     * @return list<string|PlantUmlTable|PlantUmlRule>
      */
     private function blocks(): array
     {
@@ -285,10 +285,11 @@ final readonly class PlantUmlText
                 $blocks[] = PlantUmlTable::of($rows, $this);
                 $rows = [];
             }
-            if (null !== $line) {
-                // As PlantUML's Creole sets a line: each `<<…>>` in it between guillemets.
-                $blocks[] = (string) \preg_replace('/<<\s?((?:<&\w+>|[^<>])+?)\s?>>/u', replacement: '«$1»', subject: $line);
+            if (null === $line) {
+                continue;
             }
+            // As PlantUML's Creole sets a line: a rule, or each `<<…>>` in it between guillemets.
+            $blocks[] = PlantUmlRule::of($line, $this) ?? (string) \preg_replace('/<<\s?((?:<&\w+>|[^<>])+?)\s?>>/u', replacement: '«$1»', subject: $line);
         }
 
         return $blocks;
@@ -412,7 +413,7 @@ final readonly class PlantUmlText
     {
         $past = [];
         foreach ($this->blocks() as $line) {
-            $past[] = $line instanceof PlantUmlTable ? 0.0 : self::below($this->tallestOf($this->atoms($line), $this->fontSize($line))) - 1.5;
+            $past[] = $line instanceof PlantUmlTable || $line instanceof PlantUmlRule ? 0.0 : self::below($this->tallestOf($this->atoms($line), $this->fontSize($line))) - 1.5;
         }
 
         return [$past[0] ?? 0.0, $past[\count($past) - 1] ?? 0.0];
@@ -435,6 +436,11 @@ final readonly class PlantUmlText
         $marks = [];
         $top = $y;
         foreach ($this->blocks() as $line) {
+            if ($line instanceof PlantUmlRule) {
+                \array_push($marks, ...$line->marks($x, $top, $width, $this->color));
+                $top += $line->size()[1];
+                continue;
+            }
             if ($line instanceof PlantUmlTable) {
                 [$tableWidth, $tableHeight] = $line->size();
                 \array_push($marks, ...$line->marks('left' === $align ? $x : $x + (($width - $tableWidth) / ('right' === $align ? 1 : 2)), $top));
