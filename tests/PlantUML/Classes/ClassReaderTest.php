@@ -306,8 +306,10 @@ final class ClassReaderTest extends TestCase
         ];
         yield 'separator twice' => ['class a..B', 'Bad name since . is a separator: a..B'];
         yield 'path through a class' => ["class a\nclass a.B", 'Not a package: a'];
-        yield 'mixed in' => ["allowmixing\nclass A\nactor B", 'The native PlantUML renderer does not draw: actor B'];
-        yield 'mixed with a prefix' => ["class A\nmix_actor B", 'The native PlantUML renderer does not draw: mix_actor B'];
+        yield 'a state mixed in' => ["allowmixing\nclass A\nstate B", 'The native PlantUML renderer does not draw: state B'];
+        yield 'a port mixed in with a prefix' => ["class A\nmix_port B", 'The native PlantUML renderer does not draw: mix_port B'];
+        yield 'an element mixed in by its short form' => ["allowmixing\nclass A\nactor :B:", 'The native PlantUML renderer does not draw: actor :B:'];
+        yield 'a multiline element of a kind not drawn' => ["class A\nport P [\nx\n]", 'The native PlantUML renderer does not draw port elements'];
         yield 'unsupported before a refusal' => ["class A\nmap o {\n a *-> A\n}\nentity E\nclass E", 'PlantUML cannot declare E again as class'];
         yield 'note alone' => ["note left : alone\nclass A", 'The PlantUML note has no entity to stand beside: note left : alone'];
         yield 'note on no link' => ["class A\nnote on link : alone", 'The PlantUML note has no link to stand on: note on link : alone'];
@@ -320,6 +322,15 @@ final class ClassReaderTest extends TestCase
         $this->expectExceptionObject(new Unsupported($message));
 
         self::read($line);
+    }
+
+    public function testAnElementMetBeforeKeepsItsKind(): void
+    {
+        $classes = self::read("allowmixing\nclass A\nactor A <<s>> #pink\nactor \"Bee\" as B");
+
+        // As PlantUML, which keeps the entity a name already stands for, and gives it the element's name, stereotypes and colour.
+        $this->assertSame(['class', ['s'], '#pink'], [$classes->entities['A']->type, $classes->entities['A']->stereotypes, $classes->entities['A']->color]);
+        $this->assertSame(['element', 'actor', ['Bee']], [$classes->entities['B']->type, $classes->entities['B']->element?->symbol, $classes->entities['B']->element?->display]);
     }
 
     private static function read(string $lines): PlantUmlClasses

@@ -35,6 +35,16 @@ final readonly class PlantUmlBody
         $this->sections = $sections;
     }
 
+    /**
+     * Whether any of the lines separates sections.
+     *
+     * @param list<string> $lines
+     */
+    public static function sectioned(array $lines): bool
+    {
+        return [] !== \array_filter($lines, self::separates(...));
+    }
+
     /** Whether a line separates sections, as PlantUML's `isBlockSeparator` takes one. */
     private static function separates(string $line): bool
     {

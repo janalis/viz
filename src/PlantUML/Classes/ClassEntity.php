@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Classes;
 
+use Janalis\Viz\PlantUML\Descriptions\DescriptionElement;
+
 /** A class, interface, enum or other classifier as a PlantUML class diagram declares it, filled in as its lines are read. */
 final class ClassEntity
 {
@@ -19,6 +21,8 @@ final class ClassEntity
     public ?string $color = null;
     /** Its path through the packages, as PlantUML qualifies its name for `hide` and `remove`; its id where it has none. */
     public ?string $path = null;
+    /** What it is drawn as where it is another kind of element, mixed in: an actor, a use case, a component…, as a description diagram draws one. */
+    public ?DescriptionElement $element = null;
 
     /** @param list<string> $display its name as shown, a line each */
     public function __construct(

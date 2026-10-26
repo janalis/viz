@@ -9,6 +9,7 @@ use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Draw\ActorFigure;
+use Janalis\Viz\PlantUML\Draw\PlantUmlBody;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
 use Janalis\Viz\PlantUML\States\StateBox;
@@ -85,6 +86,8 @@ final readonly class DescriptionBox
         private ?PlantUmlText $title = null,
         /** How far below a use case's top its text starts. */
         private float $textTop = 0.0,
+        /** Its text in sections at its separator lines, each set left, as PlantUML's `BodyEnhanced2` sets a box's. */
+        private ?PlantUmlBody $body = null,
     ) {}
 
     /** An interface as svek writes one a link joins beside another: its circle alone, 18 across, its name hanging 8 below. */
@@ -96,18 +99,21 @@ final readonly class DescriptionBox
     /**
      * @param ?Style $style the style it is drawn in, its symbol's in a component diagram by default, as a network diagram's servers take their own
      * @param bool $flushLeft whether its lines are set left in their block, the block centred
+     * @param string $diagram the kind of diagram whose styles it takes: a class diagram's, for one mixed in
      */
-    public static function of(DescriptionElement $element, StyleSheet $sheet, ?Style $style = null, bool $flushLeft = false): self
+    public static function of(DescriptionElement $element, StyleSheet $sheet, ?Style $style = null, bool $flushLeft = false, string $diagram = 'componentDiagram'): self
     {
-        $style ??= $sheet->style(['root', 'element', 'componentDiagram', $element->symbol], $element->stereotypes);
+        $style ??= $sheet->style(['root', 'element', $diagram, $element->symbol], $element->stereotypes);
         // As PlantUML, a package shows its name in its tab, and its text below only where it is not its name.
-        $title = 'package' === $element->symbol ? PlantUmlText::styled([$element->id], $sheet->style(['root', 'element', 'componentDiagram', 'package', 'title'], $element->stereotypes)) : null;
+        $title = 'package' === $element->symbol ? PlantUmlText::styled([$element->id], $sheet->style(['root', 'element', $diagram, 'package', 'title'], $element->stereotypes)) : null;
         $text = PlantUmlText::styled(null !== $title && [$element->id] === $element->display ? [] : $element->display, $style);
-        $stereoStyle = $sheet->style(['root', 'element', 'componentDiagram', $element->symbol, 'stereotype'], $element->stereotypes);
+        $stereoStyle = $sheet->style(['root', 'element', $diagram, $element->symbol, 'stereotype'], $element->stereotypes);
         $stereotypes = [] === $element->stereotypes || !$element->stereotypeShown
             ? null
             : PlantUmlText::styled(\array_map(static fn (string $label): string => '«'.$label.'»', $element->stereotypes), $stereoStyle);
-        [$textWidth, $textHeight] = $text->size();
+        // As PlantUML, a box's text set in sections where a line separates them; a use case's and an icon's name not.
+        $body = 'usecase' === $element->symbol || \array_key_exists($element->shape ?? $element->symbol, self::ICONS) || !PlantUmlBody::sectioned($text->lines) ? null : new PlantUmlBody($text);
+        [$textWidth, $textHeight] = null === $body ? $text->size() : $body->size();
         [$stereoWidth, $stereoHeight] = null === $stereotypes ? [0.0, 0.0] : $stereotypes->size();
         // As PlantUML is seen to measure it, a stereotype takes 2 more than its text.
         $labelWidth = \max($textWidth, null === $stereotypes ? 0.0 : $stereoWidth + 2);
@@ -138,6 +144,7 @@ final readonly class DescriptionBox
             $height,
             $flushLeft,
             title: $title,
+            body: $body,
             textTop: 'usecase' === $element->symbol ? self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()], $element->business ? 7.0 : 0.0)[2] : 0.0,
         );
     }
@@ -180,7 +187,14 @@ final readonly class DescriptionBox
         // A package's title 4 in and 3 down, in its tab.
         $title = null === $this->title ? [] : $this->title->marks($x + 4, $y + 3, $this->tab()[0]);
 
-        return [...Shadow::cast($outline, $this->style->number('Shadowing')), ...$title, ...$this->label($labelLeft, $labelTop, $labelWidth)];
+        $label = null === $this->body
+            ? $this->label($labelLeft, $labelTop, $labelWidth)
+            : [
+                ...($this->stereotypes?->marks($labelLeft, $labelTop, $labelWidth) ?? []),
+                ...$this->body->marks($labelLeft, $labelTop + ($this->stereotypes?->size()[1] ?? 0.0), $labelWidth, 'left', $x, $x + $this->width, $line, $stroke),
+            ];
+
+        return [...Shadow::cast($outline, $this->style->number('Shadowing')), ...$title, ...$label];
     }
 
     /** @return array{float, float} the title a folder's or a package's tab holds: a package's name and 6 either side, the 40 by 15 a folder keeps for one it does not show */

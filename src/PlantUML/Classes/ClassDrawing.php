@@ -10,6 +10,7 @@ use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionDrawing;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionShapes;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
@@ -36,7 +37,7 @@ final class ClassDrawing
     /** The prefix of the point svek puts in a package a link starts or ends at. */
     private const string ANCHOR_PREFIX = '*anchor*';
 
-    /** @var array<string, ClassBox> */
+    /** @var array<string, ClassBox|DescriptionBox> */
     private array $boxes = [];
     /** @var array<string, NoteBox> */
     private array $notes = [];
@@ -145,10 +146,13 @@ final class ClassDrawing
                 // As PlantUML, a hidden classifier keeps its place, drawn with nothing that touches it.
                 $this->hidden[$entity->id] = true;
             }
-            $box = ClassBox::of($entity, $this->classes->document->styles, $portions, \is_numeric($icons) ? (float) $icons : 10.0, $letter);
+            // As PlantUML, an element mixed in drawn as a description diagram draws it, in the class diagram's styles.
+            $box = null === $entity->element
+                ? ClassBox::of($entity, $this->classes->document->styles, $portions, \is_numeric($icons) ? (float) $icons : 10.0, $letter)
+                : DescriptionBox::of($entity->element, $this->classes->document->styles, diagram: 'classDiagram');
             $this->boxes[$entity->id] = $box;
             $svek->node($entity->id, $box->width, $box->height, $entity->group);
-            if ('map' === $entity->type) {
+            if ($box instanceof ClassBox && 'map' === $entity->type) {
                 $svek->rows($entity->id, $box->rows());
             }
         }
@@ -334,7 +338,7 @@ final class ClassDrawing
         $marks = [];
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
-            \array_push($marks, ...$box->bare($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+            \array_push($marks, ...$box instanceof ClassBox ? $box->bare($node->x - ($node->w / 2), $node->y - ($node->h / 2)) : $box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
         }
 
         // Alone, laid out without dot, a box is taken at its size, as PlantUML takes its image's.

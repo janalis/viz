@@ -6,6 +6,8 @@ namespace Janalis\Viz\PlantUML\Classes;
 
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Activities\ActivityReader;
+use Janalis\Viz\PlantUML\Descriptions\DescriptionElement;
+use Janalis\Viz\PlantUML\Descriptions\DescriptionReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
@@ -110,6 +112,7 @@ final class ClassReader
             'CommandAllowMixing' => $this->mixing = true,
             'CommandNamespaceSeparator' => $this->separator = \in_array(\strtolower((string) $command->get('SEPARATOR')), ['none', 'null'], strict: true) ? null : (string) $command->get('SEPARATOR'),
             'CommandCreateElementFull2' => $this->element($command),
+            'CommandCreateElementMultilines' => $this->multiline($command),
             default => throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line()),
         };
     }
@@ -203,14 +206,59 @@ final class ClassReader
         }
     }
 
-    /** An element of another kind: refused without `allowmixing`, as PlantUML refuses it, and not drawn natively with it. */
-    private function element(PlantUmlCommand $command): never
+    /**
+     * An element of another kind, after `allowmixing` or written `mix_…`: an entity drawn as a
+     * description diagram draws its symbol; refused without, as PlantUML refuses it. One met
+     * before keeps its kind, as PlantUML keeps it, and takes its name, stereotypes and colour.
+     */
+    private function element(PlantUmlCommand $command): void
     {
         if (!$this->mixing && !\str_starts_with(\strtolower($command->line()), 'mix_')) {
             throw new PlantUmlRefusal('A class diagram mixes in other elements only after allowmixing');
         }
+        $code = self::clean((string) $command->lazy('CODE'));
+        $symbol = \strtolower((string) $command->get('SYMBOL'));
+        // As PlantUML, which keeps the marks of a short form in the name, and draws a port or a state as neither kind does.
+        if (1 === \preg_match('/^(?:\(|:|\[)/', $code) || !\in_array($symbol, DescriptionReader::SYMBOLS, strict: true)) {
+            throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
+        }
+        $id = $this->resolve($code);
+        $known = \array_key_exists($id, $this->entities);
+        $display = $command->lazy('DISPLAY');
+        $entity = $this->made($id, null === $display ? null : self::clean($display));
+        $entity->stereotypes = self::stereotypes((string) $command->lazy('STEREOTYPE'));
+        $entity->color = $command->get('COLOR') ?? $entity->color;
+        if ($known) {
+            return;
+        }
+        $entity->type = 'element';
+        $entity->element = new DescriptionElement($id, $entity->display, \rtrim($symbol, characters: '/'), $entity->group, \str_ends_with($symbol, '/'));
+        $entity->element->stereotypes = $entity->stereotypes;
+        $entity->element->color = $entity->color;
+    }
 
-        throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
+    /**
+     * `rectangle R [` … `]` and `component C "` … `"`: an element whose text runs over several
+     * lines, which a class diagram takes without `allowmixing`, as PlantUML takes it.
+     */
+    private function multiline(PlantUmlCommand $command): void
+    {
+        $symbol = \strtolower((string) $command->get('TYPE'));
+        if (!\in_array($symbol, DescriptionReader::SYMBOLS, strict: true)) {
+            throw new Unsupported('The native PlantUML renderer does not draw '.$symbol.' elements');
+        }
+        $lines = [\trim((string) $command->get('DESC')), ...\array_map(\trim(...), \array_slice($command->lines, offset: 1))];
+        $last = \count($lines) - 1;
+        $lines[$last] = \rtrim($lines[$last], characters: ']"');
+        $id = $this->resolve(self::clean((string) $command->get('CODE')));
+        $entity = $this->made($id, null);
+        $entity->display = \array_values(\array_filter($lines, static fn (string $line): bool => '' !== $line));
+        $entity->stereotypes = self::stereotypes((string) $command->get('STEREO'));
+        $entity->color = $command->get('COLOR') ?? $entity->color;
+        $entity->type = 'element';
+        $entity->element = new DescriptionElement($id, $entity->display, \rtrim($symbol, characters: '/'), $entity->group, \str_ends_with($symbol, '/'));
+        $entity->element->stereotypes = $entity->stereotypes;
+        $entity->element->color = $entity->color;
     }
 
     private function member(PlantUmlCommand $command): void

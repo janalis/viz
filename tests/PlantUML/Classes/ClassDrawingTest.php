@@ -643,4 +643,19 @@ final class ClassDrawingTest extends TestCase
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
     }
+
+    public function testElementsMixedInAreDrawnAsADescriptionDiagramDrawsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: an actor, a use case, a component, a node and a database among classes; a rectangle of several lines, without allowmixing, in sections where a line separates them.
+        $this->assertSame([146.0, 414.0], $size("allowmixing\nclass A\nusecase U\ncomponent C\nnode N\ndatabase D <<db>>\nA --> U\nA --> C\nC --> N\nN --> D"));
+        $this->assertSame([118.0, 356.0], $size("allowmixing\npackage P {\n  class A\n  rectangle R #pink\n}\nactor/ B\nB --> A\nA ..> R : uses"));
+        $this->assertSame([63.0, 204.0], $size("class A\nmix_actor U\nU --> A"));
+        $this->assertSame([81.0, 117.0], $size("rectangle R [\n  one\n  ----\n  two\n  ==t==\n  three\n]"));
+    }
 }
