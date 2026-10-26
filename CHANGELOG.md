@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- PlantUML component, deployment, use case and state diagrams' `hide`, `show`, `remove` and `restore` of elements and states are drawn natively, where they were refused, as class diagrams' are: by name, `*` standing for any characters, by `<<stereotype>>` or `@unlinked`; one hidden laid out but drawn with nothing that touches it, measured all the same; one removed taken out with its links and notes. A lone element left after others are removed is laid out by dot, not drawn alone, as PlantUML counts those removed. In a class diagram, a note on a classifier removed now goes with it. Those of composite states and of the states within them are left to PlantUML.
 - A PlantUML class diagram's association diamond, `<> name`, is drawn natively, where it was refused: a diamond 24 across, nameless, as PlantUML makes it; one named as an entity already made is refused as PlantUML refuses it.
 - A PlantUML sequence diagram's `autonewpage` is read natively, where it was refused, as the no-op it is in PlantUML.
 - A PlantUML sequence diagram's message with an anchored end, `A{x} -> B` or `A -> B{x}`, is laid out natively, where it was refused, and, as teoz leaves it, not drawn: its row kept, its arrow and label left out.

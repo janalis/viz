@@ -18,6 +18,10 @@ final class StateNode
     /** @var list<string> */
     public array $stereotypes = [];
     public ?string $color = null;
+    /** Laid out but not drawn, as `hide` hides it. */
+    public bool $hidden = false;
+    /** Taken out with its transitions and notes, as `remove` takes it out. */
+    public bool $removed = false;
 
     /** @param list<string> $display */
     public function __construct(

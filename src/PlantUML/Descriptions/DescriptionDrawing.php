@@ -12,6 +12,7 @@ use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
+use Janalis\Viz\PlantUML\Classes\ClassPortions;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
@@ -21,6 +22,7 @@ use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\StackedText;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
+use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\Svek\Squares;
 use Janalis\Viz\PlantUML\Svek\Svek;
 
@@ -40,6 +42,10 @@ final class DescriptionDrawing
     private array $edges = [];
     /** @var array<string, true> the containers a link starts or ends at, each with a point inside it */
     private array $anchors = [];
+    /** @var array<string, true> the elements hidden, laid out but not drawn, as `hide` hides them */
+    private array $hidden = [];
+    /** @var list<Mark> what the hidden elements would draw, with their links and notes: measured, as PlantUML's limit finder takes them, not drawn */
+    private array $ghosts = [];
 
     /** The prefix of the point svek puts in a container a link starts or ends at. */
     private const string ANCHOR = '*anchor*';
@@ -55,9 +61,10 @@ final class DescriptionDrawing
         $placing = $drawing->graph()->place($diagram->direction);
         yield from $placing;
         $placement = $placing->getReturn();
-        // As PlantUML, which draws a lone element but a hexagon without dot, as its box 7 in from its sides: 1 less room past it, and measured as its box alone.
+        // As PlantUML, which draws a lone element but a hexagon without dot, as its box 7 in from its sides: 1 less room past it, and measured as its box alone — lone among all it was given, those removed and their links included.
         $nodes = $placement->graph->nodes;
-        $alone = 1 === \count($nodes) && [] === $placement->graph->clusters && 'hexagon' !== ($diagram->elements[$nodes[0]->name] ?? null)?->symbol;
+        $leaves = \count($diagram->elements) + \count(\array_filter($diagram->notes, static fn (PlantUmlNote $note): bool => null === $note->link));
+        $alone = 1 === \count($nodes) && 1 === $leaves && [] === $diagram->links && [] === $placement->graph->clusters && 'hexagon' !== ($diagram->elements[$nodes[0]->name] ?? null)?->symbol;
         $box = $alone
             ? [new Mark(
                 MarkKind::Polygon,
@@ -67,11 +74,13 @@ final class DescriptionDrawing
                 strokeWidth: 0.0,
             )] : null;
 
+        $marks = $drawing->paint($placement);
+
         return PlantUmlFrame::svek(
             $diagram->document,
-            $drawing->paint($placement),
+            $marks,
             trail: $alone ? 14.0 : 15.0,
-            measured: $box,
+            measured: $box ?? ([] === $drawing->ghosts ? null : [...$marks, ...$drawing->ghosts]),
             inFrame: $alone ? PlantUmlFrame::ALONE_SHORT : PlantUmlFrame::LAID_OUT,
         );
     }
@@ -94,8 +103,27 @@ final class DescriptionDrawing
             [$shapeWidth, $shapeHeight] = self::SHAPE_ROOM[$group->symbol] ?? [0.0, 0.0];
             $svek->cluster($group->id, $group->parent, ...Svek::label($width, $height, shapeWidth: $shapeWidth, shapeHeight: $shapeHeight));
         }
-        $beside = [];
+        $portions = new ClassPortions($this->diagram->visibility);
+        $linked = [];
         foreach ($this->diagram->links as $link) {
+            $linked[$link->from] = true;
+            $linked[$link->to] = true;
+        }
+        // As PlantUML: an element removed taken out with its links and notes; one hidden laid out, drawn with nothing that touches it.
+        $removed = [];
+        foreach ($this->diagram->elements as $element) {
+            if ($portions->hides($element->id, $element->stereotypes, \array_key_exists($element->id, $linked), 'removed')) {
+                $removed[$element->id] = true;
+                continue;
+            }
+            if ($portions->hides($element->id, $element->stereotypes, \array_key_exists($element->id, $linked))) {
+                $this->hidden[$element->id] = true;
+            }
+        }
+        $links = \array_filter($this->diagram->links, static fn (PlantUmlLink $link): bool => !\array_key_exists($link->from, $removed) && !\array_key_exists($link->to, $removed));
+        $notes = \array_filter($this->diagram->notes, static fn (PlantUmlNote $note): bool => !\array_key_exists($note->entity ?? '', $removed));
+        $beside = [];
+        foreach ($links as $link) {
             if (1 !== $link->length) {
                 continue;
             }
@@ -103,13 +131,16 @@ final class DescriptionDrawing
             $beside[$link->to] = true;
         }
         foreach ($this->diagram->elements as $element) {
+            if (\array_key_exists($element->id, $removed)) {
+                continue;
+            }
             $box = DescriptionBox::of($element, $this->diagram->document->styles);
             $box = \array_key_exists($element->id, $beside) ? $box->beside() : $box;
             $this->boxes[$element->id] = $box;
             $svek->node($element->id, $box->width, $box->height, $element->group);
         }
         $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'note']);
-        foreach ($this->diagram->notes as $note) {
+        foreach ($notes as $note) {
             if (null !== $note->link) {
                 continue;
             }
@@ -118,7 +149,7 @@ final class DescriptionDrawing
             [$width, $height] = $box->size();
             $svek->node($note->id, $width, $height, $note->group);
         }
-        foreach ($this->diagram->links as $index => $link) {
+        foreach ($links as $index => $link) {
             [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
             $this->edges[$index] = $svek->edge(
                 $this->end($svek, $link->from),
@@ -131,12 +162,12 @@ final class DescriptionDrawing
             );
         }
         $groups = [];
-        foreach ([...$this->diagram->elements, ...$this->diagram->notes] as $leaf) {
+        foreach ([...$this->diagram->elements, ...$notes] as $leaf) {
             $groups[$leaf->id] = $leaf->group;
         }
         $drawn = \array_values(\array_filter($this->diagram->leaves, fn (string $id): bool => \array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->notes)));
-        Squares::put($svek, $drawn, $groups, [null, ...\array_keys($this->diagram->groups)], $this->diagram->links, $this->diagram->notes);
-        foreach ($this->diagram->notes as $note) {
+        Squares::put($svek, $drawn, $groups, [null, ...\array_keys($this->diagram->groups)], \array_values($links), \array_values($notes));
+        foreach ($notes as $note) {
             if (null === $note->entity) {
                 continue;
             }
@@ -242,7 +273,8 @@ final class DescriptionDrawing
         $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'arrow']);
         $background = $this->diagram->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
         foreach ($this->edges as $index => $edge) {
-            \array_push($marks, ...LinkPainter::marks($this->diagram->links[$index], $placement, $edge, $this->label($index), $style, $background));
+            $link = $this->diagram->links[$index];
+            $this->put($marks, LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background), $link->from, $link->to);
         }
         foreach ($this->diagram->notes as $note) {
             if (null === $note->entity || !\array_key_exists($note->id, $this->notes)) {
@@ -250,17 +282,39 @@ final class DescriptionDrawing
             }
             $from = $placement->endpoints[$note->id];
             $to = $placement->endpoints[$note->entity];
-            $marks[] = new Mark(MarkKind::Polyline, BoxClip::clipped([[$from->x, $from->y], [$to->x, $to->y]], $from, $to), stroke: '#181818', dashed: true, strokeWidth: 0.5, dashes: [7.0, 7.0]);
+            $this->put(
+                $marks,
+                [new Mark(MarkKind::Polyline, BoxClip::clipped([[$from->x, $from->y], [$to->x, $to->y]], $from, $to), stroke: '#181818', dashed: true, strokeWidth: 0.5, dashes: [7.0, 7.0])],
+                $note->entity,
+            );
         }
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
-            \array_push($marks, ...$box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+            $this->put($marks, $box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)), $id);
         }
+        $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->diagram->notes), 1, 0);
         foreach ($this->notes as $id => $note) {
             $node = $placement->endpoints[$id];
-            \array_push($marks, ...$note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+            $this->put($marks, $note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)), $attached[$id] ?? '');
         }
 
         return $marks;
+    }
+
+    /**
+     * Adds what is drawn to the marks, or, when it touches a hidden element, to what is only measured.
+     *
+     * @param list<Mark> $marks
+     * @param list<Mark> $drawn
+     * @param int|string ...$touching the elements it touches, by id, a numeric one as PHP keys it
+     */
+    private function put(array &$marks, array $drawn, int|string ...$touching): void
+    {
+        if (\array_any($touching, fn (int|string $id): bool => \array_key_exists($id, $this->hidden))) {
+            \array_push($this->ghosts, ...$drawn);
+
+            return;
+        }
+        \array_push($marks, ...$drawn);
     }
 }

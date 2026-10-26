@@ -351,4 +351,21 @@ final class DescriptionDrawingTest extends TestCase
         // As the jar draws it, 99 by 95: B a circle, as no actor in the style nor use case is there.
         $this->assertSame([99.0, 95.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
+
+    public function testHiddenElementsKeepTheirPlaceAndRemovedOnesGo(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: an element hidden laid out, drawn with nothing that touches it; one removed taken out with its links and notes, a lone element left drawn with dot all the same.
+        $this->assertSame([70.0, 280.0], $size("[A] --> [B]\n[B] --> [C]\nhide B"));
+        $this->assertSame([155.0, 67.0], $size("[A] --> [B]\n[B] --> [C]\nremove B"));
+        $this->assertSame([70.0, 173.0], $size("[A] --> [B]\n[C]\nactor D\nremove @unlinked"));
+        $this->assertSame([143.0, 173.0], $size("[A] --> [B]\nnote right of B : nb\nhide B"));
+        $this->assertSame([70.0, 67.0], $size("[A] --> [B]\nnote right of B : nb\nremove B"));
+        $this->assertSame([70.0, 173.0], $size("[A] --> [B]\n[A] --> [C]\nremove *\nrestore A\nrestore C"));
+    }
 }

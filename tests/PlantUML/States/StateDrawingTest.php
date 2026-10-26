@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\Model\State\State;
 use Janalis\Viz\PlantUML\Draw\PlantUmlMetrics;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
@@ -331,5 +332,31 @@ final class StateDrawingTest extends TestCase
 
         // As the jar draws it, 116 tall: the second transition over B a third of the rank separation above the first.
         $this->assertSame([242.0, 116.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
+    public function testHiddenStatesKeepTheirPlaceAndRemovedOnesGo(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: a state hidden laid out, drawn with nothing that touches it, its note neither; one removed taken out with its transitions and notes.
+        $this->assertSame([72.0, 291.0], $size("state A\nstate B\nA --> B\nB --> C\nhide B"));
+        $this->assertSame([157.0, 71.0], $size("state A\nstate B\nA --> B\nB --> C\nremove B"));
+        $this->assertSame([136.0, 291.0], $size("state A <<x>>\nA --> B\nB --> C\nhide <<x>>\nnote right of A : n"));
+        $this->assertSame([72.0, 260.0], $size("[*] --> A\nA --> B\nstate Z\nremove @unlinked"));
+    }
+
+    public function testRemovedStatesAreLeftOutOfTheModel(): void
+    {
+        $diagram = PlantUmlPipeline::native()->diagram("@startuml\nstate A\nstate B\nA --> B\nB --> C\nnote right of B : n\nnote left of A : m\nremove B\n@enduml");
+        $this->assertInstanceOf(PlantUmlStates::class, $diagram);
+        $model = $diagram->model();
+
+        $this->assertSame(['A', 'C'], \array_map(static fn (State $state): string => $state->id, $model->states));
+        $this->assertSame([], $model->transitions);
+        $this->assertCount(1, $model->notes);
     }
 }

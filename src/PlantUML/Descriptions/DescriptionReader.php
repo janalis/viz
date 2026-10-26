@@ -70,6 +70,8 @@ final class DescriptionReader
     private array $notes = [];
     /** @var list<array{bool, ?string}> each `hide` or `show` of stereotypes: whether it shows them, and of what, null for all */
     private array $stereotypeRules = [];
+    /** @var list<array{bool, ?string, bool, string}> each `hide`, `show`, `remove` or `restore` of elements, as `ClassPortions` takes them */
+    private array $visibility = [];
     private Direction $direction = Direction::TopBottom;
     /** @var list<string> the elements and floating notes, as PlantUML makes its leaves, in order */
     private array $leaves = [];
@@ -98,7 +100,7 @@ final class DescriptionReader
         $reader->settle(\strtolower($document->param('componentStyle', '')), \strtolower($document->param('actorStyle', '')));
         $reader->linkedContainers();
 
-        return new PlantUmlDescriptions($document, $reader->elements, $reader->groups, $reader->links, $reader->notes, $reader->direction, $reader->leaves);
+        return new PlantUmlDescriptions($document, $reader->elements, $reader->groups, $reader->links, $reader->notes, $reader->direction, $reader->leaves, $reader->visibility);
     }
 
     private function execute(PlantUmlCommand $command): void
@@ -106,6 +108,12 @@ final class DescriptionReader
         match ($command->name) {
             'CommandNope', 'CommandFootboxIgnored', 'CommandHideEmptyDescription' => null,
             'CommandHideShowByGender' => $this->hideOrShow($command),
+            'CommandHideShow2', 'CommandRemoveRestore' => $this->visibility[] = [
+                1 === \preg_match('/^(?:show|restore)/i', (string) $command->get('COMMAND')),
+                \trim((string) $command->get('WHAT')),
+                false,
+                'CommandRemoveRestore' === $command->name ? 'removed' : 'entity',
+            ],
             'CommandRankDir' => $this->direction = \str_starts_with(\strtolower($command->line()), 'left') ? Direction::LeftRight : Direction::TopBottom,
             'CommandCreateElementFull' => $this->element($command),
             'CommandCreateElementMultilines' => $this->multiline($command),

@@ -42,6 +42,9 @@ final class StateDrawing
     /** How far either side of a composite state's anchor PlantUML's limit finder is seen to reach. */
     private const float ANCHOR = 14.0;
 
+    /** @var list<Mark> what the hidden states would draw, with their transitions and notes: measured, as PlantUML's limit finder takes them, not drawn */
+    private array $ghosts = [];
+
     private function __construct(
         private readonly PlantUmlStates $states,
     ) {}
@@ -54,7 +57,7 @@ final class StateDrawing
         yield from $scope;
         $marks = $scope->getReturn();
 
-        return PlantUmlFrame::svek($states->document, $marks, inFrame: PlantUmlFrame::LAID_OUT_SHORT);
+        return PlantUmlFrame::svek($states->document, $marks, measured: [] === $drawing->ghosts ? null : [...$marks, ...$drawing->ghosts], inFrame: PlantUmlFrame::LAID_OUT_SHORT);
     }
 
     /**
@@ -161,7 +164,7 @@ final class StateDrawing
     {
         $members = [];
         foreach ($this->states->nodes as $node) {
-            if ($node->group !== $group || $node->region !== $region) {
+            if ($node->group !== $group || $node->region !== $region || $node->removed) {
                 continue;
             }
             $members[] = [$node, null];
@@ -454,7 +457,8 @@ final class StateDrawing
         }
         $placement = self::framed($placement, $frames);
         foreach ($edges as $index => $edge) {
-            \array_push($marks, ...LinkPainter::marks($this->states->links[$index], $placement, $edge, $this->label($index), $style, $background));
+            $link = $this->states->links[$index];
+            $this->put($marks, LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background), $link->from, $link->to);
         }
         foreach ($this->states->notes as $note) {
             if (null === $note->entity || !\array_key_exists($note->id, $notes)) {
@@ -462,12 +466,16 @@ final class StateDrawing
             }
             $from = $placement->endpoints[$note->id];
             $to = $placement->endpoints[$note->entity];
-            $marks[] = new Mark(MarkKind::Polyline, BoxClip::clipped([[$from->x, $from->y], [$to->x, $to->y]], $from, $to), stroke: '#181818', dashed: true, strokeWidth: 0.5, dashes: [7.0, 7.0]);
+            $this->put(
+                $marks,
+                [new Mark(MarkKind::Polyline, BoxClip::clipped([[$from->x, $from->y], [$to->x, $to->y]], $from, $to), stroke: '#181818', dashed: true, strokeWidth: 0.5, dashes: [7.0, 7.0])],
+                $note->entity,
+            );
         }
         foreach ($boxes as $id => $box) {
             $node = $placement->endpoints[$id];
             [$left, $top] = [$node->x - ($node->w / 2) + ($shifts[$id] ?? 0.0), $node->y - ($node->h / 2)];
-            \array_push($marks, ...$box->marks($left, $top));
+            $this->put($marks, $box->marks($left, $top), $id);
             $owner = $owners[$id] ?? null;
             if (\array_key_exists($id, $shifts) && null !== $owner) {
                 // As PlantUML sets a point's name: above it when it stands above its frame's middle.
@@ -480,12 +488,30 @@ final class StateDrawing
                 $marks[] = self::moved($mark, $node->x - ($node->w / 2), $node->y - ($node->h / 2));
             }
         }
+        $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->states->notes), 1, 0);
         foreach ($notes as $id => $note) {
             $node = $placement->endpoints[$id];
-            \array_push($marks, ...$note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+            $this->put($marks, $note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)), $attached[$id] ?? '');
         }
 
         return $marks;
+    }
+
+    /**
+     * Adds what is drawn to the marks, or, when it touches a hidden state, to what is only measured.
+     *
+     * @param list<Mark> $marks
+     * @param list<Mark> $drawn
+     * @param int|string ...$touching the states it touches, by id, a numeric one as PHP keys it
+     */
+    private function put(array &$marks, array $drawn, int|string ...$touching): void
+    {
+        if (\array_any($touching, fn (int|string $id): bool => true === ($this->states->nodes[$id] ?? null)?->hidden)) {
+            \array_push($this->ghosts, ...$drawn);
+
+            return;
+        }
+        \array_push($marks, ...$drawn);
     }
 
     /**

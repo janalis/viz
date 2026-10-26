@@ -29,6 +29,8 @@ final readonly class PlantUmlDescriptions implements PlantUmlDiagram
         public Direction $direction = Direction::TopBottom,
         /** @var list<string> the elements and floating notes, by id, in the order they were made */
         public array $leaves = [],
+        /** @var list<array{bool, ?string, bool, string}> each `hide`, `show`, `remove` or `restore` of elements, as `ClassPortions` takes them */
+        public array $visibility = [],
     ) {}
 
     /** The use case model when the diagram has actors or use cases, the graph model otherwise. */

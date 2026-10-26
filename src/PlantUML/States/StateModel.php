@@ -27,8 +27,14 @@ final class StateModel
 
         return new StateDiagram(
             self::states($states, null, 0),
-            \array_map(static fn (PlantUmlLink $link): Transition => new Transition($link->from, $link->to, $link->label ?? ''), $states->links),
-            \array_map(static fn (PlantUmlNote $note): Note => new Note(\implode("\n", $note->lines), $note->entity, 'left' === $note->position ? NoteSide::Left : NoteSide::Right), $states->notes),
+            \array_values(\array_map(
+                static fn (PlantUmlLink $link): Transition => new Transition($link->from, $link->to, $link->label ?? ''),
+                \array_filter($states->links, static fn (PlantUmlLink $link): bool => !$states->nodes[$link->from]->removed && !$states->nodes[$link->to]->removed),
+            )),
+            \array_values(\array_map(
+                static fn (PlantUmlNote $note): Note => new Note(\implode("\n", $note->lines), $note->entity, 'left' === $note->position ? NoteSide::Left : NoteSide::Right),
+                \array_filter($states->notes, static fn (PlantUmlNote $note): bool => null === $note->entity || !$states->nodes[$note->entity]->removed),
+            )),
             $states->direction,
             null === $title ? '' : \implode("\n", $title->lines),
         );
@@ -39,7 +45,7 @@ final class StateModel
     {
         $list = [];
         foreach ($states->nodes as $node) {
-            if ($node->group !== $group || $node->region !== $region) {
+            if ($node->group !== $group || $node->region !== $region || $node->removed) {
                 continue;
             }
             $label = \implode("\n", $node->display);

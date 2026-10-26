@@ -160,7 +160,7 @@ final class ClassDrawing
         $noteStyle = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'note']);
         foreach ($this->classes->notes as $note) {
             $box = NoteBox::sectioned(PlantUmlText::styled($note->lines, $noteStyle), $noteStyle, ClassColors::back($note->color));
-            if (null !== $note->link) {
+            if (!$this->placed($note)) {
                 continue;
             }
             $this->notes[$note->id] = $box;
@@ -316,6 +316,12 @@ final class ClassDrawing
         }
 
         return $this->marks;
+    }
+
+    /** Whether a note is laid out as a node: not one on a link, which stands in its label, nor one on a classifier removed, which goes with it, as PlantUML has them. */
+    private function placed(PlantUmlNote $note): bool
+    {
+        return null === $note->link && (null === $note->entity || \array_key_exists($note->entity, $this->boxes));
     }
 
     /**

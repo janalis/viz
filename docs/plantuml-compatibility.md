@@ -76,7 +76,7 @@ Each scope is laid out as svek lays it out: a composite state no transition cros
 | --- | --- |
 | `state`, `state "Name" as S`, `state S as "Name"`, descriptions after `:` or as `S : text`; `<<choice>>`, `<<fork>>`, `<<join>>`, `<<start>>`, `<<end>>`, `<<history>>`, `<<history*>>`, `<<entryPoint>>`, `<<exitPoint>>`, pins and expansion nodes; `#colours` | `<<sdlreceive>>`; `frame`; names with a namespace |
 | Composite states with `{ … }` or `end state`, concurrent regions with `--` and `||`, a composite a transition crosses into a cluster with each region none crosses into an image in it | |
-| Transitions with `[*]`, `[H]`, `[H*]`, `S[H]`, `==bar==`, `x` at the start and `o` at the end, directions, styles and labels; notes beside states, floating, and on transitions; `hide empty description`; `left to right direction` | `remove`, `restore`, URLs, maps and JSON |
+| Transitions with `[*]`, `[H]`, `[H*]`, `S[H]`, `==bar==`, `x` at the start and `o` at the end, directions, styles and labels; notes beside states, floating, and on transitions; `hide empty description`; `hide`, `show`, `remove` and `restore` of states outside composite states, by name, stereotype or `@unlinked`; `left to right direction` | Those of composite states and of the states within them; URLs, maps and JSON |
 
 ### Description diagrams
 
@@ -84,7 +84,7 @@ Component, deployment and use case diagrams are laid out as svek lays them out, 
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| `actor`, `usecase` (and their business forms with `/`), `component`, `interface`, `node`, `database`, `cloud`, `folder`, `file`, `artifact`, `card`, `rectangle`, `agent`, `frame`, `package`, `queue`, `stack`, `storage`, `collections`, `hexagon`, `label`, `action`, `process`, `person`, `boundary`, `control`, `entity`, `circle`; the short forms `[component]`, `(use case)`, `:actor:`, `() interface`; text over several lines in `[ … ]` or `as " … "`, in sections at its separator lines; stereotypes and colours, `hide`/`show` of stereotypes; `skinparam componentStyle` and `actorStyle` | Ports, archimate, maps and JSON, sprites as symbols; a lone name on its own line, which PlantUML answers with its welcome page |
+| `actor`, `usecase` (and their business forms with `/`), `component`, `interface`, `node`, `database`, `cloud`, `folder`, `file`, `artifact`, `card`, `rectangle`, `agent`, `frame`, `package`, `queue`, `stack`, `storage`, `collections`, `hexagon`, `label`, `action`, `process`, `person`, `boundary`, `control`, `entity`, `circle`; the short forms `[component]`, `(use case)`, `:actor:`, `() interface`; text over several lines in `[ … ]` or `as " … "`, in sections at its separator lines; stereotypes and colours, `hide`/`show` of stereotypes; `hide`, `show`, `remove` and `restore` of elements by name (with `*`), stereotype or `@unlinked`, a hidden one laid out but not drawn, a removed one taken out with its links and notes; `skinparam componentStyle` and `actorStyle` | Ports, archimate, maps and JSON, sprites as symbols; a lone name on its own line, which PlantUML answers with its welcome page |
 | Containers of any of those symbols, nested, and `together`, their stereotypes above their title; links to a container | Links to an empty container |
 | Links with their marks, directions, styles, labels and `<<stereotypes>>`; notes beside elements, floating and linked like elements, and on links | Middle circles on links |
 

@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\States;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Activities\ActivityReader;
 use Janalis\Viz\PlantUML\Classes\ClassLinks;
+use Janalis\Viz\PlantUML\Classes\ClassPortions;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
@@ -51,6 +52,8 @@ final class StateReader
     /** @var list<PlantUmlNote> */
     private array $notes = [];
     private bool $hideEmpty = false;
+    /** @var list<array{bool, ?string, bool, string}> each `hide`, `show`, `remove` or `restore` of states, as `ClassPortions` takes them */
+    private array $visibility = [];
     private Direction $direction = Direction::TopBottom;
     private ?string $last = null;
 
@@ -73,6 +76,7 @@ final class StateReader
         if (null !== $unsupported) {
             throw $unsupported;
         }
+        $reader->hideOrRemove();
 
         return new PlantUmlStates($document, $reader->nodes, $reader->composites, $reader->links, $reader->notes, $reader->hideEmpty, $reader->direction);
     }
@@ -82,6 +86,12 @@ final class StateReader
         match ($command->name) {
             'CommandNope', 'CommandFootboxIgnored' => null,
             'CommandRankDir' => $this->direction = \str_starts_with(\strtolower($command->line()), 'left') ? Direction::LeftRight : Direction::TopBottom,
+            'CommandHideShow2', 'CommandRemoveRestore' => $this->visibility[] = [
+                1 === \preg_match('/^(?:show|restore)/i', (string) $command->get('COMMAND')),
+                \trim((string) $command->get('WHAT')),
+                false,
+                'CommandRemoveRestore' === $command->name ? 'removed' : 'entity',
+            ],
             'CommandHideEmptyDescription' => $this->hideEmpty = 'hide' === \strtolower((string) $command->get('HIDE')),
             'CommandCreateState' => $this->create($command),
             'CommandCreatePackageState' => $this->composite($command),
@@ -94,6 +104,28 @@ final class StateReader
             'CommandFactoryNoteOnLink$1', 'CommandFactoryNoteOnLink$2' => $this->onLink($command),
             default => throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line()),
         };
+    }
+
+    /**
+     * Marks the states `hide` hides and `remove` takes out, by name, stereotype or `@unlinked`, as PlantUML matches them.
+     *
+     * @throws Unsupported for a composite state or one inside one
+     */
+    private function hideOrRemove(): void
+    {
+        $portions = new ClassPortions($this->visibility);
+        $linked = [];
+        foreach ($this->links as $link) {
+            $linked[$link->from] = true;
+            $linked[$link->to] = true;
+        }
+        foreach ($this->nodes as $node) {
+            $node->removed = $portions->hides($node->id, $node->stereotypes, \array_key_exists($node->id, $linked), 'removed');
+            $node->hidden = !$node->removed && $portions->hides($node->id, $node->stereotypes, \array_key_exists($node->id, $linked));
+            if (($node->removed || $node->hidden) && (null !== $node->group || \array_key_exists($node->id, $this->composites))) {
+                throw new Unsupported('The native PlantUML renderer does not hide or remove a composite state or a state inside one: '.$node->id);
+            }
+        }
     }
 
     private function create(PlantUmlCommand $command): StateNode

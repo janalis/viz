@@ -39,6 +39,16 @@ final readonly class ClassPortions
      */
     public function hidden(ClassEntity $entity, bool $linked, string $kind = 'entity'): bool
     {
+        return $this->hides($entity->path ?? $entity->id, $entity->stereotypes, $linked, $kind);
+    }
+
+    /**
+     * Whether `hide` hides, or `remove` takes out, a leaf of any diagram by its qualified name and stereotypes.
+     *
+     * @param list<string> $stereotypes
+     */
+    public function hides(string $name, array $stereotypes, bool $linked, string $kind = 'entity'): bool
+    {
         $hidden = false;
         foreach ($this->rules as [$show, $what, , $part]) {
             if ($kind !== $part) {
@@ -47,8 +57,8 @@ final readonly class ClassPortions
             $what = (string) $what;
             $about = match (true) {
                 '@unlinked' === $what => !$linked,
-                \str_starts_with($what, '<<') => self::about($entity, $what),
-                default => self::named($entity, $what),
+                \str_starts_with($what, '<<') => self::stereotyped($stereotypes, $what),
+                default => self::named($name, $what),
             };
             $hidden = $about ? !$show : $hidden;
         }
@@ -57,10 +67,8 @@ final readonly class ClassPortions
     }
 
     /** Whether a name, `*` standing for any characters, is a classifier's qualified name, as PlantUML's `HideOrShow` matches it. */
-    private static function named(ClassEntity $entity, string $pattern): bool
+    private static function named(string $name, string $pattern): bool
     {
-        $name = $entity->path ?? $entity->id;
-
         return \str_contains($pattern, '*') ? 1 === \preg_match('/^'.\str_replace(search: '\\*', replace: '.*', subject: \preg_quote($pattern, delimiter: '/')).'$/', $name) : $name === $pattern;
     }
 
@@ -71,11 +79,22 @@ final readonly class ClassPortions
             return true;
         }
         $gender = \trim($gender, characters: '"');
-        $match = [];
-        if (1 === \preg_match('/^<<\s*(.*?)\s*>>$/', $gender, $match)) {
-            return \in_array($match[1], $entity->stereotypes, strict: true);
+        if (\str_starts_with($gender, '<<')) {
+            return self::stereotyped($entity->stereotypes, $gender);
         }
 
         return \strtolower($gender) === $entity->type || $gender === $entity->id;
+    }
+
+    /**
+     * Whether a `<<stereotype>>` is among a leaf's.
+     *
+     * @param list<string> $stereotypes
+     */
+    private static function stereotyped(array $stereotypes, string $stereotype): bool
+    {
+        $match = [];
+
+        return 1 === \preg_match('/^<<\s*(.*?)\s*>>$/', $stereotype, $match) && \in_array($match[1], $stereotypes, strict: true);
     }
 }
