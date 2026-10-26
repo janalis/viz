@@ -262,21 +262,22 @@ final class StateDrawing
         $top = (2 * self::MARGIN) + $titleHeight + $descriptionHeight + $extra;
         $frame = $this->frame($node, 0.0, 0.0, $boxWidth, $boxHeight, $titleHeight, $title, $description);
 
-        return [[...$frame, ...\array_map(static fn (Mark $mark): Mark => self::moved($mark, ($boxWidth - $width) / 2, $top + self::MARGIN), $marks)], $boxWidth, $boxHeight];
+        // As PlantUML's `InnerStateAutonom`, the regions MARGIN in from the left, however wide the name.
+        return [[...$frame, ...\array_map(static fn (Mark $mark): Mark => self::moved($mark, self::MARGIN, $top + self::MARGIN), $marks)], $boxWidth, $boxHeight];
     }
 
-    /** A region separator, drawn across the whole stack. */
+    /** A region separator, as PlantUML's `ConcurrentStates` draws it: across the whole stack and a dash further, 1.5 thick, in dashes of 8 every 18. */
     private static function separator(Mark $mark, Direction $stack, float $width, float $height): Mark
     {
         [$x, $y] = $mark->points[0];
 
         return new Mark(
             MarkKind::Polyline,
-            Direction::LeftRight === $stack ? [[$x, 0.0], [$x, $height]] : [[0.0, $y], [$width, $y]],
+            Direction::LeftRight === $stack ? [[$x, 0.0], [$x, $height + 8]] : [[0.0, $y], [$width + 8, $y]],
             stroke: $mark->stroke,
             dashed: true,
-            strokeWidth: $mark->strokeWidth,
-            dashes: [5.0, 5.0],
+            strokeWidth: 1.5,
+            dashes: [8.0, 10.0],
         );
     }
 

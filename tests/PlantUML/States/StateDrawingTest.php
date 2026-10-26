@@ -133,7 +133,7 @@ final class StateDrawingTest extends TestCase
         foreach (['Active', 'described', 'A', 'B', 'inner', 'region note', 'Down', 'X', 'Y'] as $text) {
             $this->assertContains($text, $texts);
         }
-        $separators = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => [5.0 * Units::POINT, 5.0 * Units::POINT] === $mark->dashes));
+        $separators = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => [8.0 * Units::POINT, 10.0 * Units::POINT] === $mark->dashes));
         $this->assertCount(2, $separators);
         $this->assertSame($separators[0]->points[0][0], $separators[0]->points[1][0], '|| separates side by side');
         $this->assertSame($separators[1]->points[0][1], $separators[1]->points[1][1], '-- separates one above the other');
@@ -312,5 +312,13 @@ final class StateDrawingTest extends TestCase
     private static function texts(Drawing $drawing): array
     {
         return \array_map(static fn (Mark $mark): string => $mark->text, \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)));
+    }
+
+    public function testRegionsSideBySideStandInFromTheLeftUnderASeparatorADashLong(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nstate A {\n  state B\n  ||\n  state C\n}\n@enduml"));
+
+        // As the jar draws it, 174 by 126: the regions 5 in from the left, the separator 8 past their foot.
+        $this->assertSame([174.0, 126.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
 }
