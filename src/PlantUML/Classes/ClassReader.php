@@ -114,6 +114,7 @@ final class ClassReader
             'CommandCreateElementFull2' => $this->element($command),
             'CommandCreateElementMultilines' => $this->multiline($command),
             'CommandDiamondAssociation' => $this->diamond($command),
+            'CommandLinkLollipop' => $this->lollipop($command),
             default => throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line()),
         };
     }
@@ -236,6 +237,22 @@ final class ClassReader
         $entity->element = new DescriptionElement($id, $entity->display, \rtrim($symbol, characters: '/'), $entity->group, \str_ends_with($symbol, '/'));
         $entity->element->stereotypes = $entity->stereotypes;
         $entity->element->color = $entity->color;
+    }
+
+    /**
+     * `A --() name` or `name ()-- A`: a lollipop interface beside a classifier made before, as
+     * PlantUML's `CommandLinkLollipop` makes it, named as written; a half one left to PlantUML.
+     */
+    private function lollipop(PlantUmlCommand $command): void
+    {
+        [$classifier, $name] = ClassLinks::lollipopEnds($command);
+        $existing = $this->reused(self::clean($classifier));
+        if (!\array_key_exists($existing, $this->entities)) {
+            throw new PlantUmlRefusal('No class '.$existing);
+        }
+        $lollipop = $this->made($existing.'lol'.\count($this->entities), $name);
+        $lollipop->type = 'lollipop';
+        $this->links[] = ClassLinks::lollipop($command, $existing, $lollipop->id, ClassLinks::lollipopsBeside($this->links, $this->entities, $existing));
     }
 
     /** `<> name`: an association's diamond, nameless, as PlantUML makes it, never one made before. */

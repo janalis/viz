@@ -315,6 +315,8 @@ final class ClassReaderTest extends TestCase
         yield 'note alone' => ["note left : alone\nclass A", 'The PlantUML note has no entity to stand beside: note left : alone'];
         yield 'note on no link' => ["class A\nnote on link : alone", 'The PlantUML note has no link to stand on: note on link : alone'];
         yield 'url' => ["class A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];
+        yield 'a lollipop beside no class' => ["class A\nA ()-- B", 'No class B'];
+        yield 'a half lollipop' => ["class A\nA --(( H", 'The native PlantUML renderer does not draw half lollipops: A --(( H'];
         yield 'kind changed' => ["entity E\nclass E", 'PlantUML cannot declare E again as class'];
     }
 
@@ -324,6 +326,15 @@ final class ClassReaderTest extends TestCase
         $this->expectExceptionObject(new Unsupported($message));
 
         self::read($line);
+    }
+
+    public function testALollipopIsMadeBesideItsClass(): void
+    {
+        $classes = self::read("class A\nA -() I1\nA -() I2\nA -() I3");
+
+        $this->assertSame(['lollipop', ['I1']], [$classes->entities['Alol1']->type, $classes->entities['Alol1']->display]);
+        // As PlantUML: a third one beside, a rank away.
+        $this->assertSame([1, 1, 2], \array_map(static fn (PlantUmlLink $link): int => $link->length, $classes->links));
     }
 
     public function testANoteBesideAPackageNamesIt(): void

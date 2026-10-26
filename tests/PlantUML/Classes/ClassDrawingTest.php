@@ -714,4 +714,18 @@ final class ClassDrawingTest extends TestCase
 
         Work::run(PlantUmlPipeline::native()->drawing("@startuml\nframe F {\n}\nclass A\n@enduml"));
     }
+
+    public function testALollipopIsACircleItsNameBelow(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: a circle 10 across, its name as written centred below it, its link plain, labelled at its ends and middle.
+        $this->assertSame([75.0, 172.0], $size("class A\nA --() \"Serial\" : uses"));
+        $this->assertSame([68.0, 139.0], $size("class A\n\"Serial\" ()-- A"));
+        $this->assertSame([100.0, 281.0], $size("class A\nclass B\nA --() Foo : \"1\" provided \"2\"\nB --> A"));
+    }
 }

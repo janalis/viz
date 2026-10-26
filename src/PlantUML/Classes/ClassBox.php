@@ -106,6 +106,12 @@ final readonly class ClassBox
 
             return new self($entity, $style, $sheet, $plain, null, null, 0.0, [], false, $width, $height, 0.0, $letter);
         }
+        if ('lollipop' === $entity->type) {
+            // As PlantUML's `EntityImageLollipopInterface`: a circle 10 across, its name below it, in a circle's style.
+            $circle = $sheet->style(['root', 'element', 'classDiagram', 'circle'], $entity->stereotypes);
+
+            return new self($entity, $circle, $sheet, PlantUmlText::styled($entity->display, $circle), null, null, 0.0, [], false, 10.0, 10.0, 0.0, $letter);
+        }
         if ('point' === $entity->type) {
             // As PlantUML's `EntityImageAssociationPoint`: a dot 4 across.
             return new self($entity, $sheet->style(['root', 'element', 'classDiagram', 'arrow']), $sheet, PlantUmlText::styled([], $style), null, null, 0.0, [], false, 4.0, 4.0, 0.0, $letter);
@@ -278,6 +284,11 @@ final readonly class ClassBox
         }
         if ('point' === $this->entity->type) {
             return [DescriptionBox::ellipse($x, $y, 4.0, 4.0, $line, $line, 1.0)];
+        }
+        if ('lollipop' === $this->entity->type) {
+            $width = $this->name->size()[0];
+
+            return [DescriptionBox::ellipse($x, $y, 10.0, 10.0, $line, $back, 1.5), ...$this->name->marks($x + 5 - ($width / 2), $y + 10, $width)];
         }
         if ('diamond' === $this->entity->type) {
             [$cx, $cy] = [$x + 12, $y + 12];

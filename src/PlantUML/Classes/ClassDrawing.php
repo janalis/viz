@@ -390,6 +390,7 @@ final class ClassDrawing
             $shapes[$id] = match (\array_key_exists($id, $this->classes->entities) ? $this->classes->entities[$id]->type : 'class') {
                 'circle' => 'circle:'.ClassBox::DOT,
                 'point' => 'circle:2',
+                'lollipop' => 'circle:5',
                 'diamond' => 'diamond',
                 default => 'box',
             };

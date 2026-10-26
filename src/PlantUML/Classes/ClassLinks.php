@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Classes;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
+use Janalis\Viz\Source\Unsupported;
 
 /**
  * A link command read as PlantUML reads it: the marks at each end, a dotted body for a dashed
@@ -35,6 +36,58 @@ final class ClassLinks
         $link->color ??= $command->get('COLOR');
         $header = $command->get('HEADER');
         $link->weight = \is_numeric($header) ? (float) $header : null;
+
+        return $link;
+    }
+
+    /**
+     * How many lollipops stand beside a classifier, a rank's length from it.
+     *
+     * @param list<PlantUmlLink> $links
+     * @param array<string, ClassEntity> $entities
+     */
+    public static function lollipopsBeside(array $links, array $entities, string $id): int
+    {
+        return \count(\array_filter(
+            $links,
+            static fn (PlantUmlLink $link): bool => (
+                1 === $link->length
+                && \in_array($id, [$link->from, $link->to], strict: true)
+                && 'lollipop' === $entities[$id === $link->from ? $link->to : $link->from]->type
+            ),
+        ));
+    }
+
+    /**
+     * The names a lollipop's line gives: the classifier's, and the lollipop's as written.
+     *
+     * @return array{string, string}
+     * @throws Unsupported for a half lollipop, `--((` or `))--`
+     */
+    public static function lollipopEnds(PlantUmlCommand $command): array
+    {
+        $first = null !== $command->get('LOL_THEN_ENT', 1);
+        $symbol = (string) ($first ? $command->get('LOL_THEN_ENT') : $command->get('ENT_THEN_LOL', 1));
+        if ($symbol[0] === $symbol[1]) {
+            throw new Unsupported('The native PlantUML renderer does not draw half lollipops: '.$command->line());
+        }
+        [$classifier, $lollipop] = [(string) $command->get('ENT1', 1), (string) $command->get('ENT2', 1)];
+
+        return $first ? [$lollipop, $classifier] : [$classifier, $lollipop];
+    }
+
+    /**
+     * A lollipop's link, plain, a rank per dash past the first — two for one alone where the
+     * classifier has two lollipops beside it already, as PlantUML's `CommandLinkLollipop` lays it.
+     */
+    public static function lollipop(PlantUmlCommand $command, string $classifier, string $lollipop, int $besides): PlantUmlLink
+    {
+        $first = null !== $command->get('LOL_THEN_ENT', 1);
+        [$from, $to] = $first ? [$lollipop, $classifier] : [$classifier, $lollipop];
+        $length = \strlen(\trim((string) ($command->get('LOL_THEN_ENT', 1) ?? $command->get('ENT_THEN_LOL'))));
+        $link = new PlantUmlLink($from, $to, LinkDecor::None, LinkDecor::None, 1 === $length && $besides > 1 ? 2 : $length);
+        [$link->firstLabel, $link->secondLabel, $text] = self::labels($command);
+        $link->label = null === $text ? null : \trim($text, characters: '"');
 
         return $link;
     }
