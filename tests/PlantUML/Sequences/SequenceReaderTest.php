@@ -430,6 +430,11 @@ final class SequenceReaderTest extends TestCase
         $this->assertTrue($sequence->events[3]->parallel);
     }
 
+    public function testAutonewpageDoesNothingAsInPlantUml(): void
+    {
+        $this->assertCount(2, self::read("autonewpage 1\nA -> B : one\nB -> A : two")->events);
+    }
+
     public function testAMessageMayHaveAnAnchoredEnd(): void
     {
         $sequence = self::read("A{start} -> B : x\nA -> B{end} : y\nA -> B");

@@ -68,7 +68,8 @@ final class SequenceReader
     private function execute(PlantUmlCommand $command): void
     {
         match ($command->name) {
-            'CommandNope', 'CommandIgnoreNewpage', 'CommandHideEmptyDescription', 'CommandHideShowByGender', 'CommandHideShowByVisibility', 'CommandHideShow2' => null,
+            // What draws nothing: `autonewpage` among them, a no-op in PlantUML too.
+            'CommandNope', 'CommandIgnoreNewpage', 'CommandAutoNewpage', 'CommandHideEmptyDescription', 'CommandHideShowByGender', 'CommandHideShowByVisibility', 'CommandHideShow2' => null,
             'CommandParticipantA', 'CommandParticipantA2', 'CommandParticipantA3', 'CommandParticipantA4', 'CommandParticipantMultilines' => $this->participant($command),
             'CommandArrow' => $this->message($command),
             'CommandLinkAnchor' => $this->links[] = [(string) $command->get('ANCHOR1'), (string) $command->get('ANCHOR2'), self::lines((string) $command->get('MESSAGE'))],
