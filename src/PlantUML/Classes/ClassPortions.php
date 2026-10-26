@@ -32,19 +32,36 @@ final readonly class ClassPortions
         return $shown;
     }
 
-    /** Whether a classifier is hidden whole, by its name, a stereotype or `@unlinked` when it has no link. */
-    public function hidden(ClassEntity $entity, bool $linked): bool
+    /**
+     * Whether a classifier is hidden whole — laid out but not drawn, as `hide` hides it — or,
+     * for `remove`, taken out: by its qualified name, `*` standing for any characters, a
+     * stereotype, or `@unlinked` when it has no link.
+     */
+    public function hidden(ClassEntity $entity, bool $linked, string $kind = 'entity'): bool
     {
         $hidden = false;
         foreach ($this->rules as [$show, $what, , $part]) {
-            if ('entity' !== $part) {
+            if ($kind !== $part) {
                 continue;
             }
-            $about = ('@unlinked' === $what && !$linked) || self::about($entity, $what);
+            $what = (string) $what;
+            $about = match (true) {
+                '@unlinked' === $what => !$linked,
+                \str_starts_with($what, '<<') => self::about($entity, $what),
+                default => self::named($entity, $what),
+            };
             $hidden = $about ? !$show : $hidden;
         }
 
         return $hidden;
+    }
+
+    /** Whether a name, `*` standing for any characters, is a classifier's qualified name, as PlantUML's `HideOrShow` matches it. */
+    private static function named(ClassEntity $entity, string $pattern): bool
+    {
+        $name = $entity->path ?? $entity->id;
+
+        return \str_contains($pattern, '*') ? 1 === \preg_match('/^'.\str_replace(search: '\\*', replace: '.*', subject: \preg_quote($pattern, delimiter: '/')).'$/', $name) : $name === $pattern;
     }
 
     /** Whether a rule's subject takes in a classifier: all, its kind, its name, or one of its stereotypes. */

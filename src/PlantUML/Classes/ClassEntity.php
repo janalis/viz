@@ -17,6 +17,8 @@ final class ClassEntity
     public ?string $visibility = null;
     /** Its colour spec as written after it, such as `#pink` or `#back:pink;line:red`. */
     public ?string $color = null;
+    /** Its path through the packages, as PlantUML qualifies its name for `hide` and `remove`; its id where it has none. */
+    public ?string $path = null;
 
     /** @param list<string> $display its name as shown, a line each */
     public function __construct(

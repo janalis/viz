@@ -185,13 +185,53 @@ final class ClassReaderTest extends TestCase
         );
     }
 
+    public function testNamesWithTheSeparatorStandInThePackagesTheirPathsName(): void
+    {
+        $classes = self::read(<<<'PUML'
+            class a.b.C
+            package p {
+              class x.D
+              class E
+            }
+            package q.r {
+            }
+            Z --> C
+            Z --> p.E
+            hide p.E
+            remove D
+            set separator ::
+            class m::N
+            set separator none
+            class s.T
+            PUML);
+
+        $this->assertSame(['b', 'C', 'b'], [$classes->groups['a.b']->display, $classes->entities['a.b.C']->display[0], $classes->groups['a.b']->display]);
+        $this->assertSame(['a', null], [$classes->groups['a.b']->parent, $classes->groups['a']->parent]);
+        // Inside p, x is no package at the top: the path runs from p.
+        $this->assertSame(['p.x', 'p'], [$classes->entities['p.x.D']->group, $classes->groups['p.x']->parent]);
+        $this->assertSame(['p', 'p.E'], [$classes->entities['E']->group, $classes->entities['E']->path]);
+        $this->assertSame(['r', 'q'], [$classes->groups['q.r']->display, $classes->groups['q.r']->parent]);
+        // A name alone, where one entity anywhere bears it, is that one; a path through a package names what it holds.
+        $this->assertSame([['Z', 'a.b.C'], ['Z', 'E']], \array_map(static fn ($link): array => [$link->from, $link->to], $classes->links));
+        $this->assertSame(
+            [
+                [false, 'p.E', false, 'entity'],
+                [false, 'D',   false, 'removed'],
+            ],
+            $classes->visibility,
+        );
+        $this->assertSame(['m', 'm'], [$classes->entities['m::N']->group, $classes->groups['m']->display]);
+        $this->assertSame(['s.T', null], [$classes->entities['s.T']->display[0], $classes->entities['s.T']->group]);
+    }
+
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
         yield 'qualifier' => ['A [key] --> B', 'The native PlantUML renderer does not draw: A [key] --> B'];
         yield 'middle circle' => ['A --0-- B', 'The native PlantUML renderer does not draw: A --0-- B'];
         yield 'object' => ['object o', 'The native PlantUML renderer does not draw: object o'];
-        yield 'namespaced' => ['class a.B', 'The native PlantUML renderer does not draw namespaced names such as a.B'];
+        yield 'separator twice' => ['class a..B', 'Bad name since . is a separator: a..B'];
+        yield 'path through a class' => ["class a\nclass a.B", 'Not a package: a'];
         yield 'mixed in' => ["allowmixing\nclass A\nactor B", 'The native PlantUML renderer does not draw: actor B'];
         yield 'mixed with a prefix' => ["class A\nmix_actor B", 'The native PlantUML renderer does not draw: mix_actor B'];
         yield 'unsupported before a refusal' => ["class A\nobject o\nentity E\nclass E", 'PlantUML cannot declare E again as class'];

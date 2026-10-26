@@ -146,7 +146,7 @@ final class ClassDrawingTest extends TestCase
             [false, '<<x>>', false, 'stereotype'],
             [true,  'A',     false, 'method'],
             [false, '<<y>>', false, 'field'],
-            [false, '"A"',   false, 'entity'],
+            [false, 'A',     false, 'entity'],
         ]);
 
         $box = ClassBox::of($entity, StyleSheet::skin(), $portions);
@@ -156,6 +156,10 @@ final class ClassDrawingTest extends TestCase
         $this->assertTrue($portions->shown($entity, 'field', 3));
         $this->assertFalse($portions->shown($entity, 'field', 0));
         $this->assertTrue($portions->hidden($entity, linked: true));
+        // As PlantUML matches a name: its qualified name, quotes and all, `*` standing for any characters.
+        $this->assertFalse(new ClassPortions([[false, '"A"', false, 'entity']])->hidden($entity, linked: true));
+        $this->assertTrue(new ClassPortions([[false, '*', false, 'removed']])->hidden($entity, linked: true, kind: 'removed'));
+        $this->assertFalse(new ClassPortions([[false, 'B*', false, 'entity']])->hidden($entity, linked: true));
         $this->assertTrue(new ClassPortions([[false, '@unlinked', false, 'entity']])->hidden($entity, linked: false));
         $this->assertFalse(new ClassPortions([
             [false, '@unlinked', false, 'entity'],
@@ -408,6 +412,33 @@ final class ClassDrawingTest extends TestCase
 
         $this->assertNull($drawing->background);
         $this->assertContains('x', \array_map(static fn (Mark $mark): string => $mark->text, $drawing->marks));
+    }
+
+    public function testNamespacesEmptyPackagesAndHiddenClassesStandAsPlantUmlSetsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sets them: a path's packages made, each named by its last part.
+        $this->assertSame([196.0, 252.0], $size("class a.b.C\nclass a.D\nC2 --> a.b.C"));
+        $this->assertSame([187.0, 310.0], $size("namespace net.dummy {\n class Person\n}\nnamespace net.foo {\n class Meeting\n}\nnet.dummy.Person --> net.foo.Meeting"));
+        $this->assertSame([143.0, 287.0], $size("set separator ::\nclass A::B::C {\n +f()\n}\nA::B::C <|-- A::D"));
+        // A package holding nothing is a node, its title 10 inside its sides.
+        $this->assertSame([126.0, 73.0], $size("package q {\n}\nclass X"));
+        $this->assertSame([141.0, 230.0], $size("package a {\n class X\n}\npackage q {\n class a.Y\n}\nX --> Y"));
+        // Hidden, a class keeps its place and its room, drawn with nothing that touches it; removed, it is gone.
+        $hidden = self::draw("class A\nclass B\nclass Lone\nA -- B\nhide @unlinked");
+        $this->assertSame([163.0, 178.0], [$hidden->width / Units::POINT, $hidden->height / Units::POINT]);
+        $this->assertSame(
+            ['C', 'A', 'C', 'B'],
+            \array_values(\array_map(static fn (Mark $mark): string => $mark->text, \array_filter($hidden->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind))),
+        );
+        $this->assertSame([63.0, 178.0], $size("class B\nclass C\nB -- C\nhide C"));
+        $this->assertSame([69.0, 186.0], $size("class A\nclass B <<S>>\nA -- B\nhide <<S>>"));
+        $this->assertSame([63.0, 70.0], $size("class A\nclass B\nA -- B\nremove B"));
     }
 
     private static function draw(string $lines): Drawing

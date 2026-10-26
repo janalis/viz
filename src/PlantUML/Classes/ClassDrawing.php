@@ -35,6 +35,12 @@ final class ClassDrawing
     private array $edges = [];
     /** @var list<Mark> */
     private array $marks = [];
+    /** @var array<string, true> the packages holding nothing, laid out as nodes */
+    private array $empty = [];
+    /** @var array<string, true> the classifiers hidden, laid out but not drawn */
+    private array $hidden = [];
+    /** @var list<Mark> what the hidden classifiers would draw, with their links and notes: measured, as PlantUML's limit finder takes them, not drawn */
+    private array $ghosts = [];
 
     private function __construct(
         private readonly PlantUmlClasses $classes,
@@ -50,7 +56,8 @@ final class ClassDrawing
         $placement = $placing->getReturn();
 
         // As PlantUML is seen to leave a lone class, which it lays out without dot, 2 less room past it, and to measure it without its type parameters.
-        $alone = 1 === \count($placement->graph->nodes) && [] === $placement->graph->clusters;
+        // A classifier removed still counts, as PlantUML counts its leaves.
+        $alone = 1 === \count($placement->graph->nodes) && [] === $placement->graph->clusters && \count($classes->entities) <= 1;
         $marks = $drawing->paint($placement);
         if ($alone && [] !== $drawing->notes) {
             // As PlantUML draws a lone note: as its box 7 in from its sides.
@@ -60,7 +67,12 @@ final class ClassDrawing
             return PlantUmlFrame::svek($classes->document, $marks, trail: 14.0, measured: [$box]);
         }
 
-        return PlantUmlFrame::svek($classes->document, $marks, trail: $alone ? 13.0 : 15.0, measured: $alone ? $drawing->bare($placement) : null);
+        return PlantUmlFrame::svek(
+            $classes->document,
+            $marks,
+            trail: $alone ? 13.0 : 15.0,
+            measured: $alone ? $drawing->bare($placement) : $drawing->measured($marks),
+        );
     }
 
     /** @return array{float, float} svek's separations, or those `skinparam nodesep` and `ranksep` set */
@@ -77,10 +89,27 @@ final class ClassDrawing
         $svek = new Svek();
         $portions = new ClassPortions($this->classes->visibility);
         $icons = $this->classes->document->param('classattributeiconsize', '10');
+        $held = [];
+        foreach ([...$this->classes->entities, ...$this->classes->notes] as $member) {
+            $held[$member->group ?? ''] = true;
+        }
+        foreach ($this->classes->groups as $group) {
+            $held[$group->parent ?? ''] = true;
+        }
         foreach ($this->classes->groups as $group) {
             $title = new PlantUmlText(ClassReader::split('' === $group->display ? $group->id : $group->display), 14.0);
             if ('together' === $group->type) {
                 $svek->together($group->id, $group->parent);
+                continue;
+            }
+            if (!\array_key_exists($group->id, $held)) {
+                // As PlantUML's `EntityImageEmptyPackage`, a package holding nothing is a node: its title, as tall as two of its lines at least, 10 inside its sides.
+                [$width, $height] = PlantUmlText::styled(
+                    ClassReader::split('' === $group->display ? $group->id : $group->display),
+                    $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'package', 'title']),
+                )->size();
+                $this->empty[$group->id] = true;
+                $svek->node($group->id, $width + 20, (2 * $height) + 20, $group->parent);
                 continue;
             }
             $svek->cluster($group->id, $group->parent, ...Svek::label(...$title->size()));
@@ -95,8 +124,12 @@ final class ClassDrawing
         $letter = $document->param('circledCharacterFontSize', $document->param('defaultFontSize'));
         $letter = 1 === \preg_match('/^\d+$/', $letter) && (int) $letter > 0 ? (int) $letter : 17;
         foreach ($this->classes->entities as $entity) {
-            if ($portions->hidden($entity, \array_key_exists($entity->id, $linked))) {
+            if ($portions->hidden($entity, \array_key_exists($entity->id, $linked), 'removed')) {
                 continue;
+            }
+            if ($portions->hidden($entity, \array_key_exists($entity->id, $linked))) {
+                // As PlantUML, a hidden classifier keeps its place, drawn with nothing that touches it.
+                $this->hidden[$entity->id] = true;
             }
             $box = ClassBox::of($entity, $this->classes->document->styles, $portions, \is_numeric($icons) ? (float) $icons : 10.0, $letter);
             $this->boxes[$entity->id] = $box;
@@ -169,22 +202,52 @@ final class ClassDrawing
                 $this->package($group, $cluster->x0, $cluster->y0, $cluster->x1, $cluster->y1);
             }
         }
+        foreach (\array_keys($this->empty) as $id) {
+            $node = $placement->endpoints[$id];
+            $this->package($this->classes->groups[$id], $node->x - ($node->w / 2), $node->y - ($node->h / 2), $node->x + ($node->w / 2), $node->y + ($node->h / 2), [
+                'root',
+                'element',
+                'classDiagram',
+                'package',
+                'title',
+            ]);
+        }
         foreach ($this->edges as $index => $edge) {
-            $this->link($this->classes->links[$index], $placement, $edge, $index);
+            $link = $this->classes->links[$index];
+            $drawn = $this->marks;
+            $this->link($link, $placement, $edge, $index);
+            if (\array_key_exists($link->from, $this->hidden) || \array_key_exists($link->to, $this->hidden)) {
+                \array_push($this->ghosts, ...\array_slice($this->marks, \count($drawn)));
+                $this->marks = $drawn;
+            }
         }
         foreach ($this->classes->notes as $note) {
             $this->noteLink($note, $placement);
         }
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
-            \array_push($this->marks, ...$box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+            $marks = $box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2));
+            \array_key_exists($id, $this->hidden) ? \array_push($this->ghosts, ...$marks) : \array_push($this->marks, ...$marks);
         }
+        $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->classes->notes), 1, 0);
         foreach ($this->notes as $id => $note) {
             $node = $placement->endpoints[$id];
-            \array_push($this->marks, ...$note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+            $marks = $note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2));
+            \array_key_exists($attached[$id] ?? '', $this->hidden) ? \array_push($this->ghosts, ...$marks) : \array_push($this->marks, ...$marks);
         }
 
         return $this->marks;
+    }
+
+    /**
+     * What PlantUML's limit finder takes of the diagram: all it draws, and what its hidden classifiers would.
+     *
+     * @param list<Mark> $marks
+     * @return ?list<Mark>
+     */
+    private function measured(array $marks): ?array
+    {
+        return [] === $this->ghosts ? null : [...$marks, ...$this->ghosts];
     }
 
     /**
@@ -204,9 +267,10 @@ final class ClassDrawing
     }
 
     /** A package: its frame with the tab its title sits in. */
-    private function package(ClassGroup $group, float $x0, float $y0, float $x1, float $y1): void
+    /** @param list<string> $signature the style it is drawn in: a package's, or an empty one's, drawn as an element */
+    private function package(ClassGroup $group, float $x0, float $y0, float $x1, float $y1, array $signature = ['root', 'element', 'group', 'package']): void
     {
-        $style = $this->classes->document->styles->style(['root', 'element', 'group', 'package'], null === $group->stereotype ? [] : ClassReader::stereotypes($group->stereotype));
+        $style = $this->classes->document->styles->style($signature, null === $group->stereotype ? [] : ClassReader::stereotypes($group->stereotype));
         $title = PlantUmlText::styled(ClassReader::split('' === $group->display ? $group->id : $group->display), $this->classes->document->styles->style(['root', 'element', 'package', 'title']));
         [$width, $height] = $title->size();
         $tab = $height + 6;
@@ -245,7 +309,7 @@ final class ClassDrawing
     /** The dashed line from a note to the entity it stands beside. */
     private function noteLink(PlantUmlNote $note, Placement $placement): void
     {
-        if (null === $note->entity || !\array_key_exists($note->id, $this->notes) || !\array_key_exists($note->entity, $this->boxes)) {
+        if (null === $note->entity || !\array_key_exists($note->id, $this->notes) || !\array_key_exists($note->entity, $this->boxes) || \array_key_exists($note->entity, $this->hidden)) {
             return;
         }
         $from = $placement->endpoints[$note->id];
