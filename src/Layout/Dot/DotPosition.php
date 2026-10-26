@@ -25,6 +25,7 @@ final class DotPosition
     /**
      * @param list<array{float, float}> $clusterLabels each cluster's label width and height
      * @param list<float> $bands each cluster's label band on its left, for a layout to be turned left to right
+     * @param list<float> $lengths each cluster's least length down the ranks: its label's width, for a layout to be turned
      */
     public function __construct(
         private readonly DotLayers $layers,
@@ -33,12 +34,13 @@ final class DotPosition
         private readonly float $rankSeparation,
         private readonly float $padding = 4.0,
         private readonly array $bands = [],
+        private readonly array $lengths = [],
     ) {}
 
     /** @return \Generator<int, null, mixed, void> */
     public function place(): \Generator
     {
-        $vertical = new DotVertical($this->layers, \array_values(\array_column($this->clusterLabels, 1)), $this->rankSeparation, $this->padding);
+        $vertical = new DotVertical($this->layers, \array_values(\array_column($this->clusterLabels, 1)), $this->rankSeparation, $this->padding, $this->lengths);
         yield null;
         $horizontal = new DotHorizontal($this->layers, \array_values(\array_column($this->clusterLabels, 0)), $this->nodeSeparation, $this->padding, $this->bands);
         $work = $horizontal->place();

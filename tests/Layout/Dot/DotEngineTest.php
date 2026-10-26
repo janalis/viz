@@ -42,6 +42,39 @@ final class DotEngineTest extends TestCase
         $this->assertSame($at['a']->x, $at['x']->x);
     }
 
+    public function testAClusterTurnedSidewaysSpreadsItsRanksForItsLabelAsDotDoes(): void
+    {
+        $x = static function (array $chain, array $clusters, array $owners): array {
+            $nodes = \array_map(static fn (string $id): LayoutNode => new LayoutNode($id, $id, 54, 36, $owners[$id] ?? null), $chain);
+            $edges = [];
+            foreach (\array_slice($chain, offset: 1) as $index => $id) {
+                $edges[] = new LayoutEdge($index, $chain[$index], $id);
+            }
+            $placement = Work::run(new DotEngine()->place(new LayoutGraph($nodes, $edges, $clusters, Direction::LeftRight, new Spacing(36, 18, 4))));
+
+            return \array_map(static fn (string $id): float => $placement->endpoints[$id]->x, $chain);
+        };
+        $label = new LayoutCluster('c0', '', 'c1', minWidth: 195.0, labelHeight: 11.0);
+
+        // As `dot` sets a -> b -> c with b, or b -> d, in a cluster labelled 195 wide: the ranks
+        // reaching half its lack further, the first half a point less; in a cluster beside a, its margin too.
+        $this->assertSame([31.0, 191.0, 352.0], $x(['a', 'b', 'c'], [new LayoutCluster('c0', '', minWidth: 195.0, labelHeight: 11.0)], ['b' => 'c0']));
+        $this->assertSame([31.0, 146.0, 236.0, 352.0], $x(['a', 'b', 'd', 'c'], [new LayoutCluster('c0', '', minWidth: 195.0, labelHeight: 11.0)], ['b' => 'c0', 'd' => 'c0']));
+        $this->assertSame([47.0, 215.0, 384.0], $x(['a', 'b', 'c'], [new LayoutCluster('c1', ''), $label], ['a' => 'c1', 'b' => 'c0', 'c' => 'c1']));
+        $this->assertSame([31.0, 191.0, 352.0], $x(['a', 'b', 'c'], [new LayoutCluster('c1', ''), $label], ['b' => 'c0']));
+    }
+
+    public function testAnEdgeTakingNoPartInRankingPullsNothingLevelAsDotSetsIt(): void
+    {
+        // As `dot` sets a -> b -> c with a -> c not constraining: all three in line, the edge around b.
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 54, 36), new LayoutNode('b', 'b', 54, 36), new LayoutNode('c', 'c', 54, 36)],
+            [new LayoutEdge(0, 'a', 'b'), new LayoutEdge(1, 'b', 'c'), new LayoutEdge(2, 'a', 'c', constraint: false)],
+        )));
+
+        $this->assertSame([31.0, 31.0, 31.0], [$placement->endpoints['a']->x, $placement->endpoints['b']->x, $placement->endpoints['c']->x]);
+    }
+
     public function testALabelledFlatEdgeKeepsItsLabelBetweenItsEndsAndStandsAboveIt(): void
     {
         // As `dot` is seen to set one: the separation and the label's width apart, two separations at

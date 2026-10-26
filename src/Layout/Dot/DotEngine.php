@@ -80,7 +80,8 @@ final readonly class DotEngine implements LayoutEngine
                 continue;
             }
             [$labelWidth, $labelHeight] = $turned ? [$edge->labelHeight, $edge->labelWidth] : [$edge->labelWidth, $edge->labelHeight];
-            $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->weight, $labelWidth, $labelHeight, $edge->tailPort, $edge->headPort];
+            // An edge that takes no part in ranking keeps its room across the ranks but, as `dot` is seen to, pulls nothing level.
+            $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->constraint ? $edge->weight : 0, $labelWidth, $labelHeight, $edge->tailPort, $edge->headPort];
             if ($labelWidth > 0 || $labelHeight > 0) {
                 $labelSizes[$edge->index] = [$labelWidth, $labelHeight];
             }
@@ -119,7 +120,9 @@ final readonly class DotEngine implements LayoutEngine
         $bands = \array_map(static fn ($cluster): float => $turned ? $cluster->labelHeight : 0.0, $graph->clusters);
         // Without labels, ranks stand their separation apart to the nearest point, as `dot` is seen to set them.
         $rankSeparation = $labelled ? $graph->spacing->rankGap / 2 : \round($graph->spacing->rankGap);
-        $position = new DotPosition($layers, $clusterLabels, $graph->spacing->nodeGap, $rankSeparation, $graph->spacing->padding, $bands);
+        // Turned, a cluster's label runs down its ranks, which its width then keeps apart.
+        $lengths = \array_map(static fn ($cluster): float => $turned ? $cluster->minWidth : 0.0, $graph->clusters);
+        $position = new DotPosition($layers, $clusterLabels, $graph->spacing->nodeGap, $rankSeparation, $graph->spacing->padding, $bands, $lengths);
         $placing = $position->place();
         yield from $placing;
         self::stretch($graph, $position);
