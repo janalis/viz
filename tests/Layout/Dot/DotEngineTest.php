@@ -156,6 +156,15 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([61.0, 55.0, 55.0], [$at['n']->x - $at['b']->x, $at['a']->x - $at['b']->x, $at['c']->x - $at['b']->x], 0.5);
     }
 
+    public function testAFlatEdgesLastHeadComesFirstAsDotPutsIt(): void
+    {
+        // As dot sets a -> b, a -> c, b -> d side by side: c next to a, then b and d.
+        $graph = Work::run(new DotParser()->parse('digraph { node [shape=rect,width=0.6,height=0.4,label=""]; {rank=same; a -> b; a -> c; b -> d;} }'));
+        $at = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)))->endpoints;
+
+        $this->assertEqualsWithDelta([61.0, 122.0, 183.0], [$at['c']->x - $at['a']->x, $at['b']->x - $at['a']->x, $at['d']->x - $at['a']->x], 0.5);
+    }
+
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

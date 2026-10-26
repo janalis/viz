@@ -89,7 +89,7 @@ final class DotFlatOrder
     /**
      * Items in an order every flat edge among them agrees with, as dot is seen to reorder them:
      * each as early as it can stand, and after it at once those its flat edges lead to, as soon
-     * as nothing else must come before them, depth first.
+     * as nothing else must come before them, depth first, the last of them first.
      *
      * @param list<list<int>> $items
      * @return list<list<int>>
@@ -107,7 +107,8 @@ final class DotFlatOrder
                 $ordered[] = $item;
                 unset($items[$current]);
                 $next = \array_keys(\array_filter($items, fn (array $other, int $at): bool => $this->keeps($item, $other) && !$this->blocked($items, $at), \ARRAY_FILTER_USE_BOTH));
-                \array_push($stack, ...\array_reverse($next));
+                // As dot is seen to, the last a node's flat edges lead to first.
+                \array_push($stack, ...$next);
             }
         }
 
