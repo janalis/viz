@@ -24,7 +24,17 @@ use Janalis\Viz\Source\Unsupported;
  */
 final class StateReader
 {
-    private const array KINDS = ['choice' => 'choice', 'fork' => 'fork', 'join' => 'join', 'start' => 'start', 'end' => 'end', 'history' => 'history', 'history*' => 'deephistory'];
+    private const array KINDS = [
+        'choice' => 'choice',
+        'fork' => 'fork',
+        'join' => 'join',
+        'start' => 'start',
+        'end' => 'end',
+        'history' => 'history',
+        'history*' => 'deephistory',
+        'entrypoint' => 'entry',
+        'exitpoint' => 'exit',
+    ];
 
     /** @var array<string, StateNode> */
     private array $nodes = [];
@@ -88,7 +98,7 @@ final class StateReader
         $stereotypes = ClassReader::stereotypes((string) $command->get('STEREOGROUP'));
         foreach ($stereotypes as $stereotype) {
             $kind = self::KINDS[\strtolower($stereotype)] ?? null;
-            if (null === $kind && \in_array(\strtolower($stereotype), ['entrypoint', 'exitpoint', 'inputpin', 'outputpin', 'expansioninput', 'expansionoutput', 'sdlreceive'], strict: true)) {
+            if (null === $kind && \in_array(\strtolower($stereotype), ['inputpin', 'outputpin', 'expansioninput', 'expansionoutput', 'sdlreceive'], strict: true)) {
                 throw new Unsupported('The native PlantUML renderer does not draw <<'.$stereotype.'>> states');
             }
             $state->kind = $kind ?? $state->kind;

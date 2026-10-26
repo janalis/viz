@@ -39,6 +39,11 @@ final readonly class GraphNode
         return clone($this, ['x' => $x, 'y' => $y]);
     }
 
+    public function sized(float $w, float $h): self
+    {
+        return clone($this, ['w' => $w, 'h' => $h]);
+    }
+
     public function painted(?string $color, ?string $fillColor, ?string $textColor): self
     {
         return clone($this, ['color' => $color, 'fillColor' => $fillColor, 'textColor' => $textColor]);

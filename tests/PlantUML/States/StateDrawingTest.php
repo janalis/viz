@@ -167,6 +167,70 @@ final class StateDrawingTest extends TestCase
         self::draw("state Split {\n  state P\n  --\n  state Q\n}\nP --> Out");
     }
 
+    public function testPointsOnACompositesBorderStandAsPlantUmlDrawsThem(): void
+    {
+        $drawing = self::draw("state Somp {\n  state entry1 <<entryPoint>>\n  state exitA <<exitPoint>>\n  entry1 --> B\n  B --> exitA\n}\n[*] --> entry1\nexitA --> Foo");
+        $at = static fn (Mark $mark): array => [
+            \round(\min(\array_column($mark->points, 0)) / Units::POINT, precision: 3),
+            \round(\min(\array_column($mark->points, 1)) / Units::POINT, precision: 3),
+            \round(\max(\array_column($mark->points, 0)) / Units::POINT, precision: 3),
+            \round(\max(\array_column($mark->points, 1)) / Units::POINT, precision: 3),
+        ];
+        $circles = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && (1.5 * Units::POINT) === $mark->strokeWidth));
+        $texts = [];
+        foreach ($drawing->marks as $mark) {
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
+            $texts[$mark->text] = \round($mark->points[0][1] / Units::POINT, precision: 3);
+        }
+
+        // As the jar draws them: the frame through the points, its name 5 below its top; each point a circle 12 across, its name 12 above or below it, the exit's crossed.
+        $this->assertSame([104.0, 428.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertSame([7.0, 104.0, 89.0, 298.0], $at($drawing->marks[0]));
+        $this->assertSame(
+            [
+                [42.0, 98.0,  54.0, 110.0],
+                [42.0, 292.0, 54.0, 304.0],
+            ],
+            \array_map($at, $circles),
+        );
+        $this->assertSame([122.535, 83.047, 317.535], [$texts['Somp'], $texts['entry1'], $texts['exitA']]);
+        $this->assertCount(2, \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && (1.5 * Units::POINT) === $mark->strokeWidth));
+
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+        // A long name makes the point a port in a table, the point read from the port's column; a composite holding nothing else holds a point.
+        $this->assertSame([236.0, 262.0], $size("state S {\n state \"a very long entry point name\" as e1 <<entryPoint>>\n e1 --> A\n}\n[*] --> e1"));
+        $this->assertSame([61.0, 188.0], $size("state S {\n state e1 <<entryPoint>>\n}\n[*] --> e1"));
+        $this->assertSame([104.0, 187.0], $size("state S {\n state e1 <<entryPoint>>\n e1 --> A\n}"));
+        $this->assertSame([376.0, 122.0], $size("left to right direction\nstate S {\n state e1 <<entryPoint>>\n state x1 <<exitPoint>>\n e1 --> A\n A --> x1\n}\n[*] --> e1\nx1 --> [*]"));
+        $this->assertSame(
+            [189.0, 376.0],
+            $size("state S {\n state e1 <<entryPoint>>\n state e2 <<entryPoint>>\n state x1 <<exitPoint>>\n e1 --> A\n e2 --> B\n A --> x1\n B --> x1\n}\n[*] --> e1\n[*] --> e2\nx1 --> [*]"),
+        );
+        $this->assertSame([237.0, 238.0], $size("state \"Composite with a long title\" as S {\n state e1 <<entryPoint>>\n e1 --> A\n}\n[*] --> e1"));
+        $this->assertSame([213.0, 466.0], $size("state S {\n state e1 <<entryPoint>>\n e1 --> A\n A --> B\n B --> C\n}\n[*] --> e1\nS --> D"));
+
+        // Turned, the long title spreads the ranks inside; two composites each rank their own points.
+        $this->assertSame(
+            [537.0, 122.0],
+            $size("left to right direction\nstate \"A rather long composite title\" as S {\n state e1 <<entryPoint>>\n state x1 <<exitPoint>>\n e1 --> A\n A --> x1\n}\n[*] --> e1\nx1 --> [*]"),
+        );
+        $this->assertSame([194.0, 238.0], $size("state S {\n state e1 <<entryPoint>>\n e1 --> A\n}\nstate T {\n state e2 <<entryPoint>>\n e2 --> B\n}\n[*] --> e1\n[*] --> e2"));
+
+        // A frame narrower than its title is widened for it.
+        $this->assertSame([227.0, 188.0], $size("state \"A rather long composite title\" as S {\n state e1 <<entryPoint>>\n state e2 <<entryPoint>>\n}\n[*] --> e1\n[*] --> e2"));
+        // Numbered states stand as any others.
+        $this->assertSame([104.0, 376.0], $size("state 1 {\n state 2 <<entryPoint>>\n state 4 <<exitPoint>>\n 2 --> 3\n 3 --> 4\n}\n[*] --> 2\n4 --> [*]"));
+
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer draws entry and exit points only on a composite state a transition crosses into'));
+        self::draw("state p1 <<entryPoint>>\nA --> p1");
+    }
+
     private static function read(string $lines): PlantUmlStates
     {
         $diagram = PlantUmlPipeline::native()->diagram("@startuml\n".$lines."\n@enduml");

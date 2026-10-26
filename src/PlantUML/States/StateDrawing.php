@@ -22,6 +22,7 @@ use Janalis\Viz\PlantUML\Draw\NoteBox;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
+use Janalis\Viz\PlantUML\Svek\Frontier;
 use Janalis\Viz\PlantUML\Svek\Svek;
 use Janalis\Viz\Source\Unsupported;
 
@@ -70,8 +71,13 @@ final class StateDrawing
         $inner = [];
         $placed = [];
         $clusters = [];
+        /** @var array<string, ?string> $owners the cluster each node of the graph stands in */
+        $owners = [];
+        /** @var array<string, float> $shifts how far right of where its links end each point on a border stands */
+        $shifts = [];
         foreach ($this->members($group, $region) as [$node, $cluster]) {
             $placed[$node->id] = true;
+            $owners[$node->id] = $cluster;
             if (\array_key_exists($node->id, $this->states->composites) && !$this->autarkic($node->id)) {
                 if ([] !== $this->states->composites[$node->id]) {
                     throw new Unsupported('The native PlantUML renderer does not draw concurrent regions a transition crosses into');
@@ -93,9 +99,23 @@ final class StateDrawing
             }
             $box = StateBox::of($node, $this->states);
             $boxes[$node->id] = $box;
-            $svek->node($node->id, $box->width, $box->height, $cluster);
+            if (!\in_array($node->kind, ['entry', 'exit'], strict: true)) {
+                $svek->node($node->id, $box->width, $box->height, $cluster);
+                continue;
+            }
+            if (null === $cluster) {
+                throw new Unsupported('The native PlantUML renderer draws entry and exit points only on a composite state a transition crosses into');
+            }
+            $svek->border($node->id, $cluster, 'entry' === $node->kind, $box->nameWidth());
+            $shifts[$node->id] = $svek->shift($node->id);
         }
         $notes = $this->notes($svek, $placed, $group, $region);
+        foreach ($this->states->notes as $note) {
+            if (null === $note->entity || !\array_key_exists($note->id, $notes)) {
+                continue;
+            }
+            $owners[$note->id] = $this->clusterOf($note->entity, $group);
+        }
         $anchored = \array_map(static fn (StateNode $node): string => $node->id, $clusters);
         $edges = [];
         foreach ($this->states->links as $index => $link) {
@@ -110,7 +130,7 @@ final class StateDrawing
                 $link->length,
                 $width,
                 $height,
-                !$link->norank,
+                !$link->norank && !$this->pointToPoint($link->from, $link->to),
                 $link->reversed,
             );
         }
@@ -120,7 +140,7 @@ final class StateDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        return $this->paint($placement, $clusters, $edges, $boxes, $inner, $notes);
+        return $this->paint($placement, $clusters, $edges, $boxes, $inner, $notes, $owners, $shifts);
     }
 
     /**
@@ -161,11 +181,24 @@ final class StateDrawing
         return false;
     }
 
-    /** Whether no transition joins a state inside a composite state to one outside it. */
+    /** Whether a transition joins two points on one composite state's border, which svek lets rank its ends freely, as PlantUML. */
+    private function pointToPoint(string $from, string $to): bool
+    {
+        [$from, $to] = [$this->states->nodes[$from], $this->states->nodes[$to]];
+
+        return $from->group === $to->group && \in_array($from->kind, ['entry', 'exit'], strict: true) && \in_array($to->kind, ['entry', 'exit'], strict: true);
+    }
+
+    /** Whether no transition joins a state inside a composite state to one outside it, and no point stands on its border. */
     private function autarkic(string $composite): bool
     {
         foreach ($this->states->links as $link) {
             if ($this->inside($link->from, $composite) !== $this->inside($link->to, $composite)) {
+                return false;
+            }
+        }
+        foreach ($this->states->nodes as $node) {
+            if ($node->group === $composite && \in_array($node->kind, ['entry', 'exit'], strict: true)) {
                 return false;
             }
         }
@@ -355,30 +388,41 @@ final class StateDrawing
      * @param array<string, StateBox> $boxes
      * @param array<string, array{list<Mark>, float, float}> $inner
      * @param array<string, NoteBox> $notes
+     * @param array<string, ?string> $owners
+     * @param array<string, float> $shifts
      * @return list<Mark>
      */
-    private function paint(Placement $placement, array $clusters, array $edges, array $boxes, array $inner, array $notes): array
+    private function paint(Placement $placement, array $clusters, array $edges, array $boxes, array $inner, array $notes, array $owners, array $shifts): array
     {
         $marks = [];
-        $boxesById = [];
+        $frames = [];
         foreach ($placement->graph->clusters as $box) {
-            $boxesById[$box->name] = $box;
+            $frames[$box->name] = [$box->x0, $box->y0, $box->x1, $box->y1];
+        }
+        $bordered = [];
+        foreach ($clusters as $node) {
+            $points = \array_filter($owners, static fn (?string $owner, string $id): bool => $owner === $node->id && \array_key_exists($id, $shifts), \ARRAY_FILTER_USE_BOTH);
+            if ([] !== $points) {
+                $bordered[$node->id] = true;
+                $frames[$node->id] = $this->frontier($node, $frames, $placement, $owners, $shifts);
+            }
         }
         foreach ($clusters as $node) {
-            $box = $boxesById[$node->id];
+            [$x0, $y0, $x1, $y1] = $frames[$node->id];
             [, $titleHeight] = $this->title($node)->size();
-            // As PlantUML draws a composite state laid out as a cluster: its name 4 below its top, its line 1 below the name.
+            // As PlantUML draws a composite state laid out as a cluster: its name 4 below its top, its line 1 below the name; 5 below and none with points on its border.
+            $border = \array_key_exists($node->id, $bordered);
             \array_push($marks, ...$this->frame(
                 $node,
-                $box->x0,
-                $box->y0,
-                $box->x1 - $box->x0,
-                $box->y1 - $box->y0,
+                $x0,
+                $y0,
+                $x1 - $x0,
+                $y1 - $y0,
                 $titleHeight,
                 $this->title($node),
                 $this->description($node),
-                titleTop: 4.0,
-                below: 1.0,
+                titleTop: $border ? self::MARGIN : 4.0,
+                below: $border ? 0.0 : 1.0,
             ));
         }
         $style = $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'arrow']);
@@ -397,7 +441,7 @@ final class StateDrawing
                 );
             }
         }
-        $placement = self::framed($placement);
+        $placement = self::framed($placement, $frames);
         foreach ($edges as $index => $edge) {
             \array_push($marks, ...LinkPainter::marks($this->states->links[$index], $placement, $edge, $this->label($index), $style, $background));
         }
@@ -411,7 +455,13 @@ final class StateDrawing
         }
         foreach ($boxes as $id => $box) {
             $node = $placement->endpoints[$id];
-            \array_push($marks, ...$box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+            [$left, $top] = [$node->x - ($node->w / 2) + ($shifts[$id] ?? 0.0), $node->y - ($node->h / 2)];
+            \array_push($marks, ...$box->marks($left, $top));
+            $owner = $owners[$id] ?? null;
+            if (\array_key_exists($id, $shifts) && null !== $owner) {
+                // As PlantUML sets a point's name: above it when it stands above its frame's middle.
+                \array_push($marks, ...$box->name($left, $top, ($frames[$owner][1] + $frames[$owner][3]) / 2));
+            }
         }
         foreach ($inner as $id => [$innerMarks]) {
             $node = $placement->endpoints[$id];
@@ -427,6 +477,32 @@ final class StateDrawing
         return $marks;
     }
 
+    /**
+     * The frame of a composite state with points on its border, as PlantUML's frontier
+     * calculator finds it from what the state holds, the points and its cluster's box.
+     *
+     * @param array<string, array{float, float, float, float}> $frames
+     * @param array<string, ?string> $owners
+     * @param array<string, float> $shifts
+     * @return array{float, float, float, float}
+     */
+    private function frontier(StateNode $node, array $frames, Placement $placement, array $owners, array $shifts): array
+    {
+        $insides = [];
+        $points = [];
+        foreach (\array_keys($owners, $node->id, strict: true) as $id) {
+            $at = $placement->endpoints[$id];
+            if (\array_key_exists($id, $shifts)) {
+                $points[] = [$at->x + $shifts[$id], $at->y];
+                continue;
+            }
+            $insides[] = $frames[$id] ?? [$at->x - ($at->w / 2), $at->y - ($at->h / 2), $at->x + ($at->w / 2), $at->y + ($at->h / 2)];
+        }
+        [$titleWidth, $titleHeight] = Svek::label(...$this->title($node)->size(), ...$this->description($node)->size());
+
+        return Frontier::of($frames[$node->id], $insides, $points, $this->states->direction, ($titleHeight + 5) > 0 ? $titleWidth : 0.0);
+    }
+
     private static function anchor(string $composite): string
     {
         return '*anchor*'.$composite;
@@ -436,13 +512,15 @@ final class StateDrawing
      * The placement with each clustered composite state standing as its frame, so a
      * transition to it, routed to its anchor, is trimmed where it meets the frame.
      */
-    private static function framed(Placement $placement): Placement
+    /** @param array<string, array{float, float, float, float}> $frames each composite state's frame, by id */
+    private static function framed(Placement $placement, array $frames): Placement
     {
         $endpoints = $placement->endpoints;
         $routes = $placement->routes;
         // Every cluster of a scope's graph is a composite state.
         foreach ($placement->graph->clusters as $box) {
-            $endpoints[$box->name] = new GraphNode(0, $box->name, '', ($box->x0 + $box->x1) / 2, ($box->y0 + $box->y1) / 2, $box->x1 - $box->x0, $box->y1 - $box->y0, null, null, dashed: false);
+            [$x0, $y0, $x1, $y1] = $frames[$box->name];
+            $endpoints[$box->name] = new GraphNode(0, $box->name, '', ($x0 + $x1) / 2, ($y0 + $y1) / 2, $x1 - $x0, $y1 - $y0, null, null, dashed: false);
         }
 
         return new Placement($placement->graph, $endpoints, $placement->directions, $routes, $placement->labels);

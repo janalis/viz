@@ -9,7 +9,9 @@ use Janalis\Viz\Layout\Engine\LayoutCluster;
 use Janalis\Viz\Layout\Engine\LayoutEdge;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\LayoutNode;
+use Janalis\Viz\Layout\Engine\LayoutRankSet;
 use Janalis\Viz\Layout\Engine\Placement;
+use Janalis\Viz\Layout\Engine\RankKind;
 use Janalis\Viz\Layout\Engine\Spacing;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
@@ -31,6 +33,12 @@ final class Svek
     /** The prefixes of the two more a cluster a link starts or ends at stands in, and holds its content in. */
     private const string AROUND = "\0a:";
     private const string WITHIN = "\0i:";
+    /** The prefix of the cluster a cluster with points on its border holds its title and content in, inside the points' ranks. */
+    private const string BORDERED = "\0ee:";
+    /** How wide a point's label may be before svek writes the point as a port in a table, as dot sizes a table: its least 54 by 36, 8 each side of the table. */
+    private const int PORTED = 40;
+    /** The prefix of the point svek puts in a cluster that holds nothing but the points on its border. */
+    private const string EMPTY = "\0e:";
 
     /** @var array<string, array{string, float, float, ?string}> by id, which each carries, as a numeric one would not stay a string key */
     private array $nodes = [];
@@ -46,6 +54,12 @@ final class Svek
     private array $points = [];
     /** @var list<array{string, string, int, float, float, bool, bool}> */
     private array $edges = [];
+    /** @var array<string, bool> the points on a cluster's border, by id: true for an entry, false for an exit */
+    private array $borders = [];
+    /** @var array<string, float> how far right of its node's centre each point on a border stands */
+    private array $ports = [];
+    /** @var array<string, true> the clusters with points on their border */
+    private array $bordered = [];
 
     /** A node, with the outline links stop at, as `BoxClip` names it: `oval`, `diamond` or `box`. */
     public function node(string $id, float $width, float $height, ?string $cluster = null, string $shape = 'box'): void
@@ -74,6 +88,29 @@ final class Svek
         $this->nodes[$id] = [$id, 0.72, 0.72, $cluster];
         $this->points[$id] = true;
         $this->linked[$cluster] = true;
+    }
+
+    /**
+     * An entry or exit point on a cluster's border, as svek writes one: a square 12 across,
+     * ranked first or last in the cluster; its label wider than 40, a table about a port that
+     * square, 40 narrower than the label, whose square its links end at. Svek reads the point
+     * from the port's column, which dot, as measured on it, makes a third of the table's width
+     * and 24 more, never under 12, centred: the point's corner is at the column's.
+     */
+    public function border(string $id, string $cluster, bool $entry, float $labelWidth): void
+    {
+        $width = (int) $labelWidth;
+        $table = \max(10, $width - self::PORTED);
+        $this->nodes[$id] = $width > self::PORTED ? [$id, \max(54.0, $table + 16.0), 36.0, $cluster] : [$id, 12.0, 12.0, $cluster];
+        $this->ports[$id] = $width > self::PORTED ? 6.0 - (\max(12.0, ($table + 24) / 3) / 2) : 0.0;
+        $this->borders[$id] = $entry;
+        $this->bordered[$cluster] = true;
+    }
+
+    /** How far right of where its links end svek reads a point on a border to stand, from its port's column. */
+    public function shift(string $id): float
+    {
+        return $this->ports[$id] ?? 0.0;
     }
 
     /** Nodes kept together, as `together` packs them: a cluster with no title and no protection around it. */
@@ -139,6 +176,15 @@ final class Svek
                 $clusters[] = new LayoutCluster(self::AROUND.$id, '', $holder, order: \count($clusters));
                 $holder = self::AROUND.$id;
             }
+            if (\array_key_exists($id, $this->bordered)) {
+                // No protections: the points' ranks in the cluster, the title and content in one more.
+                $clusters[] = new LayoutCluster($id, '', $holder, order: \count($clusters));
+                $clusters[] = new LayoutCluster(self::BORDERED.$id, '', $id, minWidth: $titleWidth, labelHeight: $titleHeight, order: \count($clusters));
+                if ($linked) {
+                    $clusters[] = new LayoutCluster(self::WITHIN.$id, '', self::BORDERED.$id, order: \count($clusters));
+                }
+                continue;
+            }
             $clusters[] = new LayoutCluster(self::OUTER.$id, '', $holder, order: \count($clusters));
             $clusters[] = new LayoutCluster($id, '', self::OUTER.$id, minWidth: $titleWidth, labelHeight: $titleHeight, order: \count($clusters));
             if ($linked) {
@@ -146,16 +192,33 @@ final class Svek
             }
             $clusters[] = new LayoutCluster(self::INNER.$id, '', $linked ? self::WITHIN.$id : $id, order: \count($clusters));
         }
-        $graph = new LayoutGraph($this->ordered(), $edges, $clusters, $direction, new Spacing($rankSeparation, $nodeSeparation, 4.0));
+        // As svek, a cluster holding nothing but its points holds a point in their place.
+        foreach ($this->clusters as [$cluster]) {
+            if (!\array_key_exists($cluster, $this->bordered)) {
+                continue;
+            }
+            $nodes = \array_filter($this->nodes, fn (array $node): bool => $node[3] === $cluster && !\array_key_exists($node[0], $this->borders));
+            if ([] === $nodes && [] === \array_filter($this->clusters, static fn (array $child): bool => $child[1] === $cluster)) {
+                $this->nodes[self::EMPTY.$cluster] = [self::EMPTY.$cluster, 0.72, 0.72, $cluster];
+                $this->points[self::EMPTY.$cluster] = true;
+            }
+        }
+        $graph = new LayoutGraph($this->ordered(), $edges, $clusters, $direction, new Spacing($rankSeparation, $nodeSeparation, 4.0), rankSets: $this->ranks());
         $placing = new DotEngine()->place($graph);
         yield from $placing;
         $placement = $placing->getReturn();
         $layout = $placement->graph;
         $kept = \array_values(\array_filter($layout->clusters, fn (GraphCluster $cluster): bool => \array_key_exists($cluster->name, $this->clusters)));
 
+        // A point written as a port has its links end at its port's square, which dot keeps at its centre.
+        $endpoints = $placement->endpoints;
+        foreach (\array_keys($this->borders) as $id) {
+            $endpoints[$id] = $endpoints[$id]->sized(12.0, 12.0);
+        }
+
         return new Placement(
             new GraphLayout($layout->width, $layout->height, $layout->nodes, $layout->edges, $kept),
-            $placement->endpoints,
+            $endpoints,
             $placement->directions,
             $placement->routes,
             $placement->labels,
@@ -199,12 +262,14 @@ final class Svek
     {
         $ordered = [];
         foreach ([null, ...\array_column($this->clusters, 0)] as $cluster) {
-            foreach ($this->nodes as [$id, $width, $height, $owner]) {
-                if ($owner !== $cluster) {
-                    continue;
-                }
+            $mine = \array_filter($this->nodes, static fn (array $node): bool => $node[3] === $cluster);
+            // As svek writes a cluster's points before its content, its entries first.
+            $entries = \array_filter($mine, fn (array $node): bool => $this->borders[$node[0]] ?? false);
+            $exits = \array_filter($mine, fn (array $node): bool => false === ($this->borders[$node[0]] ?? null));
+            foreach ([...$entries, ...$exits, ...\array_diff_key($mine, $entries, $exits)] as [$id, $width, $height, $owner]) {
                 $holder = match (true) {
-                    null === $owner, \array_key_exists($id, $this->points) => $owner,
+                    null === $owner, \array_key_exists($id, $this->borders) => $owner,
+                    \array_key_exists($id, $this->points) => \array_key_exists($owner, $this->bordered) ? self::BORDERED.$owner : $owner,
                     default => $this->holder($owner),
                 };
                 $ordered[] = new LayoutNode($id, '', $width, $height, $holder, \count($ordered), shape: $this->shapes[$id] ?? Shape::Box);
@@ -214,9 +279,44 @@ final class Svek
         return $ordered;
     }
 
-    /** The cluster a cluster's content stands in: its inner protection, or itself when packed. */
+    /** @return list<LayoutRankSet> each cluster's entries on its first rank and its exits on its last, alone */
+    private function ranks(): array
+    {
+        $sets = [];
+        foreach ($this->clusters as [$cluster]) {
+            if (!\array_key_exists($cluster, $this->bordered)) {
+                continue;
+            }
+            $entries = [];
+            $exits = [];
+            foreach ($this->borders as $id => $entry) {
+                if ($this->nodes[$id][3] !== $cluster) {
+                    continue;
+                }
+                $entry ? ($entries[] = $this->nodes[$id][0]) : ($exits[] = $this->nodes[$id][0]);
+            }
+            \array_push($sets, ...\array_map(
+                static fn (array $set): LayoutRankSet => new LayoutRankSet(...$set),
+                \array_filter(
+                    [
+                        [RankKind::Source, $entries],
+                        [RankKind::Sink,   $exits],
+                    ],
+                    static fn (array $set): bool => [] !== $set[1],
+                ),
+            ));
+        }
+
+        return $sets;
+    }
+
+    /** The cluster a cluster's content stands in: its inner protection, itself when packed, the one inside its points' ranks when it has some. */
     private function holder(string $cluster): string
     {
-        return \array_key_exists($cluster, $this->packed) ? $cluster : self::INNER.$cluster;
+        return match (true) {
+            \array_key_exists($cluster, $this->packed) => $cluster,
+            \array_key_exists($cluster, $this->bordered) => (\array_key_exists($cluster, $this->linked) ? self::WITHIN : self::BORDERED).$cluster,
+            default => self::INNER.$cluster,
+        };
     }
 }
