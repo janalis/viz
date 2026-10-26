@@ -179,6 +179,10 @@ final class PlantUmlDocumentReader
             return true;
         }
         if (1 === \preg_match('/^skinparam[\s\x{a0}]+([\w.]*(?:<<[^<>]*>>)?[\w.]*)[\s\x{a0}]+([^{}]*)$/iu', $line, $match)) {
+            // As PlantUML, which warns of these written so, and draws its warning above the diagram.
+            if (\in_array(\strtolower($match[1]), ['handwritten', 'participantpadding', 'padding'], strict: true)) {
+                throw new Unsupported('The native PlantUML renderer does not draw what PlantUML warns of: '.$line);
+            }
             $this->param($match[1], \trim($match[2]));
 
             return true;

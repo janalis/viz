@@ -107,7 +107,7 @@ final class MindMapReaderTest extends TestCase
         yield 'too deep' => ["* a\n** b\n**** c", 'error42L'];
         yield 'indented plus' => ["* a\n  ++ b", 'Syntax Error?'];
         yield 'unreadable indentation' => ["* a\n *# b", 'type=< *#>[*]'];
-        yield 'unknown command' => ["* a\nskinparam handwritten true\nfoo", 'No PlantUML diagram reads this source'];
+        yield 'unknown command' => ["* a\nskinparam shadowing true\nfoo", 'No PlantUML diagram reads this source'];
         yield 'not drawn' => ["* a\nset separator ::", 'The native PlantUML renderer does not draw: set separator ::'];
     }
 
