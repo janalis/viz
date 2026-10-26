@@ -165,6 +165,19 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([61.0, 122.0, 183.0], [$at['c']->x - $at['a']->x, $at['b']->x - $at['a']->x, $at['d']->x - $at['a']->x], 0.5);
     }
 
+    public function testAFlatEdgeOverNodesArcsAboveThemAsDotDrawsIt(): void
+    {
+        // As dot sets a -> c, a -> b side by side, b ordered first: a -> c goes over b, half a rank separation above, the graph as tall as dot makes it.
+        foreach (['0.5' => 51.8, '0.833333' => 64.8, '1.5' => 90.2] as $ranksep => $height) {
+            $graph = Work::run(new DotParser()->parse('digraph { ranksep='.$ranksep.'; node [shape=rect,width=0.6,height=0.4,label=""]; {rank=same; a -> c; a -> b;} }'));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $this->assertEqualsWithDelta($height + 8, $placement->graph->height, 1.0, $ranksep);
+            $top = \min(\array_column($placement->splines[0], 1));
+            $this->assertLessThan($placement->endpoints['b']->y - 14.4, $top, 'over b');
+            $this->assertSame([], $placement->splines[1] ?? [], 'a -> b, to its neighbour, straight');
+        }
+    }
+
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

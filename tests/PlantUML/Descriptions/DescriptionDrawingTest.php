@@ -303,4 +303,12 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([50.0, 153.0], $size("skinparam componentStyle rectangle\n[A] --> [B]"));
         $this->assertSame([55.0, 153.0], $size("skinparam componentStyle uml1\n[A] --> [B]"));
     }
+
+    public function testALinkAcrossOverUseCasesGoesOverThem(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nactor User\nUser -> (Login)\nUser -> (Logout)\n(Login) .> (Auth) : include\n@enduml"));
+
+        // As the jar sets it, 386 by 122: Logout next to the user, the link to Login over it; the jar takes the arc'\''s controls, 3 higher than it runs.
+        $this->assertSame([386.0, 119.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
 }

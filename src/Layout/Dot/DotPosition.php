@@ -31,7 +31,7 @@ final class DotPosition
         private readonly DotLayers $layers,
         private readonly array $clusterLabels,
         private readonly float $nodeSeparation,
-        private readonly float $rankSeparation,
+        public readonly float $rankSeparation,
         private readonly float $padding = 4.0,
         private readonly array $bands = [],
         private readonly array $lengths = [],

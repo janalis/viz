@@ -131,6 +131,37 @@ final readonly class DotEngine implements LayoutEngine
     }
 
     /**
+     * The flat edges' routes, straight from end to end, and the labels of those labelled; as dot is
+     * seen to, one with nodes between its ends goes over them.
+     *
+     * @param \Closure(float, float): array{float, float} $point
+     * @param list<int> $edgeIndexes
+     * @param array<int, list<array{float, float}>> $routes
+     * @param array<int, list<array{float, float}>> $splines
+     * @param array<int, array{float, float}> $labels
+     * @return array{array<int, list<array{float, float}>>, array<int, list<array{float, float}>>, array<int, array{float, float}>}
+     */
+    private static function flat(DotLayers $layers, DotPosition $position, \Closure $point, array $edgeIndexes, array $routes, array $splines, array $labels): array
+    {
+        foreach ($layers->flat as [$tail, $head, $layered, $labelWidth, $labelHeight]) {
+            $original = $edgeIndexes[$layered];
+            $routes[$original] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
+            if ($labelWidth > 0 || $labelHeight > 0) {
+                $labels[$original] = $point(...self::flatLabel($layers, $position, $tail, $head, $labelHeight));
+                continue;
+            }
+            $arc = DotArcs::route($layers, $position, $tail, $head);
+            if (null === $arc) {
+                continue;
+            }
+            $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[0]);
+            $routes[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[1]);
+        }
+
+        return [$routes, $splines, $labels];
+    }
+
+    /**
      * As dot's `ratio`, positions stretched until the drawing is as tall for its width as
      * asked: down where it is too flat, else across; laid out to be turned, the other way.
      */
@@ -254,12 +285,7 @@ final readonly class DotEngine implements LayoutEngine
                 $labels[$original] = $point(...$label);
             }
         }
-        foreach ($layers->flat as [$tail, $head, $layered, $labelWidth, $labelHeight]) {
-            $routes[$edgeIndexes[$layered]] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
-            if ($labelWidth > 0 || $labelHeight > 0) {
-                $labels[$edgeIndexes[$layered]] = $point(...self::flatLabel($layers, $position, $tail, $head, $labelHeight));
-            }
-        }
+        [$routes, $splines, $labels] = self::flat($layers, $position, $point, $edgeIndexes, $routes, $splines, $labels);
 
         $pieces = [];
         if ($graph->concentrate) {

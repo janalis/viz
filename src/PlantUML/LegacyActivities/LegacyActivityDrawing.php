@@ -122,8 +122,7 @@ final class LegacyActivityDrawing
             }
             // A note's name cannot be written, so it has a single link: the one it was made with.
             $index = (int) \array_key_first(\array_filter($this->diagram->links, static fn (PlantUmlLink $link): bool => $link->from === $entity->id || $link->to === $entity->id));
-            $link = $this->diagram->links[$index];
-            if (!self::curve($placement, $link, $this->edges[$index])) {
+            if (!self::curve($placement, $this->edges[$index])) {
                 continue;
             }
             $pointers[$entity->id] = $index;
@@ -132,23 +131,10 @@ final class LegacyActivityDrawing
         return $pointers;
     }
 
-    /** Whether dot routes a link in a single curve: to the next rank, or across its own with no node between its ends. */
-    private static function curve(Placement $placement, PlantUmlLink $link, int $edge): bool
+    /** Whether dot routes a link in a single curve: to the next rank, or across its own with no node between its ends, which it goes over. */
+    private static function curve(Placement $placement, int $edge): bool
     {
-        if (\count($placement->routes[$edge] ?? []) > 2) {
-            return false;
-        }
-        [$from, $to] = [$placement->endpoints[$link->from], $placement->endpoints[$link->to]];
-        if (\abs($from->y - $to->y) > 0.001) {
-            return true;
-        }
-        foreach ($placement->graph->nodes as $node) {
-            if (\abs($node->y - $from->y) < 0.001 && $node->x > \min($from->x, $to->x) && $node->x < \max($from->x, $to->x)) {
-                return false;
-            }
-        }
-
-        return true;
+        return \count($placement->routes[$edge] ?? []) <= 2;
     }
 
     /** @return list<Mark> */
