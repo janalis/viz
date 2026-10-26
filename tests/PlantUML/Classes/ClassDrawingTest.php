@@ -569,6 +569,22 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([151.0, 162.0], $size("object \"Long Object Title\" as o {\n a = 1\n}\nobject p\no --> p"));
     }
 
+    public function testAMiddleCircleStandsMidwayAsPlantUmlDrawsIt(): void
+    {
+        $centres = static fn (Drawing $drawing): array => \array_values(\array_map(
+            static fn (Mark $mark): array => [
+                \round(((\min(\array_column($mark->points, 0)) + \max(\array_column($mark->points, 0))) / 2) / Units::POINT, precision: 1),
+                \round(((\min(\array_column($mark->points, 1)) + \max(\array_column($mark->points, 1))) / 2) / Units::POINT, precision: 1),
+            ],
+            \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && (1.5 * Units::POINT) === $mark->strokeWidth),
+        ));
+
+        // As the jar draws them: 6 across where the line comes nearest midway between its ends; the jar's at 27.83,145.955 and 27.83,112.95.
+        $this->assertSame([[27.8, 146.0]], $centres(self::draw("class A\nclass B\nA --0-- B")));
+        $this->assertSame([[27.8, 113.0]], $centres(self::draw("class A\nclass B\nA ..0.> B")));
+        $this->assertSame([[45.5, 169.5], [82.5, 85.0]], $centres(self::draw("class A\nclass B\nclass C\nA --0-- B\nA -0- C")));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

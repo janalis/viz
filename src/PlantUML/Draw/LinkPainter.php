@@ -12,6 +12,7 @@ use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
+use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Links\Extremity;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
@@ -65,6 +66,11 @@ final class LinkPainter
             $points = $reversed ? \array_reverse($points) : $points;
         }
         $marks[] = new Mark(MarkKind::Polyline, $points, stroke: $color, dashed: $link->dashed || $link->dotted, strokeWidth: $stroke, dashes: self::dashes($link));
+        if ($link->middleCircle) {
+            // As PlantUML's `MiddleCircle`: 6 across from where the line comes nearest midway between its ends, filled as the background.
+            [$cx, $cy] = self::middle($points);
+            $marks[] = DescriptionBox::ellipse($cx - 6, $cy - 6, 12, 12, $color, 'none' === $background ? '#ffffff' : $background, 1.5);
+        }
         if (!$label->empty()) {
             $margin = Svek::labelMargin($link->from, $link->to);
             [$width, $height] = $label->size($margin);
@@ -80,6 +86,32 @@ final class LinkPainter
         \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes, $placement->directions[''] ?? Direction::TopBottom));
 
         return $marks;
+    }
+
+    /**
+     * The point of a line nearest midway between its ends, as PlantUML's `DotPath` finds its
+     * middle: the least sum of its squared distances to them.
+     *
+     * @param list<array{float, float}> $points
+     * @return array{float, float}
+     */
+    private static function middle(array $points): array
+    {
+        // The least sum lies nearest the midpoint of its ends.
+        [$start, $end] = [$points[0], $points[\count($points) - 1]];
+        $mid = [($start[0] + $end[0]) / 2, ($start[1] + $end[1]) / 2];
+        [$best, $distance] = [$start, \INF];
+        for ($index = 1, $count = \count($points); $index < $count; ++$index) {
+            [$a, $b] = [$points[$index - 1], $points[$index]];
+            [$dx, $dy] = [$b[0] - $a[0], $b[1] - $a[1]];
+            $length = $dx ** 2 + $dy ** 2;
+            $t = $length > 0 ? \max(0.0, \min(1.0, ((($mid[0] - $a[0]) * $dx) + (($mid[1] - $a[1]) * $dy)) / $length)) : 0.0;
+            $point = [$a[0] + ($t * $dx), $a[1] + ($t * $dy)];
+            $away = \hypot($point[0] - $mid[0], $point[1] - $mid[1]);
+            [$best, $distance] = $away < $distance ? [$point, $away] : [$best, $distance];
+        }
+
+        return $best;
     }
 
     /**

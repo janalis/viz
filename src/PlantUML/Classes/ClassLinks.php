@@ -29,6 +29,7 @@ final class ClassLinks
         [$link->firstLabel, $link->secondLabel, $text] = self::labels($command);
         [$link->label, $link->labelArrow] = self::arrow($text);
         [$link->fromQualifier, $link->toQualifier] = [$command->get('QUALIFIER1'), $command->get('QUALIFIER2')];
+        $link->middleCircle = '0' === $command->get('INSIDE');
         $link = \in_array($direction, ['left', 'up'], strict: true) ? self::carried($link, $link->inverted()) : $link;
         self::style($link, $command->lazy('ARROW_STYLE'));
         $link->color ??= $command->get('COLOR');

@@ -263,7 +263,7 @@ final class ClassReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
-        yield 'middle circle' => ['A --0-- B', 'The native PlantUML renderer does not draw: A --0-- B'];
+        yield 'middle circle circled' => ['A --(0)-- B', 'The native PlantUML renderer does not draw: A --(0)-- B'];
         yield 'map link' => ["map M {\n a *-> B\n}", 'The native PlantUML renderer does not draw: a *-> B'];
         yield 'map again' => ["class M\nmap M {\n}", 'PlantUML cannot declare M again as map'];
         yield 'object again' => ["class o\nobject o", 'PlantUML cannot declare o again as object'];

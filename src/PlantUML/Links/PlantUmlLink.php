@@ -30,6 +30,8 @@ final class PlantUmlLink
     /** The qualifier written at its first end, as `A [key] --> B`, and at its second. */
     public ?string $fromQualifier = null;
     public ?string $toQualifier = null;
+    /** Whether a circle stands midway along it, as `A --0-- B` draws one. */
+    public bool $middleCircle = false;
 
     /** @param int $length the dashes in the arrow, 1 for a link drawn across */
     public function __construct(
@@ -50,6 +52,7 @@ final class PlantUmlLink
         $link->reversed = !$this->reversed;
         [$link->firstLabel, $link->secondLabel] = [$this->secondLabel, $this->firstLabel];
         [$link->fromQualifier, $link->toQualifier] = [$this->toQualifier, $this->fromQualifier];
+        $link->middleCircle = $this->middleCircle;
 
         return $link;
     }
