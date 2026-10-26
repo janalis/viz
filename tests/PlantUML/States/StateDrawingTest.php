@@ -231,6 +231,13 @@ final class StateDrawingTest extends TestCase
         self::draw("state p1 <<entryPoint>>\nA --> p1");
     }
 
+    public function testALinkPassingBesideAStateRunsAsDotFitsItsSpline(): void
+    {
+        // As the jar draws it, the link up from C to A runs close beside B, as dot fits it through the room by its virtual node, not out through the node.
+        $drawing = self::draw("state A\nstate B\nA --> B\nB --> C : go\nC -up-> A");
+        $this->assertSame([111.0, 309.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
     public function testPinsAndExpansionsStandOnACompositesBorderAsPlantUmlDrawsThem(): void
     {
         $at = static fn (Mark $mark): array => [

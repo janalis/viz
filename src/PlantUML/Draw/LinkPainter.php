@@ -18,8 +18,8 @@ use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Svek\Svek;
 
 /**
- * A link drawn as PlantUML draws it, in points: its route smoothed and trimmed at the boxes
- * it joins, the mark at each end with the line stopping short to meet it, its line dashed,
+ * A link drawn as PlantUML draws it, in points: the spline dot fits along its route, or the
+ * route smoothed where there is none, trimmed at the boxes it joins, the mark at each end with the line stopping short to meet it, its line dashed,
  * dotted, bold or coloured as written, its label where the layout put it — after a small
  * triangle when written `label >` or `< label` — and the labels at its ends beside the line.
  */
@@ -37,7 +37,7 @@ final class LinkPainter
         $from = $placement->endpoints[$link->from];
         $to = $placement->endpoints[$link->to];
         $route = $placement->routes[$edge] ?? [[$from->x, $from->y], [$to->x, $to->y]];
-        $points = BoxClip::clipped(Route::smooth($route), $from, $to, $shapes);
+        $points = BoxClip::clipped($placement->splines[$edge] ?? Route::smooth($route), $from, $to, $shapes);
         // As dot sees the line, before the ends make room for their marks: where the end labels stand.
         $whole = $points;
         $color = ClassColors::back($link->color) ?? $style->color('LineColor', '#181818');

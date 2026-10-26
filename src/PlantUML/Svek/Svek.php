@@ -233,6 +233,7 @@ final class Svek
             $placement->directions,
             $placement->routes,
             $placement->labels,
+            $placement->splines,
         );
     }
 
