@@ -61,8 +61,8 @@ Laid out as PlantUML's svek lays them out, by the native dot engine: each classi
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| `class`, `abstract`, `interface`, `enum`, `annotation`, `entity`, `protocol`, `struct`, `exception`, `metaclass`, `stereotype`, `dataclass`, `record`, `circle`, `diamond`; `as`, `<T>`, `<<stereotypes>>`, `#colours`, `extends`, `implements`, bodies and `Name : member` | `object`, `map`, `json`; names with a namespace (`a.B`); lollipops, qualifiers, middle circles, `<>` associations |
-| Members with their visibility icons (or as text with `skinparam classAttributeIconSize 0`), `{static}`, `{abstract}`, `{field}`, `{method}`, separators `--`, `..`, `==`, `__` with titles | URLs, tips, `remove`/`restore`, `set separator`, `allowmixing`, `layout_new_line` |
+| `class`, `abstract`, `interface`, `enum`, `annotation`, `entity`, `protocol`, `struct`, `exception`, `metaclass`, `stereotype`, `dataclass`, `record`, `circle`, `diamond`, `object`, `map`; `as`, `<T>`, `<<stereotypes>>`, `#colours`, `extends`, `implements`, bodies and `Name : member`; names with a namespace (`a.B`); qualifiers, middle circles, association classes | `json`; lollipops, `<>` associations; a map's row linking out, and links to ports (`M::key`) |
+| Members with their visibility icons (or as text with `skinparam classAttributeIconSize 0`), `{static}`, `{abstract}`, `{field}`, `{method}`, separators `--`, `..`, `==`, `__` with titles; `remove`/`restore`, `set separator`; elements of other kinds after `allowmixing` or as `mix_…`, and over several lines in `[ … ]`, drawn as a description diagram draws them | URLs, tips, `layout_new_line`; mixed-in elements by their short forms, ports and states |
 | Links with every end mark, dashed and styled bodies (`[#red,dashed,bold,dotted,hidden,norank,thickness=n]`), labels with `<`/`>`, labels at each end, `@weight` | `constraint on links` |
 | Packages and namespaces, `together`, notes (floating, beside a classifier, on a link), `hide`/`show` of members, fields, methods, circles, stereotypes and classifiers, `left to right direction` | Styles by stereotype on links |
 
@@ -84,8 +84,8 @@ Component, deployment and use case diagrams are laid out as svek lays them out, 
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| `actor`, `usecase` (and their business forms with `/`), `component`, `interface`, `node`, `database`, `cloud`, `folder`, `file`, `artifact`, `card`, `rectangle`, `agent`, `frame`, `package`, `queue`, `stack`, `storage`, `collections`, `hexagon`, `label`, `action`, `process`, `person`, `boundary`, `control`, `entity`, `circle`; the short forms `[component]`, `(use case)`, `:actor:`, `() interface`; text over several lines in `[ … ]` or `as " … "`; stereotypes and colours, `hide`/`show` of stereotypes | Ports, archimate, maps and JSON, sprites as symbols; a lone name on its own line, which PlantUML answers with its welcome page |
-| Containers of any of those symbols, nested, and `together`, their stereotypes above their title | Links to a container |
+| `actor`, `usecase` (and their business forms with `/`), `component`, `interface`, `node`, `database`, `cloud`, `folder`, `file`, `artifact`, `card`, `rectangle`, `agent`, `frame`, `package`, `queue`, `stack`, `storage`, `collections`, `hexagon`, `label`, `action`, `process`, `person`, `boundary`, `control`, `entity`, `circle`; the short forms `[component]`, `(use case)`, `:actor:`, `() interface`; text over several lines in `[ … ]` or `as " … "`, in sections at its separator lines; stereotypes and colours, `hide`/`show` of stereotypes; `skinparam componentStyle` and `actorStyle` | Ports, archimate, maps and JSON, sprites as symbols; a lone name on its own line, which PlantUML answers with its welcome page |
+| Containers of any of those symbols, nested, and `together`, their stereotypes above their title; links to a container | Links to an empty container |
 | Links with their marks, directions, styles, labels and `<<stereotypes>>`; notes beside elements, floating and linked like elements, and on links | Middle circles on links |
 
 ### Sequence diagrams
