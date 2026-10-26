@@ -501,4 +501,12 @@ final class TeozDrawingTest extends TestCase
         // As the jar draws it, 214 wide: the text and the spaces either side of it, as wide as the participants allow.
         $this->assertSame([214.0, 172.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
+
+    public function testMessagesWrapAtTheMaximumMessageSize(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nskinparam maxMessageSize 50\nA -> B : this is a very long message that should wrap around somewhere\n@enduml"));
+
+        // As the jar draws it, 139 by 253: a word on a line but where two or three fit in 50.
+        $this->assertSame([139.0, 253.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
 }

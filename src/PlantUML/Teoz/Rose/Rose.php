@@ -26,6 +26,8 @@ final readonly class Rose
         private StyleSheet $sheet,
         /** `skinparam actorStyle`: `awesome` or `hollow` draw an actor as that figure, anything else as a stick man. */
         private string $actorStyle = '',
+        /** `skinparam wrapMessageWidth` or `maxMessageSize`: how wide a message's text runs before it wraps, where its style does not say. */
+        private float $messageWidth = 0.0,
     ) {}
 
     /** @param list<string> $stereotypes */
@@ -115,6 +117,8 @@ final readonly class Rose
     public function arrow(array $lines, ?string $number, ArrowConfig $config, Arrow $arrow): ArrowComponent
     {
         $style = $this->style('arrow');
+        // As PlantUML's Rose: the style's width, else the skin parameter's.
+        $style = $style->number('MaximumWidth') > 0 || $this->messageWidth <= 0 ? $style : new Style([...$style->values, 'MaximumWidth' => (string) $this->messageWidth], $style->sprites);
         $text = RoseText::of($lines, $style, [1.0, 7.0, 1.0, 7.0], $number);
         $pen = Pen::of($style);
         $pen = null === $arrow->color ? $pen : $pen->withColor(PlantUmlColor::parse($arrow->color) ?? $pen->color);
