@@ -75,7 +75,7 @@ Each scope is laid out as svek lays it out: a composite state no transition cros
 | Drawn natively | Left to PlantUML |
 | --- | --- |
 | `state`, `state "Name" as S`, `state S as "Name"`, descriptions after `:` or as `S : text`; `<<choice>>`, `<<fork>>`, `<<join>>`, `<<start>>`, `<<end>>`, `<<history>>`, `<<history*>>`, `<<entryPoint>>`, `<<exitPoint>>`, pins and expansion nodes; `#colours` | `<<sdlreceive>>`; `frame`; names with a namespace |
-| Composite states with `{ … }` or `end state`, concurrent regions with `--` and `||` | Concurrent regions a transition crosses into |
+| Composite states with `{ … }` or `end state`, concurrent regions with `--` and `||`, a composite a transition crosses into a cluster with each region none crosses into an image in it | |
 | Transitions with `[*]`, `[H]`, `[H*]`, `S[H]`, `==bar==`, `x` at the start and `o` at the end, directions, styles and labels; notes beside states, floating, and on transitions; `hide empty description`; `left to right direction` | `remove`, `restore`, URLs, maps and JSON |
 
 ### Description diagrams

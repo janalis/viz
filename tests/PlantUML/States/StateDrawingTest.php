@@ -163,8 +163,11 @@ final class StateDrawingTest extends TestCase
         // A cluster no transition starts or ends at has no point of its own for one to end at.
         $this->assertContains('Kept', self::texts(self::draw("state Box {\n  state Kept\n}\nAway --> Kept")));
 
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw concurrent regions a transition crosses into'));
-        self::draw("state Split {\n  state P\n  --\n  state Q\n}\nP --> Out");
+        // Its concurrent regions as svek lays them out, a region no transition crosses into an image in the cluster: as the jar draws it, 205 by 231.
+        $split = self::draw("state Split {\n  state P\n  --\n  state Q\n}\nP --> Out");
+        $this->assertSame([205.0, 231.0], [$split->width / Units::POINT, $split->height / Units::POINT]);
+        $nested = self::draw("state Split {\n  state N {\n    state D\n  }\n  --\n  state Q\n}\nD --> Out");
+        $this->assertSame([229.0, 266.0], [$nested->width / Units::POINT, $nested->height / Units::POINT]);
     }
 
     public function testPointsOnACompositesBorderStandAsPlantUmlDrawsThem(): void

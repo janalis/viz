@@ -182,6 +182,8 @@ final class StateReaderTest extends TestCase
         yield 'region outside' => ["state A\n--", 'A PlantUML region separator stands outside any composite state'];
         yield 'namespaced' => ['state a.b', 'The native PlantUML renderer does not draw namespaced names such as a.b'];
         yield 'frame' => ["frame F {\n}", 'The native PlantUML renderer does not draw: frame F {'];
+        yield 'a state of a later region named outside it' => ["state A {\n  [*] --> B\n  --\n  [*] --> C\n}\nX --> C", 'The state C cannot be used here.'];
+        yield 'a state named outside from within a later region' => ["state X\nstate A {\n  [*] --> B\n  --\n  C --> X\n}", 'The state X cannot be used here.'];
         yield 'remove' => ["state A\nA --> B\nremove B", 'The native PlantUML renderer does not draw: remove B'];
     }
 

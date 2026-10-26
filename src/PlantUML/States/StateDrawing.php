@@ -79,10 +79,15 @@ final class StateDrawing
             $placed[$node->id] = true;
             $owners[$node->id] = $cluster;
             if (\array_key_exists($node->id, $this->states->composites) && !$this->autarkic($node->id)) {
-                if ([] !== $this->states->composites[$node->id]) {
-                    throw new Unsupported('The native PlantUML renderer does not draw concurrent regions a transition crosses into');
-                }
                 $svek->cluster($node->id, $cluster, ...Svek::label(...$this->title($node)->size(), ...$this->description($node)->size()));
+                // As svek, each region no transition crosses into laid out on its own, an image in the cluster.
+                foreach (StateRegions::images($this->states, $node->id) as $index) {
+                    $image = $this->scope($node->id, $index);
+                    yield from $image;
+                    $id = $node->id.'#region'.$index;
+                    $inner[$id] = PlantUmlFrame::svekImage($image->getReturn());
+                    $svek->node($id, $inner[$id][1], $inner[$id][2], $node->id);
+                }
                 // As svek, a transition to or from a composite state drawn as a cluster ends at a point inside it.
                 if ($this->endpoint($node->id)) {
                     $svek->point(self::anchor($node->id), $node->id);
@@ -161,8 +166,10 @@ final class StateDrawing
             }
             $members[] = [$node, null];
             if (\array_key_exists($node->id, $this->states->composites) && !$this->autarkic($node->id)) {
-                foreach ($this->members($node->id, 0) as [$inner, $cluster]) {
-                    $members[] = [$inner, $cluster ?? $node->id];
+                foreach (StateRegions::crossed($this->states, $node->id) as $index) {
+                    foreach ($this->members($node->id, $index) as [$inner, $cluster]) {
+                        $members[] = [$inner, $cluster ?? $node->id];
+                    }
                 }
             }
         }

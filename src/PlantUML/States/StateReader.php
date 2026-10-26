@@ -176,8 +176,25 @@ final class StateReader
             '[*]' === $name => $this->pseudo('*'.$pseudo.'*'.$scope, $pseudo)->id,
             1 === \preg_match('/^(.*)\[(H\*?)\]$/i', $name, $match) => $this->history($match[1], '[H*]' === \strtoupper('['.$match[2].']') ? 'deephistory' : 'history', $scope),
             1 === \preg_match('/^==+(.+?)==+$/', $name, $match) => $this->pseudo('=='.$match[1], 'fork')->id,
-            default => $this->state($name)->id,
+            default => $this->linked($name, $composite, $region)->id,
         };
+    }
+
+    /**
+     * A state a link names, as PlantUML's `checkConcurrentStateOk` lets it: one already met in a
+     * region after the first only from within that region, and none met elsewhere from within
+     * such a region.
+     *
+     * @throws PlantUmlRefusal
+     */
+    private function linked(string $name, string $composite, int $region): StateNode
+    {
+        $existing = $this->nodes[\trim($name, characters: '"')] ?? null;
+        if (null !== $existing && ($existing->region > 0 || $region > 0) && [$existing->group ?? '', $existing->region] !== [$composite, $region]) {
+            throw new PlantUmlRefusal('The state '.$name.' cannot be used here.');
+        }
+
+        return $this->state($name);
     }
 
     /** `[H]` or `[H*]`: the history of the current scope, or `X[H]` that of X, which stands inside X as PlantUML draws it. */
