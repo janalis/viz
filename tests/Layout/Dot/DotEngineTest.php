@@ -120,7 +120,7 @@ final class DotEngineTest extends TestCase
         $this->assertSame(36.0, $placement->endpoints['c']->x - $placement->endpoints['b']->x - 54.0);
     }
 
-    public function testParallelEdgesPackTheirLabelsOnlyFromTheMiddleOneOnAsDotDoes(): void
+    public function testParallelEdgesKeepTheirRoomTheirLabelsFollowingTheirLinesAsDotSetsThem(): void
     {
         $edges = \array_map(static fn (int $index): LayoutEdge => new LayoutEdge($index, 'a', 'b', labelWidth: 100, labelHeight: 17), [0, 1, 2]);
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(
@@ -132,11 +132,11 @@ final class DotEngineTest extends TestCase
         )));
         $lefts = \array_map(static fn (array $at): float => $at[0] - 50, $placement->labels);
 
-        // As `dot` sets three such labels 100 wide: 40 between the first two, 8 between the last two.
-        $this->assertGreaterThanOrEqual(140.0, $lefts[1] - $lefts[0]);
-        $this->assertLessThan(110.0, $lefts[2] - $lefts[1]);
+        // As `dot` sets three such labels 100 wide: 40 between the first two, held at their nodes; 8 between the last two, the third following its line back.
+        $this->assertEqualsWithDelta(140.0, $lefts[1] - $lefts[0], 4.0);
+        $this->assertEqualsWithDelta(108.0, $lefts[2] - $lefts[1], 2.0);
 
-        // What follows them keeps the room the packed label would have taken: as dot sets c, 220 right of the first label.
+        // What follows them keeps its room from the label nodes: as dot sets c, 220 right of the first label.
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(
             [new LayoutNode('a', 'a', 50, 50), new LayoutNode('b', 'b', 50, 50), new LayoutNode('c', 'c', 50, 50)],
             [new LayoutEdge(0, 'a', 'b', labelWidth: 77, labelHeight: 17), new LayoutEdge(1, 'a', 'b', labelWidth: 77, labelHeight: 17), new LayoutEdge(2, 'c', 'b')],

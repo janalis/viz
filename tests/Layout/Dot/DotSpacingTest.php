@@ -56,14 +56,14 @@ final class DotSpacingTest extends TestCase
         $this->assertEqualsWithDelta($expected, self::across($source, $expected, 'x'), 0.01);
     }
 
-    public function testTheLabelsOfTwoEdgesBetweenTheSameNodesStandTheFirstLabelAndFourApart(): void
+    public function testTheLabelsOfTwoEdgesBetweenTheSameNodesFollowTheirLinesAsDotSetsThem(): void
     {
-        foreach ([59 => 63.0, 100 => 104.0] as $width => $expected) {
+        foreach ([59 => 50.4, 100 => 71.9] as $width => $expected) {
             $graph = Work::run(new DotParser()->parse('digraph { '.self::NODES.' a -> b [label='.self::label($width).']; b -> a [label='.self::label(32).'] }'));
-            $routes = Work::run(new DotEngine()->place(DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())))->routes;
+            $labels = Work::run(new DotEngine()->place(DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())))->labels;
 
-            // As dot sets them: the edges' label nodes the first label and 4 apart, each label on its node's right.
-            $this->assertEqualsWithDelta($expected, $routes[1][1][0] - $routes[0][1][0], 0.01, (string) $width);
+            // As dot sets them: each label node keeping its room, the second label following its line back beside the first.
+            $this->assertEqualsWithDelta($expected, $labels[1][0] - $labels[0][0], 2.5, (string) $width);
         }
     }
 

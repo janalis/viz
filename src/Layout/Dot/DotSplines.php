@@ -297,8 +297,9 @@ final class DotSplines
     }
 
     /**
-     * How far across the room beside a virtual node reaches: halfway to its neighbours, and
-     * no further than the clusters they lie in and it does not. A label node keeps the edge
+     * How far across the room beside a virtual node reaches: half the room neighbours keep from
+     * them: a node separation, or 5 on the ranks a graph with edge labels puts between its nodes'
+     * ranks, where `dot` is seen to let a label follow its line so far; and no further than the clusters they lie in and it does not. A label node keeps the edge
      * on the far side from its label.
      *
      * @return array{float, float} left and right
@@ -310,13 +311,14 @@ final class DotSplines
         $place = $this->place[$node];
         $left = 0.0;
         $right = $this->position->width;
+        $half = [] !== $layers->labels && 1 === ($layers->rank[$node] % 2) ? 2.5 : $this->nodeSeparation / 2;
         $previous = $rank[$place - 1] ?? null;
         if (null !== $previous) {
-            $left = \max($this->position->x[$previous] + $layers->right[$previous] + ($this->nodeSeparation / 2), $this->apart($previous, $node, side: 1));
+            $left = \max($this->position->x[$previous] + $layers->right[$previous] + $half, $this->apart($previous, $node, side: 1));
         }
         $next = $rank[$place + 1] ?? null;
         if (null !== $next) {
-            $right = \min($this->position->x[$next] - $layers->left[$next] - ($this->nodeSeparation / 2), $this->apart($next, $node, side: 0));
+            $right = \min($this->position->x[$next] - $layers->left[$next] - $half, $this->apart($next, $node, side: 0));
         }
         if (DotLayers::LABEL === $layers->kind[$node]) {
             // Its label stands on its right, or its left mirrored: the edge keeps to the other side.
