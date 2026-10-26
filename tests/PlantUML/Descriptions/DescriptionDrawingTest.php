@@ -253,4 +253,11 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertNotEmpty(\array_filter($drawing->marks, static fn (Mark $mark): bool => '#add8e6' === $mark->fill));
         $this->assertInstanceOf(Drawing::class, $drawing);
     }
+
+    public function testAHiddenLinkIsNotDrawn(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\ncomponent A\ncomponent B\nA -[hidden]-> B\n@enduml"));
+
+        $this->assertSame([], \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && (1.0 * Units::POINT) === $mark->strokeWidth));
+    }
 }

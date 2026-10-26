@@ -411,7 +411,8 @@ final class ClassDrawingTest extends TestCase
         $drawing = self::draw("skinparam classAttributeIconSize 0\nskinparam backgroundColor transparent\nclass A {\n  - x\n}\nA --> B");
 
         $this->assertNull($drawing->background);
-        $this->assertContains('x', \array_map(static fn (Mark $mark): string => $mark->text, $drawing->marks));
+        // As PlantUML writes a visibility with no icons: before the member, the space after it dropped.
+        $this->assertContains('-x', \array_map(static fn (Mark $mark): string => $mark->text, $drawing->marks));
     }
 
     public function testNamespacesEmptyPackagesAndHiddenClassesStandAsPlantUmlSetsThem(): void
@@ -480,6 +481,29 @@ final class ClassDrawingTest extends TestCase
 
         // Two below one class pushed apart, as PlantUML pushes them: the jar sets them at 45.928 and 68.514.
         $this->assertSame([[45.93, 55.0, 73.49], [68.52, 55.0, 73.49]], $boxes(self::draw("class A\nclass B\nclass C\nA [x] --> B\nA [yy] --> C")));
+    }
+
+    public function testLinksToPackagesRectanglePackagesHiddenLinksAndWrittenVisibilityStandAsPlantUmlSetsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sets them: a link to a package laid out to a point inside it, cut at its frame.
+        $this->assertSame([140.0, 209.0], $size("class A\npackage P {\n class B\n}\nA --> P"));
+        $this->assertSame([136.0, 291.0], $size("package P {\n class B\n}\npackage Q {\n class C\n}\nP ..> Q"));
+        $this->assertSame([63.0, 182.0], $size("class A\npackage P {\n}\nA --> P"));
+        // A package marked a rectangle drawn as one, its title centred.
+        $rectangle = self::draw("class A\npackage P <<Rectangle>> {\n class B\n}\nA --> P");
+        $this->assertSame([141.0, 208.0], [$rectangle->width / Units::POINT, $rectangle->height / Units::POINT]);
+        // A hidden link laid out and measured, not drawn.
+        $this->assertSame([74.0, 178.0], $size("class A\nclass B\nA -[hidden]-> B\nA -[#red,bold]-> B"));
+        // With no icons, a member's visibility written as text.
+        $written = self::draw("skinparam classAttributeIconSize 0\nclass A {\n -x : int\n +f()\n}");
+        $this->assertSame([79.0, 100.0], [$written->width / Units::POINT, $written->height / Units::POINT]);
+        $this->assertContains('-x : int', \array_map(static fn (Mark $mark): string => $mark->text, $written->marks));
     }
 
     private static function draw(string $lines): Drawing

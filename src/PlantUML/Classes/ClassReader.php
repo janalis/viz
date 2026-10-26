@@ -176,8 +176,17 @@ final class ClassReader
         if (null === $from || null === $to || null !== $command->get('INSIDE')) {
             throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
         }
-        $link = ClassLinks::read($command, $this->entity($from)->id, $this->entity($to)->id);
+        $link = ClassLinks::read($command, $this->end($from), $this->end($to));
         $this->links[] = $link;
+    }
+
+    /** What a link's end names: a package, as PlantUML links to one, else an entity, made a class when new. */
+    private function end(string $name): string
+    {
+        $id = $this->reused(self::clean($name));
+        $package = !\array_key_exists($id, $this->entities) && 'package' === ($this->groups[$id] ?? null)?->type;
+
+        return $package ? $id : $this->entity($name)->id;
     }
 
     /** A group a command declares, new or reopened; its id. */

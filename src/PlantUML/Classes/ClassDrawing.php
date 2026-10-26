@@ -9,6 +9,7 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Layout\Engine\Placement;
+use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
@@ -29,6 +30,9 @@ use Janalis\Viz\PlantUML\Svek\Svek;
  */
 final class ClassDrawing
 {
+    /** The prefix of the point svek puts in a package a link starts or ends at. */
+    private const string ANCHOR_PREFIX = '*anchor*';
+
     /** @var array<string, ClassBox> */
     private array $boxes = [];
     /** @var array<string, NoteBox> */
@@ -39,6 +43,8 @@ final class ClassDrawing
     private array $marks = [];
     /** @var array<string, true> the packages holding nothing, laid out as nodes */
     private array $empty = [];
+    /** @var array<string, true> the packages a link starts or ends at, each with a point inside it */
+    private array $anchors = [];
     /** @var array<string, true> the classifiers hidden, laid out but not drawn */
     private array $hidden = [];
     /** @var array<int, array<int, float>> how far across each link's qualifier at its first end, 0, and its second, 1, is pushed */
@@ -150,15 +156,16 @@ final class ClassDrawing
             $svek->node($note->id, $width, $height, $note->group);
         }
         foreach ($this->classes->links as $index => $link) {
-            if (!\array_key_exists($link->from, $this->boxes) || !\array_key_exists($link->to, $this->boxes)) {
+            [$from, $to] = [$this->end($svek, $link->from, $held), $this->end($svek, $link->to, $held)];
+            if (null === $from || null === $to) {
                 continue;
             }
             [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
             $this->qualify($svek, $link);
             // Svek keeps a margin around a label, so it stands clear of the line.
             $this->edges[$index] = $svek->edge(
-                $link->from,
-                $link->to,
+                $from,
+                $to,
                 $link->length,
                 $width,
                 $height,
@@ -175,6 +182,28 @@ final class ClassDrawing
         }
 
         return $svek;
+    }
+
+    /**
+     * The node a link's end is laid out to: a classifier drawn, a package holding nothing, or,
+     * as svek lays out a link to a package, a point inside its cluster; null for one not drawn.
+     *
+     * @param array<string, true> $held the groups holding something
+     */
+    private function end(Svek $svek, string $id, array $held): ?string
+    {
+        if (\array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->empty)) {
+            return $id;
+        }
+        if (!\array_key_exists($id, $held) || !\array_key_exists($id, $this->classes->groups)) {
+            return null;
+        }
+        if (!\array_key_exists($id, $this->anchors)) {
+            $svek->point(self::ANCHOR_PREFIX.$id, $id);
+            $this->anchors[$id] = true;
+        }
+
+        return self::ANCHOR_PREFIX.$id;
     }
 
     /** A link's middle label: its text, and any note on the link below it. */
@@ -201,6 +230,17 @@ final class ClassDrawing
     /** @return list<Mark> */
     private function paint(Placement $placement): array
     {
+        // As PlantUML's limit finder is seen to take the point a link to a package ends at: 14 either side of it.
+        foreach (\array_keys($this->anchors) as $id) {
+            $anchor = $placement->endpoints[self::ANCHOR_PREFIX.$id];
+            $this->ghosts[] = new Mark(MarkKind::Polygon, [[$anchor->x - 14.0, $anchor->y], [$anchor->x + 14.0, $anchor->y]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
+        }
+        // A link to a package is cut where it meets the package's frame.
+        $endpoints = $placement->endpoints;
+        foreach ($placement->graph->clusters as $box) {
+            $endpoints[$box->name] = new GraphNode(0, $box->name, '', ($box->x0 + $box->x1) / 2, ($box->y0 + $box->y1) / 2, $box->x1 - $box->x0, $box->y1 - $box->y0, null, null, dashed: false);
+        }
+        $placement = new Placement($placement->graph, $endpoints, $placement->directions, $placement->routes, $placement->labels, $placement->splines);
         foreach ($placement->graph->clusters as $cluster) {
             $group = $this->classes->groups[$cluster->name] ?? null;
             if (null !== $group && 'together' !== $group->type) {
@@ -221,8 +261,11 @@ final class ClassDrawing
         foreach ($this->edges as $index => $edge) {
             $link = $this->classes->links[$index];
             $drawn = $this->marks;
-            $this->link($link, $placement, $edge, $index);
-            if (\array_key_exists($link->from, $this->hidden) || \array_key_exists($link->to, $this->hidden)) {
+            // A hidden link, as PlantUML draws it unseen: measured as drawn.
+            $seen = clone $link;
+            $seen->hidden = false;
+            $this->link($seen, $placement, $edge, $index);
+            if ($link->hidden || \array_key_exists($link->from, $this->hidden) || \array_key_exists($link->to, $this->hidden)) {
                 \array_push($this->ghosts, ...\array_slice($this->marks, \count($drawn)));
                 $this->marks = $drawn;
             }
@@ -279,6 +322,23 @@ final class ClassDrawing
         $style = $this->classes->document->styles->style($signature, null === $group->stereotype ? [] : ClassReader::stereotypes($group->stereotype));
         $title = PlantUmlText::styled(ClassReader::split('' === $group->display ? $group->id : $group->display), $this->classes->document->styles->style(['root', 'element', 'package', 'title']));
         [$width, $height] = $title->size();
+        if (\in_array('rectangle', \array_map(\strtolower(...), ClassReader::stereotypes((string) $group->stereotype)), strict: true)) {
+            // As PlantUML's `USymbolRectangle` draws a package so marked: a box, its title centred 2 below its top.
+            $box = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'group', 'rectangle']);
+            $this->marks[] = ClassBox::rectangle(
+                $x0,
+                $y0,
+                $x1 - $x0,
+                $y1 - $y0,
+                $box->color('LineColor', '#181818'),
+                ClassColors::back($group->color) ?? $box->color('BackGroundColor', 'none'),
+                $box->number('LineThickness', 1.0),
+                $box->number('RoundCorner', 5.0),
+            );
+            \array_push($this->marks, ...$title->marks($x0, $y0 + 2, $x1 - $x0));
+
+            return;
+        }
         $tab = $height + 6;
         $line = $style->color('LineColor', '#000000');
         $stroke = $style->number('LineThickness', 1.5);

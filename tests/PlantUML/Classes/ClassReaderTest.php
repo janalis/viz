@@ -224,6 +224,14 @@ final class ClassReaderTest extends TestCase
         $this->assertSame(['s.T', null], [$classes->entities['s.T']->display[0], $classes->entities['s.T']->group]);
     }
 
+    public function testALinkToAPackageEndsAtThePackage(): void
+    {
+        $classes = self::read("package P {\n class B\n}\nA --> P\nP --> Q");
+
+        $this->assertSame([['A', 'P'], ['P', 'Q']], \array_map(static fn ($link): array => [$link->from, $link->to], $classes->links));
+        $this->assertSame(['B', 'A', 'Q'], \array_keys($classes->entities));
+    }
+
     public function testQualifiersStandAtTheirEnds(): void
     {
         $links = self::read("A [key] --> B\nC --> [id] D\nE [k] -up-> F")->links;

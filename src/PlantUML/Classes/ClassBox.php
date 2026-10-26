@@ -70,6 +70,8 @@ final readonly class ClassBox
         public float $header,
         /** The circled character's font size. */
         private float $letter = 17.0,
+        /** Whether a member's visibility is written as text, as PlantUML writes it with no icons. */
+        private bool $written = false,
     ) {}
 
     /**
@@ -117,7 +119,7 @@ final readonly class ClassBox
         $height = $header;
         $line = $name->line();
         foreach ($compartments as [$lines, , $title]) {
-            $text = new PlantUmlText(\array_map(self::text(...), $lines), $style->fontSize(), sprites: $style->sprites);
+            $text = new PlantUmlText(\array_map($iconSize > 0 ? self::text(...) : self::written(...), $lines), $style->fontSize(), sprites: $style->sprites);
             [$textWidth] = $text->size();
             [$titleWidth, $titleHeight] = self::title($title, $style)?->size() ?? [0.0, 0.0];
             // As PlantUML, a compartment under a titled line 8 wider than its title at least, and half its title's height above and below the line.
@@ -125,7 +127,22 @@ final readonly class ClassBox
             $height += ('' === $title ? 8 : $titleHeight + 4) + (\count($lines) * $line);
         }
 
-        return new self($entity, $style, $sheet, $name, $stereotypes, $generic, $circle ? $diameter : 0.0, $compartments, $iconSize > 0 && $visibility, $width, $height, $header, $letter);
+        return new self(
+            $entity,
+            $style,
+            $sheet,
+            $name,
+            $stereotypes,
+            $generic,
+            $circle ? $diameter : 0.0,
+            $compartments,
+            $iconSize > 0 && $visibility,
+            $width,
+            $height,
+            $header,
+            $letter,
+            $iconSize <= 0,
+        );
     }
 
     /** @return list<Mark> the box with its top left at a point */
@@ -157,7 +174,7 @@ final readonly class ClassBox
         foreach ($this->compartments as [$lines, $separator, $title]) {
             \array_push($marks, ...self::separator($x, $top, $this->width, $separator, $title, $line, $stroke, $this->style));
             $text = new PlantUmlText(
-                \array_map(self::text(...), $lines),
+                \array_map($this->shown(...), $lines),
                 $this->style->fontSize(),
                 color: $this->style->color('FontColor', '#000000'),
                 sprites: $this->style->sprites,
@@ -290,7 +307,7 @@ final readonly class ClassBox
             \array_push($marks, ...self::icon(self::ICONS[$visibility], ClassBody::method($member) ? 2 : 1, $left - self::room($this->letter) + 4, $top + ($text->line() / 2)));
         }
         $row = new PlantUmlText(
-            [self::text($member)],
+            [$this->shown($member)],
             $text->size,
             \str_contains(\strtolower($member), '{abstract}') ? FontFace::Italic : FontFace::Regular,
             $text->color,
@@ -369,10 +386,30 @@ final readonly class ClassBox
         return new Mark(MarkKind::Polyline, [[$x, $y], [$x + $width, $y]], stroke: $color, dashed: null !== $dashes, strokeWidth: $stroke, dashes: $dashes);
     }
 
+    /** A member's text as shown: without its visibility character, unless written as text, as PlantUML writes it, the spaces after it dropped. */
+    private function shown(string $member): string
+    {
+        return $this->written ? self::written($member) : self::text($member);
+    }
+
+    /** A member's text with its visibility character written before it, as PlantUML writes it with no icons: the spaces after the character dropped. */
+    private static function written(string $member): string
+    {
+        $member = self::modified($member);
+
+        return \array_key_exists($member[0] ?? '', self::ICONS) ? $member[0].\ltrim(\substr($member, offset: 1)) : $member;
+    }
+
+    /** A member's text without its modifiers. */
+    private static function modified(string $member): string
+    {
+        return \trim((string) \preg_replace('/\{(static|classifier|abstract|field|method)\}/i', replacement: '', subject: $member));
+    }
+
     /** A member's text without its visibility character and modifiers. */
     private static function text(string $member): string
     {
-        $member = \trim((string) \preg_replace('/\{(static|classifier|abstract|field|method)\}/i', replacement: '', subject: $member));
+        $member = self::modified($member);
 
         return \array_key_exists($member[0] ?? '', self::ICONS) ? \ltrim(\substr($member, offset: 1)) : $member;
     }
