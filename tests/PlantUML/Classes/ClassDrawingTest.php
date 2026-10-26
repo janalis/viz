@@ -499,7 +499,7 @@ final class ClassDrawingTest extends TestCase
         $rectangle = self::draw("class A\npackage P <<Rectangle>> {\n class B\n}\nA --> P");
         $this->assertSame([141.0, 208.0], [$rectangle->width / Units::POINT, $rectangle->height / Units::POINT]);
         // A hidden link laid out and measured, not drawn.
-        $this->assertSame([74.0, 178.0], $size("class A\nclass B\nA -[hidden]-> B\nA -[#red,bold]-> B"));
+        $this->assertSame([73.0, 178.0], $size("class A\nclass B\nA -[hidden]-> B\nA -[#red,bold]-> B"));
         // With no icons, a member's visibility written as text.
         $written = self::draw("skinparam classAttributeIconSize 0\nclass A {\n -x : int\n +f()\n}");
         $this->assertSame([79.0, 100.0], [$written->width / Units::POINT, $written->height / Units::POINT]);

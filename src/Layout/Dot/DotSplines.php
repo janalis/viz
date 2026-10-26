@@ -22,8 +22,10 @@ final class DotSplines
     private const array PULLS = [0.4, 0.25, 0.12, 0.05, 0.0];
     /** How far apart edges sharing a path run, as parts of the node separation: measured on dot. */
     public const float SPREAD = 0.74;
-    /** How far from its centre, as parts of the narrower end's half width, an edge of a spread may start. */
-    private const float START = 0.8;
+    /** How far past the narrower end's side an edge of a spread may start. */
+    private const float START = 0.37;
+    /** Where an edge of a spread starts, as a part of how far out it runs midway. */
+    private const float ENDS = 0.6;
     /** How far a curve may stray outside its corridor: rounding. */
     private const float SLACK = 0.01;
 
@@ -150,8 +152,9 @@ final class DotSplines
     private function spread(array $points, float $offset, int $tail, int $head): array
     {
         $layers = $this->layers;
-        $narrowest = self::START * \min($layers->left[$tail], $layers->right[$tail], $layers->left[$head], $layers->right[$head]);
-        $ends = \max(-$narrowest, \min($narrowest, $offset));
+        // As dot is seen to start them, at three fifths of their spread midway, no further out than a little past the narrower end's side.
+        $narrowest = \min($layers->left[$tail], $layers->right[$tail], $layers->left[$head], $layers->right[$head]) + self::START;
+        $ends = \max(-$narrowest, \min($narrowest, $offset * self::ENDS));
         $lengths = [0.0];
         for ($index = 1, $count = \count($points); $index < $count; ++$index) {
             $lengths[] = $lengths[$index - 1] + \hypot($points[$index][0] - $points[$index - 1][0], $points[$index][1] - $points[$index - 1][1]);

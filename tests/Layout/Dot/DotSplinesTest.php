@@ -149,12 +149,12 @@ final class DotSplinesTest extends TestCase
             'up the ranks, the same path back',
         );
 
-        // Spread: the ends no further than 0.8 of the narrower half width, 8; the middle nearly all 20.
+        // Spread, as dot is seen to start them: the ends at three fifths of the spread, no further than 0.37 past the narrower half width, 10.37; the middle nearly all 20.
         [, $spread] = $router->route([0, 3, 2], offset: 20.0);
         $along = \hypot(5.0, y: 55.0) / (\hypot(5.0, y: 55.0) + \hypot(35.0, y: 45.0));
-        $this->assertEqualsWithDelta([[8.0, 0.0], [5.0 + 8.0 + (12.0 * \sin(\M_PI * $along)), 55.0], [48.0, 100.0]], $spread, 1e-9);
+        $this->assertEqualsWithDelta([[10.37, 0.0], [5.0 + 10.37 + (9.63 * \sin(\M_PI * $along)), 55.0], [50.37, 100.0]], $spread, 1e-9);
         [, $near] = $router->route([0, 3, 2], offset: 2.0);
-        $this->assertEqualsWithDelta([[2.0, 0.0], [7.0, 55.0], [42.0, 100.0]], $near, 1e-9, 'a small spread runs its whole length');
+        $this->assertEqualsWithDelta([[1.2, 0.0], [5.0 + 1.2 + (0.8 * \sin(\M_PI * $along)), 55.0], [41.2, 100.0]], $near, 1e-9, 'a small spread starts at three fifths of itself');
     }
 
     /**
