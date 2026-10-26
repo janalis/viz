@@ -368,4 +368,17 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([70.0, 67.0], $size("[A] --> [B]\nnote right of B : nb\nremove B"));
         $this->assertSame([70.0, 173.0], $size("[A] --> [B]\n[A] --> [C]\nremove *\nrestore A\nrestore C"));
     }
+
+    public function testANoteBesideAContainerStandsBesideItsPoint(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: beside a point inside the container, as svek lays it out, its line cut at the container's outline.
+        $this->assertSame([194.0, 134.0], $size("package P {\n[A]\n}\nnote right of P : n"));
+        $this->assertSame([201.0, 220.0], $size("node N {\n[A]\n}\nnote left of N : l\n[B] --> N"));
+    }
 }

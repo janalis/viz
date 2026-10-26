@@ -40,6 +40,8 @@ final class DescriptionDrawing
     private array $notes = [];
     /** @var array<int, int> */
     private array $edges = [];
+    /** @var array<string, int> the edges of the notes beside containers, by note */
+    private array $noteEdges = [];
     /** @var array<string, true> the containers a link starts or ends at, each with a point inside it */
     private array $anchors = [];
     /** @var array<string, true> the elements hidden, laid out but not drawn, as `hide` hides them */
@@ -171,8 +173,10 @@ final class DescriptionDrawing
             if (null === $note->entity) {
                 continue;
             }
+            // As svek, a note beside a container stands beside a point inside its cluster.
+            $end = $this->end($svek, $note->entity);
             $across = \in_array($note->position, ['left', 'right'], strict: true) ? 1 : 2;
-            \in_array($note->position, ['left', 'top'], strict: true) ? $svek->edge($note->id, $note->entity, $across) : $svek->edge($note->entity, $note->id, $across);
+            $this->noteEdges[$note->id] = \in_array($note->position, ['left', 'top'], strict: true) ? $svek->edge($note->id, $end, $across) : $svek->edge($end, $note->id, $across);
         }
 
         return $svek;
@@ -280,7 +284,10 @@ final class DescriptionDrawing
             if (null === $note->entity || !\array_key_exists($note->id, $this->notes)) {
                 continue;
             }
-            $this->put($marks, [NoteLine::straight($placement, $note->id, $note->entity)], $note->entity);
+            $line = \array_key_exists($note->entity, $this->diagram->groups)
+                ? NoteLine::routed($note, $placement, $this->noteEdges[$note->id], $style, $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'note']))
+                : [NoteLine::straight($placement, $note->id, $note->entity)];
+            $this->put($marks, $line, $note->entity);
         }
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];

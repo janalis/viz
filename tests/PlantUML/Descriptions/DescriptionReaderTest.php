@@ -190,7 +190,8 @@ final class DescriptionReaderTest extends TestCase
         yield 'multiline other' => ["node N\nportin P [\nx\n]", 'The native PlantUML renderer does not draw portin elements'];
         yield 'middle circle' => ["node N\nN --0-- M", 'The native PlantUML renderer does not draw: N --0-- M'];
         yield 'empty container link' => ["node A\nrectangle R {\n}\nA --> R", 'The native PlantUML renderer does not draw links to empty containers such as R'];
-        yield 'note on a container' => ["rectangle R {\n [B]\n}\nnote right of R : n", 'The native PlantUML renderer does not draw links to containers such as R'];
+        yield 'a container as an interface' => ["rectangle R {\n [B]\n}\n() R --> [B]", 'The native PlantUML renderer does not draw links to containers such as R'];
+        yield 'an element named as a container' => ["rectangle R {\n [B]\n}\ncomponent R", 'This element (R) is already defined'];
         yield 'namespaced' => ['node a.b', 'The native PlantUML renderer does not draw namespaced names such as a.b'];
         yield 'archimate' => ["node N\narchimate #Business \"Thing\" as T", 'The native PlantUML renderer does not draw: archimate #Business "Thing" as T'];
     }

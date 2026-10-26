@@ -144,6 +144,9 @@ final class DescriptionReader
         }
         $code = \str_starts_with($code, '()') ? \trim(\substr($code, offset: 2)) : $code;
         self::undeclared($this->elements[self::bare($code)] ?? null);
+        if (\array_key_exists(self::bare($code), $this->groups)) {
+            throw new PlantUmlRefusal('This element ('.self::bare($code).') is already defined');
+        }
         $element = $this->get(self::bare($code), null === $display ? null : self::bare($display));
         if ('unknown' !== $element->symbol && $element->symbol !== $symbol) {
             throw new PlantUmlRefusal('This element ('.$element->id.') is already defined');
@@ -279,7 +282,12 @@ final class DescriptionReader
     private function beside(PlantUmlCommand $command): void
     {
         $id = $command->get('CODE');
-        $element = null === $id ? $this->last : $this->get(self::bare($id))->id;
+        // As PlantUML, beside an element or a container.
+        $element = match (true) {
+            null === $id => $this->last,
+            \array_key_exists(self::bare($id), $this->groups) => self::bare($id),
+            default => $this->get(self::bare($id))->id,
+        };
         if (null === $element) {
             throw new PlantUmlRefusal('The PlantUML note has no element to stand beside: '.$command->line());
         }
