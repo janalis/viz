@@ -34,6 +34,12 @@ final readonly class GraphCluster
         return clone($this, ['color' => $color, 'fillColor' => $fillColor, 'textColor' => $textColor]);
     }
 
+    /** The frame with its corners rounded to so many decimal places. */
+    public function rounded(int $places): self
+    {
+        return clone($this, ['x0' => \round($this->x0, $places), 'y0' => \round($this->y0, $places), 'x1' => \round($this->x1, $places), 'y1' => \round($this->y1, $places)]);
+    }
+
     /** The frame with its bottom edge moved to `$y1`. */
     public function reaching(float $y1): self
     {

@@ -10,6 +10,7 @@ use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
+use Janalis\Viz\PlantUML\Draw\SvgPath;
 use Janalis\Viz\PlantUML\States\StateBox;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
@@ -55,7 +56,20 @@ final readonly class DescriptionBox
      *
      * @var array<string, array{float, float}>
      */
-    private const array ICONS = ['actor' => [28.0, 60.0], 'boundary' => [49.0, 32.0], 'control' => [32.0, 32.0], 'entity' => [32.0, 32.0], 'interface' => [18.0, 18.0], 'circle' => [18.0, 18.0]];
+    /** `ActorAwesome`'s body, 54 wide and 28 tall, its collar 4 deep, its shoulders and corners rounded. */
+    private const array AWESOME = [0.0, 'M0,4 C4,4 7,4 11,0 C19,0 27,8 27,16 L27,20 C27,24 23,28 19,28 L-19,28 C-23,28 -27,24 -27,20 L-27,16 C-27,8 -19,0 -11,0 C-7,4 -4,4 0,4 Z'];
+    /** `ActorHollow`'s body, 2 below its head: arms 25 across and 5 thick, a body 6 thick, legs 6 thick at a slant. */
+    private const array HOLLOW = [2.0, 'M-12.5,0 L-12.5,5 L-3,5 L-3,7.257 L-12.5,16.757 L-8.257,21 L0,12.743 L8.257,21 L12.5,16.757 L3,7.257 L3,5 L12.5,5 L12.5,0 Z'];
+    private const array ICONS = [
+        'actor' => [27.0, 60.0],
+        'awesome' => [55.0, 61.0],
+        'hollow' => [26.0, 33.0],
+        'boundary' => [49.0, 32.0],
+        'control' => [32.0, 32.0],
+        'entity' => [32.0, 32.0],
+        'interface' => [18.0, 18.0],
+        'circle' => [18.0, 18.0],
+    ];
 
     /** The room a folder keeps for its title, which an element does not show. */
     private const array FOLDER_TITLE = [40.0, 15.0];
@@ -109,7 +123,10 @@ final readonly class DescriptionBox
             'person' === $element->symbol => self::person($labelWidth + 20, $labelHeight + 20),
             // As svek writes an interface, and dot sizes it: its circle in a cell 18 across, its name's height above and below and as wide as its name, in whole points, 4 around, 54 wide at least; its stereotypes outside it.
             \in_array($element->symbol, ['interface', 'circle'], strict: true) => [\max(54.0, 18 + (2 * \round(\max(0.5, ($labelWidth - 18) / 2))) + 8), (2 * \floor($textHeight)) + 26],
-            \array_key_exists($element->symbol, self::ICONS) => [\max(self::ICONS[$element->symbol][0], $labelWidth), self::ICONS[$element->symbol][1] + $labelHeight],
+            \array_key_exists($element->shape ?? $element->symbol, self::ICONS) => [
+                \max(self::ICONS[$element->shape ?? $element->symbol][0], $labelWidth),
+                self::ICONS[$element->shape ?? $element->symbol][1] + $labelHeight,
+            ],
             // As PlantUML, a folder keeps room for a title it does not show, 40 by 15, above its label.
             'folder' === $element->symbol => self::boxed($element->symbol, \max(self::FOLDER_TITLE[0], $labelWidth), self::FOLDER_TITLE[1] + $labelHeight),
             null !== $title => self::boxed($element->symbol, \max($title->size()[0] + 12, $labelWidth), $title->size()[1] + $labelHeight),
@@ -191,6 +208,8 @@ final readonly class DescriptionBox
         $centre = $x + ($this->width / 2);
         $marks = match ($symbol) {
             'actor' => [...self::stickman($centre, $y, $line, $back, $stroke), ...($this->element->business ? [self::chord($centre, $y, $line, $stroke)] : [])],
+            'awesome' => self::figure($centre, $y + 0.5, 16.0, self::AWESOME, $line, $back, $stroke),
+            'hollow' => self::figure($centre, $y + 0.5, 4.5, self::HOLLOW, $line, $back, $stroke),
             // As PlantUML 1.2026 draws them, 4 in from their node's sides, each a circle 24 across 16 below its node's top: beside a bar 24 tall, over a line, under an arrowhead.
             'boundary' => [
                 StateBox::disc($centre + 8.5, $y + 16, 12.0, $line, $back),
@@ -335,6 +354,21 @@ final readonly class DescriptionBox
         $at = static fn (float $angle): array => [$x + ($w / 2) + (($w / 2) * \cos($angle)), $y + ($h / 2) + (($h / 2) * \sin($angle))];
 
         return new Mark(MarkKind::Polyline, [$at(-$theta), $at($other)], stroke: $line, strokeWidth: $stroke);
+    }
+
+    /**
+     * An actor's head and its body under it, as PlantUML's `ActorAwesome` and `ActorHollow` draw
+     * them: the body a path from the middle of its top, filled, that many below the head.
+     *
+     * @param array{float, string} $body how far below the head the body starts, and its path
+     * @return list<Mark>
+     */
+    private static function figure(float $x, float $y, float $radius, array $body, string $line, string $back, float $stroke): array
+    {
+        $top = $y + (2 * $radius) + $body[0];
+        $outline = \array_map(static fn (array $at): array => [$x + $at[0], $top + $at[1]], SvgPath::outlines($body[1])[0]);
+
+        return [StateBox::disc($x, $y + $radius, $radius, $line, $back), new Mark(MarkKind::Polygon, $outline, stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Path)];
     }
 
     /** A business actor's head crossed by a chord, 21/64 of a half turn either side of its lower right, as PlantUML draws it. */

@@ -329,4 +329,26 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([123.0, 185.0], [\round($drawing->width / Units::POINT, precision: 6), \round($drawing->height / Units::POINT, precision: 6)]);
         $this->assertCount(2, $chords);
     }
+
+    public function testTheActorStyleSetsHowAnActorIsDrawn(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: a head over shoulders 54 wide; a hollow figure 25 wide; a business actor a stick man whatever the style.
+        $this->assertSame([75.0, 181.0], $size("skinparam actorStyle awesome\nactor A\nA --> (U)"));
+        $this->assertSame([49.0, 153.0], $size("skinparam actorStyle hollow\nactor A\nA --> (U)"));
+        $this->assertSame([168.0, 131.0], $size("skinparam actorStyle hollow\nactor A\nactor/ C\nA -> B\nA -> C"));
+    }
+
+    public function testABusinessActorLeavesNamesOnlyLinksUseInterfaces(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nactor/ A\nA -> B\n@enduml"));
+
+        // As the jar draws it, 99 by 95: B a circle, as no actor in the style nor use case is there.
+        $this->assertSame([99.0, 95.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
 }

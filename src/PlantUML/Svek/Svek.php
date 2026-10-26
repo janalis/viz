@@ -15,6 +15,7 @@ use Janalis\Viz\Layout\Engine\RankKind;
 use Janalis\Viz\Layout\Engine\Spacing;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
+use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\Model\Graph\Shape;
 
@@ -287,10 +288,14 @@ final class Svek
         yield from $placing;
         $placement = $placing->getReturn();
         $layout = $placement->graph;
-        $kept = \array_values(\array_filter($layout->clusters, fn (GraphCluster $cluster): bool => \array_key_exists($cluster->name, $this->clusters)));
+        // Each cluster as svek reads it from what dot draws, to two places.
+        $kept = \array_map(
+            static fn (GraphCluster $cluster): GraphCluster => $cluster->rounded(places: 2),
+            \array_values(\array_filter($layout->clusters, fn (GraphCluster $cluster): bool => \array_key_exists($cluster->name, $this->clusters))),
+        );
 
+        $endpoints = $this->read($placement->endpoints);
         // A point written as a port has its links end at its port's square, which dot keeps at its centre.
-        $endpoints = $placement->endpoints;
         // A node written as a table stands as its own cell, which its links end at.
         foreach ($this->margins as $id => [$top, $right, $bottom, $left]) {
             [$node, [, $width, $height]] = [$endpoints[$id], $this->nodes[$id]];
@@ -310,6 +315,24 @@ final class Svek
             $placement->splines,
             controls: $placement->controls,
         );
+    }
+
+    /**
+     * The nodes as svek reads them from what dot draws: each one's corner where dot puts it, to
+     * two places, its size its own but a table's.
+     *
+     * @param array<array-key, GraphNode> $endpoints
+     * @return array<array-key, GraphNode>
+     */
+    private function read(array $endpoints): array
+    {
+        foreach ($endpoints as $id => $node) {
+            [$width, $height] = \array_key_exists($id, $this->margins) || !\array_key_exists($id, $this->nodes) ? [$node->w, $node->h] : [$this->nodes[$id][1], $this->nodes[$id][2]];
+            $corner = [\round($node->x - ($node->w / 2), precision: 2), \round($node->y - ($node->h / 2), precision: 2)];
+            $endpoints[$id] = $node->at($corner[0] + ($width / 2), $corner[1] + ($height / 2))->sized($width, $height);
+        }
+
+        return $endpoints;
     }
 
     /**
@@ -360,7 +383,16 @@ final class Svek
                     default => $this->holder($owner),
                 };
                 [$width, $height] = \array_key_exists($id, $this->margins) ? $this->table($id) : [$width, $height];
-                $ordered[] = new LayoutNode($id, '', $width, $height, $holder, \count($ordered), shape: $this->shapes[$id] ?? Shape::Box);
+                // As svek writes them: in inches, to six places.
+                $ordered[] = new LayoutNode(
+                    $id,
+                    '',
+                    \round($width / 72, precision: 6) * 72,
+                    \round($height / 72, precision: 6) * 72,
+                    $holder,
+                    \count($ordered),
+                    shape: $this->shapes[$id] ?? Shape::Box,
+                );
             }
         }
 

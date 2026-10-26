@@ -95,7 +95,7 @@ final class DescriptionReader
         if (null !== $unsupported) {
             throw $unsupported;
         }
-        $reader->settle(\strtolower($document->param('componentStyle', '')));
+        $reader->settle(\strtolower($document->param('componentStyle', '')), \strtolower($document->param('actorStyle', '')));
         $reader->linkedContainers();
 
         return new PlantUmlDescriptions($document, $reader->elements, $reader->groups, $reader->links, $reader->notes, $reader->direction, $reader->leaves);
@@ -323,19 +323,27 @@ final class DescriptionReader
         $this->stereotypeRules[] = ['show' === \strtolower($match[1]), $gender];
     }
 
-    /** @param string $componentStyle `skinparam componentStyle`, as PlantUML's `ComponentStyle` reads it: `uml1`, `uml2` or `rectangle` */
-    private function settle(string $componentStyle): void
+    /**
+     * @param string $componentStyle `skinparam componentStyle`, as PlantUML's `ComponentStyle` reads it: `uml1`, `uml2` or `rectangle`
+     * @param string $actorStyle     `skinparam actorStyle`, as its `ActorStyle` reads it: `stickman`, `awesome` or `hollow`, a business actor a stick man whatever it says
+     */
+    private function settle(string $componentStyle, string $actorStyle): void
     {
         foreach ([...$this->elements, ...$this->groups] as $entity) {
             foreach ($this->stereotypeRules as [$show, $gender]) {
                 $entity->stereotypeShown = self::is($entity, $gender) ? $show : $entity->stereotypeShown;
             }
         }
-        $usecase = [] !== \array_filter($this->elements, static fn (DescriptionElement $element): bool => \in_array($element->symbol, ['actor', 'usecase'], strict: true));
+        // As PlantUML, a business actor or use case is not one of these.
+        $usecase = [] !== \array_filter($this->elements, static fn (DescriptionElement $element): bool => !$element->business && \in_array($element->symbol, ['actor', 'usecase'], strict: true));
         $default = $usecase ? 'actor' : 'interface';
         foreach ($this->elements as $element) {
             $element->symbol = 'unknown' === $element->symbol ? $default : $element->symbol;
-            $element->shape = 'component' === $element->symbol ? ['uml1' => 'component1', 'rectangle' => 'rectangle'][$componentStyle] ?? null : null;
+            $element->shape = match (true) {
+                'component' === $element->symbol => ['uml1' => 'component1', 'rectangle' => 'rectangle'][$componentStyle] ?? null,
+                'actor' === $element->symbol && !$element->business => ['awesome' => 'awesome', 'hollow' => 'hollow'][$actorStyle] ?? null,
+                default => null,
+            };
         }
     }
 
