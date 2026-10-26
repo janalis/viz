@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Teoz\Rose;
 
 use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\PlantUML\Draw\PlantUmlBody;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Style\Style;
 
@@ -22,6 +23,8 @@ final readonly class RoseText
         private string $align,
         public array $padding,
         private ?PlantUmlText $number,
+        /** The text in sections at its separator lines, as an enhanced component sets it. */
+        private ?PlantUmlBody $body = null,
     ) {}
 
     /**
@@ -40,9 +43,26 @@ final readonly class RoseText
         );
     }
 
+    /**
+     * Text in sections at its separator lines, as PlantUML's `BodyEnhanced2` sets an enhanced
+     * component's, a note's.
+     *
+     * @param list<string> $lines
+     * @param array{float, float, float, float} $padding top, right, bottom and left
+     */
+    public static function sectioned(array $lines, Style $style, array $padding): self
+    {
+        $text = PlantUmlText::styled($lines, $style);
+
+        return new self($text, \strtolower($style->value('HorizontalAlignment', 'left')), $padding, null, new PlantUmlBody($text));
+    }
+
     /** @return array{float, float} the text's own size, without its padding */
     public function pure(): array
     {
+        if (null !== $this->body) {
+            return $this->body->size();
+        }
         [$width, $height] = $this->text->size();
         if (null === $this->number) {
             return [$width, $height];
@@ -64,9 +84,15 @@ final readonly class RoseText
         return $this->pure()[1] + $this->padding[0] + $this->padding[2];
     }
 
-    /** @return list<Mark> the text with its block's top left at a point, its padding not included */
-    public function marks(float $x, float $y): array
+    /**
+     * @param ?array{float, float, Pen} $across where its separator lines run from and to, and the pen they are drawn with
+     * @return list<Mark> the text with its block's top left at a point, its padding not included
+     */
+    public function marks(float $x, float $y, ?array $across = null): array
     {
+        if (null !== $this->body && null !== $across) {
+            return $this->body->marks($x, $y, $this->body->size()[0], $this->align, $across[0], $across[1], $across[2]->color, $across[2]->width);
+        }
         if (null === $this->number) {
             // As PlantUML writes a line: without the spaces it ends with, which it measures.
             $written = new PlantUmlText(\array_map(\rtrim(...), $this->text->lines), $this->text->size, $this->text->face, $this->text->color, $this->text->sprites, $this->text->background);

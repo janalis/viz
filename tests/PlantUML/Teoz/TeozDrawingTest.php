@@ -509,4 +509,12 @@ final class TeozDrawingTest extends TestCase
         // As the jar draws it, 139 by 253: a word on a line but where two or three fit in 50.
         $this->assertSame([139.0, 253.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
+
+    public function testANotesSeparatorsSetItInSections(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nA -> B\nnote right\n  one\n  ----\n  two\nend note\nnote left\n  three\nend note\n@enduml"));
+
+        // As the jar draws it, 160 tall: the line 4 above and below the second section, not a line of text.
+        $this->assertSame(160.0, $drawing->height / Units::POINT);
+    }
 }

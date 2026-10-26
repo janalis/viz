@@ -80,6 +80,6 @@ final readonly class NoteShape implements Component
             ],
         };
 
-        return [...Shadow::cast($outline, $this->shadow), ...$this->text->marks($x + $this->text->padding[3] + ($widening / 2), $y + $this->text->padding[0])];
+        return [...Shadow::cast($outline, $this->shadow), ...$this->text->marks($x + $this->text->padding[3] + ($widening / 2), $y + $this->text->padding[0], [$x, $x + $width, $this->pen])];
     }
 }
