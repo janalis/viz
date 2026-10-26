@@ -86,6 +86,7 @@ final class ClassReader
             'CommandCreateClassMultilines' => $this->create($command, $command->body()),
             'CommandCreateEntityObject' => $this->object($command, []),
             'CommandCreateEntityObjectMultilines' => $this->object($command, $command->body()),
+            'CommandCreateMap' => $this->map($command),
             'CommandAddMethod' => $this->member($command),
             'CommandLinkClass' => $this->link($command),
             'CommandStereotype' => self::stereotyped($this->entity((string) $command->get('NAME')), (string) $command->get('STEREO')),
@@ -158,6 +159,28 @@ final class ClassReader
         }
         $entity->color = $command->get('COLOR') ?? $entity->color;
         $entity->body = [...$entity->body, ...$body];
+        $this->last = $entity->id;
+    }
+
+    /** A map, its entries `key => value` its body, as PlantUML's `CommandCreateMap` makes one. */
+    private function map(PlantUmlCommand $command): void
+    {
+        foreach ($command->body() as $line) {
+            if (!\str_contains($line, '=>')) {
+                throw new Unsupported('The native PlantUML renderer does not draw: '.\trim($line));
+            }
+        }
+        $id = $this->resolve(self::clean((string) $command->get('NAME', 1)));
+        if (\array_key_exists($id, $this->entities) && 'map' !== $this->entities[$id]->type) {
+            throw new PlantUmlRefusal('PlantUML cannot declare '.$id.' again as map');
+        }
+        $entity = $this->made($id, $command->get('NAME'));
+        $entity->type = 'map';
+        if (null !== $command->get('STEREO')) {
+            self::stereotyped($entity, (string) $command->get('STEREO'));
+        }
+        $entity->color = $command->get('COLOR') ?? $entity->color;
+        $entity->body = [...$entity->body, ...\array_map(\trim(...), $command->body())];
         $this->last = $entity->id;
     }
 

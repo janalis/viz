@@ -144,6 +144,9 @@ final class ClassDrawing
             $box = ClassBox::of($entity, $this->classes->document->styles, $portions, \is_numeric($icons) ? (float) $icons : 10.0, $letter);
             $this->boxes[$entity->id] = $box;
             $svek->node($entity->id, $box->width, $box->height, $entity->group);
+            if ('map' === $entity->type) {
+                $svek->rows($entity->id, $box->rows());
+            }
         }
         $noteStyle = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'note']);
         foreach ($this->classes->notes as $note) {
@@ -312,7 +315,8 @@ final class ClassDrawing
             \array_push($marks, ...$box->bare($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
         }
 
-        return $marks;
+        // Alone, laid out without dot, a box is taken at its size, as PlantUML takes its image's.
+        return \array_map(static fn (Mark $mark): Mark => Outline::Box === $mark->outline && MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => Outline::Block]) : $mark, $marks);
     }
 
     /** A package: its frame with the tab its title sits in. */

@@ -534,6 +534,41 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([99.0, 153.0], $size("object a\nobject b\nobject c\na --> b\na --> c"));
     }
 
+    public function testMapsStandAsPlantUmlDrawsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+        $map = self::draw("map CapitalCity {\n UK => London\n USA => Washington\n}");
+        $texts = \array_values(\array_map(
+            static fn (Mark $mark): array => [$mark->text, \round($mark->points[0][1] / Units::POINT, precision: 2)],
+            \array_filter($map->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind),
+        ));
+
+        // As the jar draws them: each entry a row under a line, its key centred, its value after a line.
+        $this->assertSame([146.0, 81.0], [$map->width / Units::POINT, $map->height / Units::POINT]);
+        $this->assertSame(
+            [
+                ['CapitalCity', 22.54],
+                ['UK',          43.02],
+                ['London',      43.02],
+                ['USA',         63.51],
+                ['Washington',  63.51],
+            ],
+            $texts,
+        );
+        // Laid out as svek writes it, a table of rows in whole points; empty, just its title.
+        $this->assertSame([181.0, 215.0], $size("map \"Capital Cities\" as CC {\n UK => London\n USA => Washington\n Germany => Berlin\n}\nclass X\nX --> CC"));
+        $this->assertSame([76.0, 40.0], $size("map Empty {\n}"));
+        $this->assertSame([83.0, 97.0], $size("map M {\n +a => 1\n multi\\nline => v\n}"));
+        $this->assertSame([142.0, 83.0], $size("map M {\n a => 1\n b => 2\n}\nclass X"));
+        // A lone object taken at its size; an object's fields measured as wide as they are.
+        $this->assertSame([42.0, 56.0], $size('object o'));
+        $this->assertSame([151.0, 162.0], $size("object \"Long Object Title\" as o {\n a = 1\n}\nobject p\no --> p"));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

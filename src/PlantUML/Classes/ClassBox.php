@@ -106,7 +106,7 @@ final readonly class ClassBox
 
             return new self($entity, $style, $sheet, $plain, null, null, 0.0, [], false, $width, $height, 0.0, $letter);
         }
-        if ('object' === $entity->type) {
+        if (\in_array($entity->type, ['object', 'map'], strict: true)) {
             return self::object($entity, $sheet, $letter);
         }
         $circle = $portions->shown($entity, 'circle');
@@ -154,15 +154,94 @@ final readonly class ClassBox
      */
     private static function object(ClassEntity $entity, StyleSheet $sheet, float $letter): self
     {
-        $style = $sheet->style(['root', 'element', 'objectDiagram', 'object'], $entity->stereotypes);
-        $name = PlantUmlText::styled($entity->display, $sheet->style(['root', 'element', 'objectDiagram', 'object', 'header'], $entity->stereotypes));
+        $style = $sheet->style(['root', 'element', 'objectDiagram', $entity->type], $entity->stereotypes);
+        $name = PlantUmlText::styled($entity->display, $sheet->style(['root', 'element', 'objectDiagram', $entity->type, 'header'], $entity->stereotypes));
         [$nameWidth, $nameHeight] = $name->size();
+        if ('map' === $entity->type) {
+            [$keys, $values] = self::entries($entity, $style);
+            $rows = \array_sum(\array_map(static fn (PlantUmlText $key, PlantUmlText $value): float => \max($key->size()[1], $value->size()[1]) + 4, $keys, $values));
+            $columns = self::column($keys) + self::column($values);
+
+            return new self($entity, $style, $sheet, $name, null, null, 0.0, [], false, \max($nameWidth + 14, $columns), $nameHeight + 4 + $rows, $nameHeight + 4, $letter);
+        }
         $fields = new PlantUmlText(\array_map(self::text(...), $entity->body), $style->fontSize(), sprites: $style->sprites);
         $header = $nameHeight + 4;
         $height = $header + ([] === $entity->body ? 16.0 : 8 + (\count($entity->body) * $fields->line()));
         $width = \max($nameWidth + 14, [] === $entity->body ? 0.0 : $fields->size()[0] + 12);
 
         return new self($entity, $style, $sheet, $name, null, null, 0.0, [[$entity->body, '', '']], false, $width, $height, $header, $letter);
+    }
+
+    /**
+     * A map's entries, each key's and value's text, as PlantUML's `TextBlockMap` takes them: a
+     * key without its visibility character.
+     *
+     * @return array{list<PlantUmlText>, list<PlantUmlText>}
+     */
+    private static function entries(ClassEntity $entity, Style $style): array
+    {
+        [$keys, $values] = [[], []];
+        foreach ($entity->body as $entry) {
+            [$key, $value] = \array_map(\trim(...), \explode('=>', $entry, limit: 2));
+            $key = \array_key_exists($key[0] ?? '', self::ICONS) ? \substr($key, offset: 1) : $key;
+            $keys[] = PlantUmlText::styled(ClassReader::split($key), $style);
+            $values[] = PlantUmlText::styled(ClassReader::split($value), $style);
+        }
+
+        return [$keys, $values];
+    }
+
+    /**
+     * How tall svek writes a map's rows, as its table of ports: a row for each entry, as tall as
+     * its entry in whole points down, each after a row for what lies before it, in whole points
+     * down, from where the last ended; then a row for what is left.
+     */
+    public function rows(): float
+    {
+        [$keys, $values] = self::entries($this->entity, $this->style);
+        [$sum, $top] = [0, $this->header];
+        foreach ($keys as $index => $key) {
+            $height = \max($key->size()[1], $values[$index]->size()[1]) + 4;
+            $sum += \max(0, (int) ($top - $sum)) + (int) $height;
+            $top += $height;
+        }
+
+        return $sum + \max(0, (int) ($this->height - $sum));
+    }
+
+    /**
+     * A map's column's width: its widest text and 5 either side.
+     *
+     * @param list<PlantUmlText> $texts
+     */
+    private static function column(array $texts): float
+    {
+        return [] === $texts ? 0.0 : \max(\array_map(static fn (PlantUmlText $text): float => $text->size()[0], $texts)) + 10;
+    }
+
+    /**
+     * A map's entries as PlantUML's `TextBlockMap` draws them: each row under a line across the
+     * map, its key centred in the first column, its value 5 into the second, after a line.
+     *
+     * @return list<Mark>
+     */
+    private function mapMarks(float $x, float $y): array
+    {
+        $line = $this->style->color('LineColor', '#181818');
+        [$keys, $values] = self::entries($this->entity, $this->style);
+        $first = self::column($keys);
+        $marks = [];
+        $top = $y + $this->header;
+        foreach ($keys as $index => $key) {
+            $value = $values[$index];
+            $height = \max($key->size()[1], $value->size()[1]) + 4;
+            $marks[] = new Mark(MarkKind::Polyline, [[$x, $top], [$x + $this->width, $top]], stroke: $line, strokeWidth: 1.0);
+            \array_push($marks, ...$key->marks($x, $top + 2, $first), ...$value->marks($x + $first + 5, $top + 2, $value->size()[0]));
+            $marks[] = new Mark(MarkKind::Polyline, [[$x + $first, $top], [$x + $first, $top + $height]], stroke: $line, strokeWidth: 1.0);
+            $top += $height;
+        }
+
+        return $marks;
     }
 
     /** @return list<Mark> the box with its top left at a point */
@@ -188,11 +267,15 @@ final readonly class ClassBox
             return [new Mark(MarkKind::Polygon, [[$cx, $y], [$x + 24, $cy], [$cx, $y + 24], [$x, $cy]], stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Path)];
         }
         $marks = Shadow::cast([self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))
-            ->with(['outline' => 'object' === $this->entity->type ? Outline::Box : Outline::Block])], $this->style->number('Shadowing'));
-        \array_push($marks, ...'object' === $this->entity->type ? $this->name->marks($x, $y + 2, $this->width) : $this->headerMarks($x, $y));
+            ->with(['outline' => \in_array($this->entity->type, ['object', 'map'], strict: true) ? Outline::Box : Outline::Block])], $this->style->number('Shadowing'));
+        \array_push($marks, ...\in_array($this->entity->type, ['object', 'map'], strict: true) ? $this->name->marks($x, $y + 2, $this->width) : $this->headerMarks($x, $y));
+        if ('map' === $this->entity->type) {
+            return [...$marks, ...$this->mapMarks($x, $y)];
+        }
         if ('object' === $this->entity->type && [] !== $this->entity->body) {
-            // As PlantUML draws an object's fields: the line above them across its whole width, cut to its outline, which its limit finder takes uncut.
-            $marks[] = new Mark(MarkKind::Polygon, [[$x, $y + $this->header], [$x + $this->width, $y + $this->header]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
+            // As PlantUML draws an object's fields: the line above them as wide as they are, 6 either side, cut to its outline, which its limit finder takes uncut.
+            [$fields] = new PlantUmlText(\array_map(self::text(...), $this->entity->body), $this->style->fontSize(), sprites: $this->style->sprites)->size();
+            $marks[] = new Mark(MarkKind::Polygon, [[$x, $y + $this->header], [$x + $fields + 12, $y + $this->header]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
         }
         $top = $y + $this->header;
         foreach ($this->compartments as [$lines, $separator, $title]) {

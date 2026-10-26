@@ -63,6 +63,8 @@ final class Svek
     private array $ports = [];
     /** @var array<string, true> the clusters with points on their border */
     private array $bordered = [];
+    /** @var array<string, float> how tall svek writes the rows of a node it writes as a table of them */
+    private array $rows = [];
     /** @var array<string, array{float, float, float, float}> the room svek keeps around a node, as its table's cells about the node's own: top, right, bottom and left */
     private array $margins = [];
 
@@ -86,6 +88,16 @@ final class Svek
     {
         $kept = $this->margins[$id] ?? [0.0, 0.0, 0.0, 0.0];
         $this->margins[$id] = [\max($kept[0], $top), \max($kept[1], $right), \max($kept[2], $bottom), \max($kept[3], $left)];
+    }
+
+    /**
+     * A node svek writes as a table of rows, each a port, as it writes a map: the rows as tall
+     * as svek makes them, each in whole points down.
+     */
+    public function rows(string $id, float $height): void
+    {
+        $this->margins($id, 0.0, 0.0, 0.0, 0.0);
+        $this->rows[$id] = $height;
     }
 
     /** A cluster, with the size of its title, which it keeps room for above its content. */
@@ -161,7 +173,7 @@ final class Svek
         [$top, $right, $bottom, $left] = \array_map(\floor(...), $this->margins[$id]);
         [, $width, $height] = $this->nodes[$id];
 
-        return [\floor($width) + $left + $right + (2 * self::TABLE_SIDE), \floor($height) + $top + $bottom + (2 * self::TABLE_TOP)];
+        return [\floor($width) + $left + $right + (2 * self::TABLE_SIDE), ($this->rows[$id] ?? \floor($height)) + $top + $bottom + (2 * self::TABLE_TOP)];
     }
 
     /** How far right of where its links end svek reads a point on a border to stand, from its port's column. */
