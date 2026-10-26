@@ -311,4 +311,22 @@ final class DescriptionDrawingTest extends TestCase
         // As the jar sets it, 386 by 122: Logout next to the user, the link to Login over it, measured by its curve's controls as the jar measures it.
         $this->assertSame([386.0, 122.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
+
+    public function testBusinessActorsAndUseCasesAreCrossedAsPlantUmlCrossesThem(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nactor A\nactor/ B\nusecase/ U\n(V)\nA --> U\nB --> V\n@enduml"));
+        $chords = \array_values(\array_filter(
+            $drawing->marks,
+            static fn (Mark $mark): bool => (
+                MarkKind::Polyline === $mark->kind
+                && 2 === \count($mark->points)
+                && $mark->points[0][0] !== $mark->points[1][0]
+                && $mark->points[0][1] !== $mark->points[1][1]
+            ),
+        ));
+
+        // As the jar draws it, 123 by 185: the business use case 7 wider either side of its name, both crossed by a chord.
+        $this->assertSame([123.0, 185.0], [\round($drawing->width / Units::POINT, precision: 6), \round($drawing->height / Units::POINT, precision: 6)]);
+        $this->assertCount(2, $chords);
+    }
 }

@@ -103,7 +103,7 @@ final readonly class DescriptionBox
         $labelWidth = \max($textWidth, null === $stereotypes ? 0.0 : $stereoWidth + 2);
         $labelHeight = $textHeight + $stereoHeight;
         [$width, $height] = match (true) {
-            'usecase' === $element->symbol => self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()]),
+            'usecase' === $element->symbol => self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()], $element->business ? 7.0 : 0.0),
             // As PlantUML: its flat sides as wide as its text, its points half as far again, 5 above and below.
             'hexagon' === $element->symbol => [2 * $labelWidth, $labelHeight + 10],
             'person' === $element->symbol => self::person($labelWidth + 20, $labelHeight + 20),
@@ -125,7 +125,7 @@ final readonly class DescriptionBox
             $height,
             $flushLeft,
             title: $title,
-            textTop: 'usecase' === $element->symbol ? self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()])[2] : 0.0,
+            textTop: 'usecase' === $element->symbol ? self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()], $element->business ? 7.0 : 0.0)[2] : 0.0,
         );
     }
 
@@ -156,7 +156,7 @@ final readonly class DescriptionBox
         }
         [$left, $right, $top] = self::MARGINS[$symbol] ?? [10, 10, 10, 10];
         $outline = 'usecase' === $symbol
-            ? [self::ellipse($x, $y, $this->width, $this->height, $line, $back, $stroke)]
+            ? [self::ellipse($x, $y, $this->width, $this->height, $line, $back, $stroke), ...($this->element->business ? [self::across($x, $y, $this->width, $this->height, $line, $stroke)] : [])]
             : DescriptionShapes::outline($symbol, $x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'), $this->tab());
         [$labelLeft, $labelTop, $labelWidth] = match ($symbol) {
             'usecase' => [$x, $y + $this->textTop, $this->width],
@@ -190,7 +190,7 @@ final readonly class DescriptionBox
         $y += $interface ? 0.0 : $stereoHeight;
         $centre = $x + ($this->width / 2);
         $marks = match ($symbol) {
-            'actor' => self::stickman($centre, $y, $line, $back, $stroke),
+            'actor' => [...self::stickman($centre, $y, $line, $back, $stroke), ...($this->element->business ? [self::chord($centre, $y, $line, $stroke)] : [])],
             // As PlantUML 1.2026 draws them, 4 in from their node's sides, each a circle 24 across 16 below its node's top: beside a bar 24 tall, over a line, under an arrowhead.
             'boundary' => [
                 StateBox::disc($centre + 8.5, $y + 16, 12.0, $line, $back),
@@ -242,14 +242,15 @@ final readonly class DescriptionBox
      * The ellipse PlantUML's `TextBlockInEllipse` fits around lines centred one under another,
      * as its `Footprint` and `ContainingEllipse` find it: the smallest around each line's corners,
      * as flat as the lines but between a fifth and four fifths as tall as wide, 6 bigger; the
-     * lines drawn from its centre, 2 higher.
+     * lines drawn from its centre, 2 higher. A business use case's lines held 7 in from either side,
+     * the block they make, its margins with it, taken whole as well as each line's corners.
      *
      * @param list<array{float, float, float}> $rows each line's width, height and how far above its top it is taken
      * @return array{float, float, float} its width, its height, and how far below its top the lines start
      */
-    private static function footprint(array $rows): array
+    private static function footprint(array $rows, float $margin): array
     {
-        [$width, $height] = [[] === $rows ? 0.0 : \max(\array_column($rows, 0)), \array_sum(\array_column($rows, 1))];
+        [$width, $height] = [([] === $rows ? 0.0 : \max(\array_column($rows, 0))) + (2 * $margin), \array_sum(\array_column($rows, 1))];
         $aspect = $width > 0 ? \min(0.8, \max(0.2, $height / $width)) : 0.8;
         // Each line's half width, and its top and bottom as measured, from the first line's top.
         $spans = [];
@@ -257,6 +258,9 @@ final readonly class DescriptionBox
         foreach ($rows as [$rowWidth, $rowHeight, $above]) {
             $spans[] = [$rowWidth / 2, $top - $above, $top + $rowHeight - $above];
             $top += $rowHeight;
+        }
+        if ($margin > 0) {
+            $spans[] = [$width / 2, 0.0, $height];
         }
         // The lines centred, the circle's centre on their middle line: where, down it, the farthest corner is nearest.
         $farthest = static function (float $centre) use ($spans, $aspect): float {
@@ -314,6 +318,32 @@ final readonly class DescriptionBox
             new Mark(MarkKind::Polyline, [[$x - 13, $y + 24], [$x + 13, $y + 24]], stroke: $line, strokeWidth: $stroke),
             new Mark(MarkKind::Polyline, [[$x - 13, $y + 58], [$x, $y + 43], [$x + 13, $y + 58]], stroke: $line, strokeWidth: $stroke),
         ];
+    }
+
+    /**
+     * A business use case's slash, as PlantUML draws it: across its ellipse shrunk by a hundredth,
+     * from 20° above its right to where the ellipse turned an eighth of a turn meets the same
+     * upright through that point again.
+     */
+    private static function across(float $x, float $y, float $width, float $height, string $line, float $stroke): Mark
+    {
+        [$a, $b, $theta] = [$width / 2, $height / 2, \deg2rad(20)];
+        $z = (($a * \cos($theta)) - ($b * \sin($theta))) * \M_SQRT1_2;
+        [$ra, $rb] = [$a * \M_SQRT1_2, $b * \M_SQRT1_2];
+        $other = \acos(((2 * $ra * $z) / ($ra ** 2 + $rb ** 2)) - \cos($theta));
+        [$w, $h] = [$width * 0.99, $height * 0.99];
+        $at = static fn (float $angle): array => [$x + ($w / 2) + (($w / 2) * \cos($angle)), $y + ($h / 2) + (($h / 2) * \sin($angle))];
+
+        return new Mark(MarkKind::Polyline, [$at(-$theta), $at($other)], stroke: $line, strokeWidth: $stroke);
+    }
+
+    /** A business actor's head crossed by a chord, 21/64 of a half turn either side of its lower right, as PlantUML draws it. */
+    private static function chord(float $x, float $y, string $line, float $stroke): Mark
+    {
+        [$turn, $y] = [(21 * \M_PI) / 64, $y + 8.5];
+        $at = static fn (float $angle): array => [$x + (8 * \cos($angle)), $y + (8 * \sin($angle))];
+
+        return new Mark(MarkKind::Polyline, [$at((\M_PI / 4) + $turn), $at((\M_PI / 4) - $turn)], stroke: $line, strokeWidth: $stroke);
     }
 
     public static function ellipse(float $x, float $y, float $width, float $height, string $line, string $back, float $stroke): Mark
