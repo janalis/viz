@@ -587,4 +587,35 @@ final class TeozDrawingTest extends TestCase
         $this->assertSame([164.0, 189.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
         $this->assertCount(1, $label);
     }
+
+    public function testAParallelNoteStandsOnTheRowBeforeIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing(
+            "@startuml\nAlice -> Bob : hello\n& note over Alice : parallel note\nBob -> Carol : next\nnote left of Bob : a\n& note right of Carol : b\n@enduml",
+        ));
+
+        // As the jar draws it, 224 by 205: each note beside what comes before it, not under it.
+        $this->assertSame([224.0, 205.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
+    public function testNotesOnAGroupsEndStandBesideItsFrame(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: at the frame's top, left or right of it, a nested group's widening the group around it.
+        $this->assertSame(
+            [367.0, 235.0],
+            $size(
+                "participant A\nparticipant B\nparticipant C\nparticipant D\nA -> B : hello\nloop 10 times\n  B -> C : x\nend\nnote left : left note\nnote right\n  right\n  two lines\nend note\nC -> D : z",
+            ),
+        );
+        $this->assertSame(
+            [352.0, 299.0],
+            $size("participant A\nparticipant B\nparticipant C\nalt ok\n  group inner\n    A -> B : x\n  end\n  note right : inner end\nelse ko\n  B -> A : y\nend\nnote left : outer\nB -> C : q"),
+        );
+    }
 }

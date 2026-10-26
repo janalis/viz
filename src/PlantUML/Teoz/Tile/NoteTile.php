@@ -43,7 +43,7 @@ final class NoteTile extends AbstractTile
             default => $note->position,
         };
         $this->component = $context->rose->note($note);
-        $this->gauge = YGauge::withContact($current, $this->contact(), $this->height());
+        $this->gauge = $note->parallel ? YGauge::parallel($current, $this->contact(), $this->height()) : YGauge::withContact($current, $this->contact(), $this->height());
     }
 
     #[\Override]

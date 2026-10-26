@@ -406,10 +406,14 @@ final class SequenceReader
         };
         $position = null !== $command->get('ACROSS') ? 'across' : \strtolower($command->get('POSITION') ?? 'over');
         $text = null === $command->get('NOTE') ? ActivityReader::columns($command->body()) : self::lines((string) $command->get('NOTE'));
-        $note = new SequenceNote($participants, \str_starts_with($position, 'over') ? 'over' : $position, $text, \strtolower($command->get('STYLE') ?? 'note'), $command->get('COLOR'));
-        if (null !== $command->get('PARALLEL')) {
-            throw new Unsupported('The native PlantUML renderer does not draw parallel notes: '.$command->line());
-        }
+        $note = new SequenceNote(
+            $participants,
+            \str_starts_with($position, 'over') ? 'over' : $position,
+            $text,
+            \strtolower($command->get('STYLE') ?? 'note'),
+            $command->get('COLOR'),
+            parallel: null !== $command->get('PARALLEL'),
+        );
         // `/ note` sets a note on the same row as the one before it.
         $last = \end($this->events);
         if (null === $command->get('VMERGE') || false === $last) {
@@ -433,10 +437,7 @@ final class SequenceReader
     private function noteOnArrow(PlantUmlCommand $command): void
     {
         $last = $this->lastWithDeactivate;
-        if ($last instanceof SequenceGroup) {
-            throw new Unsupported('The native PlantUML renderer does not draw notes on a group\'s end: '.$command->line());
-        }
-        if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo) {
+        if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo && !$last instanceof SequenceGroup) {
             throw new PlantUmlRefusal('A note on an arrow needs an arrow before it');
         }
         $text = null === $command->get('NOTE') ? ActivityReader::columns($command->body()) : self::lines((string) $command->get('NOTE'));

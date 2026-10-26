@@ -44,6 +44,8 @@ final class GroupingTile extends AbstractTile
     private readonly Real $min;
     private readonly Real $max;
     private readonly float $bodyHeight;
+    /** @var array{left: list<Component>, right: list<Component>} the notes on its end, beside its frame's top */
+    private array $notes = ['left' => [], 'right' => []];
 
     /** @param \Iterator<int, SequenceEvent> $events the diagram's events, the group's own up next */
     public function __construct(
@@ -63,6 +65,10 @@ final class GroupingTile extends AbstractTile
             \assert(null !== $event, description: 'a valid iterator has a current event');
             $events->next();
             if ($event instanceof SequenceGroup && 'end' === $event->role) {
+                // A note left of the end stands left of the frame; any other, right of it.
+                foreach ($event->notes as $note) {
+                    $this->notes['left' === $note->position ? 'left' : 'right'][] = $context->rose->note($note);
+                }
                 break;
             }
             foreach (TileBuilder::one($context, $event, $events, $this, $inner) as $tile) {
@@ -144,6 +150,18 @@ final class GroupingTile extends AbstractTile
         $area = new Area($this->max->value() - $left, $this->bodyHeight + $this->component->size()[1] + (self::MARGIN_Y_MAGIC / 2));
         $marks = Layer::Background === $layer ? $this->background($left, $top, $area) : [];
         \array_push($marks, ...$this->component->marks($left, $top, $area, $layer));
+        $x = $this->max->value();
+        foreach ($this->notes['right'] as $note) {
+            [$width, $height] = $note->size();
+            \array_push($marks, ...$note->marks($x, $top, new Area($width, $height), $layer));
+            $x += $width;
+        }
+        $x = $left;
+        foreach ($this->notes['left'] as $note) {
+            [$width, $height] = $note->size();
+            $x -= $width;
+            \array_push($marks, ...$note->marks($x, $top, new Area($width, $height), $layer));
+        }
         foreach ($this->tiles as $tile) {
             \array_push($marks, ...$tile->marks($layer));
         }
@@ -179,13 +197,19 @@ final class GroupingTile extends AbstractTile
     #[\Override]
     public function minX(): Real
     {
-        return $this->min->plus(-self::EXTERNAL_MARGIN_X1);
+        return $this->min->plus(-self::EXTERNAL_MARGIN_X1 - $this->notesWidth('left'));
     }
 
     #[\Override]
     public function maxX(): Real
     {
-        return $this->max->plus(self::EXTERNAL_MARGIN_X2);
+        return $this->max->plus(self::EXTERNAL_MARGIN_X2 + $this->notesWidth('right'));
+    }
+
+    /** @param 'left'|'right' $side */
+    private function notesWidth(string $side): float
+    {
+        return \array_sum(\array_map(static fn (Component $note): float => $note->size()[0], $this->notes[$side]));
     }
 
     public function frameMinX(): Real
@@ -284,7 +308,7 @@ final class GroupingTile extends AbstractTile
         $this->clearTitle($group, $posA, $margin);
         foreach ($group->tiles as $tile) {
             if ($tile instanceof self) {
-                $this->clearRight($tile, $posA, $margin + self::MARGIN_X + self::EXTERNAL_MARGIN_X2);
+                $this->clearRight($tile, $posA, $margin + self::MARGIN_X + self::EXTERNAL_MARGIN_X2 + $tile->notesWidth('right'));
                 continue;
             }
             foreach (self::stableMaxX($tile) as $maxX) {
@@ -298,7 +322,7 @@ final class GroupingTile extends AbstractTile
     {
         foreach ($group->tiles as $tile) {
             if ($tile instanceof self) {
-                $this->clearLeft($tile, $posC, $margin + self::MARGIN_X + self::EXTERNAL_MARGIN_X2);
+                $this->clearLeft($tile, $posC, $margin + self::MARGIN_X + self::EXTERNAL_MARGIN_X2 + $tile->notesWidth('left'));
                 continue;
             }
             foreach (self::stableMinX($tile) as $minX) {

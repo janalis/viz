@@ -345,7 +345,6 @@ final class SequenceReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
-        yield 'parallel note' => ["participant A\n& note over A : x", 'The native PlantUML renderer does not draw parallel notes: & note over A : x'];
         yield 'url' => ["participant A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];
     }
 
@@ -407,11 +406,15 @@ final class SequenceReaderTest extends TestCase
         $this->assertSame([], self::lives($sequence->events[0]));
     }
 
-    public function testNotesOnAGroupsEndAreNotDrawnNatively(): void
+    public function testANoteAfterAGroupsEndIsOnItsEnd(): void
     {
-        $this->expectExceptionObject(new Unsupported("The native PlantUML renderer does not draw notes on a group's end: note right : after"));
+        $sequence = self::read("group g\nA -> B\nend\nnote right : after\n& note over A : beside");
+        $end = $sequence->events[2];
 
-        self::read("group g\nA -> B\nend\nnote right : after");
+        $this->assertInstanceOf(SequenceGroup::class, $end);
+        $this->assertSame([['after']], \array_map(static fn (SequenceNote $note): array => $note->text, $end->notes));
+        $this->assertInstanceOf(SequenceNote::class, $sequence->events[3]);
+        $this->assertTrue($sequence->events[3]->parallel);
     }
 
     public function testAnchoredMessagesAreNotDrawnNatively(): void

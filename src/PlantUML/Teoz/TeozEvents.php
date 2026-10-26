@@ -9,6 +9,7 @@ use Janalis\Viz\PlantUML\Sequences\SequenceExo;
 use Janalis\Viz\PlantUML\Sequences\SequenceGroup;
 use Janalis\Viz\PlantUML\Sequences\SequenceLife;
 use Janalis\Viz\PlantUML\Sequences\SequenceMessage;
+use Janalis\Viz\PlantUML\Sequences\SequenceNote;
 
 /**
  * A sequence diagram's events in time, as teoz reads them: which message each change of life
@@ -86,6 +87,6 @@ final class TeozEvents
     /** Whether an event is written `&`, to go along with the one before. */
     public static function parallel(SequenceEvent $event): bool
     {
-        return ($event instanceof SequenceMessage || $event instanceof SequenceExo || $event instanceof SequenceGroup) && $event->parallel;
+        return ($event instanceof SequenceMessage || $event instanceof SequenceExo || $event instanceof SequenceGroup || $event instanceof SequenceNote) && $event->parallel;
     }
 }

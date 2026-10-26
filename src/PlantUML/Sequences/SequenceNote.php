@@ -19,5 +19,7 @@ final readonly class SequenceNote implements SequenceEvent
         /** `note`, `hnote` (a hexagon) or `rnote` (a rectangle) */
         public string $style = 'note',
         public ?string $color = null,
+        /** Written `&`, on the row of the event before it */
+        public bool $parallel = false,
     ) {}
 }
