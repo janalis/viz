@@ -31,7 +31,13 @@ final class TeozDrawing
         }
         $document = $sequence->document;
         $messageWidth = $document->param('wrapMessageWidth', $document->param('maxMessageSize', ''));
-        $rose = new Rose($document->styles, \strtolower($document->param('actorStyle', '')), \is_numeric($messageWidth) ? (float) $messageWidth : 0.0);
+        $boxPadding = $document->param('boxPadding', '');
+        $rose = new Rose(
+            $document->styles,
+            \strtolower($document->param('actorStyle', '')),
+            \is_numeric($messageWidth) ? (float) $messageWidth : 0.0,
+            \is_numeric($boxPadding) ? (float) $boxPadding : 0.0,
+        );
         $events = new TeozEvents($sequence->events);
         $xOrigin = RealImpl::origin();
         $yOrigin = RealImpl::origin();

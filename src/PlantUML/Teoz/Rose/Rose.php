@@ -28,6 +28,8 @@ final readonly class Rose
         private string $actorStyle = '',
         /** `skinparam wrapMessageWidth` or `maxMessageSize`: how wide a message's text runs before it wraps, where its style does not say. */
         private float $messageWidth = 0.0,
+        /** `skinparam boxPadding`: room kept more either side of a box. */
+        public float $boxPadding = 0.0,
     ) {}
 
     /** @param list<string> $stereotypes */

@@ -53,20 +53,29 @@ final class Doll
         }
     }
 
-    /** Keeps it 10 clear of the participant before it, or of the diagram's left edge. */
+    /** Keeps it 10 clear of the participant before it, or of the diagram's left edge, and its padding more. */
     public function addConstraintBefore(): void
     {
         $previous = $this->context->spaces->previous($this->first());
         $this
             ->first()
             ->posALive()
-            ->ensureBiggerThan(($previous?->posD() ?? $this->context->xOrigin)->plus(10));
+            ->ensureBiggerThan(($previous?->posD() ?? $this->context->xOrigin)->plus(10 + $this->context->rose->boxPadding));
     }
 
-    /** Keeps the participant after it 20 clear of it. */
+    /** Keeps the participant after it 20 clear of it, and its padding either side more. */
     public function addConstraintAfter(): void
     {
-        $this->context->spaces->next($this->last())?->posALive()->ensureBiggerThan($this->last()->posELive()->plus(20));
+        $this->context
+            ->spaces
+            ->next($this->last())
+            ?->posALive()
+            ->ensureBiggerThan(
+                $this
+                    ->last()
+                    ->posELive()
+                    ->plus(20 + (2 * $this->context->rose->boxPadding)),
+            );
     }
 
     public function minX(): Real

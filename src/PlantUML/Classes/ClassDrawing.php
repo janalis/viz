@@ -154,7 +154,7 @@ final class ClassDrawing
         }
         $noteStyle = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'note']);
         foreach ($this->classes->notes as $note) {
-            $box = new NoteBox(PlantUmlText::styled($note->lines, $noteStyle), $noteStyle, ClassColors::back($note->color));
+            $box = NoteBox::sectioned(PlantUmlText::styled($note->lines, $noteStyle), $noteStyle, ClassColors::back($note->color));
             if (null !== $note->link) {
                 continue;
             }

@@ -107,7 +107,7 @@ final class DescriptionDrawing
             if (null !== $note->link) {
                 continue;
             }
-            $box = new NoteBox(PlantUmlText::styled($note->lines, $style), $style, ClassColors::back($note->color));
+            $box = NoteBox::sectioned(PlantUmlText::styled($note->lines, $style), $style, ClassColors::back($note->color));
             $this->notes[$note->id] = $box;
             [$width, $height] = $box->size();
             $svek->node($note->id, $width, $height, $note->group);

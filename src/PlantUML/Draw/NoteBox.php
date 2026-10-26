@@ -19,10 +19,16 @@ final readonly class NoteBox
     private const float FOLD = 10.0;
 
     public function __construct(
-        private PlantUmlText $text,
+        private PlantUmlText|PlantUmlBody $text,
         private Style $style,
         private ?string $back = null,
     ) {}
+
+    /** A note svek draws, its text in sections as PlantUML's `BodyEnhanced2` sets it. */
+    public static function sectioned(PlantUmlText $text, Style $style, ?string $back = null): self
+    {
+        return new self(new PlantUmlBody($text), $style, $back);
+    }
 
     /** @return array{float, float} */
     public function size(): array
@@ -94,7 +100,11 @@ final readonly class NoteBox
                 outline: Outline::Path,
             ),
             new Mark(MarkKind::Polyline, [[$right - self::FOLD, $y], [$right - self::FOLD, $y + self::FOLD], [$right, $y + self::FOLD]], stroke: $line, strokeWidth: $stroke),
-            ...$this->text->marks($x + 6, $y + 5, $width - 12 - self::FOLD, 'left'),
+            ...(
+                $this->text instanceof PlantUmlBody
+                    ? $this->text->marks($x + 6, $y + 5, $width - 12 - self::FOLD, 'left', $x, $right, $line, $stroke)
+                    : $this->text->marks($x + 6, $y + 5, $width - 12 - self::FOLD, 'left')
+            ),
         ];
     }
 }

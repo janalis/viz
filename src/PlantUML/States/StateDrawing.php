@@ -364,7 +364,7 @@ final class StateDrawing
             if (!$mine) {
                 continue;
             }
-            $box = new NoteBox(PlantUmlText::styled($note->lines, $style), $style, ClassColors::back($note->color));
+            $box = NoteBox::sectioned(PlantUmlText::styled($note->lines, $style), $style, ClassColors::back($note->color));
             $boxes[$note->id] = $box;
             [$width, $height] = $box->size();
             $svek->node($note->id, $width, $height, null === $note->entity ? null : $this->clusterOf($note->entity, $group));

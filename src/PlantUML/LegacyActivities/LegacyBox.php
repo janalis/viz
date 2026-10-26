@@ -47,7 +47,7 @@ final readonly class LegacyBox
         };
         $style = $sheet->style($path, $stereotypes);
         if ('note' === $entity->kind) {
-            $note = new NoteBox(PlantUmlText::styled($entity->display, $style), $style, ClassColors::back($entity->color));
+            $note = NoteBox::sectioned(PlantUmlText::styled($entity->display, $style), $style, ClassColors::back($entity->color));
             [$width, $height] = $note->size();
 
             return new self($entity, $style, null, $note, $width, $height);
