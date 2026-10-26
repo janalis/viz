@@ -60,6 +60,24 @@ final readonly class DescriptionShapes
     }
 
     /**
+     * A container's outline: as its symbol's, but a hexagon's, which PlantUML draws as a path, its
+     * limit finder taking it as it runs; and a card's, its title ruled off 4 below it.
+     *
+     * @param array{float, float} $title the size of its title
+     * @return list<Mark>
+     */
+    public static function container(string $symbol, float $x, float $y, float $width, float $height, string $line, string $back, float $stroke, float $round, array $title): array
+    {
+        $marks = self::outline($symbol, $x, $y, $width, $height, $line, $back, $stroke, $round, $title);
+
+        return match ($symbol) {
+            'hexagon' => \array_map(static fn (Mark $mark): Mark => $mark->with(['outline' => Outline::Path]), $marks),
+            'card' => [...$marks, new Mark(MarkKind::Polyline, [[$x, $y + $title[1] + 4], [$x + $width, $y + $title[1] + 4]], stroke: $line, strokeWidth: $stroke)],
+            default => $marks,
+        };
+    }
+
+    /**
      * A person's head's radius, as measured on PlantUML's output: 0.21 times the square root of its body's area.
      */
     public static function radius(float $width, float $height): float

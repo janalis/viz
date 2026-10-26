@@ -18,6 +18,7 @@ use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Render\Work;
+use Janalis\Viz\Source\Unsupported;
 use PHPUnit\Framework\TestCase;
 
 final class ClassDrawingTest extends TestCase
@@ -688,5 +689,29 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([198.0, 209.0], $size("package P {\nclass A\n}\nnote left of P : left\nnote top of P : top\nclass B\nB --> A"));
         $this->assertSame([147.0, 212.0], $size("package P {\nclass A\n}\nnote bottom of P\n  two\n  lines\nend note"));
         $this->assertSame([164.0, 73.0], $size("package P {\n}\nnote right of P : on empty"));
+    }
+
+    public function testContainersStandAsTheirSymbolsDrawThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: as a description diagram's containers, a folder rounded, a card's title ruled off, a hexagon taken as its path; an empty package laid out with dot.
+        $this->assertSame([127.0, 135.0], $size("node N {\nclass A\n}"));
+        $this->assertSame([95.0, 242.0], $size("folder F {\nclass A\n}\nframe G {\nclass B\n}\nA --> B"));
+        $this->assertSame([107.0, 269.0], $size("cloud C {\nclass A\n}\ndatabase D {\nclass B\n}\nA --> B"));
+        $this->assertSame([580.0, 121.0], $size("artifact K {\nclass A\n}\nfile X {\nclass B\n}\nstorage S {\nclass C\n}\nqueue Q {\nclass D\n}\nstack T {\nclass E\n}\nhexagon H {\nclass F\n}"));
+        $this->assertSame([96.0, 136.0], $size("card \"Two\\nlines\" as X {\nclass A\n}"));
+        $this->assertSame([49.0, 73.0], $size("package P {\n}"));
+    }
+
+    public function testAnEmptyContainerOfASymbolIsLeftToPlantUml(): void
+    {
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw an empty frame such as F'));
+
+        Work::run(PlantUmlPipeline::native()->drawing("@startuml\nframe F {\n}\nclass A\n@enduml"));
     }
 }

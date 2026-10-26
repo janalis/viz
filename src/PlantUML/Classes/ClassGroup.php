@@ -9,6 +9,8 @@ final class ClassGroup
 {
     public ?string $stereotype = null;
     public ?string $color = null;
+    /** The symbol it is declared as, `node N {` and the rest; null for a package or a namespace. */
+    public ?string $symbol = null;
 
     public function __construct(
         public readonly string $id,

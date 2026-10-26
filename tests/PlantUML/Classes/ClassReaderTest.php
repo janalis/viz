@@ -314,6 +314,7 @@ final class ClassReaderTest extends TestCase
         yield 'unsupported before a refusal' => ["class A\nmap o {\n a *-> A\n}\nentity E\nclass E", 'PlantUML cannot declare E again as class'];
         yield 'note alone' => ["note left : alone\nclass A", 'The PlantUML note has no entity to stand beside: note left : alone'];
         yield 'note on no link' => ["class A\nnote on link : alone", 'The PlantUML note has no link to stand on: note on link : alone'];
+        yield 'url' => ["class A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];
         yield 'kind changed' => ["entity E\nclass E", 'PlantUML cannot declare E again as class'];
     }
 

@@ -96,7 +96,7 @@ final class ClassReader
             'CommandAddMethod' => $this->member($command),
             'CommandLinkClass' => $this->link($command),
             'CommandStereotype' => self::stereotyped($this->entity((string) $command->get('NAME')), (string) $command->get('STEREO')),
-            'CommandPackage', 'CommandNamespace', 'CommandNamespace2', 'CommandTogether' => $this->open[] = $this->group($command),
+            'CommandPackage', 'CommandNamespace', 'CommandNamespace2', 'CommandTogether', 'CommandPackageWithUSymbol' => $this->open[] = $this->group($command),
             'CommandPackageEmpty', 'CommandNamespaceEmpty' => $this->group($command),
             'CommandEndPackage' => \array_pop($this->open),
             'CommandFactoryNote$1', 'CommandFactoryNote$2' => $this->floating($command),
@@ -392,8 +392,8 @@ final class ClassReader
     private function group(PlantUmlCommand $command): string
     {
         $together = 'CommandTogether' === $command->name;
-        $display = $together ? '' : \trim($command->get('NAME') ?? $command->get('DISPLAY') ?? '', characters: '"');
-        $id = $together ? 'together#'.\count($this->groups) : self::clean($command->get('AS') ?? $command->get('CODE') ?? $display);
+        $display = $together ? '' : \trim($command->get('NAME') ?? $command->lazy('DISPLAY') ?? $command->lazy('CODE') ?? '', characters: '"');
+        $id = $together ? 'together#'.\count($this->groups) : self::clean($command->get('AS') ?? $command->lazy('CODE') ?? $display);
         $parent = [] === $this->open ? null : $this->open[\count($this->open) - 1];
         if (!$together && null !== $this->separator && \str_contains($id, $this->separator)) {
             // As PlantUML, a package named by a path stands in the packages it names, its name the path's last part.
@@ -409,7 +409,10 @@ final class ClassReader
             $this->pathOf[$id] = $path;
         }
         $group = $this->groups[$id] ?? new ClassGroup($id, $display, $together ? 'together' : 'package', $parent);
-        $group->stereotype = $command->get('STEREOTYPE') ?? $group->stereotype;
+        $group->stereotype = $command->lazy('STEREOTYPE') ?? $group->stereotype;
+        // As PlantUML, a container declared by its symbol, a package drawn so.
+        $symbol = \strtolower((string) $command->get('SYMBOL'));
+        $group->symbol = \in_array($symbol, ['', 'package'], strict: true) ? $group->symbol : $symbol;
         $group->color = $command->get('COLOR') ?? $group->color;
         $this->groups[$id] = $group;
 

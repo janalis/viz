@@ -12,7 +12,6 @@ use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionDrawing;
-use Janalis\Viz\PlantUML\Descriptions\DescriptionShapes;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
@@ -25,6 +24,7 @@ use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Svek\LineOfSegments;
 use Janalis\Viz\PlantUML\Svek\Squares;
 use Janalis\Viz\PlantUML\Svek\Svek;
+use Janalis\Viz\Source\Unsupported;
 
 /**
  * A native class diagram laid out as svek lays it out and drawn as PlantUML draws it:
@@ -72,8 +72,8 @@ final class ClassDrawing
         $placement = $placing->getReturn();
 
         // As PlantUML is seen to leave a lone class, which it lays out without dot, 2 less room past it, and to measure it without its type parameters.
-        // A classifier removed still counts, as PlantUML counts its leaves.
-        $alone = 1 === \count($placement->graph->nodes) && [] === $placement->graph->clusters && \count($classes->entities) <= 1;
+        // A classifier removed still counts, as PlantUML counts its leaves; a package, empty or not, makes it laid out.
+        $alone = 1 === \count($placement->graph->nodes) && [] === $classes->groups && \count($classes->entities) <= 1;
         $marks = $drawing->paint($placement);
         if ($alone && [] !== $drawing->notes) {
             // As PlantUML draws a lone note: as its box 7 in from its sides.
@@ -120,6 +120,9 @@ final class ClassDrawing
                 continue;
             }
             if (!\array_key_exists($group->id, $held)) {
+                if (null !== $group->symbol) {
+                    throw new Unsupported('The native PlantUML renderer does not draw an empty '.$group->symbol.' such as '.$group->id);
+                }
                 // As PlantUML's `EntityImageEmptyPackage`, a package holding nothing is a node: its title, as tall as two of its lines at least, 10 inside its sides.
                 [$width, $height] = PlantUmlText::styled(
                     ClassReader::split('' === $group->display ? $group->id : $group->display),
@@ -129,7 +132,7 @@ final class ClassDrawing
                 $svek->node($group->id, $width + 20, (2 * $height) + 20, $group->parent);
                 continue;
             }
-            [$shapeWidth, $shapeHeight] = DescriptionDrawing::SHAPE_ROOM[self::symbol($group)] ?? [0.0, 0.0];
+            [$shapeWidth, $shapeHeight] = DescriptionDrawing::SHAPE_ROOM[ClassPackage::symbol($group)] ?? [0.0, 0.0];
             $svek->cluster($group->id, $group->parent, ...Svek::label(...$title->size(), shapeWidth: $shapeWidth, shapeHeight: $shapeHeight));
         }
         $linked = [];
@@ -238,18 +241,6 @@ final class ClassDrawing
         return self::ANCHOR_PREFIX.$id;
     }
 
-    /** The symbol a package's stereotype draws it as, as PlantUML's `USymbols` reads it: its name, lower case; `package` for any other. */
-    private static function symbol(ClassGroup $group): string
-    {
-        foreach (ClassReader::stereotypes((string) $group->stereotype) as $stereotype) {
-            if (\in_array(\strtolower($stereotype), ['node', 'cloud', 'database', 'rectangle'], strict: true)) {
-                return \strtolower($stereotype);
-            }
-        }
-
-        return 'package';
-    }
-
     /** A link's middle label: its text, and any note on the link below it. */
     private function label(int $index): LinkLabel
     {
@@ -288,18 +279,26 @@ final class ClassDrawing
         foreach ($placement->graph->clusters as $cluster) {
             $group = $this->classes->groups[$cluster->name] ?? null;
             if (null !== $group && 'together' !== $group->type) {
-                $this->package($group, $cluster->x0, $cluster->y0, $cluster->x1, $cluster->y1);
+                \array_push($this->marks, ...ClassPackage::marks($group, $this->classes->document->styles, $cluster->x0, $cluster->y0, $cluster->x1, $cluster->y1));
             }
         }
         foreach (\array_keys($this->empty) as $id) {
             $node = $placement->endpoints[$id];
-            $this->package($this->classes->groups[$id], $node->x - ($node->w / 2), $node->y - ($node->h / 2), $node->x + ($node->w / 2), $node->y + ($node->h / 2), [
-                'root',
-                'element',
-                'classDiagram',
-                'package',
-                'title',
-            ]);
+            \array_push($this->marks, ...ClassPackage::marks(
+                $this->classes->groups[$id],
+                $this->classes->document->styles,
+                $node->x - ($node->w / 2),
+                $node->y - ($node->h / 2),
+                $node->x + ($node->w / 2),
+                $node->y + ($node->h / 2),
+                [
+                    'root',
+                    'element',
+                    'classDiagram',
+                    'package',
+                    'title',
+                ],
+            ));
         }
         $this->push($placement);
         foreach ($this->edges as $index => $edge) {
@@ -364,70 +363,6 @@ final class ClassDrawing
 
         // Alone, laid out without dot, a box is taken at its size, as PlantUML takes its image's.
         return \array_map(static fn (Mark $mark): Mark => Outline::Box === $mark->outline && MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => Outline::Block]) : $mark, $marks);
-    }
-
-    /** A package: its frame with the tab its title sits in. */
-    /** @param list<string> $signature the style it is drawn in: a package's, or an empty one's, drawn as an element */
-    private function package(ClassGroup $group, float $x0, float $y0, float $x1, float $y1, array $signature = ['root', 'element', 'group', 'package']): void
-    {
-        $style = $this->classes->document->styles->style($signature, null === $group->stereotype ? [] : ClassReader::stereotypes($group->stereotype));
-        $title = PlantUmlText::styled(ClassReader::split('' === $group->display ? $group->id : $group->display), $this->classes->document->styles->style(['root', 'element', 'package', 'title']));
-        [$width, $height] = $title->size();
-        $symbol = self::symbol($group);
-        if (\in_array($symbol, ['node', 'cloud', 'database'], strict: true)) {
-            // As PlantUML draws a package so marked, as a description diagram's container: its symbol's outline, its title centred at its top.
-            $box = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'group', $symbol]);
-            \array_push(
-                $this->marks,
-                ...DescriptionShapes::outline(
-                    $symbol,
-                    $x0,
-                    $y0,
-                    $x1 - $x0,
-                    $y1 - $y0,
-                    $box->color('LineColor', '#181818'),
-                    ClassColors::back($group->color) ?? 'none',
-                    $box->number('LineThickness', 1.0),
-                    0.0,
-                    $title->size(),
-                ),
-            );
-            \array_push($this->marks, ...$title->marks($x0 + ('node' === $symbol ? -4.0 : 0.0), $y0 + DescriptionDrawing::TITLE_TOPS[$symbol], $x1 - $x0));
-
-            return;
-        }
-        if ('rectangle' === $symbol) {
-            // As PlantUML's `USymbolRectangle` draws a package so marked: a box, its title centred 2 below its top.
-            $box = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'group', 'rectangle']);
-            $this->marks[] = ClassBox::rectangle(
-                $x0,
-                $y0,
-                $x1 - $x0,
-                $y1 - $y0,
-                $box->color('LineColor', '#181818'),
-                ClassColors::back($group->color) ?? $box->color('BackGroundColor', 'none'),
-                $box->number('LineThickness', 1.0),
-                $box->number('RoundCorner', 5.0),
-            );
-            \array_push($this->marks, ...$title->marks($x0, $y0 + 2, $x1 - $x0));
-
-            return;
-        }
-        $tab = $height + 6;
-        $line = $style->color('LineColor', '#000000');
-        $stroke = $style->number('LineThickness', 1.5);
-        $back = ClassColors::back($group->color) ?? $style->color('BackGroundColor', 'none');
-        $this->marks[] = new Mark(
-            MarkKind::Polygon,
-            [[$x0, $y0], [$x0 + $width + 12, $y0], [$x0 + $width + 12, $y0 + $tab], [$x1, $y0 + $tab], [$x1, $y1], [$x0, $y1]],
-            stroke: $line,
-            fill: $back,
-            strokeWidth: $stroke,
-            // As PlantUML, which draws it as a path, its limit finder taking it as it runs.
-            outline: Outline::Path,
-        );
-        $this->marks[] = new Mark(MarkKind::Polyline, [[$x0, $y0 + $tab], [$x0 + $width + 12, $y0 + $tab]], stroke: $line, strokeWidth: $stroke);
-        \array_push($this->marks, ...$title->marks($x0 + 4, $y0 + 2, $width));
     }
 
     private function link(PlantUmlLink $link, Placement $placement, int $edge, int $index): void
