@@ -99,14 +99,17 @@ final class StateDrawing
             }
             $box = StateBox::of($node, $this->states);
             $boxes[$node->id] = $box;
-            if (!\in_array($node->kind, ['entry', 'exit'], strict: true)) {
+            $input = StateBox::BORDER[$node->kind] ?? null;
+            if (null === $input) {
                 $svek->node($node->id, $box->width, $box->height, $cluster);
                 continue;
             }
             if (null === $cluster) {
-                throw new Unsupported('The native PlantUML renderer draws entry and exit points only on a composite state a transition crosses into');
+                throw new Unsupported('The native PlantUML renderer draws points and pins only on a composite state a transition crosses into');
             }
-            $svek->border($node->id, $cluster, 'entry' === $node->kind, $box->nameWidth());
+            \in_array($node->kind, ['entry', 'exit'], strict: true)
+                ? $svek->border($node->id, $cluster, $input, $box->nameWidth())
+                : $svek->pin($node->id, $cluster, $input, $box->width, $box->height);
             $shifts[$node->id] = $svek->shift($node->id);
         }
         $notes = $this->notes($svek, $placed, $group, $region);
@@ -186,7 +189,7 @@ final class StateDrawing
     {
         [$from, $to] = [$this->states->nodes[$from], $this->states->nodes[$to]];
 
-        return $from->group === $to->group && \in_array($from->kind, ['entry', 'exit'], strict: true) && \in_array($to->kind, ['entry', 'exit'], strict: true);
+        return $from->group === $to->group && \array_key_exists($from->kind, StateBox::BORDER) && \array_key_exists($to->kind, StateBox::BORDER);
     }
 
     /** Whether no transition joins a state inside a composite state to one outside it, and no point stands on its border. */
@@ -198,7 +201,7 @@ final class StateDrawing
             }
         }
         foreach ($this->states->nodes as $node) {
-            if ($node->group === $composite && \in_array($node->kind, ['entry', 'exit'], strict: true)) {
+            if ($node->group === $composite && \array_key_exists($node->kind, StateBox::BORDER)) {
                 return false;
             }
         }

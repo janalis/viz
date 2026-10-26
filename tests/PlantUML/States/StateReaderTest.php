@@ -178,7 +178,7 @@ final class StateReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
-        yield 'input pin' => ['state E <<inputPin>>', 'The native PlantUML renderer does not draw <<inputPin>> states'];
+        yield 'sdl receive' => ['state E <<sdlReceive>>', 'The native PlantUML renderer does not draw <<sdlReceive>> states'];
         yield 'region outside' => ["state A\n--", 'A PlantUML region separator stands outside any composite state'];
         yield 'namespaced' => ['state a.b', 'The native PlantUML renderer does not draw namespaced names such as a.b'];
         yield 'frame' => ["frame F {\n}", 'The native PlantUML renderer does not draw: frame F {'];

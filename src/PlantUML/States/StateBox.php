@@ -22,6 +22,9 @@ use Janalis\Viz\PlantUML\Style\Style;
  */
 final readonly class StateBox
 {
+    /** The kinds of state PlantUML puts on a composite state's border, each true for an input, false for an output. */
+    public const array BORDER = ['entry' => true, 'exit' => false, 'inputpin' => true, 'outputpin' => false, 'expansioninput' => true, 'expansionoutput' => false];
+
     private const float MARGIN = 5.0;
 
     private function __construct(
@@ -45,7 +48,8 @@ final readonly class StateBox
         $line = !($states->hideEmptyDescription && [] === $node->description);
         [$width, $height] = match ($node->kind) {
             'start' => [20.0, 20.0],
-            'entry', 'exit' => [12.0, 12.0],
+            'entry', 'exit', 'inputpin', 'outputpin' => [12.0, 12.0],
+            'expansioninput', 'expansionoutput' => Direction::LeftRight === $states->direction ? [12.0, 48.0] : [48.0, 12.0],
             'end', 'history', 'deephistory' => [22.0, 22.0],
             'choice' => [24.0, 24.0],
             'fork', 'join' => Direction::LeftRight === $states->direction ? [8.0, 80.0] : [80.0, 8.0],
@@ -87,6 +91,9 @@ final readonly class StateBox
             // As PlantUML draws a point on a composite state's border: a circle 12 across, an exit's crossed about a centre half a point off.
             'entry' => [self::disc($cx, $cy, 6.0, $line, $back, 1.5)],
             'exit' => [self::disc($cx, $cy, 6.0, $line, $back, 1.5), ...self::cross($x + 6.5, $y + 6.5, $line)], // As PlantUML: its letter at 14 points, its line centred on the circle.
+            // As PlantUML draws a pin, a square 12 across, and an expansion, four such squares in a row along the composite's side.
+            'inputpin', 'outputpin' => [ClassBox::rectangle($x, $y, $this->width, $this->height, $line, $back, 1.5, 0.0)],
+            'expansioninput', 'expansionoutput' => [ClassBox::rectangle($x, $y, $this->width, $this->height, $line, $back, 1.5, 0.0), ...self::dividers($x, $y, $this->width, $this->height, $line)],
             'history', 'deephistory' => [
                 self::disc($cx, $cy, 11.0, $line, $back),
                 ...new PlantUmlText(['history' === $this->node->kind ? 'H' : 'H*'])->marks($x, $cy - (PlantUmlText::lineHeight(14.0) / 2), $this->width),
@@ -129,6 +136,18 @@ final readonly class StateBox
         return new Mark(MarkKind::Polygon, $points, stroke: $stroke, fill: $fill, strokeWidth: $width, outline: Outline::Ellipse);
     }
 
+    /** @return list<Mark> an expansion's three dividers, 12 apart across a row of squares 12 across */
+    private static function dividers(float $x, float $y, float $width, float $height, string $line): array
+    {
+        $row = $width > $height;
+        $marks = [];
+        foreach ([12.0, 24.0, 36.0] as $step) {
+            $marks[] = new Mark(MarkKind::Polyline, $row ? [[$x + $step, $y], [$x + $step, $y + 12.0]] : [[$x, $y + $step], [$x + 12.0, $y + $step]], stroke: $line, strokeWidth: 1.5);
+        }
+
+        return $marks;
+    }
+
     /** @return list<Mark> an exit's cross, its two diagonals 5.5 either side of a centre */
     private static function cross(float $x, float $y, string $line): array
     {
@@ -148,7 +167,7 @@ final readonly class StateBox
     }
 
     /**
-     * A point's name as PlantUML sets it, centred on the point: 12 above it when it stands above its frame's middle, else 12 below.
+     * A point's name as PlantUML sets it, centred on the point's first 12 across: 12 above it when it stands above its frame's middle, else 12 below its top.
      *
      * @return list<Mark>
      */
@@ -157,6 +176,6 @@ final readonly class StateBox
         $name = PlantUmlText::styled($this->node->display, $this->style);
         [$width, $height] = $name->size();
 
-        return $name->marks($x - (($width - $this->width) / 2), $y < $middle ? $y - $this->height - $height : $y + $this->height, $width);
+        return $name->marks($x - (($width - 12.0) / 2), $y < $middle ? $y - 12.0 - $height : $y + 12.0, $width);
     }
 }

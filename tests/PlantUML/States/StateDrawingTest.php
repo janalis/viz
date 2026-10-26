@@ -227,8 +227,65 @@ final class StateDrawingTest extends TestCase
         // Numbered states stand as any others.
         $this->assertSame([104.0, 376.0], $size("state 1 {\n state 2 <<entryPoint>>\n state 4 <<exitPoint>>\n 2 --> 3\n 3 --> 4\n}\n[*] --> 2\n4 --> [*]"));
 
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer draws entry and exit points only on a composite state a transition crosses into'));
+        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer draws points and pins only on a composite state a transition crosses into'));
         self::draw("state p1 <<entryPoint>>\nA --> p1");
+    }
+
+    public function testPinsAndExpansionsStandOnACompositesBorderAsPlantUmlDrawsThem(): void
+    {
+        $at = static fn (Mark $mark): array => [
+            \round(\min(\array_column($mark->points, 0)) / Units::POINT, precision: 3),
+            \round(\min(\array_column($mark->points, 1)) / Units::POINT, precision: 3),
+            \round(\max(\array_column($mark->points, 0)) / Units::POINT, precision: 3),
+            \round(\max(\array_column($mark->points, 1)) / Units::POINT, precision: 3),
+        ];
+        $thick = static fn (Drawing $drawing, MarkKind $kind): array => \array_values(\array_map($at, \array_filter(
+            $drawing->marks,
+            static fn (Mark $mark): bool => $kind === $mark->kind && (1.5 * Units::POINT) === $mark->strokeWidth,
+        )));
+
+        // As the jar draws them: a pin a square 12 across, an expansion four in a row with three dividers, each written to svek as a plain rectangle its size.
+        $pins = self::draw("state Somp {\n  state in1 <<inputPin>>\n  state out1 <<outputPin>>\n  in1 --> A\n  A --> out1\n}\n[*] --> in1\nout1 --> [*]");
+        $this->assertSame([104.0, 376.0], [$pins->width / Units::POINT, $pins->height / Units::POINT]);
+        $this->assertSame(
+            [
+                [42.0, 86.0,  54.0, 98.0],
+                [42.0, 268.0, 54.0, 280.0],
+            ],
+            $thick($pins, MarkKind::Polygon),
+        );
+        $expansions = self::draw("state Somp {\n  state ex1 <<expansionInput>>\n  state ex2 <<expansionOutput>>\n  ex1 --> A\n  A --> ex2\n}\n[*] --> ex1\nex2 --> [*]");
+        $this->assertSame([104.0, 376.0], [$expansions->width / Units::POINT, $expansions->height / Units::POINT]);
+        $this->assertSame(
+            [
+                [24.0, 86.0,  72.0, 98.0],
+                [24.0, 268.0, 72.0, 280.0],
+            ],
+            $thick($expansions, MarkKind::Polygon),
+        );
+        $this->assertSame([36.0, 86.0, 36.0, 98.0], $thick($expansions, MarkKind::Polyline)[0]);
+        $names = \array_values(\array_filter($expansions->marks, static fn (Mark $mark): bool => 'ex1' === $mark->text));
+        $this->assertEqualsWithDelta(17.381, ($names[0]->points[0][0] / Units::POINT) - (25.238 / 2), 0.01);
+
+        // Turned, an expansion stands upright, its dividers across; a long name widens the drawing.
+        $turned = self::draw("left to right direction\nstate Somp {\n  state ex1 <<expansionInput>>\n  state ex2 <<outputPin>>\n  ex1 --> A\n  A --> ex2\n}\n[*] --> ex1\nex2 --> [*]");
+        $this->assertSame([376.0, 122.0], [$turned->width / Units::POINT, $turned->height / Units::POINT]);
+        $this->assertSame(
+            [
+                [86.0,  43.0, 98.0,  91.0],
+                [268.0, 61.0, 280.0, 73.0],
+            ],
+            $thick($turned, MarkKind::Polygon),
+        );
+        $this->assertSame([86.0, 55.0, 98.0, 55.0], $thick($turned, MarkKind::Polyline)[0]);
+        $long = self::draw("state Somp {\n  state inputWithAVeryLongName <<inputPin>>\n  inputWithAVeryLongName --> A\n}\n[*] --> inputWithAVeryLongName");
+        $this->assertSame([198.0, 238.0], [$long->width / Units::POINT, $long->height / Units::POINT]);
+        $this->assertSame([436.0, 156.0], [
+            ($wide = self::draw(
+                "left to right direction\nstate Big {\n  state p1 <<inputPin>>\n  state p2 <<inputPin>>\n  state x1 <<expansionOutput>>\n  p1 --> A\n  p2 --> A\n  A --> x1\n}\nS1 --> p1\nS2 --> p2\nx1 --> E",
+            ))->width / Units::POINT,
+            $wide->height / Units::POINT,
+        ]);
     }
 
     private static function read(string $lines): PlantUmlStates

@@ -34,6 +34,10 @@ final class StateReader
         'history*' => 'deephistory',
         'entrypoint' => 'entry',
         'exitpoint' => 'exit',
+        'inputpin' => 'inputpin',
+        'outputpin' => 'outputpin',
+        'expansioninput' => 'expansioninput',
+        'expansionoutput' => 'expansionoutput',
     ];
 
     /** @var array<string, StateNode> */
@@ -98,7 +102,7 @@ final class StateReader
         $stereotypes = ClassReader::stereotypes((string) $command->get('STEREOGROUP'));
         foreach ($stereotypes as $stereotype) {
             $kind = self::KINDS[\strtolower($stereotype)] ?? null;
-            if (null === $kind && \in_array(\strtolower($stereotype), ['inputpin', 'outputpin', 'expansioninput', 'expansionoutput', 'sdlreceive'], strict: true)) {
+            if (null === $kind && 'sdlreceive' === \strtolower($stereotype)) {
                 throw new Unsupported('The native PlantUML renderer does not draw <<'.$stereotype.'>> states');
             }
             $state->kind = $kind ?? $state->kind;

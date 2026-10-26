@@ -107,6 +107,17 @@ final class Svek
         $this->bordered[$cluster] = true;
     }
 
+    /**
+     * A pin or an expansion on a cluster's border, as svek writes one: a rectangle its own
+     * size, ranked first in the cluster for an input or last for an output, with no port.
+     */
+    public function pin(string $id, string $cluster, bool $input, float $width, float $height): void
+    {
+        $this->nodes[$id] = [$id, $width, $height, $cluster];
+        $this->borders[$id] = $input;
+        $this->bordered[$cluster] = true;
+    }
+
     /** How far right of where its links end svek reads a point on a border to stand, from its port's column. */
     public function shift(string $id): float
     {
@@ -212,7 +223,7 @@ final class Svek
 
         // A point written as a port has its links end at its port's square, which dot keeps at its centre.
         $endpoints = $placement->endpoints;
-        foreach (\array_keys($this->borders) as $id) {
+        foreach (\array_keys($this->ports) as $id) {
             $endpoints[$id] = $endpoints[$id]->sized(12.0, 12.0);
         }
 
