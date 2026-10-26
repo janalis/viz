@@ -147,6 +147,15 @@ final class DotEngineTest extends TestCase
         $this->assertGreaterThanOrEqual(215.0, $placement->endpoints['c']->x - ($placement->labels[0][0] - 38.5));
     }
 
+    public function testAFlatEdgeKeepsItsEndsTogetherAsDotDoes(): void
+    {
+        // As dot sets b -> n laid side by side with a -> b, b -> c, a -> c: n just right of b, a's long edge past it.
+        $graph = Work::run(new DotParser()->parse('digraph { node [shape=rect,width=0.6,height=0.4,label=""]; b -> n [minlen=0]; a -> b; b -> c; a -> c; }'));
+        $at = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)))->endpoints;
+
+        $this->assertEqualsWithDelta([61.0, 55.0, 55.0], [$at['n']->x - $at['b']->x, $at['a']->x - $at['b']->x, $at['c']->x - $at['b']->x], 0.5);
+    }
+
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

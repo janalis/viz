@@ -87,7 +87,9 @@ final class DotFlatOrder
     }
 
     /**
-     * Items in an order every flat edge among them agrees with, each as early as it can stand.
+     * Items in an order every flat edge among them agrees with, as dot is seen to reorder them:
+     * each as early as it can stand, and after it at once those its flat edges lead to, as soon
+     * as nothing else must come before them, depth first.
      *
      * @param list<list<int>> $items
      * @return list<list<int>>
@@ -96,19 +98,35 @@ final class DotFlatOrder
     {
         $ordered = [];
         while ([] !== $items) {
-            foreach ($items as $index => $item) {
-                $blocked = false;
-                foreach ($items as $before => $other) {
-                    $blocked = $blocked || ($before !== $index && $this->keeps($other, $item));
-                }
-                if (!$blocked) {
-                    break;
-                }
+            $free = \array_filter(\array_keys($items), fn (int $candidate): bool => !$this->blocked($items, $candidate));
+            // Pushed only once nothing must come before it, an item is never pushed twice.
+            $stack = [[] === $free ? \array_key_first($items) : $free[\array_key_first($free)]];
+            while ([] !== $stack) {
+                $current = \array_pop($stack);
+                $item = $items[$current];
+                $ordered[] = $item;
+                unset($items[$current]);
+                $next = \array_keys(\array_filter($items, fn (array $other, int $at): bool => $this->keeps($item, $other) && !$this->blocked($items, $at), \ARRAY_FILTER_USE_BOTH));
+                \array_push($stack, ...\array_reverse($next));
             }
-            $ordered[] = $items[$index];
-            unset($items[$index]);
         }
 
         return $ordered;
+    }
+
+    /**
+     * Whether an item must wait for another still to be placed.
+     *
+     * @param array<int, list<int>> $items
+     */
+    private function blocked(array $items, int $index): bool
+    {
+        foreach ($items as $before => $other) {
+            if ($before !== $index && $this->keeps($other, $items[$index])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -374,7 +374,7 @@ final class DotOrdering
                 break;
             }
             $exchange = $medians[$left] > $medians[$right] || (Ties::Exchange === $ties && $medians[$left] === $medians[$right]);
-            if ($exchange && !$this->flat->keeps($items[$left], $items[$right])) {
+            if ($exchange && !$this->held($items, $left, $right)) {
                 [$items[$left], $items[$right]] = [$items[$right], $items[$left]];
                 [$medians[$left], $medians[$right]] = [$medians[$right], $medians[$left]];
                 $changed = true;
@@ -383,6 +383,23 @@ final class DotOrdering
         }
 
         return $changed;
+    }
+
+    /**
+     * Whether a flat edge keeps two items in their order, or either in its place against those
+     * between them, which swapping them would jump over.
+     *
+     * @param list<list<int>> $items
+     */
+    private function held(array $items, int $left, int $right): bool
+    {
+        for ($between = $left + 1; $between <= $right; ++$between) {
+            if ($this->flat->keeps($items[$left], $items[$between]) || $this->flat->keeps($items[$between - 1], $items[$right])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Swaps neighbouring items wherever that removes crossings, or keeps them equal when exchanging ties, until no swap helps. */

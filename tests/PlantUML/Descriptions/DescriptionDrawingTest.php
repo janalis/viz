@@ -282,4 +282,12 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([144.0, 287.0], $size("package P {\n [A]\n}\npackage Q {\n [B]\n}\nP --> Q"));
         $this->assertSame([160.0, 343.0], $size("rectangle R {\n actor U\n}\nfolder F {\n [C]\n}\nR ..> F : uses"));
     }
+
+    public function testANoteBesideAnElementStandsNextToItAsPlantUmlSetsIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n[A] --> [B]\n[B] --> [C]\nnote right of [B] : a note\n[A] --> [C]\n@enduml"));
+
+        // As the jar sets it: the note just right of B, A's link to C past it.
+        $this->assertSame([188.0, 280.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
 }
