@@ -617,6 +617,20 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([279.0, 70.0], $size("class A\nclass B\nclass C\nnote right of A : n"));
     }
 
+    public function testPackagesMarkedAsSymbolsAreDrawnAsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [\round($drawing->width / Units::POINT, precision: 3), \round($drawing->height / Units::POINT, precision: 3)];
+        };
+
+        // As the jar draws them: a node, a cloud and a database each its own outline, the room its shape takes kept.
+        $this->assertSame([125.0, 135.0], $size("package B <<Node>> {\n class Y\n}"));
+        $this->assertSame([103.0, 127.0], $size("package C <<Cloud>> {\n class Z\n}"));
+        $this->assertSame([105.0, 145.0], $size("package E <<Database>> {\n class V\n}"));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

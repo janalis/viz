@@ -71,10 +71,10 @@ final class DescriptionDrawing
     }
 
     /** The room PlantUML's symbols keep around a container's title for their shape: a node's depth, a database's lid. */
-    private const array SHAPE_ROOM = ['node' => [60.0, 5.0], 'database' => [0.0, 15.0]];
+    public const array SHAPE_ROOM = ['node' => [60.0, 5.0], 'database' => [0.0, 15.0]];
 
     /** How far below a container's top its title stands, where PlantUML sets it lower than in a plain box: 11 more, 20 under a database's lid, 5 in storage. */
-    private const array TITLE_TOPS = ['node' => 13.0, 'cloud' => 13.0, 'component' => 13.0, 'stack' => 13.0, 'database' => 22.0, 'storage' => 7.0];
+    public const array TITLE_TOPS = ['node' => 13.0, 'cloud' => 13.0, 'component' => 13.0, 'stack' => 13.0, 'database' => 22.0, 'storage' => 7.0];
 
     private function graph(): Svek
     {

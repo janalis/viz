@@ -10,6 +10,8 @@ use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\PlantUML\Descriptions\DescriptionDrawing;
+use Janalis\Viz\PlantUML\Descriptions\DescriptionShapes;
 use Janalis\Viz\PlantUML\Draw\BoxClip;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
@@ -123,7 +125,8 @@ final class ClassDrawing
                 $svek->node($group->id, $width + 20, (2 * $height) + 20, $group->parent);
                 continue;
             }
-            $svek->cluster($group->id, $group->parent, ...Svek::label(...$title->size()));
+            [$shapeWidth, $shapeHeight] = DescriptionDrawing::SHAPE_ROOM[self::symbol($group)] ?? [0.0, 0.0];
+            $svek->cluster($group->id, $group->parent, ...Svek::label(...$title->size(), shapeWidth: $shapeWidth, shapeHeight: $shapeHeight));
         }
         $linked = [];
         foreach ($this->classes->links as $link) {
@@ -214,6 +217,18 @@ final class ClassDrawing
         }
 
         return self::ANCHOR_PREFIX.$id;
+    }
+
+    /** The symbol a package's stereotype draws it as, as PlantUML's `USymbols` reads it: its name, lower case; `package` for any other. */
+    private static function symbol(ClassGroup $group): string
+    {
+        foreach (ClassReader::stereotypes((string) $group->stereotype) as $stereotype) {
+            if (\in_array(\strtolower($stereotype), ['node', 'cloud', 'database', 'rectangle'], strict: true)) {
+                return \strtolower($stereotype);
+            }
+        }
+
+        return 'package';
     }
 
     /** A link's middle label: its text, and any note on the link below it. */
@@ -333,7 +348,30 @@ final class ClassDrawing
         $style = $this->classes->document->styles->style($signature, null === $group->stereotype ? [] : ClassReader::stereotypes($group->stereotype));
         $title = PlantUmlText::styled(ClassReader::split('' === $group->display ? $group->id : $group->display), $this->classes->document->styles->style(['root', 'element', 'package', 'title']));
         [$width, $height] = $title->size();
-        if (\in_array('rectangle', \array_map(\strtolower(...), ClassReader::stereotypes((string) $group->stereotype)), strict: true)) {
+        $symbol = self::symbol($group);
+        if (\in_array($symbol, ['node', 'cloud', 'database'], strict: true)) {
+            // As PlantUML draws a package so marked, as a description diagram's container: its symbol's outline, its title centred at its top.
+            $box = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'group', $symbol]);
+            \array_push(
+                $this->marks,
+                ...DescriptionShapes::outline(
+                    $symbol,
+                    $x0,
+                    $y0,
+                    $x1 - $x0,
+                    $y1 - $y0,
+                    $box->color('LineColor', '#181818'),
+                    ClassColors::back($group->color) ?? 'none',
+                    $box->number('LineThickness', 1.0),
+                    0.0,
+                    $title->size(),
+                ),
+            );
+            \array_push($this->marks, ...$title->marks($x0 + ('node' === $symbol ? -4.0 : 0.0), $y0 + DescriptionDrawing::TITLE_TOPS[$symbol], $x1 - $x0));
+
+            return;
+        }
+        if ('rectangle' === $symbol) {
             // As PlantUML's `USymbolRectangle` draws a package so marked: a box, its title centred 2 below its top.
             $box = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'group', 'rectangle']);
             $this->marks[] = ClassBox::rectangle(
