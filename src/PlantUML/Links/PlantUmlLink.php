@@ -27,6 +27,9 @@ final class PlantUmlLink
     public ?float $weight = null;
     /** The stereotype written after the link, such as `include` in `A ..> B <<include>>`. */
     public ?string $stereotype = null;
+    /** The qualifier written at its first end, as `A [key] --> B`, and at its second. */
+    public ?string $fromQualifier = null;
+    public ?string $toQualifier = null;
 
     /** @param int $length the dashes in the arrow, 1 for a link drawn across */
     public function __construct(
@@ -46,6 +49,7 @@ final class PlantUmlLink
         $link->bold = $this->bold;
         $link->reversed = !$this->reversed;
         [$link->firstLabel, $link->secondLabel] = [$this->secondLabel, $this->firstLabel];
+        [$link->fromQualifier, $link->toQualifier] = [$this->toQualifier, $this->fromQualifier];
 
         return $link;
     }

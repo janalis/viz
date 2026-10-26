@@ -39,6 +39,9 @@ final class Svek
     private const int PORTED = 40;
     /** The prefix of the point svek puts in a cluster that holds nothing but the points on its border. */
     private const string EMPTY = "\0e:";
+    /** The room dot is seen to give the empty cells across either side of a node written as a table, and above and below it. */
+    private const float TABLE_SIDE = 8.0;
+    private const float TABLE_TOP = 4.0;
 
     /** @var array<string, array{string, float, float, ?string}> by id, which each carries, as a numeric one would not stay a string key */
     private array $nodes = [];
@@ -60,6 +63,8 @@ final class Svek
     private array $ports = [];
     /** @var array<string, true> the clusters with points on their border */
     private array $bordered = [];
+    /** @var array<string, array{float, float, float, float}> the room svek keeps around a node, as its table's cells about the node's own: top, right, bottom and left */
+    private array $margins = [];
 
     /** A node, with the outline links stop at, as `BoxClip` names it: `oval`, `diamond` or `box`. */
     public function node(string $id, float $width, float $height, ?string $cluster = null, string $shape = 'box'): void
@@ -70,6 +75,17 @@ final class Svek
             'diamond' => Shape::Diamond,
             default => Shape::Box,
         };
+    }
+
+    /**
+     * Room kept around a node, as svek keeps it for a link's qualifier: the node written as a
+     * table, the node's own box a cell with a port its links end at, cells of that room around
+     * it. Room asked for twice is the more of the two on each side.
+     */
+    public function margins(string $id, float $top, float $right, float $bottom, float $left): void
+    {
+        $kept = $this->margins[$id] ?? [0.0, 0.0, 0.0, 0.0];
+        $this->margins[$id] = [\max($kept[0], $top), \max($kept[1], $right), \max($kept[2], $bottom), \max($kept[3], $left)];
     }
 
     /** A cluster, with the size of its title, which it keeps room for above its content. */
@@ -116,6 +132,36 @@ final class Svek
         $this->nodes[$id] = [$id, $width, $height, $cluster];
         $this->borders[$id] = $input;
         $this->bordered[$cluster] = true;
+    }
+
+    /**
+     * Where across a node written as a table its links end, along its rank's order: its own
+     * cell's centre, as a part of the table's width, or of its height laid out across.
+     */
+    private function port(string $id, Direction $direction): float
+    {
+        if (!\array_key_exists($id, $this->margins)) {
+            return 0.0;
+        }
+        [$top, $right, $bottom, $left] = \array_map(\floor(...), $this->margins[$id]);
+        [$width, $height] = $this->table($id);
+        $across = \in_array($direction, [Direction::LeftRight, Direction::RightLeft], strict: true);
+
+        return $across ? (($top - $bottom) / 2) / $height : (($left - $right) / 2) / $width;
+    }
+
+    /**
+     * The size of a node written as a table, as dot is seen to give it: each size svek writes
+     * taken in whole points down, and 8 more either side across, 4 above and below.
+     *
+     * @return array{float, float}
+     */
+    private function table(string $id): array
+    {
+        [$top, $right, $bottom, $left] = \array_map(\floor(...), $this->margins[$id]);
+        [, $width, $height] = $this->nodes[$id];
+
+        return [\floor($width) + $left + $right + (2 * self::TABLE_SIDE), \floor($height) + $top + $bottom + (2 * self::TABLE_TOP)];
     }
 
     /** How far right of where its links end svek reads a point on a border to stand, from its port's column. */
@@ -168,7 +214,17 @@ final class Svek
     {
         $edges = [];
         foreach ($this->edges as $index => [$from, $to, $minimum, $labelWidth, $labelHeight, $constraint]) {
-            $edges[] = new LayoutEdge($index, $from, $to, $minimum, constraint: $constraint, labelWidth: $labelWidth, labelHeight: $labelHeight);
+            $edges[] = new LayoutEdge(
+                $index,
+                $from,
+                $to,
+                $minimum,
+                constraint: $constraint,
+                labelWidth: $labelWidth,
+                labelHeight: $labelHeight,
+                tailPort: $this->port($from, $direction),
+                headPort: $this->port($to, $direction),
+            );
         }
         // Svek writes links laid side by side before the nodes, and the others after them.
         \usort($edges, static fn (LayoutEdge $a, LayoutEdge $b): int => [(int) (0 !== $a->minLength), $a->index] <=> [(int) (0 !== $b->minLength), $b->index]);
@@ -223,6 +279,12 @@ final class Svek
 
         // A point written as a port has its links end at its port's square, which dot keeps at its centre.
         $endpoints = $placement->endpoints;
+        // A node written as a table stands as its own cell, which its links end at.
+        foreach ($this->margins as $id => [$top, $right, $bottom, $left]) {
+            [$node, [, $width, $height]] = [$endpoints[$id], $this->nodes[$id]];
+            [$x, $y] = [$node->x - ($node->w / 2) + self::TABLE_SIDE + \floor($left), $node->y - ($node->h / 2) + self::TABLE_TOP + \floor($top)];
+            $endpoints[$id] = $node->at($x + ($width / 2), $y + ($height / 2))->sized($width, $height);
+        }
         foreach (\array_keys($this->ports) as $id) {
             $endpoints[$id] = $endpoints[$id]->sized(12.0, 12.0);
         }
@@ -284,6 +346,7 @@ final class Svek
                     \array_key_exists($id, $this->points) => \array_key_exists($owner, $this->bordered) ? self::BORDERED.$owner : $owner,
                     default => $this->holder($owner),
                 };
+                [$width, $height] = \array_key_exists($id, $this->margins) ? $this->table($id) : [$width, $height];
                 $ordered[] = new LayoutNode($id, '', $width, $height, $holder, \count($ordered), shape: $this->shapes[$id] ?? Shape::Box);
             }
         }

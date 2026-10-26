@@ -224,10 +224,16 @@ final class ClassReaderTest extends TestCase
         $this->assertSame(['s.T', null], [$classes->entities['s.T']->display[0], $classes->entities['s.T']->group]);
     }
 
+    public function testQualifiersStandAtTheirEnds(): void
+    {
+        $links = self::read("A [key] --> B\nC --> [id] D\nE [k] -up-> F")->links;
+
+        $this->assertSame([['key', null], [null, 'id'], [null, 'k']], \array_map(static fn ($link): array => [$link->fromQualifier, $link->toQualifier], $links));
+    }
+
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
-        yield 'qualifier' => ['A [key] --> B', 'The native PlantUML renderer does not draw: A [key] --> B'];
         yield 'middle circle' => ['A --0-- B', 'The native PlantUML renderer does not draw: A --0-- B'];
         yield 'object' => ['object o', 'The native PlantUML renderer does not draw: object o'];
         yield 'separator twice' => ['class a..B', 'Bad name since . is a separator: a..B'];

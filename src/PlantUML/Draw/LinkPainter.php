@@ -13,6 +13,7 @@ use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Links\Extremity;
+use Janalis\Viz\PlantUML\Links\LinkDecor;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Svek\Svek;
@@ -27,28 +28,40 @@ final class LinkPainter
 {
     /**
      * @param array<string, string> $shapes `oval` or `diamond` by node name, for a node its line stops at the outline of
+     * @param array{?array{PlantUmlText, Style, float}, ?array{PlantUmlText, Style, float}} $qualifiers the qualifier at its first end and at its second, with the style its box is drawn in and how far across it is pushed from its place
      * @return list<Mark>
      */
-    public static function marks(PlantUmlLink $link, Placement $placement, int $edge, LinkLabel $label, Style $style, string $background, array $shapes = []): array
+    public static function marks(PlantUmlLink $link, Placement $placement, int $edge, LinkLabel $label, Style $style, string $background, array $shapes = [], array $qualifiers = [null, null]): array
     {
         if ($link->hidden) {
             return [];
         }
-        $from = $placement->endpoints[$link->from];
-        $to = $placement->endpoints[$link->to];
-        $route = $placement->routes[$edge] ?? [[$from->x, $from->y], [$to->x, $to->y]];
-        $points = BoxClip::clipped($placement->splines[$edge] ?? Route::smooth($route), $from, $to, $shapes);
+        [$from, $to] = [$placement->endpoints[$link->from], $placement->endpoints[$link->to]];
+        $points = self::line($link, $placement, $edge, $shapes);
+        // As PlantUML's `Kal` pushed across, its link's start with it.
+        $points[0][0] += $qualifiers[0][2] ?? 0.0;
         // As dot sees the line, before the ends make room for their marks: where the end labels stand.
         $whole = $points;
         $color = ClassColors::back($link->color) ?? $style->color('LineColor', '#181818');
         $stroke = $link->thickness ?? ($link->bold ? 2.0 : $style->number('LineThickness', 1.0));
         $marks = [];
-        foreach ([[$link->toDecor, false], [$link->fromDecor, true]] as [$decor, $reversed]) {
+        $boxes = [];
+        foreach ([[$link->toDecor, false, $qualifiers[1]], [$link->fromDecor, true, $qualifiers[0]]] as [$decor, $reversed, $qualifier]) {
             $points = $reversed ? \array_reverse($points) : $points;
             [$tip, $along] = Route::end($points);
-            [$ends, $short] = Extremity::marks($decor, $tip, $along, $color, 'none' === $background ? '#ffffff' : $background, $stroke);
+            [$box, $delta] = null === $qualifier
+                ? [[], [0.0, 0.0]]
+                : self::qualifier($qualifier[0], $qualifier[1], [$tip[0] + ($reversed ? 0.0 : $qualifier[2]), $tip[1]], 1 === $link->length, $reversed);
+            \array_push($boxes, ...$box);
+            // As PlantUML's `Kal`, a qualifier pushes its end's mark past it, and the line's end with it.
+            $moved = [$tip[0] + $delta[0], $tip[1] + $delta[1]];
+            [$ends, $short] = Extremity::marks($decor, $moved, $along, $color, 'none' === $background ? '#ffffff' : $background, $stroke);
             \array_push($marks, ...$ends);
-            $points = $short > 0 ? Route::shorten($points, $short)[0] : $points;
+            if (null !== $qualifier && LinkDecor::None !== $decor) {
+                $points = Route::shorten($points, $short + \hypot(...$delta))[0];
+                $points[\count($points) - 1] = [$moved[0] - ($along[0] * $short), $moved[1] - ($along[1] * $short)];
+            }
+            $points = $short > 0 && (null === $qualifier || LinkDecor::None === $decor) ? Route::shorten($points, $short)[0] : $points;
             $points = $reversed ? \array_reverse($points) : $points;
         }
         $marks[] = new Mark(MarkKind::Polyline, $points, stroke: $color, dashed: $link->dashed || $link->dotted, strokeWidth: $stroke, dashes: self::dashes($link));
@@ -63,9 +76,66 @@ final class LinkPainter
             \array_push($marks, ...$label->marks($left, $top, $margin));
             \array_push($marks, ...self::labelArrow($link, $from, $to, $left + ($margin / 2) + 4, $y, $color));
         }
+        \array_push($marks, ...$boxes);
         \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes, $placement->directions[''] ?? Direction::TopBottom));
 
         return $marks;
+    }
+
+    /**
+     * Where a link's line leaves its first node and reaches its second.
+     *
+     * @param array<string, string> $shapes
+     * @return array{array{float, float}, array{float, float}}
+     */
+    public static function ends(PlantUmlLink $link, Placement $placement, int $edge, array $shapes = []): array
+    {
+        $points = self::line($link, $placement, $edge, $shapes);
+
+        return [$points[0], $points[\count($points) - 1]];
+    }
+
+    /**
+     * @param array<string, string> $shapes
+     * @return list<array{float, float}>
+     */
+    private static function line(PlantUmlLink $link, Placement $placement, int $edge, array $shapes): array
+    {
+        [$from, $to] = [$placement->endpoints[$link->from], $placement->endpoints[$link->to]];
+        $route = $placement->routes[$edge] ?? [[$from->x, $from->y], [$to->x, $to->y]];
+
+        return BoxClip::clipped($placement->splines[$edge] ?? Route::smooth($route), $from, $to, $shapes);
+    }
+
+    /**
+     * A qualifier's box where its end of the line meets its node, as PlantUML's `Kal` draws
+     * it: its text 2 in from its sides and 1 from its top and bottom, below the first end and
+     * above the second, or for a link laid across, right of the first and left of the second;
+     * and how far the end's mark moves past it.
+     *
+     * @param array{float, float} $end
+     * @return array{list<Mark>, array{float, float}}
+     */
+    private static function qualifier(PlantUmlText $text, Style $style, array $end, bool $across, bool $first): array
+    {
+        [$width, $height] = $text->size();
+        [$width, $height] = [$width + 4, $height + 2];
+        [$x, $y] = $end;
+        [$left, $top, $delta] = match (true) {
+            $across && $first => [$x, $y - ($height / 2), [$width, 0.0]],
+            $across => [$x - $width + 0.5, $y - ($height / 2), [-$width, 0.0]],
+            $first => [$x - ($width / 2), $y, [0.0, $height]],
+            default => [$x - ($width / 2), $y - $height + 0.5, [0.0, -$height]],
+        };
+        $box = new Mark(
+            MarkKind::Polygon,
+            [[$left, $top], [$left + $width, $top], [$left + $width, $top + $height], [$left, $top + $height]],
+            stroke: $style->color('LineColor', '#181818'),
+            fill: $style->color('BackGroundColor', '#f1f1f1'),
+            strokeWidth: 0.5,
+        );
+
+        return [[$box, ...$text->marks($left + 2, $top + 1, $width - 4)], $delta];
     }
 
     /** @return list<Mark> the small triangle a label written `label >` or `< label` starts with, pointing the way the label reads: 9 long and 6 wide, as measured on PlantUML's output */

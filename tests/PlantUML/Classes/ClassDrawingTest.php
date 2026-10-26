@@ -441,6 +441,47 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([63.0, 70.0], $size("class A\nclass B\nA -- B\nremove B"));
     }
 
+    public function testQualifiersStandWhereTheirLinksLeaveAsPlantUmlDrawsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+        $boxes = static fn (Drawing $drawing): array => \array_values(\array_map(
+            static fn (Mark $mark): array => [
+                \round($mark->points[0][0] / Units::POINT, precision: 2),
+                \round($mark->points[0][1] / Units::POINT, precision: 2),
+                \round($mark->points[2][1] / Units::POINT, precision: 2),
+            ],
+            \array_filter(
+                $drawing->marks,
+                static fn (Mark $mark): bool => (
+                    MarkKind::Polygon === $mark->kind
+                    && (0.5 * Units::POINT) === $mark->strokeWidth
+                    && 4 === \count($mark->points)
+                    && ($mark->points[2][1] - $mark->points[0][1]) < (20 * Units::POINT)
+                ),
+            ),
+        ));
+
+        // As the jar sets them: svek keeps the qualifier's room in a table about the class, as dot sizes it.
+        $this->assertSame([63.0, 200.0], $size("class A\nclass B\nA [key] --> B"));
+        $this->assertSame([73.0, 217.0], $size("class A\nclass B\nA [key] --> \"1\" B : uses"));
+        $this->assertSame([63.0, 200.0], $size("class A\nclass B\nA --> [id] B"));
+        $this->assertSame([158.0, 70.0], $size("class A\nclass B\nA [k] - B"));
+        $this->assertSame([158.0, 70.0], $size("class A\nclass B\nA - [k] B"));
+
+        // Its box where the line leaves the class, its end's mark pushed past it.
+        $composed = self::draw("class A\nclass B\nA [key] *-- B");
+        $this->assertSame([[13.85, 55.0, 73.49]], $boxes($composed));
+        $diamond = \array_values(\array_filter($composed->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 4 === \count($mark->points) && '#181818' === $mark->fill));
+        $this->assertEqualsWithDelta(73.49, \min(\array_column($diamond[0]->points, 1)) / Units::POINT, 0.01);
+
+        // Two below one class pushed apart, as PlantUML pushes them: the jar sets them at 45.928 and 68.514.
+        $this->assertSame([[45.93, 55.0, 73.49], [68.52, 55.0, 73.49]], $boxes(self::draw("class A\nclass B\nclass C\nA [x] --> B\nA [yy] --> C")));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

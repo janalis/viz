@@ -17,6 +17,8 @@ use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
+use Janalis\Viz\PlantUML\Style\Style;
+use Janalis\Viz\PlantUML\Svek\LineOfSegments;
 use Janalis\Viz\PlantUML\Svek\Svek;
 
 /**
@@ -39,6 +41,8 @@ final class ClassDrawing
     private array $empty = [];
     /** @var array<string, true> the classifiers hidden, laid out but not drawn */
     private array $hidden = [];
+    /** @var array<int, array<int, float>> how far across each link's qualifier at its first end, 0, and its second, 1, is pushed */
+    private array $pushed = [];
     /** @var list<Mark> what the hidden classifiers would draw, with their links and notes: measured, as PlantUML's limit finder takes them, not drawn */
     private array $ghosts = [];
 
@@ -150,6 +154,7 @@ final class ClassDrawing
                 continue;
             }
             [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
+            $this->qualify($svek, $link);
             // Svek keeps a margin around a label, so it stands clear of the line.
             $this->edges[$index] = $svek->edge(
                 $link->from,
@@ -212,6 +217,7 @@ final class ClassDrawing
                 'title',
             ]);
         }
+        $this->push($placement);
         foreach ($this->edges as $index => $edge) {
             $link = $this->classes->links[$index];
             $drawn = $this->marks;
@@ -294,7 +300,22 @@ final class ClassDrawing
     {
         $style = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'arrow']);
         $background = $this->classes->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
-        // A link stops at a circle's or a diamond's outline, as PlantUML draws it.
+        $qualifiers = [$this->qualifier($link->from, $link->fromQualifier), $this->qualifier($link->to, $link->toQualifier)];
+        foreach ([0, 1] as $end) {
+            if (null === $qualifiers[$end]) {
+                continue;
+            }
+            $qualifiers[$end][2] = $this->pushed[$index][$end] ?? 0.0;
+        }
+        \array_push($this->marks, ...LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, $this->shapes($link), $qualifiers));
+    }
+
+    /**
+     * @return array<string, string> the outline each end's line stops at: a circle's or a
+     *     diamond's, as PlantUML draws them, else a box
+     */
+    private function shapes(PlantUmlLink $link): array
+    {
         $shapes = [];
         foreach ([$link->from, $link->to] as $id) {
             $shapes[$id] = match (\array_key_exists($id, $this->classes->entities) ? $this->classes->entities[$id]->type : 'class') {
@@ -303,7 +324,71 @@ final class ClassDrawing
                 default => 'box',
             };
         }
-        \array_push($this->marks, ...LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, $shapes));
+
+        return $shapes;
+    }
+
+    /**
+     * How far across each qualifier below or above a node is pushed, as PlantUML's `SvekNode`
+     * pushes those on one side apart: each 5 wider either side than its box, in the order
+     * their links were written.
+     */
+    private function push(Placement $placement): void
+    {
+        $sides = [];
+        foreach ($this->edges as $index => $edge) {
+            $link = $this->classes->links[$index];
+            if (1 === $link->length) {
+                continue;
+            }
+            $ends = LinkPainter::ends($link, $placement, $edge, $this->shapes($link));
+            foreach ([[$link->from, $link->fromQualifier, 0, 'down'], [$link->to, $link->toQualifier, 1, 'up']] as [$id, $text, $end, $side]) {
+                $qualifier = $this->qualifier($id, $text);
+                if (null === $qualifier) {
+                    continue;
+                }
+                $width = $qualifier[0]->size()[0] + 4;
+                $start = $ends[$end][0] - ($width / 2) - 5;
+                $sides[$id."\0".$side][] = [$index, $end, $start, $start + $width + 10];
+            }
+        }
+        foreach ($sides as $segments) {
+            $solved = LineOfSegments::solved(\array_map(static fn (array $segment): array => [$segment[2], $segment[3]], $segments));
+            foreach ($segments as $at => [$index, $end, $start]) {
+                $this->pushed[$index][$end] = $solved[$at] - $start;
+            }
+        }
+    }
+
+    /**
+     * The room svek keeps beside a link's qualified ends, as PlantUML's `Kal` asks it: the
+     * qualifier's width on the side a link laid across leaves by, else its height below its
+     * first end, above its second.
+     */
+    private function qualify(Svek $svek, PlantUmlLink $link): void
+    {
+        foreach ([[$link->from, $link->fromQualifier, true], [$link->to, $link->toQualifier, false]] as [$id, $text, $first]) {
+            $qualifier = $this->qualifier($id, $text);
+            if (null === $qualifier) {
+                continue;
+            }
+            [$width, $height] = $qualifier[0]->size();
+            [$width, $height] = [$width + 4, $height + 2];
+            $across = 1 === $link->length;
+            $svek->margins($id, $across || $first ? 0.0 : $height, $across && $first ? $width : 0.0, !$across && $first ? $height : 0.0, $across && !$first ? $width : 0.0);
+        }
+    }
+
+    /** @return ?array{PlantUmlText, Style, float} a qualifier's text and the style its box is drawn in, as PlantUML's `Kal` styles it, not yet pushed across */
+    private function qualifier(string $id, ?string $text): ?array
+    {
+        if (null === $text) {
+            return null;
+        }
+        $entity = $this->classes->entities[$id] ?? null;
+        $style = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'class', 'qualified'], null === $entity ? [] : $entity->stereotypes);
+
+        return [PlantUmlText::styled(ClassReader::split($text), $style), $style, 0.0];
     }
 
     /** The dashed line from a note to the entity it stands beside. */

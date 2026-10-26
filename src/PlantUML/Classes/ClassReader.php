@@ -173,7 +173,7 @@ final class ClassReader
     {
         $from = $command->get('ENT1');
         $to = $command->get('ENT2');
-        if (null === $from || null === $to || null !== $command->get('QUALIFIER1') || null !== $command->get('QUALIFIER2') || null !== $command->get('INSIDE')) {
+        if (null === $from || null === $to || null !== $command->get('INSIDE')) {
             throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
         }
         $link = ClassLinks::read($command, $this->entity($from)->id, $this->entity($to)->id);
