@@ -551,4 +551,17 @@ final class TeozDrawingTest extends TestCase
         $this->assertSame([101.0, 131.0], $size("mainframe F\n[A]"));
         $this->assertSame([89.0, 207.0], $size("mainframe F\n[*] --> S"));
     }
+
+    public function testAMulticastMessageIsAlsoSentToTheOthers(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nA -> B & C : multicast\n@enduml"));
+        $lines = \array_values(\array_filter(
+            $drawing->marks,
+            static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && 2 === \count($mark->points) && $mark->points[0][1] === $mark->points[1][1] && $mark->strokeWidth >= Units::POINT,
+        ));
+
+        // As the jar draws it, 159 wide: an arrow to C, unlabelled, 2 below the one to B.
+        $this->assertSame([159.0, 131.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertEqualsWithDelta(2 * Units::POINT, $lines[1]->points[0][1] - $lines[0]->points[0][1], 1e-6);
+    }
 }

@@ -174,9 +174,9 @@ final class SequenceReader
         $message = new SequenceMessage($from, $to, self::lines((string) $command->get('MESSAGE')), $arrow, $this->numbers?->next());
         $message->parallel = null !== $command->get('PARALLEL');
         $message->anchor = $command->get('ANCHOR', 1);
-        if ([] !== \array_filter(\array_map(\trim(...), \explode('&', (string) $command->get('MULTICAST'))), static fn (string $name): bool => '' !== $name)) {
-            throw new Unsupported('The native PlantUML renderer does not draw multicast messages: '.$command->line());
-        }
+        // As PlantUML's `CommandArrow`, the participants it is also sent to made after its own.
+        $names = \array_filter(\array_map(\trim(...), \explode('&', (string) $command->get('MULTICAST'))), static fn (string $name): bool => '' !== $name);
+        $message->multicast = \array_map($this->participantNamed(...), \array_values($names));
         if (null !== $command->get('PART1ANCHOR', 1) || null !== $command->get('PART2ANCHOR', 1)) {
             throw new Unsupported('The native PlantUML renderer does not draw anchored messages: '.$command->line());
         }

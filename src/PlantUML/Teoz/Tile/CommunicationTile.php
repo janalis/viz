@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Teoz\Tile;
 
+use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\PlantUML\Sequences\SequenceEvent;
 use Janalis\Viz\PlantUML\Sequences\SequenceMessage;
 use Janalis\Viz\PlantUML\Teoz\History;
@@ -121,7 +122,28 @@ final class CommunicationTile extends AbstractTile
             $marks = $this->space2->headMarks($x2, $y, $layer);
         }
 
-        return [...$marks, ...$this->component->marks($x1, $y, new Area($x2 - $x1, $height), $layer)];
+        return [...$marks, ...$this->component->marks($x1, $y, new Area($x2 - $x1, $height), $layer), ...$this->multicast($y, $layer)];
+    }
+
+    /**
+     * The arrows to the participants it is also sent to, as teoz draws them: from the sender's
+     * lifeline to each one's, unlabelled, each 2 below the one before.
+     *
+     * @return list<Mark>
+     */
+    private function multicast(float $y, Layer $layer): array
+    {
+        $x1 = $this->space1->posC()->value();
+        $marks = [];
+        foreach ($this->message->multicast as $index => $code) {
+            $x2 = $this->context->spaces->get($code)->posC()->value();
+            $config = ArrowConfig::of($this->message->arrow);
+            $arrow = $this->context->rose->arrow([], null, $x2 < $x1 ? $config->reverse() : $config, $this->message->arrow);
+            $top = $y + $this->component->yPoint() + (2 * ($index + 1)) - $arrow->yPoint();
+            \array_push($marks, ...$arrow->marks(\min($x1, $x2), $top, new Area(\abs($x2 - $x1), $arrow->size()[1]), $layer));
+        }
+
+        return $marks;
     }
 
     #[\Override]

@@ -346,7 +346,6 @@ final class SequenceReaderTest extends TestCase
     public static function refused(): iterable
     {
         yield 'newpage' => ["A -> B\nnewpage", 'The native PlantUML renderer leaves newpage to PlantUML'];
-        yield 'multicast' => ['A -> B & C', 'The native PlantUML renderer does not draw multicast messages: A -> B & C'];
         yield 'parallel note' => ["participant A\n& note over A : x", 'The native PlantUML renderer does not draw parallel notes: & note over A : x'];
         yield 'url' => ["participant A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];
     }

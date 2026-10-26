@@ -13,6 +13,8 @@ final class SequenceMessage implements SequenceEvent
     public array $notes = [];
     public bool $parallel = false;
     public ?string $anchor = null;
+    /** @var list<string> the participants it is also sent to, `A -> B & C`, by code */
+    public array $multicast = [];
 
     /** @param list<string> $text */
     public function __construct(
