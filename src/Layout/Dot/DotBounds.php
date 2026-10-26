@@ -62,6 +62,7 @@ final class DotBounds
             \array_map(static fn (array $points): array => self::line($points, $dx, $dy), $placement->splines),
             \array_map(static fn (array $points): array => self::line($points, $dx, $dy), $placement->polylines),
             $pieces,
+            \array_map(static fn (array $points): array => self::line($points, $dx, $dy), $placement->controls),
         );
     }
 

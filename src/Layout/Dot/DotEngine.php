@@ -139,10 +139,11 @@ final readonly class DotEngine implements LayoutEngine
      * @param array<int, list<array{float, float}>> $routes
      * @param array<int, list<array{float, float}>> $splines
      * @param array<int, array{float, float}> $labels
-     * @return array{array<int, list<array{float, float}>>, array<int, list<array{float, float}>>, array<int, array{float, float}>}
+     * @return array{array<int, list<array{float, float}>>, array<int, list<array{float, float}>>, array<int, array{float, float}>, array<int, list<array{float, float}>>}
      */
     private static function flat(DotLayers $layers, DotPosition $position, \Closure $point, array $edgeIndexes, array $routes, array $splines, array $labels): array
     {
+        $controls = [];
         foreach ($layers->flat as [$tail, $head, $layered, $labelWidth, $labelHeight]) {
             $original = $edgeIndexes[$layered];
             $routes[$original] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
@@ -156,9 +157,10 @@ final readonly class DotEngine implements LayoutEngine
             }
             $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[0]);
             $routes[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[1]);
+            $controls[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[2]);
         }
 
-        return [$routes, $splines, $labels];
+        return [$routes, $splines, $labels, $controls];
     }
 
     /**
@@ -285,7 +287,7 @@ final readonly class DotEngine implements LayoutEngine
                 $labels[$original] = $point(...$label);
             }
         }
-        [$routes, $splines, $labels] = self::flat($layers, $position, $point, $edgeIndexes, $routes, $splines, $labels);
+        [$routes, $splines, $labels, $controls] = self::flat($layers, $position, $point, $edgeIndexes, $routes, $splines, $labels);
 
         $pieces = [];
         if ($graph->concentrate) {
@@ -307,7 +309,7 @@ final readonly class DotEngine implements LayoutEngine
         $splines += $loops;
         $routes += $loops;
         $labels += $loopLabels;
-        $placement = new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines, $pieces);
+        $placement = new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines, $pieces, $controls);
 
         // Stretched to an aspect, a drawing keeps the bounds it was stretched to.
         return null !== $graph->aspect && $graph->aspect > 0 ? $placement : DotBounds::bounded($graph, $layers, $placement, $edgeIndexes);

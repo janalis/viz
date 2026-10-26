@@ -265,7 +265,7 @@ final class ClassDrawing
         foreach ($placement->graph->clusters as $box) {
             $endpoints[$box->name] = new GraphNode(0, $box->name, '', ($box->x0 + $box->x1) / 2, ($box->y0 + $box->y1) / 2, $box->x1 - $box->x0, $box->y1 - $box->y0, null, null, dashed: false);
         }
-        $placement = new Placement($placement->graph, $endpoints, $placement->directions, $placement->routes, $placement->labels, $placement->splines);
+        $placement = new Placement($placement->graph, $endpoints, $placement->directions, $placement->routes, $placement->labels, $placement->splines, controls: $placement->controls);
         foreach ($placement->graph->clusters as $cluster) {
             $group = $this->classes->groups[$cluster->name] ?? null;
             if (null !== $group && 'together' !== $group->type) {

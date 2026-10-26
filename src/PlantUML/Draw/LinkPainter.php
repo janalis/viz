@@ -65,7 +65,16 @@ final class LinkPainter
             $points = $short > 0 && (null === $qualifier || LinkDecor::None === $decor) ? Route::shorten($points, $short)[0] : $points;
             $points = $reversed ? \array_reverse($points) : $points;
         }
-        $marks[] = new Mark(MarkKind::Polyline, $points, stroke: $color, dashed: $link->dashed || $link->dotted, strokeWidth: $stroke, dashes: self::dashes($link));
+        // As PlantUML's limit finder takes dot's curve: by its control points too, where they are known.
+        $marks[] = new Mark(
+            MarkKind::Polyline,
+            $points,
+            stroke: $color,
+            dashed: $link->dashed || $link->dotted,
+            strokeWidth: $stroke,
+            dashes: self::dashes($link),
+            extent: $placement->controls[$edge] ?? [],
+        );
         if ($link->middleCircle) {
             // As PlantUML's `MiddleCircle`: 6 across from where the line comes nearest midway between its ends, filled as the background.
             [$cx, $cy] = self::middle($points);

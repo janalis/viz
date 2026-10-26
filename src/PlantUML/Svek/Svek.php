@@ -308,6 +308,7 @@ final class Svek
             $placement->routes,
             $placement->labels,
             $placement->splines,
+            controls: $placement->controls,
         );
     }
 

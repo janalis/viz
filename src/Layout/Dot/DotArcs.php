@@ -20,7 +20,7 @@ final class DotArcs
     /**
      * The arc of a flat edge over the nodes between its ends, or null where none stands between.
      *
-     * @return ?array{list<array{float, float}>, list<array{float, float}>} the curve, drawn in straight steps, and its corners
+     * @return ?array{list<array{float, float}>, list<array{float, float}>, list<array{float, float}>} the curve, drawn in straight steps, its corners, and its pieces' points
      */
     public static function route(DotLayers $layers, DotPosition $position, int $tail, int $head): ?array
     {
@@ -57,7 +57,7 @@ final class DotArcs
             }
         }
 
-        return [$drawn, [[$x[$tail], $y], $first, $last, [$x[$head], $y]]];
+        return [$drawn, [[$x[$tail], $y], $first, $last, [$x[$head], $y]], [...$rise, ...$run, ...$pieces[2]]];
     }
 
     /**

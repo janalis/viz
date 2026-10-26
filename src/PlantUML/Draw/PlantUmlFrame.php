@@ -175,7 +175,7 @@ final class PlantUmlFrame
             return [[\min($xs) - $near - $wider, \min($ys) - $near], [\max($xs) - $far + $wider, \max($ys) - $far]];
         }
 
-        return $mark->points;
+        return [...$mark->points, ...$mark->extent];
     }
 
     /**

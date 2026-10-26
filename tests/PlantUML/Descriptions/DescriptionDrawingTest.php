@@ -308,7 +308,7 @@ final class DescriptionDrawingTest extends TestCase
     {
         $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nactor User\nUser -> (Login)\nUser -> (Logout)\n(Login) .> (Auth) : include\n@enduml"));
 
-        // As the jar sets it, 386 by 122: Logout next to the user, the link to Login over it; the jar takes the arc'\''s controls, 3 higher than it runs.
-        $this->assertSame([386.0, 119.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        // As the jar sets it, 386 by 122: Logout next to the user, the link to Login over it, measured by its curve's controls as the jar measures it.
+        $this->assertSame([386.0, 122.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
 }

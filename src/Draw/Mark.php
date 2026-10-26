@@ -40,6 +40,8 @@ final readonly class Mark
         public ?array $slots = null,
         /** @var list<list<array{float, float}>> a polygon's other outlines, filled with it even-odd: its holes, and what stands in them */
         public array $subpaths = [],
+        /** @var list<array{float, float}> points besides its own a renderer measuring what it draws takes it to reach, as PlantUML's limit finder takes a curve's control points */
+        public array $extent = [],
     ) {}
 
     /**
@@ -67,7 +69,7 @@ final readonly class Mark
     }
 
     /**
-     * The mark with each of its points, its other outlines' too, moved through a function.
+     * The mark with each of its points, its other outlines' and its extent's too, moved through a function.
      *
      * @param \Closure(array{float, float}): array{float, float} $point
      */
@@ -76,6 +78,7 @@ final readonly class Mark
         return $this->with([
             'points' => \array_map($point, $this->points),
             'subpaths' => \array_map(static fn (array $outline): array => \array_map($point, $outline), $this->subpaths),
+            'extent' => \array_map($point, $this->extent),
         ]);
     }
 

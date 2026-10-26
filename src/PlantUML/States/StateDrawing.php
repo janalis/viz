@@ -526,7 +526,7 @@ final class StateDrawing
             $endpoints[$box->name] = new GraphNode(0, $box->name, '', ($x0 + $x1) / 2, ($y0 + $y1) / 2, $x1 - $x0, $y1 - $y0, null, null, dashed: false);
         }
 
-        return new Placement($placement->graph, $endpoints, $placement->directions, $routes, $placement->labels, $placement->splines);
+        return new Placement($placement->graph, $endpoints, $placement->directions, $routes, $placement->labels, $placement->splines, controls: $placement->controls);
     }
 
     private static function moved(Mark $mark, float $x, float $y): Mark
