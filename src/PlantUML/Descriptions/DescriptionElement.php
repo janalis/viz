@@ -16,6 +16,8 @@ final class DescriptionElement
     public ?string $color = null;
     /** Whether its stereotypes are written, as `hide stereotype` leaves them. */
     public bool $stereotypeShown = true;
+    /** The symbol it is drawn as, where it is not its own: a component as `skinparam componentStyle` draws it, `component1` or `rectangle`. */
+    public ?string $shape = null;
 
     /** @param list<string> $display its text, a line each */
     public function __construct(

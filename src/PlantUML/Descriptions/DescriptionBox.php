@@ -33,6 +33,7 @@ final readonly class DescriptionBox
         'cloud' => [15, 15, 15, 15],
         'collections' => [8, 12, 8, 12],
         'component' => [15, 25, 20, 10],
+        'component1' => [10, 10, 10, 10],
         'database' => [10, 10, 24, 5],
         'file' => [10, 10, 10, 10],
         'folder' => [10, 20, 13, 10],
@@ -112,7 +113,7 @@ final readonly class DescriptionBox
             // As PlantUML, a folder keeps room for a title it does not show, 40 by 15, above its label.
             'folder' === $element->symbol => self::boxed($element->symbol, \max(self::FOLDER_TITLE[0], $labelWidth), self::FOLDER_TITLE[1] + $labelHeight),
             null !== $title => self::boxed($element->symbol, \max($title->size()[0] + 12, $labelWidth), $title->size()[1] + $labelHeight),
-            default => self::boxed($element->symbol, $labelWidth, $labelHeight),
+            default => self::boxed($element->shape ?? $element->symbol, $labelWidth, $labelHeight),
         };
 
         return new self(
@@ -149,7 +150,7 @@ final readonly class DescriptionBox
         $line = ClassColors::line($this->element->color) ?? $this->style->color('LineColor', '#181818');
         $back = ClassColors::back($this->element->color) ?? $this->style->color('BackGroundColor', '#f1f1f1');
         $stroke = $this->style->number('LineThickness', 0.5);
-        $symbol = $this->element->symbol;
+        $symbol = $this->element->shape ?? $this->element->symbol;
         if (\array_key_exists($symbol, self::ICONS)) {
             return $this->icon($symbol, $x, $y, $line, $back, $stroke);
         }

@@ -95,7 +95,7 @@ final class DescriptionReader
         if (null !== $unsupported) {
             throw $unsupported;
         }
-        $reader->settle();
+        $reader->settle(\strtolower($document->param('componentStyle', '')));
         $reader->linkedContainers();
 
         return new PlantUmlDescriptions($document, $reader->elements, $reader->groups, $reader->links, $reader->notes, $reader->direction, $reader->leaves);
@@ -323,7 +323,8 @@ final class DescriptionReader
         $this->stereotypeRules[] = ['show' === \strtolower($match[1]), $gender];
     }
 
-    private function settle(): void
+    /** @param string $componentStyle `skinparam componentStyle`, as PlantUML's `ComponentStyle` reads it: `uml1`, `uml2` or `rectangle` */
+    private function settle(string $componentStyle): void
     {
         foreach ([...$this->elements, ...$this->groups] as $entity) {
             foreach ($this->stereotypeRules as [$show, $gender]) {
@@ -334,6 +335,7 @@ final class DescriptionReader
         $default = $usecase ? 'actor' : 'interface';
         foreach ($this->elements as $element) {
             $element->symbol = 'unknown' === $element->symbol ? $default : $element->symbol;
+            $element->shape = 'component' === $element->symbol ? ['uml1' => 'component1', 'rectangle' => 'rectangle'][$componentStyle] ?? null : null;
         }
     }
 

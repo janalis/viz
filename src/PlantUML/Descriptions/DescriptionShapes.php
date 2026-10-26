@@ -33,7 +33,7 @@ final readonly class DescriptionShapes
             default => [],
         };
         $outline = match ($symbol) {
-            'component', 'node', 'frame', 'stack', 'collections' => $pen->framed($symbol, $x, $y, $width, $height, $round),
+            'component', 'component1', 'node', 'frame', 'stack', 'collections' => $pen->framed($symbol, $x, $y, $width, $height, $round),
             'folder', 'package' => $pen->folder($x, $y, $width, $height, $round, ...$title),
             'file' => $pen->tabbed($x, $y, $width, $height),
             'artifact' => $pen->artifact($x, $y, $width, $height, $round),
@@ -110,6 +110,12 @@ final readonly class DescriptionShapes
                 $this->polygon(ClassBox::corners($right - 20, $y + 5, 15, 10)),
                 $this->polygon(ClassBox::corners($right - 22, $y + 7, 4, 2)),
                 $this->polygon(ClassBox::corners($right - 22, $y + 11, 4, 2)),
+            ],
+            // As PlantUML's `USymbolComponent1`: two tabs 10 by 5 half out of its left side, 5 below its top and 10 above its bottom.
+            'component1' => [
+                ClassBox::rectangle($x, $y, $width, $height, $this->line, $this->back, $this->stroke, $round),
+                $this->polygon(ClassBox::corners($x - 5, $y + 5, 10, 5)),
+                $this->polygon(ClassBox::corners($x - 5, $bottom - 10, 10, 5)),
             ],
             'node' => [
                 $this->polygon([[$x, $y + 10], [$x + 10, $y], [$right, $y], [$right, $bottom - 10], [$right - 10, $bottom], [$x, $bottom]]),

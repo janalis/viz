@@ -290,4 +290,17 @@ final class DescriptionDrawingTest extends TestCase
         // As the jar sets it: the note just right of B, A's link to C past it.
         $this->assertSame([188.0, 280.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
+
+    public function testTheComponentStyleSetsHowAComponentIsDrawn(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: a box 10 around its name; in UML 1, two tabs half out of its left side.
+        $this->assertSame([50.0, 153.0], $size("skinparam componentStyle rectangle\n[A] --> [B]"));
+        $this->assertSame([55.0, 153.0], $size("skinparam componentStyle uml1\n[A] --> [B]"));
+    }
 }
