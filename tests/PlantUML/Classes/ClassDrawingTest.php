@@ -670,5 +670,8 @@ final class ClassDrawingTest extends TestCase
         // As the jar draws them: the stereotype in italics at 12 points over the name, 5 in from the sides; a diamond taken 10 wider either side, as a polygon.
         $this->assertSame([83.0, 185.0], $size("object a <<stereo>>\nobject b #pink\na --> b : label"));
         $this->assertSame([65.0, 237.0], $size("diamond D\nobject A\nobject B\nA --> D\nD --> B"));
+        // `<> name`, an association's diamond, 24 across.
+        $this->assertSame([167.0, 262.0], $size("class Foo\nclass Bar\nclass Baz\n<> diamond\nFoo -- diamond\nBar -- diamond\ndiamond -- Baz"));
+        $this->assertSame([208.0, 280.0], $size("class Student\nclass Course\nclass Grade\n<> enrol\nStudent \"1\" -- enrol\nenrol -- \"*\" Course\nenrol .. Grade : grades"));
     }
 }

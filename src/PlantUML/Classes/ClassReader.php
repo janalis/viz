@@ -113,6 +113,7 @@ final class ClassReader
             'CommandNamespaceSeparator' => $this->separator = \in_array(\strtolower((string) $command->get('SEPARATOR')), ['none', 'null'], strict: true) ? null : (string) $command->get('SEPARATOR'),
             'CommandCreateElementFull2' => $this->element($command),
             'CommandCreateElementMultilines' => $this->multiline($command),
+            'CommandDiamondAssociation' => $this->diamond($command),
             default => throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line()),
         };
     }
@@ -235,6 +236,16 @@ final class ClassReader
         $entity->element = new DescriptionElement($id, $entity->display, \rtrim($symbol, characters: '/'), $entity->group, \str_ends_with($symbol, '/'));
         $entity->element->stereotypes = $entity->stereotypes;
         $entity->element->color = $entity->color;
+    }
+
+    /** `<> name`: an association's diamond, nameless, as PlantUML makes it, never one made before. */
+    private function diamond(PlantUmlCommand $command): void
+    {
+        $id = $this->resolve(self::clean((string) $command->get('CODE')));
+        if (\array_key_exists($id, $this->entities)) {
+            throw new PlantUmlRefusal('Already existing : '.$id);
+        }
+        $this->made($id, '')->type = 'diamond';
     }
 
     /**

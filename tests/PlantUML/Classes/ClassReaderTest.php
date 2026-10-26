@@ -325,6 +325,14 @@ final class ClassReaderTest extends TestCase
         self::read($line);
     }
 
+    public function testAnAssociationsDiamondIsNamelessAndNew(): void
+    {
+        $this->assertSame('diamond', self::read("<> d\nclass A\nA -- d")->entities['d']->type);
+        $this->expectExceptionObject(new Unsupported('Already existing : A'));
+
+        self::read("class A\n<> A");
+    }
+
     public function testAnElementMetBeforeKeepsItsKind(): void
     {
         $classes = self::read("allowmixing\nclass A\nactor A <<s>> #pink\nactor \"Bee\" as B");

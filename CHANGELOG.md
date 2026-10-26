@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML class diagram's association diamond, `<> name`, is drawn natively, where it was refused: a diamond 24 across, nameless, as PlantUML makes it; one named as an entity already made is refused as PlantUML refuses it.
 - A PlantUML sequence diagram's `autonewpage` is read natively, where it was refused, as the no-op it is in PlantUML.
 - A PlantUML sequence diagram's message with an anchored end, `A{x} -> B` or `A -> B{x}`, is laid out natively, where it was refused, and, as teoz leaves it, not drawn: its row kept, its arrow and label left out.
 - A PlantUML sequence diagram's note on an arrow goes where PlantUML puts it: on the last message, reference or group's end written before it, whatever stands between; with none, it is left out, where it was refused. A reference's notes are drawn beside it, the last left of it and the last right of it, at its top, as teoz's `ReferenceTile` draws them; one above or below a reference or a group's end, which PlantUML warns of, is left to it.
