@@ -71,6 +71,8 @@ final class DescriptionReader
     /** @var list<array{bool, ?string}> each `hide` or `show` of stereotypes: whether it shows them, and of what, null for all */
     private array $stereotypeRules = [];
     private Direction $direction = Direction::TopBottom;
+    /** @var list<string> the elements and floating notes, as PlantUML makes its leaves, in order */
+    private array $leaves = [];
     private ?string $last = null;
 
     /**
@@ -95,7 +97,7 @@ final class DescriptionReader
         }
         $reader->settle();
 
-        return new PlantUmlDescriptions($document, $reader->elements, $reader->groups, $reader->links, $reader->notes, $reader->direction);
+        return new PlantUmlDescriptions($document, $reader->elements, $reader->groups, $reader->links, $reader->notes, $reader->direction, $reader->leaves);
     }
 
     private function execute(PlantUmlCommand $command): void
@@ -257,6 +259,7 @@ final class DescriptionReader
     {
         $lines = 'CommandFactoryNote$1' === $command->name ? ClassReader::split((string) $command->get('DISPLAY')) : ActivityReader::columns($command->body());
         $this->notes[] = new PlantUmlNote((string) $command->get('CODE'), $lines, color: $command->get('COLOR'), group: $this->current());
+        $this->leaves[] = (string) $command->get('CODE');
     }
 
     private function beside(PlantUmlCommand $command): void
@@ -345,6 +348,7 @@ final class DescriptionReader
         }
         if (!\array_key_exists($id, $this->elements) && !\array_key_exists($id, $this->groups)) {
             $this->elements[$id] = new DescriptionElement($id, ClassReader::split($display ?? $id), group: $this->current());
+            $this->leaves[] = $id;
         }
         if (\array_key_exists($id, $this->groups)) {
             throw new Unsupported('The native PlantUML renderer does not draw links to containers such as '.$id);

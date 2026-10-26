@@ -20,6 +20,7 @@ use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Svek\LineOfSegments;
+use Janalis\Viz\PlantUML\Svek\Squares;
 use Janalis\Viz\PlantUML\Svek\Svek;
 
 /**
@@ -176,6 +177,12 @@ final class ClassDrawing
                 $link->reversed,
             );
         }
+        $groups = [];
+        foreach ([...$this->classes->entities, ...$this->classes->notes] as $leaf) {
+            $groups[$leaf->id] = $leaf->group;
+        }
+        $drawn = \array_values(\array_filter($this->classes->leaves, fn (string $id): bool => \array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->notes)));
+        Squares::put($svek, $drawn, $groups, [null, ...\array_keys($this->classes->groups)], $this->classes->links, $this->classes->notes);
         foreach ($this->classes->notes as $note) {
             if (null === $note->entity || !\array_key_exists($note->entity, $this->boxes)) {
                 continue;

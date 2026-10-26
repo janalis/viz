@@ -600,6 +600,23 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([121.0, 286.0], $size("class A\nclass B\nclass C\nC .. (A, B)"));
     }
 
+    public function testClassesNoLinkTouchesStandInASquareAsPlantUmlPutsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sets them: three or more in a group, in rows as long as the square root of how many, rounded up.
+        $this->assertSame([216.0, 178.0], $size("class A\nclass B\nclass C\nclass D\nclass E"));
+        $this->assertSame([167.0, 178.0], $size("class A\nclass B\nnote \"floating\" as N\nclass C"));
+        $this->assertSame([229.0, 228.0], $size("package P {\n class A\n class B\n class C\n}\nclass X"));
+        // Linked, or with a note beside them, they stand as laid out.
+        $this->assertSame([216.0, 178.0], $size("class A\nclass B\nclass C\nclass D\nA --> D"));
+        $this->assertSame([279.0, 70.0], $size("class A\nclass B\nclass C\nnote right of A : n"));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

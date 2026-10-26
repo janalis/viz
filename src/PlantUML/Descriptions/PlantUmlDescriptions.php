@@ -27,6 +27,8 @@ final readonly class PlantUmlDescriptions implements PlantUmlDiagram
         public array $links = [],
         public array $notes = [],
         public Direction $direction = Direction::TopBottom,
+        /** @var list<string> the elements and floating notes, by id, in the order they were made */
+        public array $leaves = [],
     ) {}
 
     /** The use case model when the diagram has actors or use cases, the graph model otherwise. */

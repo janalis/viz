@@ -19,6 +19,7 @@ use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\StackedText;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
+use Janalis\Viz\PlantUML\Svek\Squares;
 use Janalis\Viz\PlantUML\Svek\Svek;
 
 /**
@@ -116,6 +117,12 @@ final class DescriptionDrawing
                 $link->reversed,
             );
         }
+        $groups = [];
+        foreach ([...$this->diagram->elements, ...$this->diagram->notes] as $leaf) {
+            $groups[$leaf->id] = $leaf->group;
+        }
+        $drawn = \array_values(\array_filter($this->diagram->leaves, fn (string $id): bool => \array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->notes)));
+        Squares::put($svek, $drawn, $groups, [null, ...\array_keys($this->diagram->groups)], $this->diagram->links, $this->diagram->notes);
         foreach ($this->diagram->notes as $note) {
             if (null === $note->entity) {
                 continue;

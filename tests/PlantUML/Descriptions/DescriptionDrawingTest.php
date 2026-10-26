@@ -260,4 +260,12 @@ final class DescriptionDrawingTest extends TestCase
 
         $this->assertSame([], \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && (1.0 * Units::POINT) === $mark->strokeWidth));
     }
+
+    public function testElementsNoLinkTouchesStandInASquareAsPlantUmlPutsThem(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\ncomponent A\ncomponent B\ncomponent C\ncomponent D\n@enduml"));
+
+        // As the jar sets them: two rows of two.
+        $this->assertSame([156.0, 173.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
 }
