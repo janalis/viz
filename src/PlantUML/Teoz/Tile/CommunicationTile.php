@@ -96,6 +96,9 @@ final class CommunicationTile extends AbstractTile
     #[\Override]
     public function marks(Layer $layer): array
     {
+        if ($this->message->endAnchored) {
+            return [];
+        }
         $y = $this->gauge->min->value();
         $x1 = $this->space1->posC()->value();
         $x2 = $this->point2()->value();

@@ -631,4 +631,14 @@ final class TeozDrawingTest extends TestCase
         $this->assertSame([236.0, 205.0], $size("participant A\nparticipant B\nparticipant C\nA -> B : x\nref over A, B : init\nnote right : on ref\nnote left : left one\nB -> C : y"));
         $this->assertSame([180.0, 175.0], $size("participant A\nparticipant B\nparticipant C\nref over B : r\nnote left\n  long note\n  here\nend note\nA -> C : q"));
     }
+
+    public function testAMessageWithAnAnchoredEndTakesItsRoomUndrawn(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nA{start} -> B : hello\nB -> A : back\nA -> B{end} : again\n@enduml"));
+        $texts = \array_values(\array_filter(\array_map(static fn (Mark $mark): ?string => $mark->text, $drawing->marks)));
+
+        // As the jar draws it, 102 by 189: room for all three, only the one between unanchored ends drawn.
+        $this->assertSame([102.0, 189.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertSame(['A', 'B', 'A', 'B', 'back'], $texts);
+    }
 }

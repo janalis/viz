@@ -181,9 +181,7 @@ final class SequenceReader
         // As PlantUML's `CommandArrow`, the participants it is also sent to made after its own.
         $names = \array_filter(\array_map(\trim(...), \explode('&', (string) $command->get('MULTICAST'))), static fn (string $name): bool => '' !== $name);
         $message->multicast = \array_map($this->participantNamed(...), \array_values($names));
-        if (null !== $command->get('PART1ANCHOR', 1) || null !== $command->get('PART2ANCHOR', 1)) {
-            throw new Unsupported('The native PlantUML renderer does not draw anchored messages: '.$command->line());
-        }
+        $message->endAnchored = null !== $command->get('PART1ANCHOR', 1) || null !== $command->get('PART2ANCHOR', 1);
         $this->addMessage($message);
         $this->afterMessage($activation, $from, $to, $arrow, $command->get('LIFECOLOR'));
     }

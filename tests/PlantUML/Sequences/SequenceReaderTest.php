@@ -11,6 +11,7 @@ use Janalis\Viz\PlantUML\PlantUmlPipeline;
 use Janalis\Viz\PlantUML\PlantUmlRefusal;
 use Janalis\Viz\PlantUML\Sequences\AutoNumber;
 use Janalis\Viz\PlantUML\Sequences\PlantUmlSequence;
+use Janalis\Viz\PlantUML\Sequences\SequenceEvent;
 use Janalis\Viz\PlantUML\Sequences\SequenceExo;
 use Janalis\Viz\PlantUML\Sequences\SequenceGroup;
 use Janalis\Viz\PlantUML\Sequences\SequenceLife;
@@ -429,11 +430,11 @@ final class SequenceReaderTest extends TestCase
         $this->assertTrue($sequence->events[3]->parallel);
     }
 
-    public function testAnchoredMessagesAreNotDrawnNatively(): void
+    public function testAMessageMayHaveAnAnchoredEnd(): void
     {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw anchored messages: A{start} -> B'));
+        $sequence = self::read("A{start} -> B : x\nA -> B{end} : y\nA -> B");
 
-        self::read('A{start} -> B');
+        $this->assertSame([true, true, false], \array_map(static fn (SequenceEvent $message): bool => $message instanceof SequenceMessage && $message->endAnchored, $sequence->events));
     }
 
     /** @return list<string> */

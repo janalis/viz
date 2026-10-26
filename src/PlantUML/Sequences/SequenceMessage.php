@@ -13,6 +13,8 @@ final class SequenceMessage implements SequenceEvent
     public array $notes = [];
     public bool $parallel = false;
     public ?string $anchor = null;
+    /** Whether an end of it is anchored, `A{x} -> B`, which teoz lays out but never draws */
+    public bool $endAnchored = false;
     /** @var list<string> the participants it is also sent to, `A -> B & C`, by code */
     public array $multicast = [];
 
