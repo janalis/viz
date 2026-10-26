@@ -96,6 +96,7 @@ final class DescriptionReader
             throw $unsupported;
         }
         $reader->settle();
+        $reader->linkedContainers();
 
         return new PlantUmlDescriptions($document, $reader->elements, $reader->groups, $reader->links, $reader->notes, $reader->direction, $reader->leaves);
     }
@@ -217,6 +218,11 @@ final class DescriptionReader
 
             return $element->id;
         }
+        // As PlantUML links to a container named so.
+        $container = self::bare($text);
+        if (\array_key_exists($container, $this->groups) && !\array_key_exists($container, $this->elements) && 'together' !== $this->groups[$container]->symbol) {
+            return $container;
+        }
         $first = \strlen($text) > 2 ? $text[0] : '';
         $business = \str_ends_with($text, '/');
         $element = $this->get(self::bare($text));
@@ -328,6 +334,29 @@ final class DescriptionReader
         $default = $usecase ? 'actor' : 'interface';
         foreach ($this->elements as $element) {
             $element->symbol = 'unknown' === $element->symbol ? $default : $element->symbol;
+        }
+    }
+
+    /**
+     * Refuses a link to a container holding nothing, which PlantUML lays out as an element.
+     *
+     * @throws Unsupported
+     */
+    private function linkedContainers(): void
+    {
+        $held = [];
+        foreach ([...$this->elements, ...$this->notes] as $member) {
+            $held[$member->group ?? ''] = true;
+        }
+        foreach ($this->groups as $group) {
+            $held[$group->parent ?? ''] = true;
+        }
+        foreach ($this->links as $link) {
+            foreach ([$link->from, $link->to] as $end) {
+                if (\array_key_exists($end, $this->groups) && !\array_key_exists($end, $held)) {
+                    throw new Unsupported('The native PlantUML renderer does not draw links to empty containers such as '.$end);
+                }
+            }
         }
     }
 

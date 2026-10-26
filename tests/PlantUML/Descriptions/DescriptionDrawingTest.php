@@ -268,4 +268,18 @@ final class DescriptionDrawingTest extends TestCase
         // As the jar sets them: two rows of two.
         $this->assertSame([156.0, 173.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
+
+    public function testLinksToContainersEndAtTheirOutlineAsPlantUmlDrawsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sets them: laid out to a point inside the container, cut at its outline.
+        $this->assertSame([166.0, 324.0], $size("node N {\n component C\n database DB\n}\ncloud Cl\nC --> DB\nCl --> N"));
+        $this->assertSame([144.0, 287.0], $size("package P {\n [A]\n}\npackage Q {\n [B]\n}\nP --> Q"));
+        $this->assertSame([160.0, 343.0], $size("rectangle R {\n actor U\n}\nfolder F {\n [C]\n}\nR ..> F : uses"));
+    }
 }

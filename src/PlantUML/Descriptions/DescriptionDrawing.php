@@ -7,7 +7,9 @@ namespace Janalis\Viz\PlantUML\Descriptions;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Layout\Engine\Placement;
+use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
@@ -36,6 +38,11 @@ final class DescriptionDrawing
     private array $notes = [];
     /** @var array<int, int> */
     private array $edges = [];
+    /** @var array<string, true> the containers a link starts or ends at, each with a point inside it */
+    private array $anchors = [];
+
+    /** The prefix of the point svek puts in a container a link starts or ends at. */
+    private const string ANCHOR = '*anchor*';
 
     private function __construct(
         private readonly PlantUmlDescriptions $diagram,
@@ -108,8 +115,8 @@ final class DescriptionDrawing
         foreach ($this->diagram->links as $index => $link) {
             [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
             $this->edges[$index] = $svek->edge(
-                $link->from,
-                $link->to,
+                $this->end($svek, $link->from),
+                $this->end($svek, $link->to),
                 $link->length,
                 $width,
                 $height,
@@ -132,6 +139,20 @@ final class DescriptionDrawing
         }
 
         return $svek;
+    }
+
+    /** The node a link's end is laid out to: an element or a note, or, as svek lays out a link to a container, a point inside its cluster. */
+    private function end(Svek $svek, string $id): string
+    {
+        if (!\array_key_exists($id, $this->diagram->groups)) {
+            return $id;
+        }
+        if (!\array_key_exists($id, $this->anchors)) {
+            $svek->point(self::ANCHOR.$id, $id);
+            $this->anchors[$id] = true;
+        }
+
+        return self::ANCHOR.$id;
     }
 
     /** A group's title: its stereotypes in their style, as PlantUML draws them above its name. */
@@ -201,6 +222,17 @@ final class DescriptionDrawing
                 $tabbed ? 'left' : 'center',
             ));
         }
+        // As PlantUML's limit finder is seen to take the point a link to a container ends at: 14 either side of it.
+        foreach (\array_keys($this->anchors) as $id) {
+            $anchor = $placement->endpoints[self::ANCHOR.$id];
+            $marks[] = new Mark(MarkKind::Polygon, [[$anchor->x - 14.0, $anchor->y], [$anchor->x + 14.0, $anchor->y]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
+        }
+        // A link to a container is cut where it meets the container's outline.
+        $endpoints = $placement->endpoints;
+        foreach ($placement->graph->clusters as $box) {
+            $endpoints[$box->name] = new GraphNode(0, $box->name, '', ($box->x0 + $box->x1) / 2, ($box->y0 + $box->y1) / 2, $box->x1 - $box->x0, $box->y1 - $box->y0, null, null, dashed: false);
+        }
+        $placement = new Placement($placement->graph, $endpoints, $placement->directions, $placement->routes, $placement->labels, $placement->splines);
         $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'arrow']);
         $background = $this->diagram->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
         foreach ($this->edges as $index => $edge) {
