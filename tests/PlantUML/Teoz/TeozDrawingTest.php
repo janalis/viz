@@ -618,4 +618,17 @@ final class TeozDrawingTest extends TestCase
             $size("participant A\nparticipant B\nparticipant C\nalt ok\n  group inner\n    A -> B : x\n  end\n  note right : inner end\nelse ko\n  B -> A : y\nend\nnote left : outer\nB -> C : q"),
         );
     }
+
+    public function testAReferencesNotesStandBesideIt(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: at the reference's top, the last left of it, the last right of it.
+        $this->assertSame([236.0, 205.0], $size("participant A\nparticipant B\nparticipant C\nA -> B : x\nref over A, B : init\nnote right : on ref\nnote left : left one\nB -> C : y"));
+        $this->assertSame([180.0, 175.0], $size("participant A\nparticipant B\nparticipant C\nref over B : r\nnote left\n  long note\n  here\nend note\nA -> C : q"));
+    }
 }

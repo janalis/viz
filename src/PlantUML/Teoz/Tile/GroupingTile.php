@@ -65,7 +65,6 @@ final class GroupingTile extends AbstractTile
             \assert(null !== $event, description: 'a valid iterator has a current event');
             $events->next();
             if ($event instanceof SequenceGroup && 'end' === $event->role) {
-                // A note left of the end stands left of the frame; any other, right of it.
                 foreach ($event->notes as $note) {
                     $this->notes['left' === $note->position ? 'left' : 'right'][] = $context->rose->note($note);
                 }

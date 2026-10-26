@@ -436,12 +436,28 @@ final class SequenceReader
 
     private function noteOnArrow(PlantUmlCommand $command): void
     {
-        $last = $this->lastWithDeactivate;
-        if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo && !$last instanceof SequenceGroup) {
-            throw new PlantUmlRefusal('A note on an arrow needs an arrow before it');
+        // As PlantUML: on the last message, reference or group's section or end, whatever came after it; with none, nowhere.
+        $last = \array_find(
+            \array_reverse($this->events),
+            static fn (SequenceEvent $event): bool => (
+                $event instanceof SequenceMessage
+                || $event instanceof SequenceExo
+                || $event instanceof SequenceGroup
+                && 'start' !== $event->role
+                || $event instanceof SequenceMark
+                && 'reference' === $event->kind
+            ),
+        );
+        if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo && !$last instanceof SequenceGroup && !$last instanceof SequenceMark) {
+            return;
+        }
+        // A reference or a group holds a note left or right of it, and warns of any other.
+        $position = \strtolower($command->get('POSITION') ?? 'right');
+        if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo && 'left' !== $position && 'right' !== $position) {
+            throw new Unsupported('The native PlantUML renderer does not draw what PlantUML warns of: '.$command->line());
         }
         $text = null === $command->get('NOTE') ? ActivityReader::columns($command->body()) : self::lines((string) $command->get('NOTE'));
-        $last->notes[] = new SequenceNote([], \strtolower($command->get('POSITION') ?? 'right'), $text, \strtolower($command->get('STYLE') ?? 'note'), $command->get('COLOR'));
+        $last->notes[] = new SequenceNote([], $position, $text, \strtolower($command->get('STYLE') ?? 'note'), $command->get('COLOR'));
     }
 
     private function boxStart(PlantUmlCommand $command): void

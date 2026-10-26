@@ -345,6 +345,7 @@ final class SequenceReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
+        yield 'note above a reference' => ["participant A\nref over A : r\nnote top : x", 'The native PlantUML renderer does not draw what PlantUML warns of: note top : x'];
         yield 'url' => ["participant A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];
     }
 
@@ -365,7 +366,6 @@ final class SequenceReaderTest extends TestCase
         yield 'create unsent' => ["create C\nA -> B", 'After create command, you have to send a message to "C"'];
         yield 'nowhere to return' => ['return x', 'Nowhere to return to.'];
         yield 'box end alone' => ["A -> B\nend box", 'A box ends that never started'];
-        yield 'note on no arrow' => ["participant A\nnote right : x", 'A note on an arrow needs an arrow before it'];
     }
 
     #[DataProvider('failing')]
@@ -404,6 +404,18 @@ final class SequenceReaderTest extends TestCase
         $sequence = self::read("A -> B\n== d ==\nactivate B");
 
         $this->assertSame([], self::lives($sequence->events[0]));
+    }
+
+    public function testANoteOnAnArrowGoesOnTheLastEventToHoldOne(): void
+    {
+        $sequence = self::read("note right : nowhere\nA -> B\n== d ==\nnote over A : alone\nnote right : on the message\nref over A : r\nnote left : on the reference");
+        [$message, , , $reference] = $sequence->events;
+
+        $this->assertInstanceOf(SequenceMessage::class, $message);
+        $this->assertSame([['on the message']], \array_map(static fn (SequenceNote $note): array => $note->text, $message->notes));
+        $this->assertInstanceOf(SequenceMark::class, $reference);
+        $this->assertSame([['on the reference']], \array_map(static fn (SequenceNote $note): array => $note->text, $reference->notes));
+        $this->assertCount(4, $sequence->events);
     }
 
     public function testANoteAfterAGroupsEndIsOnItsEnd(): void
