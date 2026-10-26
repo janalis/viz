@@ -286,7 +286,8 @@ final readonly class PlantUmlText
                 $rows = [];
             }
             if (null !== $line) {
-                $blocks[] = $line;
+                // As PlantUML's Creole sets a line: each `<<…>>` in it between guillemets.
+                $blocks[] = (string) \preg_replace('/<<\s?((?:<&\w+>|[^<>])+?)\s?>>/u', replacement: '«$1»', subject: $line);
             }
         }
 

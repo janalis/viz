@@ -175,4 +175,13 @@ final class PlantUmlTextTest extends TestCase
         $this->assertSame('#ffffff', $marks[0]->fill);
         $this->assertSame('#feffdd', new NoteBox(new PlantUmlText(['x']), new Style())->marks(0.0, 0.0)[0]->fill);
     }
+
+    public function testDoubleAngleBracketsAreSetAsGuillemets(): void
+    {
+        $text = new PlantUmlText(['a <<b>> c', '<< use >>']);
+
+        // As PlantUML's Creole sets them, whatever the text: a link's label, a note, a message.
+        $this->assertSame(['a «b» c', '«use»'], \array_map(static fn ($mark): string => $mark->text, $text->marks(0.0, 0.0, 100.0)));
+        $this->assertSame(new PlantUmlText(['a «b» c', '«use»'])->size(), $text->size());
+    }
 }
