@@ -167,6 +167,17 @@ final class CreoleCommands
         };
     }
 
+    /** Text with each `[[…]]` link written as what it shows: its label, else its target. */
+    public static function unlinked(string $text): string
+    {
+        if (!\str_contains($text, '[[')) {
+            return $text;
+        }
+        $pattern = '/'.\substr(self::COMMANDS['[['][0][0], offset: 3);
+
+        return (string) \preg_replace_callback($pattern, self::label(...), $text);
+    }
+
     /** @param array<int|string, string> $match a link's label, else its target */
     private static function label(array $match): string
     {

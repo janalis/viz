@@ -463,13 +463,12 @@ final class SequenceReader
 
     private function reference(PlantUmlCommand $command): void
     {
-        $participants = \array_map(fn (string $code): string => $this->participantNamed(\trim($code, characters: ' "')), \explode(',', (string) $command->get('PARTS')));
-        $text = 'CommandReferenceMultilinesOverSeveral' === $command->name ? \array_map(\trim(...), $command->body()) : self::lines((string) $command->get('TEXT'));
-        if ('CommandReferenceMultilinesOverSeveral' === $command->name) {
-            $match = [];
-            \preg_match('/over\s+(.+?)\s*$/i', $command->line(), $match);
-            $participants = \array_map(fn (string $code): string => $this->participantNamed(\trim($code, characters: ' "')), \explode(',', $match[1] ?? ''));
-        }
+        $multiline = 'CommandReferenceMultilinesOverSeveral' === $command->name;
+        $text = $multiline ? \array_map(\trim(...), $command->body()) : self::lines((string) $command->get('TEXT'));
+        $match = [];
+        // A reference over several lines names its participants on its first, read here as PlantUML reads them.
+        $parts = $multiline && 1 === \preg_match('/over\s+(.+?)\s*$/i', $command->line(), $match) ? $match[1] : (string) $command->get('PARTS');
+        $participants = \array_map(fn (string $code): string => $this->participantNamed(\trim($code, characters: ' "')), \explode(',', $parts));
         $this->events[] = new SequenceMark('reference', $text, $participants);
     }
 

@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Draw;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\Creole\CreoleCommands;
 use Janalis\Viz\PlantUML\Style\PlantUmlColor;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\Text\FontFace;
@@ -216,7 +217,7 @@ final readonly class PlantUmlText
     /** A line without its Creole markup: a `**`, `//`, `""`, `__` or `~~` only around something, as PlantUML reads it, `****` written as it is. */
     public static function plain(string $line): string
     {
-        $line = (string) \preg_replace(self::TAGS, replacement: '', subject: $line);
+        $line = (string) \preg_replace(self::TAGS, replacement: '', subject: CreoleCommands::unlinked($line));
 
         return (string) \preg_replace('/(\*\*|\/\/|""|__|~~)(.+?)\1/u', replacement: '$2', subject: $line);
     }
@@ -340,7 +341,7 @@ final readonly class PlantUmlText
         for ($at = 0, $count = \count($parts); $at < $count; $at += 4) {
             // As PlantUML's Creole sets them, each stretch of bold, italic or monospaced markup in its own face, a tag left open to the line's end.
             foreach ((array) \preg_split(
-                '/(\*\*.+?\*\*|<b>.+?(?:<\/b>|$)|\/\/.+?\/\/|<i>.+?(?:<\/i>|$)|"".+?""|<&[\w-]+>)/iu',
+                '/(\[\[.+?\]\]|\*\*.+?\*\*|<b>.+?(?:<\/b>|$)|\/\/.+?\/\/|<i>.+?(?:<\/i>|$)|"".+?""|<&[\w-]+>)/iu',
                 (string) $parts[$at],
                 flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY,
             ) as $stretch) {
@@ -534,6 +535,9 @@ final readonly class PlantUmlText
         $match = [];
         // A line wholly coloured, as `<color:…>` around it writes it, takes that colour.
         $color = 1 === \preg_match('/^\s*<color:([^>]+)>.*<\/color>\s*$/i', $line, $match) ? PlantUmlColor::parse($match[1]) ?? $this->color : $this->color;
+        // As PlantUML writes a link: blue, underlined.
+        $link = \str_starts_with($text, '[[');
+        $color = $link ? '#0000ff' : $color;
         $mark = new Mark(
             MarkKind::Text,
             [[$left + ($shown / 2), $baseline]],
@@ -544,7 +548,9 @@ final readonly class PlantUmlText
             slots: self::slots($plain, $size, $face, $shown, self::family($text)),
         );
 
-        return [[$mark], $shown];
+        $underline = new Mark(MarkKind::Polyline, [[$left, $baseline + 1.5], [$left + $shown, $baseline + 1.5]], stroke: $color, strokeWidth: 1.0);
+
+        return [$link ? [$mark, $underline] : [$mark], $shown];
     }
 
     /** @return array{list<Mark>, float} a sprite's image, standing on a line's foot, and its width */

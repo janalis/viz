@@ -517,4 +517,22 @@ final class TeozDrawingTest extends TestCase
         // As the jar draws it, 160 tall: the line 4 above and below the second section, not a line of text.
         $this->assertSame(160.0, $drawing->height / Units::POINT);
     }
+
+    public function testAReferenceOverSeveralLinesNamesOnlyItsParticipants(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nA -> B\nref over A\n  multi\n  line\nend ref\n@enduml"));
+
+        // As the jar draws it, 88 wide: no participant made of nothing beside B.
+        $this->assertSame([88.0, 174.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
+    public function testALinkShowsItsLabelInBlueUnderlined(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nA -> B : [[http://x.com link]]\n@enduml"));
+        $link = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => 'link' === $mark->text))[0];
+
+        // As the jar draws it, 91 wide: the link written as its label.
+        $this->assertSame([91.0, 131.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertSame('#0000ff', $link->stroke);
+    }
 }
