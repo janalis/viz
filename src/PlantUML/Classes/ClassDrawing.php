@@ -205,7 +205,7 @@ final class ClassDrawing
      */
     private function end(Svek $svek, string $id, array $held): ?string
     {
-        if (\array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->empty)) {
+        if (\array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->empty) || \array_key_exists($id, $this->notes)) {
             return $id;
         }
         if (!\array_key_exists($id, $held) || !\array_key_exists($id, $this->classes->groups)) {

@@ -304,9 +304,14 @@ final class ClassReader
         return $link;
     }
 
-    /** What a link's end names: a package, as PlantUML links to one, else an entity, made a class when new. */
+    /** What a link's end names: a floating note or a package, as PlantUML links to them, else an entity, made a class when new. */
     private function end(string $name): string
     {
+        foreach ($this->notes as $note) {
+            if (null === $note->entity && null === $note->link && $note->id === self::clean($name)) {
+                return $note->id;
+            }
+        }
         $id = $this->reused(self::clean($name));
         $package = !\array_key_exists($id, $this->entities) && 'package' === ($this->groups[$id] ?? null)?->type;
 

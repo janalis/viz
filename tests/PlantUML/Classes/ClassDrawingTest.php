@@ -631,6 +631,14 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([105.0, 145.0], $size("package E <<Database>> {\n class V\n}"));
     }
 
+    public function testALinkToAFloatingNoteEndsAtTheNote(): void
+    {
+        // As the jar sets it: no class made of the note's name.
+        $drawing = self::draw("class Car\nnote \"Floating\" as N1\nCar .. N1");
+        $this->assertSame([92.0, 155.0], [\round($drawing->width / Units::POINT, precision: 3), \round($drawing->height / Units::POINT, precision: 3)]);
+        $this->assertNotContains('N1', \array_map(static fn (Mark $mark): string => $mark->text, $drawing->marks));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
