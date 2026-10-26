@@ -67,7 +67,13 @@ final class DescriptionDrawing
                 strokeWidth: 0.0,
             )] : null;
 
-        return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement), trail: $alone ? 14.0 : 15.0, measured: $box);
+        return PlantUmlFrame::svek(
+            $diagram->document,
+            $drawing->paint($placement),
+            trail: $alone ? 14.0 : 15.0,
+            measured: $box,
+            inFrame: $alone ? PlantUmlFrame::ALONE_SHORT : PlantUmlFrame::LAID_OUT,
+        );
     }
 
     /** The room PlantUML's symbols keep around a container's title for their shape: a node's depth, a database's lid. */

@@ -78,7 +78,7 @@ final class ClassDrawing
             $node = $placement->graph->nodes[0];
             $box = new Mark(MarkKind::Polygon, ClassBox::corners($node->x - ($node->w / 2), $node->y - ($node->h / 2), $node->w, $node->h), stroke: 'none', fill: 'none', strokeWidth: 0.0);
 
-            return PlantUmlFrame::svek($classes->document, $marks, trail: 14.0, measured: [$box]);
+            return PlantUmlFrame::svek($classes->document, $marks, trail: 14.0, measured: [$box], inFrame: PlantUmlFrame::ALONE);
         }
 
         return PlantUmlFrame::svek(
@@ -86,6 +86,7 @@ final class ClassDrawing
             $marks,
             trail: $alone ? 13.0 : 15.0,
             measured: $alone ? $drawing->bare($placement) : $drawing->measured($marks),
+            inFrame: $alone ? PlantUmlFrame::ALONE : PlantUmlFrame::LAID_OUT,
         );
     }
 

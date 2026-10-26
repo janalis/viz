@@ -54,7 +54,7 @@ final class StateDrawing
         yield from $scope;
         $marks = $scope->getReturn();
 
-        return PlantUmlFrame::svek($states->document, $marks);
+        return PlantUmlFrame::svek($states->document, $marks, inFrame: PlantUmlFrame::LAID_OUT_SHORT);
     }
 
     /**

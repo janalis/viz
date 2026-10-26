@@ -535,4 +535,20 @@ final class TeozDrawingTest extends TestCase
         $this->assertSame([91.0, 131.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
         $this->assertSame('#0000ff', $link->stroke);
     }
+
+    public function testAMainframeFramesTheDiagram(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: the frame 10 above and below, 5 either side, its label in a tab, whatever lays the diagram out.
+        $this->assertSame([174.0, 173.0], $size("mainframe This is a mainframe\nA -> B"));
+        $this->assertSame([80.0, 234.0], $size("mainframe: Hello\nclass A\nclass B\nA --> B"));
+        $this->assertSame([93.0, 132.0], $size("mainframe Hello\nclass A"));
+        $this->assertSame([101.0, 131.0], $size("mainframe F\n[A]"));
+        $this->assertSame([89.0, 207.0], $size("mainframe F\n[*] --> S"));
+    }
 }

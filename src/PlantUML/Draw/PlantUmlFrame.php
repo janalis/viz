@@ -27,6 +27,16 @@ final class PlantUmlFrame
     private const float SVEK_TRAIL = 15.0;
     /** How much room svek leaves past an image it lays out within a diagram. */
     private const float SVEK_IMAGE_TRAIL = 15.0;
+    /**
+     * In a frame, how much further than measured an image dot lays out reaches across and down,
+     * and how far it moves in from the frame's inside: 1 more each way where what it draws is
+     * measured 1 short of its far sides, as its limit finder measures a box.
+     */
+    public const array LAID_OUT = [0.0, 7.0, 0.0, 7.0];
+    public const array LAID_OUT_SHORT = [1.0, 8.0, 0.0, 7.0];
+    /** The same for an image laid out alone, without dot. */
+    public const array ALONE = [13.0, 13.0, 6.0, 6.0];
+    public const array ALONE_SHORT = [14.0, 14.0, 6.0, 6.0];
     /** How much of that room lies past the document's captions, below and to the right of everything. */
     private const float SVEK_OUTER = 5.0;
 
@@ -93,8 +103,9 @@ final class PlantUmlFrame
      * @param list<Mark> $marks the diagram's, in points
      * @param float $trail the room past what it draws, the 5 past everything included
      * @param ?list<Mark> $measured what its limit finder takes, where not all it draws
+     * @param array{float, float, float, float} $inFrame in a frame, how much further than measured it reaches across and down, and how far it moves in: an image dot lays out reaching 1 and 8 further, 7 down from its left; one laid out alone 14 and 14, 7 in from both
      */
-    public static function svek(PlantUmlDocument $document, array $marks, float $trail = self::SVEK_TRAIL, ?array $measured = null): Drawing
+    public static function svek(PlantUmlDocument $document, array $marks, float $trail = self::SVEK_TRAIL, ?array $measured = null, array $inFrame = self::LAID_OUT): Drawing
     {
         [$minX, $minY, $maxX, $maxY] = self::limits($measured ?? $marks);
 
@@ -107,6 +118,7 @@ final class PlantUmlFrame
             \floor(...),
             // As PlantUML is seen to take them, rounding the diagram down: its captions 1 wider.
             captionRoom: 1.0,
+            content: [$maxX - $minX + $inFrame[0], $maxY - $minY + $inFrame[1], $inFrame[2] - self::SVEK_INSET, $inFrame[3] - self::SVEK_INSET],
         );
     }
 
@@ -183,9 +195,18 @@ final class PlantUmlFrame
      * @param array{float, float, float, float} $margins top, right, bottom and left, around everything, unless the document's style sets them
      * @param ?\Closure(float): float $whole how its size unscaled is rounded to whole points: up by default, as PlantUML writes it
      * @param float $captionRoom how much wider than they are its captions are taken
+     * @param ?array{float, float, float, float} $content how far what is drawn reaches across and down in a frame, and how far it moves into it; as measured by default
      */
-    private static function framed(PlantUmlDocument $document, array $marks, float $width, float $height, array $margins, ?\Closure $whole = null, float $captionRoom = 0.0): Drawing
-    {
+    private static function framed(
+        PlantUmlDocument $document,
+        array $marks,
+        float $width,
+        float $height,
+        array $margins,
+        ?\Closure $whole = null,
+        float $captionRoom = 0.0,
+        ?array $content = null,
+    ): Drawing {
         // A margin the document's style sets, as a theme's `root` does, stands for the diagram's own.
         $style = $document->styles->style(['root', 'document']);
         [$top, $right, $bottom, $left] = '' === \trim($style->value('Margin')) ? $margins : $style->sides('Margin');
@@ -193,6 +214,9 @@ final class PlantUmlFrame
         foreach (['header', 'title'] as $kind) {
             $blocks[] = self::block($document, $kind, $captionRoom);
         }
+        [$marks, $width, $height] = self::mainframe($document, $marks, $width, $height, $content);
+        // As PlantUML is seen to size a framed diagram: rounded up, whatever lays it out.
+        $whole = ($document->captions['mainframe'] ?? null) instanceof PlantUmlCaption ? null : $whole;
         $blocks[] = [[], $width, $height, 'center'];
         foreach (['legend', 'caption', 'footer'] as $kind) {
             $blocks[] = self::block($document, $kind, $captionRoom);
@@ -228,6 +252,55 @@ final class PlantUmlFrame
             \array_map(static fn (Mark $mark): Mark => Units::scaled($mark, $scale), $placed),
             'none' === $background ? null : $background,
         );
+    }
+
+    /**
+     * The diagram in the frame `mainframe` asks for, as PlantUML's `BigFrame` draws it, inside its
+     * style's margin: as wide as what is drawn reaches and 12 more, or its label and 10 more, as
+     * tall as what is drawn reaches and its label's height twice and 11 more, its padding around;
+     * its label in a tab at its top left, 3 in and 1 down, the tab's corner cut 10 across.
+     *
+     * @param list<Mark> $marks
+     * @param ?array{float, float, float, float} $content how far what is drawn reaches across and down, and how far it moves in; as measured by default
+     * @return array{list<Mark>, float, float}
+     */
+    private static function mainframe(PlantUmlDocument $document, array $marks, float $width, float $height, ?array $content): array
+    {
+        $caption = $document->captions['mainframe'] ?? null;
+        if (!$caption instanceof PlantUmlCaption) {
+            return [$marks, $width, $height];
+        }
+        $style = $document->styles->style(['root', 'document', 'mainframe']);
+        $title = PlantUmlText::styled($caption->lines, $style);
+        [$titleWidth, $titleHeight] = $title->size();
+        [$padTop, $padRight, $padBottom, $padLeft] = $style->sides('Padding');
+        [$top, $right, $bottom, $left] = $style->sides('Margin');
+        // As its limit finder takes what is drawn: as far as it reaches from the origin.
+        [$minX, $minY, $maxX, $maxY] = [] === $marks ? [0.0, 0.0, 0.0, 0.0] : self::limits($marks);
+        [$reach, $depth, $dx, $dy] = $content ?? [$minX >= 0 ? $maxX : $maxX - $minX, $minY >= 0 ? $maxY : $maxY - $minY, 0.0, 0.0];
+        $inside = $padTop + $titleHeight + 10;
+        $frameWidth = $padLeft + \max($reach + 12, $titleWidth + 10) + $padRight;
+        $frameHeight = $inside + $titleHeight + $depth + $padBottom;
+        $line = $style->color('LineColor', '#181818');
+        $thickness = $style->number('LineThickness', 1.5);
+        $tab = [$left + $titleWidth + 10, $top + $titleHeight + 3];
+        $frame = [
+            new Mark(
+                MarkKind::Polygon,
+                [[$left, $top], [$left + $frameWidth, $top], [$left + $frameWidth, $top + $frameHeight], [$left, $top + $frameHeight]],
+                stroke: $line,
+                fill: 'none',
+                strokeWidth: $thickness,
+            ),
+            new Mark(MarkKind::Polyline, [[$tab[0], $top], [$tab[0], $tab[1] - 10], [$tab[0] - 10, $tab[1]], [$left, $tab[1]]], stroke: $line, strokeWidth: $thickness),
+            ...$title->marks($left + 3, $top + 1, $titleWidth, 'left'),
+        ];
+
+        return [
+            [...$frame, ...\array_map(static fn (Mark $mark): Mark => self::moved($mark, $left + $padLeft + $dx, $top + $inside + $dy), $marks)],
+            $left + $frameWidth + $right,
+            $top + $frameHeight + $bottom,
+        ];
     }
 
     /** @return array{list<Mark>, float, float, string} a caption's marks from the origin, its size, and how it aligns */

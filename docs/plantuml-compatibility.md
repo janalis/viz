@@ -17,7 +17,7 @@ Where PlantUML's preprocessor stops on an error, the diagram is left to PlantUML
 
 | Read natively | Left to PlantUML |
 | --- | --- |
-| `skinparam name value`, `skinparam [prefix] { … }` with nested blocks and `<<stereotype>>`s; `<style>` sheets on one line or several, a `document` or `root` margin standing for the diagram's own; `skinparam dpi`, scaling as PlantUML does against 96; `!assume transparent`, which does nothing; `skinparam wrapWidth`, text wrapped where PlantUML wraps it, measured in its font's advances; Creole tables (`|= head |`, `<#colour>` cells and rows); `sprite` of 16, 8 or 4 gray levels, packed or compressed, or of those libraries (`#c4#…`), and `<$name>` in text; `skin rose`; `title`, `caption`, `header`, `footer`, `legend` on one line or several, with their alignments; `scale n` and `scale a/b`, and `scale` to a width, a height or both (`200 width`, `100 height`, `200*300`), `max` only to shrink, as PlantUML fits the drawing | Sprites of colours, of SVG or of the standard library; `mainframe`; `newpage`; `rotate`; `page`; `minwidth`; `skinparamlocked`; other skins |
+| `skinparam name value`, `skinparam [prefix] { … }` with nested blocks and `<<stereotype>>`s; `<style>` sheets on one line or several, a `document` or `root` margin standing for the diagram's own; `skinparam dpi`, scaling as PlantUML does against 96; `!assume transparent`, which does nothing; `skinparam wrapWidth`, text wrapped where PlantUML wraps it, measured in its font's advances; Creole tables (`|= head |`, `<#colour>` cells and rows); `sprite` of 16, 8 or 4 gray levels, packed or compressed, or of those libraries (`#c4#…`), and `<$name>` in text; `skin rose`; `title`, `caption`, `header`, `footer`, `legend` on one line or several, with their alignments; `scale n` and `scale a/b`, and `scale` to a width, a height or both (`200 width`, `100 height`, `200*300`), `max` only to shrink, as PlantUML fits the drawing; `mainframe`, a frame around the diagram with its label in a tab, exactly as the jar draws it around sequence, class, description and state diagrams; `[[target label]]` links, written as their label in blue, underlined | Sprites of colours, of SVG or of the standard library; `newpage`; `rotate`; `page`; `minwidth`; `skinparamlocked`; other skins |
 
 ## Styles
 
@@ -96,7 +96,7 @@ A diagram PlantUML fails to draw is left to it too: a second note beside a messa
 
 | Read natively | Left to PlantUML |
 | --- | --- |
-| Participants of every kind, `as`, `order`, stereotypes, colours, `create`, over several lines, in nested boxes; `hide unlinked`; footbox | `newpage`, `mainframe`, URLs, anchors and their links, notes on a group's `end` |
+| Participants of every kind, `as`, `order`, stereotypes, colours, `create`, over several lines, in nested boxes; `hide unlinked`; footbox | `newpage`, anchors and their links, notes on a group's `end` |
 | Messages with every arrow (`->`, `-->`, `->>`, `<-`, `<->`, `x`, `o`, halves, slants, `[#color,dashed,hidden]`), `++`, `--`, `!!`, `**` and their pairs, `&` in parallel, `[->`, `->]`, `?->` and their kin | Multicast (`A -> B & C`) |
 | `activate`, `deactivate`, `destroy`, `create`, `X++`, `X--`, `return`, `autoactivate`; groups (`alt`, `else`, `opt`, `loop`, `par`, `break`, `critical`, `group … [label]`), `&` before a group | Parallel notes (`& note`) |
 | Notes left, right and over one or two participants, across, `hnote`, `rnote`, on a row with `/`, on messages; dividers, delays, space, `ref over`; `autonumber` with its start, step, format, `stop`, `resume` and `inc` | |

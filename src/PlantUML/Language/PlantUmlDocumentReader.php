@@ -17,7 +17,7 @@ final class PlantUmlDocumentReader
     private const string NOTE = '/^[hr]?note\b(?!.*[:"])/i';
 
     /** Shared commands the native renderer leaves to PlantUML. */
-    private const string LEFT = '/^(?:sprite\b|mainframe\b|newpage\b|rotate$|page\s|minwidth\b|skinparamlocked\b|assume\s+transparent|<style>\s*@import|\$\w+\s*=)/i';
+    private const string LEFT = '/^(?:sprite\b|newpage\b|rotate$|page\s|minwidth\b|skinparamlocked\b|assume\s+transparent|<style>\s*@import|\$\w+\s*=)/i';
 
     private int $at = 0;
     private StyleSheet $styles;
@@ -255,6 +255,12 @@ final class PlantUmlDocumentReader
 
                 return true;
             }
+        }
+        // As PlantUML's `CommandMainframe`: a frame around the diagram, its label in a tab at its top left.
+        if (1 === \preg_match('/^mainframe(?:[\s\x{a0}]*:[\s\x{a0}]*|[\s\x{a0}]+)(.*[\p{L}\p{N}_.].*)$/iu', $line, $match)) {
+            $this->captions['mainframe'] = new PlantUmlCaption(self::lines($match[1]));
+
+            return true;
         }
         if (1 !== \preg_match('/^(title|caption|legend)(?=[\s\x{a0}:])(.*)$/iu', $line, $match)) {
             return false;

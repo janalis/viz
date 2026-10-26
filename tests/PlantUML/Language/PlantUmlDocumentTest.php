@@ -118,7 +118,6 @@ final class PlantUmlDocumentTest extends TestCase
     public static function refused(): iterable
     {
         yield 'sprite' => ['sprite $x [16x16/4] {'];
-        yield 'mainframe' => ['mainframe Frame'];
         yield 'newpage' => ['newpage'];
         yield 'other skin' => ['skin debug'];
         yield 'scale to a size in units' => ['scale 200 px'];
