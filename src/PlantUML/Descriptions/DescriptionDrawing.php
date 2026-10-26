@@ -14,10 +14,10 @@ use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassPortions;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
-use Janalis\Viz\PlantUML\Draw\BoxClip;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
+use Janalis\Viz\PlantUML\Draw\NoteLine;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\StackedText;
@@ -280,13 +280,7 @@ final class DescriptionDrawing
             if (null === $note->entity || !\array_key_exists($note->id, $this->notes)) {
                 continue;
             }
-            $from = $placement->endpoints[$note->id];
-            $to = $placement->endpoints[$note->entity];
-            $this->put(
-                $marks,
-                [new Mark(MarkKind::Polyline, BoxClip::clipped([[$from->x, $from->y], [$to->x, $to->y]], $from, $to), stroke: '#181818', dashed: true, strokeWidth: 0.5, dashes: [7.0, 7.0])],
-                $note->entity,
-            );
+            $this->put($marks, [NoteLine::straight($placement, $note->id, $note->entity)], $note->entity);
         }
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];

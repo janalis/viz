@@ -375,6 +375,13 @@ final class ClassReader
                 return $note->id;
             }
         }
+
+        return $this->classifierOrPackage($name);
+    }
+
+    /** What a name stands for beside a link or a note: a package so named that no classifier is, else a classifier, made when new. */
+    private function classifierOrPackage(string $name): string
+    {
         $id = $this->reused(self::clean($name));
         $package = !\array_key_exists($id, $this->entities) && 'package' === ($this->groups[$id] ?? null)?->type;
 
@@ -419,7 +426,7 @@ final class ClassReader
     private function beside(PlantUmlCommand $command): void
     {
         $id = $command->get('CODE');
-        $entity = null === $id ? $this->last : $this->entity($id)->id;
+        $entity = null === $id ? $this->last : $this->classifierOrPackage($id);
         if (null === $entity) {
             throw new PlantUmlRefusal('The PlantUML note has no entity to stand beside: '.$command->line());
         }

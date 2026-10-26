@@ -269,14 +269,15 @@ final class DotOrdering
                 foreach ($item as $node) {
                     $itemOf[$node] = [$rank, $index];
                 }
-                // As dot, the top level starts from its nodes in the order a depth-first search meets them; a cluster, in the order it holds them.
-                $seeds[] = [\min(\array_map(fn (int $node): int => $scope >= 0 ? $node : $this->visit[$node], $item)), $rank, $index];
+                // As dot is seen to start them: the top level from its nodes in the order a depth-first search meets them; a cluster from the clusters it holds, then its own nodes, each in the order it holds them.
+                $own = $scope >= 0 && -1 === $this->layers->childOf($item[0], $scope) ? 1 : 0;
+                $seeds[] = [$own, \min(\array_map(fn (int $node): int => $scope >= 0 ? $node : $this->visit[$node], $item)), $rank, $index];
             }
         }
         \usort($seeds, static fn (array $a, array $b): int => $a <=> $b);
         $placed = [];
         $orders = \array_fill(0, \max(0, $ranks), []);
-        foreach ($seeds as [, $rank, $index]) {
+        foreach ($seeds as [, , $rank, $index]) {
             if (\array_key_exists($rank.':'.$index, $placed) || $this->hasEdge($itemsByRank[$rank][$index], $from, $scope)) {
                 continue;
             }

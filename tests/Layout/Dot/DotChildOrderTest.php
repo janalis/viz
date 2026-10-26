@@ -22,19 +22,43 @@ final class DotChildOrderTest extends TestCase
         yield 'a cluster of the parent\'s own holding none of them' => ['digraph { c; b; subgraph cluster_0 { a } a -> b; a -> c }', ['c', 'b']];
     }
 
+    /** @return iterable<string, array{string, list<string>}> */
+    public static function ranks(): iterable
+    {
+        yield 'a cluster\'s own nodes after the clusters it holds' => ['digraph { subgraph cluster_1 { p; q; subgraph cluster_2 { a } r } }', ['a', 'p', 'q', 'r']];
+        yield 'the top level\'s as written' => ['digraph { x; subgraph cluster_1 { a } }', ['x', 'a']];
+        yield 'a cluster\'s point after the cluster it holds, whatever it links to' => ['digraph { subgraph cluster_1 { p; subgraph cluster_2 { a } } n; p -> n [minlen=0] }', ['a', 'p', 'n']];
+    }
+
     /** @param list<string> $expected */
     #[DataProvider('graphs')]
     public function testChildrenStandAsDotSetsThem(string $source, array $expected): void
     {
+        $this->assertSame($expected, self::leftToRight($source, $expected));
+    }
+
+    /** @param list<string> $expected */
+    #[DataProvider('ranks')]
+    public function testARanksNodesStartAsDotSetsThem(string $source, array $expected): void
+    {
+        $this->assertSame($expected, self::leftToRight($source, $expected));
+    }
+
+    /**
+     * @param list<string> $names
+     * @return list<string> the nodes so named, left to right
+     */
+    private static function leftToRight(string $source, array $names): array
+    {
         $x = [];
         foreach (Work::run(new DotPipeline()->drawing($source))->marks as $mark) {
-            if (MarkKind::Text !== $mark->kind || !\in_array($mark->text, $expected, strict: true)) {
+            if (MarkKind::Text !== $mark->kind || !\in_array($mark->text, $names, strict: true)) {
                 continue;
             }
             $x[$mark->text] = $mark->points[0][0];
         }
         \asort($x);
 
-        $this->assertSame($expected, \array_keys($x));
+        return \array_map(strval(...), \array_keys($x));
     }
 }

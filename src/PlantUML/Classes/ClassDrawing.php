@@ -13,10 +13,10 @@ use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionDrawing;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionShapes;
-use Janalis\Viz\PlantUML\Draw\BoxClip;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
+use Janalis\Viz\PlantUML\Draw\NoteLine;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
@@ -49,6 +49,8 @@ final class ClassDrawing
     private array $empty = [];
     /** @var array<string, true> the packages a link starts or ends at, each with a point inside it */
     private array $anchors = [];
+    /** @var array<string, int> the edges of the notes beside classifiers and packages, by note */
+    private array $noteEdges = [];
     /** @var array<string, true> the classifiers hidden, laid out but not drawn */
     private array $hidden = [];
     /** @var array<int, array<int, float>> how far across each link's qualifier at its first end, 0, and its second, 1, is pushed */
@@ -191,15 +193,27 @@ final class ClassDrawing
         }
         $drawn = \array_values(\array_filter($this->classes->leaves, fn (string $id): bool => \array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->notes)));
         Squares::put($svek, $drawn, $groups, [null, ...\array_keys($this->classes->groups)], $this->classes->links, $this->classes->notes);
+        $this->noteEdges($svek, $held);
+
+        return $svek;
+    }
+
+    /**
+     * Lays each note beside a classifier or a package out an edge from it or to it: as svek, a
+     * note beside a package stands beside a point inside its cluster.
+     *
+     * @param array<string, true> $held the groups holding something
+     */
+    private function noteEdges(Svek $svek, array $held): void
+    {
         foreach ($this->classes->notes as $note) {
-            if (null === $note->entity || !\array_key_exists($note->entity, $this->boxes)) {
+            $end = null === $note->entity || !\array_key_exists($note->id, $this->notes) ? null : $this->end($svek, $note->entity, $held);
+            if (null === $end) {
                 continue;
             }
             $across = \in_array($note->position, ['left', 'right'], strict: true) ? 1 : 2;
-            \in_array($note->position, ['left', 'top'], strict: true) ? $svek->edge($note->id, $note->entity, $across) : $svek->edge($note->entity, $note->id, $across);
+            $this->noteEdges[$note->id] = \in_array($note->position, ['left', 'top'], strict: true) ? $svek->edge($note->id, $end, $across) : $svek->edge($end, $note->id, $across);
         }
-
-        return $svek;
     }
 
     /**
@@ -321,7 +335,7 @@ final class ClassDrawing
     /** Whether a note is laid out as a node: not one on a link, which stands in its label, nor one on a classifier removed, which goes with it, as PlantUML has them. */
     private function placed(PlantUmlNote $note): bool
     {
-        return null === $note->link && (null === $note->entity || \array_key_exists($note->entity, $this->boxes));
+        return null === $note->link && (null === $note->entity || \array_key_exists($note->entity, $this->boxes) || \array_key_exists($note->entity, $this->classes->groups));
     }
 
     /**
@@ -515,12 +529,24 @@ final class ClassDrawing
     /** The dashed line from a note to the entity it stands beside. */
     private function noteLink(PlantUmlNote $note, Placement $placement): void
     {
-        if (null === $note->entity || !\array_key_exists($note->id, $this->notes) || !\array_key_exists($note->entity, $this->boxes) || \array_key_exists($note->entity, $this->hidden)) {
+        $entity = (string) $note->entity;
+        // As PlantUML, a note's line to a package is its edge as dot draws it; to a classifier shown, a straight line.
+        $routed = \array_key_exists($note->id, $this->noteEdges) && \array_key_exists($entity, $this->classes->groups);
+        if (!$routed && (!\array_key_exists($note->id, $this->notes) || !\array_key_exists($entity, $this->boxes) || \array_key_exists($entity, $this->hidden))) {
             return;
         }
-        $from = $placement->endpoints[$note->id];
-        $to = $placement->endpoints[$note->entity];
-        $points = BoxClip::clipped([[$from->x, $from->y], [$to->x, $to->y]], $from, $to);
-        $this->marks[] = new Mark(MarkKind::Polyline, $points, stroke: '#181818', dashed: true, strokeWidth: 0.5, dashes: [7.0, 7.0]);
+        $styles = $this->classes->document->styles;
+        \array_push(
+            $this->marks,
+            ...$routed
+                ? NoteLine::routed(
+                    $note,
+                    $placement,
+                    $this->noteEdges[$note->id],
+                    $styles->style(['root', 'element', 'classDiagram', 'arrow']),
+                    $styles->style(['root', 'element', 'classDiagram', 'note']),
+                )
+                : [NoteLine::straight($placement, $note->id, $entity)],
+        );
     }
 }

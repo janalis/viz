@@ -325,6 +325,14 @@ final class ClassReaderTest extends TestCase
         self::read($line);
     }
 
+    public function testANoteBesideAPackageNamesIt(): void
+    {
+        $classes = self::read("package P {\nclass A\n}\nnote right of P : n");
+
+        $this->assertSame(['A'], \array_keys($classes->entities));
+        $this->assertSame('P', $classes->notes[0]->entity);
+    }
+
     public function testAnAssociationsDiamondIsNamelessAndNew(): void
     {
         $this->assertSame('diamond', self::read("<> d\nclass A\nA -- d")->entities['d']->type);

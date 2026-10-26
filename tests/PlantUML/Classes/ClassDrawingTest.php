@@ -674,4 +674,19 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([167.0, 262.0], $size("class Foo\nclass Bar\nclass Baz\n<> diamond\nFoo -- diamond\nBar -- diamond\ndiamond -- Baz"));
         $this->assertSame([208.0, 280.0], $size("class Student\nclass Course\nclass Grade\n<> enrol\nStudent \"1\" -- enrol\nenrol -- \"*\" Course\nenrol .. Grade : grades"));
     }
+
+    public function testANoteBesideAPackageStandsBesideItsPoint(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: beside a point inside the package, as svek lays it out, its line cut at the package's frame; beside an empty package, as beside a class.
+        $this->assertSame([186.0, 136.0], $size("package P {\nclass A\n}\nnote right of P : n"));
+        $this->assertSame([198.0, 209.0], $size("package P {\nclass A\n}\nnote left of P : left\nnote top of P : top\nclass B\nB --> A"));
+        $this->assertSame([147.0, 212.0], $size("package P {\nclass A\n}\nnote bottom of P\n  two\n  lines\nend note"));
+        $this->assertSame([164.0, 73.0], $size("package P {\n}\nnote right of P : on empty"));
+    }
 }

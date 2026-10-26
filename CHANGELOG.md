@@ -4,6 +4,8 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML class diagram's note beside a package stands beside it as svek lays it out, where it made a class of the package's name: beside a point inside the package's cluster, its dashed line the edge dot draws, cut at the package's frame.
+- The native dot engine starts a cluster's order on a rank from the clusters it holds, then its own nodes, each in the order the cluster holds them, as `dot` is seen to; the top level keeps the order its nodes are met in.
 - PlantUML component, deployment, use case and state diagrams' `hide`, `show`, `remove` and `restore` of elements and states are drawn natively, where they were refused, as class diagrams' are: by name, `*` standing for any characters, by `<<stereotype>>` or `@unlinked`; one hidden laid out but drawn with nothing that touches it, measured all the same; one removed taken out with its links and notes. A lone element left after others are removed is laid out by dot, not drawn alone, as PlantUML counts those removed. In a class diagram, a note on a classifier removed now goes with it. Those of composite states and of the states within them are left to PlantUML.
 - A PlantUML class diagram's association diamond, `<> name`, is drawn natively, where it was refused: a diamond 24 across, nameless, as PlantUML makes it; one named as an entity already made is refused as PlantUML refuses it.
 - A PlantUML sequence diagram's `autonewpage` is read natively, where it was refused, as the no-op it is in PlantUML.
