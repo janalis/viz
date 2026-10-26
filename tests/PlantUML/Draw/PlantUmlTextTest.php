@@ -184,4 +184,11 @@ final class PlantUmlTextTest extends TestCase
         $this->assertSame(['a «b» c', '«use»'], \array_map(static fn ($mark): string => $mark->text, $text->marks(0.0, 0.0, 100.0)));
         $this->assertSame(new PlantUmlText(['a «b» c', '«use»'])->size(), $text->size());
     }
+
+    public function testABoldOrItalicTagLeftOpenRunsToTheLinesEnd(): void
+    {
+        // As PlantUML's Creole reads it: the face to the end of the line, as if closed there.
+        $this->assertSame(new PlantUmlText(['<b>[001]</b>'], 13.0)->size(), new PlantUmlText(['<b>[001]'], 13.0)->size());
+        $this->assertSame(new PlantUmlText(['x <i>[001]</i>'], 13.0)->size(), new PlantUmlText(['x <i>[001]'], 13.0)->size());
+    }
 }

@@ -337,9 +337,9 @@ final readonly class PlantUmlText
         $parts = (array) \preg_split('/'.self::SPRITE.'/u', $text, flags: \PREG_SPLIT_DELIM_CAPTURE);
         $atoms = [];
         for ($at = 0, $count = \count($parts); $at < $count; $at += 4) {
-            // As PlantUML's Creole sets them, each stretch of bold, italic or monospaced markup in its own face.
+            // As PlantUML's Creole sets them, each stretch of bold, italic or monospaced markup in its own face, a tag left open to the line's end.
             foreach ((array) \preg_split(
-                '/(\*\*.+?\*\*|<b>.+?<\/b>|\/\/.+?\/\/|<i>.+?<\/i>|"".+?""|<&[\w-]+>)/iu',
+                '/(\*\*.+?\*\*|<b>.+?(?:<\/b>|$)|\/\/.+?\/\/|<i>.+?(?:<\/i>|$)|"".+?""|<&[\w-]+>)/iu',
                 (string) $parts[$at],
                 flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY,
             ) as $stretch) {
@@ -581,8 +581,8 @@ final readonly class PlantUmlText
     private static function face(string $line, FontFace $face): FontFace
     {
         $line = (string) \preg_replace('/<\/?(?:color|size|font|back)(?::[^>]*)?>/i', replacement: '', subject: $line);
-        $bold = FontFace::Bold === $face || FontFace::BoldItalic === $face || 1 === \preg_match('/^\s*(?:\*\*.*\*\*|<b>.*<\/b>)\s*$/i', $line);
-        $italic = FontFace::Italic === $face || FontFace::BoldItalic === $face || 1 === \preg_match('/^\s*(?:\/\/.*\/\/|<i>.*<\/i>)\s*$/i', $line);
+        $bold = FontFace::Bold === $face || FontFace::BoldItalic === $face || 1 === \preg_match('/^\s*(?:\*\*.*\*\*|<b>.*<\/b>|<b>(?!.*<\/b>).*)\s*$/i', $line);
+        $italic = FontFace::Italic === $face || FontFace::BoldItalic === $face || 1 === \preg_match('/^\s*(?:\/\/.*\/\/|<i>.*<\/i>|<i>(?!.*<\/i>).*)\s*$/i', $line);
 
         return match (true) {
             $bold && $italic => FontFace::BoldItalic,
