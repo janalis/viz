@@ -210,11 +210,14 @@ final class PlantUmlDocumentReader
         return true;
     }
 
-    /** @throws Unsupported for the strict UML style, which changes how much is drawn across diagrams */
+    /** @throws Unsupported for the strict UML style, which changes how much is drawn across diagrams, and for padding around every text */
     private function param(string $name, string $value): void
     {
         if ('style' === \strtolower($name) && 'strictuml' === \strtolower($value)) {
             throw new Unsupported('The native PlantUML renderer leaves skinparam style strictuml to PlantUML');
+        }
+        if ('padding' === \strtolower($name) && \is_numeric($value) && 0.0 !== (float) $value) {
+            throw new Unsupported('The native PlantUML renderer leaves skinparam padding to PlantUML');
         }
         $this->params[\strtolower($name)] = $value;
         $this->styles = $this->styles->withSkinParam($name, $value);

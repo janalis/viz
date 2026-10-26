@@ -129,6 +129,7 @@ final class PlantUmlDocumentTest extends TestCase
         yield 'open skinparam' => ["skinparam {\n a b"];
         yield 'a skin parameter PlantUML warns of' => ['skinparam ParticipantPadding 20'];
         yield 'the strict UML style' => ["skinparam {\n  Style StrictUML\n}"];
+        yield 'padding around every text' => ["skinparam {\n  Padding 2\n}"];
     }
 
     #[DataProvider('refused')]
