@@ -480,4 +480,17 @@ final class TeozDrawingTest extends TestCase
         $this->assertSame([111.0, 173.0], $size("A -> B\n== Section ==\nB -> A"));
         $this->assertSame([158.0, 175.0], $size("A -> B\ngroup G [label]\n B -> A\nend"));
     }
+
+    public function testTheActorStyleSetsHowAnActorStands(): void
+    {
+        $size = static function (string $style): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nskinparam actorStyle ".$style."\nactor A\nparticipant B\nA -> B\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: a head over shoulders 54 wide, 61 tall; a hollow figure 26 wide, 33 tall.
+        $this->assertSame([108.0, 207.0], $size('awesome'));
+        $this->assertSame([79.0, 151.0], $size('hollow'));
+    }
 }

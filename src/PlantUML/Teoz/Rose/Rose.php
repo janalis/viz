@@ -24,6 +24,8 @@ final readonly class Rose
 
     public function __construct(
         private StyleSheet $sheet,
+        /** `skinparam actorStyle`: `awesome` or `hollow` draw an actor as that figure, anything else as a stick man. */
+        private string $actorStyle = '',
     ) {}
 
     /** @param list<string> $stereotypes */
@@ -47,12 +49,21 @@ final readonly class Rose
         $back = $style->color('BackGroundColor', '#e2e2f0');
 
         return match ($participant->type) {
-            'actor', 'boundary', 'control', 'entity', 'database' => new ParticipantIcon(new Icon($participant->type, $pen, $back, $style->number('Shadowing')), RoseText::of($lines, $style, [
-                0.0,
-                3.0,
-                0.0,
-                3.0,
-            ]), $head),
+            'actor', 'boundary', 'control', 'entity', 'database' => new ParticipantIcon(
+                new Icon(
+                    'actor' === $participant->type && \in_array($this->actorStyle, ['awesome', 'hollow'], strict: true) ? $this->actorStyle : $participant->type,
+                    $pen,
+                    $back,
+                    $style->number('Shadowing'),
+                ),
+                RoseText::of($lines, $style, [
+                    0.0,
+                    3.0,
+                    0.0,
+                    3.0,
+                ]),
+                $head,
+            ),
             'queue' => new ParticipantQueue(RoseText::of($lines, $style, [0.0, 3.0, 0.0, 3.0]), $pen, $back),
             default => new ParticipantBox(
                 RoseText::of($lines, $style, $style->sides('Padding')),

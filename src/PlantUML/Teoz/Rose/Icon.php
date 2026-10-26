@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Teoz\Rose;
 
 use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\PlantUML\Draw\ActorFigure;
 
 /**
  * The icon a participant may stand as, in its own pen and fill, as PlantUML draws it: the
- * stick man of an actor, a boundary's barred circle, a control's circling arrow, an entity's
+ * stick man of an actor or the figure its style asks for, a boundary's barred circle, a control's circling arrow, an entity's
  * underlined circle, a database's cylinder.
  */
 final readonly class Icon
@@ -26,6 +27,8 @@ final readonly class Icon
         $thickness = $pen->width;
         [$this->width, $this->height] = match ($kind) {
             'actor' => [26 + (2 * $thickness), 59 + (2 * $thickness) + $shadow],
+            'awesome' => [54 + (2 * $thickness), 60 + (2 * $thickness)],
+            'hollow' => [25 + (2 * $thickness), 32 + (2 * $thickness) + $shadow],
             'boundary' => [49.0, 32.0],
             'database' => [36.0, 46.0],
             default => [32.0, 32.0],
@@ -37,6 +40,7 @@ final readonly class Icon
     {
         return match ($this->kind) {
             'actor' => $this->stickman($x, $y),
+            'awesome', 'hollow' => $this->figure($x, $y),
             'boundary' => [
                 $this->pen->path([[$x + 4, $y + 4], [$x + 4, $y + 28]]),
                 $this->pen->path([[$x + 4, $y + 16], [$x + 21, $y + 16]]),
@@ -65,6 +69,14 @@ final readonly class Icon
             $this->pen->path([[$centre - 13, $neck + 8], [$centre + 13, $neck + 8]]),
             $this->pen->path([[$centre - 13, $neck + 42], [$centre, $neck + 27], [$centre + 13, $neck + 42]]),
         ];
+    }
+
+    /** @return list<Mark> the figure `skinparam actorStyle` asks for: a head over a filled body, its pen's width in from the top */
+    private function figure(float $x, float $y): array
+    {
+        [[$headX, $headY, $radius], $outline] = ActorFigure::of($this->kind, $x + ($this->width / 2), $y + $this->pen->width);
+
+        return [$this->pen->ellipse($headX - $radius, $headY - $radius, 2 * $radius, 2 * $radius, $this->back), $this->pen->shape($outline, $this->back)];
     }
 
     /** @return list<Mark> a cylinder: its outline, and the front of its top */

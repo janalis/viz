@@ -8,9 +8,9 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
+use Janalis\Viz\PlantUML\Draw\ActorFigure;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
-use Janalis\Viz\PlantUML\Draw\SvgPath;
 use Janalis\Viz\PlantUML\States\StateBox;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
@@ -56,10 +56,6 @@ final readonly class DescriptionBox
      *
      * @var array<string, array{float, float}>
      */
-    /** `ActorAwesome`'s body, 54 wide and 28 tall, its collar 4 deep, its shoulders and corners rounded. */
-    private const array AWESOME = [0.0, 'M0,4 C4,4 7,4 11,0 C19,0 27,8 27,16 L27,20 C27,24 23,28 19,28 L-19,28 C-23,28 -27,24 -27,20 L-27,16 C-27,8 -19,0 -11,0 C-7,4 -4,4 0,4 Z'];
-    /** `ActorHollow`'s body, 2 below its head: arms 25 across and 5 thick, a body 6 thick, legs 6 thick at a slant. */
-    private const array HOLLOW = [2.0, 'M-12.5,0 L-12.5,5 L-3,5 L-3,7.257 L-12.5,16.757 L-8.257,21 L0,12.743 L8.257,21 L12.5,16.757 L3,7.257 L3,5 L12.5,5 L12.5,0 Z'];
     private const array ICONS = [
         'actor' => [27.0, 60.0],
         'awesome' => [55.0, 61.0],
@@ -208,8 +204,7 @@ final readonly class DescriptionBox
         $centre = $x + ($this->width / 2);
         $marks = match ($symbol) {
             'actor' => [...self::stickman($centre, $y, $line, $back, $stroke), ...($this->element->business ? [self::chord($centre, $y, $line, $stroke)] : [])],
-            'awesome' => self::figure($centre, $y + 0.5, 16.0, self::AWESOME, $line, $back, $stroke),
-            'hollow' => self::figure($centre, $y + 0.5, 4.5, self::HOLLOW, $line, $back, $stroke),
+            'awesome', 'hollow' => self::figure($symbol, $centre, $y + 0.5, $line, $back, $stroke),
             // As PlantUML 1.2026 draws them, 4 in from their node's sides, each a circle 24 across 16 below its node's top: beside a bar 24 tall, over a line, under an arrowhead.
             'boundary' => [
                 StateBox::disc($centre + 8.5, $y + 16, 12.0, $line, $back),
@@ -360,15 +355,13 @@ final readonly class DescriptionBox
      * An actor's head and its body under it, as PlantUML's `ActorAwesome` and `ActorHollow` draw
      * them: the body a path from the middle of its top, filled, that many below the head.
      *
-     * @param array{float, string} $body how far below the head the body starts, and its path
      * @return list<Mark>
      */
-    private static function figure(float $x, float $y, float $radius, array $body, string $line, string $back, float $stroke): array
+    private static function figure(string $style, float $x, float $y, string $line, string $back, float $stroke): array
     {
-        $top = $y + (2 * $radius) + $body[0];
-        $outline = \array_map(static fn (array $at): array => [$x + $at[0], $top + $at[1]], SvgPath::outlines($body[1])[0]);
+        [[$headX, $headY, $radius], $outline] = ActorFigure::of($style, $x, $y);
 
-        return [StateBox::disc($x, $y + $radius, $radius, $line, $back), new Mark(MarkKind::Polygon, $outline, stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Path)];
+        return [StateBox::disc($headX, $headY, $radius, $line, $back), new Mark(MarkKind::Polygon, $outline, stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Path)];
     }
 
     /** A business actor's head crossed by a chord, 21/64 of a half turn either side of its lower right, as PlantUML draws it. */

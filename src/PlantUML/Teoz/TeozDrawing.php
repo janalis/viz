@@ -29,7 +29,7 @@ final class TeozDrawing
         if ([] === $sequence->participants) {
             throw new Unsupported('The native PlantUML renderer does not draw sequence diagrams without participants');
         }
-        $rose = new Rose($sequence->document->styles);
+        $rose = new Rose($sequence->document->styles, \strtolower($sequence->document->param('actorStyle', '')));
         $events = new TeozEvents($sequence->events);
         $xOrigin = RealImpl::origin();
         $yOrigin = RealImpl::origin();
