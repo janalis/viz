@@ -120,6 +120,23 @@ final class DotEngineTest extends TestCase
         $this->assertSame(36.0, $placement->endpoints['c']->x - $placement->endpoints['b']->x - 54.0);
     }
 
+    public function testParallelEdgesPackTheirLabelsOnlyFromTheMiddleOneOnAsDotDoes(): void
+    {
+        $edges = \array_map(static fn (int $index): LayoutEdge => new LayoutEdge($index, 'a', 'b', labelWidth: 100, labelHeight: 17), [0, 1, 2]);
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 50, 50), new LayoutNode('b', 'b', 50, 50)],
+            $edges,
+            [],
+            Direction::TopBottom,
+            new Spacing(60, 35, 4),
+        )));
+        $lefts = \array_map(static fn (array $at): float => $at[0] - 50, $placement->labels);
+
+        // As `dot` sets three such labels 100 wide: 40 between the first two, 8 between the last two.
+        $this->assertGreaterThanOrEqual(140.0, $lefts[1] - $lefts[0]);
+        $this->assertLessThan(110.0, $lefts[2] - $lefts[1]);
+    }
+
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

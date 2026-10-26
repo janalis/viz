@@ -121,16 +121,30 @@ final class DotHorizontal
     /**
      * How far apart two neighbours stand, as `dot` is seen to set them: their sides, the room
      * each keeps, and the gap between; on a rank between nodes' ranks, the label nodes of two
-     * edges joining the same two nodes, the label between them and 4.
+     * edges joining the same two nodes, from the middle one of all such on the rank on, the
+     * label between them and 4.
      */
     private function apart(int $left, int $right): float
     {
         $layers = $this->layers;
-        if (1 === ($layers->rank[$left] % 2) && null !== ($ends = $this->ends($left)) && $ends === $this->ends($right)) {
+        if (1 === ($layers->rank[$left] % 2) && null !== ($ends = $this->ends($left)) && $ends === $this->ends($right) && $this->beyondMiddle($left, $ends)) {
             return ($layers->mirrored ? $layers->left[$right] : $layers->right[$left]) + 4;
         }
 
         return $layers->right[$left] + $this->after($left) + $this->gap($left, $right) + $this->before($right) + $layers->left[$right];
+    }
+
+    /**
+     * Whether a label node stands at or past the middle of the label nodes on its rank whose
+     * edges join the same two nodes, as `dot` is seen to pack only those past it.
+     *
+     * @param array{int, int} $ends
+     */
+    private function beyondMiddle(int $node, array $ends): bool
+    {
+        $group = \array_values(\array_filter($this->layers->ranks[$this->layers->rank[$node]], fn (int $other): bool => $this->ends($other) === $ends));
+
+        return (int) \array_search($node, $group, strict: true) >= \intdiv(\count($group) - 1, num2: 2);
     }
 
     /**
