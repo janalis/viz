@@ -97,9 +97,9 @@ final class VizTest extends TestCase
     {
         $this->assertStringContainsString('<svg', new Viz(engine: Engine::Native)->render("@startuml\nclass A\n@enduml", SourceFormat::PlantUml, Format::Svg)->bytes);
         $this->expectException(RenderFailure::class);
-        $this->expectExceptionMessage('leaves newpage to PlantUML');
+        $this->expectExceptionMessage('does not draw anchored messages');
 
-        new Viz(engine: Engine::Native)->render("@startuml\nAlice -> Bob\nnewpage\nBob -> Alice\n@enduml", SourceFormat::PlantUml, Format::Svg);
+        new Viz(engine: Engine::Native)->render("@startuml\nAlice{start} -> Bob\n@enduml", SourceFormat::PlantUml, Format::Svg);
     }
 
     public function testDotDrawsNativelyAndFallsBackToDotForWhatItLeaves(): void

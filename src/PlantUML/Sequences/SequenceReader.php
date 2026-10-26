@@ -91,6 +91,7 @@ final class SequenceReader
             'CommandBoxStart' => $this->boxStart($command),
             'CommandBoxEnd' => $this->box = null === $this->box ? throw new PlantUmlRefusal('A box ends that never started') : $this->boxes[$this->box]->parent,
             'CommandDivider' => $this->divider($command),
+            'CommandNewpage' => $this->events[] = new SequenceMark('newpage', self::lines((string) $command->get('LABEL'))),
             'CommandDelay' => $this->delay($command),
             'CommandHSpace' => $this->events[] = new SequenceMark('space', size: null === $command->get('VALUE') ? null : (int) $command->get('VALUE')),
             'CommandReferenceOverSeveral', 'CommandReferenceMultilinesOverSeveral' => $this->reference($command),

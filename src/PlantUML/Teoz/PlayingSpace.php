@@ -11,6 +11,7 @@ use Janalis\Viz\PlantUML\Teoz\Real\Real;
 use Janalis\Viz\PlantUML\Teoz\Real\RealMax;
 use Janalis\Viz\PlantUML\Teoz\Rose\Layer;
 use Janalis\Viz\PlantUML\Teoz\Tile\GroupingTile;
+use Janalis\Viz\PlantUML\Teoz\Tile\NewpageTile;
 use Janalis\Viz\PlantUML\Teoz\Tile\Tile;
 use Janalis\Viz\PlantUML\Teoz\Tile\TileBuilder;
 
@@ -76,21 +77,42 @@ final class PlayingSpace
         }
     }
 
-    /** @return list<Mark> the tiles' marks, behind the lifelines or in front of them */
+    /** @return list<Mark> the tiles' marks on its first page, behind the lifelines or in front of them */
     public function marks(Layer $layer): array
     {
         $marks = [];
-        foreach ($this->tiles as $tile) {
+        foreach ($this->page() as $tile) {
             \array_push($marks, ...$tile->marks($layer));
         }
 
         return $marks;
     }
 
-    /** Its height: down to the last tile or the lowest shape drawn, 10 below. */
+    /**
+     * The tiles on its first page, as PlantUML writes a diagram of several pages: down to the first
+     * new page, all laid out across as one.
+     *
+     * @return list<Tile>
+     */
+    private function page(): array
+    {
+        foreach ($this->tiles as $index => $tile) {
+            if ($tile instanceof NewpageTile) {
+                return \array_slice($this->tiles, offset: 0, length: $index + 1);
+            }
+        }
+
+        return $this->tiles;
+    }
+
+    /** Its height: down to the last tile or the lowest shape drawn, 10 below; a page ending at a new page, down to that tile's foot. */
     public function height(): float
     {
-        $last = [] === $this->tiles ? self::STARTING_Y : $this->tiles[\count($this->tiles) - 1]->gauge()->max->value();
+        $page = $this->page();
+        $last = [] === $page ? self::STARTING_Y : $page[\count($page) - 1]->gauge()->max->value();
+        if ([] !== $page && $page[\count($page) - 1] instanceof NewpageTile) {
+            return $last;
+        }
 
         return \max(Marks::bottom($this->marks(Layer::Foreground)), $last) + 10;
     }

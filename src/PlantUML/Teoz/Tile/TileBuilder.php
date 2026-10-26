@@ -119,6 +119,7 @@ final class TileBuilder
     {
         return match ($mark->kind) {
             'divider' => new DividerTile($context, $mark, $current),
+            'newpage' => new NewpageTile($context, $mark, $current),
             'delay' => new DelayTile($context, $mark, $current),
             'reference' => new ReferenceTile($context, $mark, $current),
             default => new HSpaceTile($context, $mark, $current),

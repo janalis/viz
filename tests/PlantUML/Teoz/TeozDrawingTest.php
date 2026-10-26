@@ -564,4 +564,17 @@ final class TeozDrawingTest extends TestCase
         $this->assertSame([159.0, 131.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
         $this->assertEqualsWithDelta(2 * Units::POINT, $lines[1]->points[0][1] - $lines[0]->points[0][1], 1e-6);
     }
+
+    public function testADiagramOfSeveralPagesIsDrawnAsItsFirst(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar writes its first page: down to the new page's dashed line, as wide as all its pages are laid out.
+        $this->assertSame([76.0, 126.0], $size("A -> B\nnewpage\nB -> A"));
+        $this->assertSame([138.0, 142.0], $size("A -> B : one\nnewpage Page two\nB -> C : two\nnewpage\nC -> A"));
+    }
 }

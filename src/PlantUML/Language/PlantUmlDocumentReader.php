@@ -17,7 +17,7 @@ final class PlantUmlDocumentReader
     private const string NOTE = '/^[hr]?note\b(?!.*[:"])/i';
 
     /** Shared commands the native renderer leaves to PlantUML. */
-    private const string LEFT = '/^(?:sprite\b|newpage\b|rotate$|page\s|minwidth\b|skinparamlocked\b|assume\s+transparent|<style>\s*@import|\$\w+\s*=)/i';
+    private const string LEFT = '/^(?:sprite\b|rotate$|page\s|minwidth\b|skinparamlocked\b|assume\s+transparent|<style>\s*@import|\$\w+\s*=)/i';
 
     private int $at = 0;
     private StyleSheet $styles;
