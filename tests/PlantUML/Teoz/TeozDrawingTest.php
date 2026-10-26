@@ -577,4 +577,14 @@ final class TeozDrawingTest extends TestCase
         $this->assertSame([76.0, 126.0], $size("A -> B\nnewpage\nB -> A"));
         $this->assertSame([138.0, 142.0], $size("A -> B : one\nnewpage Page two\nB -> C : two\nnewpage\nC -> A"));
     }
+
+    public function testADurationLinksTwoAnchoredMessages(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{start} A -> B : start\nB -> C : middle\n{end} C -> A : end\n{start} <-> {end} : some time\n{start} <-> {none}\n@enduml"));
+        $label = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => 'some time' === $mark->text));
+
+        // As the jar draws it: a line between the two messages, a head at either end, its text beside it; a link to no anchor left out.
+        $this->assertSame([164.0, 189.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertCount(1, $label);
+    }
 }

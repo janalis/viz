@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Teoz;
 
 use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
+use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Sequences\PlantUmlSequence;
+use Janalis\Viz\PlantUML\Sequences\SequenceMessage;
 use Janalis\Viz\PlantUML\Teoz\Real\RealImpl;
 use Janalis\Viz\PlantUML\Teoz\Rose\Layer;
+use Janalis\Viz\PlantUML\Teoz\Rose\Pen;
 use Janalis\Viz\PlantUML\Teoz\Rose\Rose;
+use Janalis\Viz\PlantUML\Teoz\Tile\Tile;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -84,7 +89,7 @@ final class TeozDrawing
         }
         $top = $boxes + $headHeight;
         $background = $playing->marks(Layer::Background);
-        $foreground = $playing->marks(Layer::Foreground);
+        $foreground = [...$playing->marks(Layer::Foreground), ...self::links($sequence, $playing, $rose)];
         \array_push(
             $marks,
             ...Marks::moved($background, 0.0, $top),
@@ -95,6 +100,57 @@ final class TeozDrawing
         );
 
         return PlantUmlFrame::teoz($sequence->document, Marks::moved($marks, -$min, 0.0), $playing->max->value() - $min, $body + $boxes + $below);
+    }
+
+    /**
+     * The durations between anchored messages, as teoz's `LinkAnchor` draws them: a line up and
+     * down halfway between the two messages' middles, from 2 below the first's arrow to 2 above
+     * the second's, a head at each end, its text centred beside it, 4 to its right; one whose
+     * anchors a message does not carry left out.
+     *
+     * @return list<Mark>
+     */
+    private static function links(PlantUmlSequence $sequence, PlayingSpace $playing, Rose $rose): array
+    {
+        $anchored = [];
+        foreach ($playing->tiles as $tile) {
+            $event = $tile->event();
+            if ($event instanceof SequenceMessage && null !== $event->anchor) {
+                $anchored[$event->anchor] = $tile;
+            }
+        }
+        $style = $rose->style('arrow');
+        $pen = Pen::of($style);
+        $marks = [];
+        foreach ($sequence->links as [$first, $second, $text]) {
+            if (!\array_key_exists($first, $anchored) || !\array_key_exists($second, $anchored)) {
+                continue;
+            }
+            [$y1, $y2] = [self::contact($anchored[$first]), self::contact($anchored[$second])];
+            $x = (self::middle($anchored[$first]) + self::middle($anchored[$second])) / 2;
+            [$top, $bottom] = [\min($y1, $y2) + 2, \max($y1, $y2) - 2];
+            $label = PlantUmlText::styled($text, $style);
+            [$width, $height] = $label->size();
+            \array_push(
+                $marks,
+                $pen->path([[$x, $top], [$x, $bottom]]),
+                $pen->shape([[$x - 4, $top + 10], [$x, $top], [$x + 4, $top + 10], [$x, $top + 6]], $pen->color),
+                $pen->shape([[$x - 4, $bottom - 10], [$x, $bottom], [$x + 4, $bottom - 10], [$x, $bottom - 6]], $pen->color),
+                ...$label->marks($x + 4, (($top + $bottom) / 2) - ($height / 2), $width, 'left'),
+            );
+        }
+
+        return $marks;
+    }
+
+    private static function contact(Tile $tile): float
+    {
+        return $tile->gauge()->min->value() + $tile->contact();
+    }
+
+    private static function middle(Tile $tile): float
+    {
+        return ($tile->minX()->value() + $tile->maxX()->value()) / 2;
     }
 
     /**

@@ -24,6 +24,8 @@ final class SequenceReader
     private array $participants = [];
     /** @var list<SequenceEvent> */
     private array $events = [];
+    /** @var list<array{string, string, list<string>}> each duration between anchors: the anchors and its text */
+    private array $links = [];
     /** @var list<SequenceBox> */
     private array $boxes = [];
     private ?int $box = null;
@@ -60,7 +62,7 @@ final class SequenceReader
             throw $unsupported;
         }
 
-        return new PlantUmlSequence($document, $reader->ordered(), $reader->events, $reader->boxes, $reader->footbox, null !== $reader->numbers);
+        return new PlantUmlSequence($document, $reader->ordered(), $reader->events, $reader->boxes, $reader->footbox, null !== $reader->numbers, $reader->links);
     }
 
     private function execute(PlantUmlCommand $command): void
@@ -69,6 +71,7 @@ final class SequenceReader
             'CommandNope', 'CommandIgnoreNewpage', 'CommandHideEmptyDescription', 'CommandHideShowByGender', 'CommandHideShowByVisibility', 'CommandHideShow2' => null,
             'CommandParticipantA', 'CommandParticipantA2', 'CommandParticipantA3', 'CommandParticipantA4', 'CommandParticipantMultilines' => $this->participant($command),
             'CommandArrow' => $this->message($command),
+            'CommandLinkAnchor' => $this->links[] = [(string) $command->get('ANCHOR1'), (string) $command->get('ANCHOR2'), self::lines((string) $command->get('MESSAGE'))],
             'CommandExoArrowLeft', 'CommandExoArrowRight' => $this->exo($command),
             'CommandActivate' => $this->activate(
                 $this->participantNamed(\trim((string) $command->get('WHO'), characters: '"')),

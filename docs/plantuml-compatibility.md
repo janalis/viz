@@ -96,8 +96,8 @@ A diagram PlantUML fails to draw is left to it too: a second note beside a messa
 
 | Read natively | Left to PlantUML |
 | --- | --- |
-| Participants of every kind, `as`, `order`, stereotypes, colours, `create`, over several lines, in nested boxes; `hide unlinked`; footbox | Pages after the first, anchors and their links, notes on a group's `end` |
-| Messages with every arrow (`->`, `-->`, `->>`, `<-`, `<->`, `x`, `o`, halves, slants, `[#color,dashed,hidden]`), `++`, `--`, `!!`, `**` and their pairs, `&` in parallel, `[->`, `->]`, `?->` and their kin; `newpage`, the diagram drawn as its first page, down to the dashed line where it ends, laid out across as all its pages are; multicast, `A -> B & C`, an unlabelled arrow to each other 2 below the one before |
+| Participants of every kind, `as`, `order`, stereotypes, colours, `create`, over several lines, in nested boxes; `hide unlinked`; footbox | Pages after the first, anchors on a message's ends (`A{start} -> B`), notes on a group's `end` |
+| Messages with every arrow (`->`, `-->`, `->>`, `<-`, `<->`, `x`, `o`, halves, slants, `[#color,dashed,hidden]`), `++`, `--`, `!!`, `**` and their pairs, `&` in parallel, `[->`, `->]`, `?->` and their kin; anchored messages, `{start} A -> B`, and the durations between them, `{start} <-> {end} : text`; `newpage`, the diagram drawn as its first page, down to the dashed line where it ends, laid out across as all its pages are; multicast, `A -> B & C`, an unlabelled arrow to each other 2 below the one before |
 | `activate`, `deactivate`, `destroy`, `create`, `X++`, `X--`, `return`, `autoactivate`; groups (`alt`, `else`, `opt`, `loop`, `par`, `break`, `critical`, `group … [label]`), `&` before a group | Parallel notes (`& note`) |
 | Notes left, right and over one or two participants, across, `hnote`, `rnote`, on a row with `/`, on messages; dividers, delays, space, `ref over`; `autonumber` with its start, step, format, `stop`, `resume` and `inc` | |
 
