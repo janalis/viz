@@ -384,6 +384,7 @@ final class ClassDrawing
         foreach ([$link->from, $link->to] as $id) {
             $shapes[$id] = match (\array_key_exists($id, $this->classes->entities) ? $this->classes->entities[$id]->type : 'class') {
                 'circle' => 'circle:'.ClassBox::DOT,
+                'point' => 'circle:2',
                 'diamond' => 'diamond',
                 default => 'box',
             };

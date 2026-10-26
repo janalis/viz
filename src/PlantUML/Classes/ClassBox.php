@@ -106,6 +106,10 @@ final readonly class ClassBox
 
             return new self($entity, $style, $sheet, $plain, null, null, 0.0, [], false, $width, $height, 0.0, $letter);
         }
+        if ('point' === $entity->type) {
+            // As PlantUML's `EntityImageAssociationPoint`: a dot 4 across.
+            return new self($entity, $sheet->style(['root', 'element', 'classDiagram', 'arrow']), $sheet, PlantUmlText::styled([], $style), null, null, 0.0, [], false, 4.0, 4.0, 0.0, $letter);
+        }
         if (\in_array($entity->type, ['object', 'map'], strict: true)) {
             return self::object($entity, $sheet, $letter);
         }
@@ -260,6 +264,9 @@ final readonly class ClassBox
             [$cx, $cy] = [$x + ($this->width / 2), $y + ($this->height / 2)];
 
             return [DescriptionBox::ellipse($cx - self::DOT, $cy - self::DOT, 2 * self::DOT, 2 * self::DOT, $line, $back, $stroke), ...$this->name->marks($x, $cy + 17, $this->width)];
+        }
+        if ('point' === $this->entity->type) {
+            return [DescriptionBox::ellipse($x, $y, 4.0, 4.0, $line, $line, 1.0)];
         }
         if ('diamond' === $this->entity->type) {
             [$cx, $cy] = [$x + 12, $y + 12];

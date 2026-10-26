@@ -585,6 +585,21 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([[45.5, 169.5], [82.5, 85.0]], $centres(self::draw("class A\nclass B\nclass C\nA --0-- B\nA -0- C")));
     }
 
+    public function testAssociationClassesStandAsPlantUmlSetsThem(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sets them: the link split at a dot 4 across, the dot linked to the association class.
+        $this->assertSame([206.0, 286.0], $size("class Student\nclass Course\nclass Enrollment\n(Student, Course) .. Enrollment"));
+        $this->assertSame([138.0, 304.0], $size("class A\nclass B\nclass C\nA \"1\" *-- \"many\" B : has\n(A, B) .. C"));
+        $this->assertSame([177.0, 178.0], $size("class A\nclass B\nclass C\nA - B\n(A, B) .. C"));
+        $this->assertSame([121.0, 286.0], $size("class A\nclass B\nclass C\nC .. (A, B)"));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

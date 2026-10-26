@@ -253,6 +253,37 @@ final class ClassReaderTest extends TestCase
         $this->assertSame(['map', ['Capital Cities'], ['UK => London'], ['s'], '#pink'], [$map->type, $map->display, $map->body, $map->stereotypes, $map->color]);
     }
 
+    public function testAnAssociationClassSplitsTheLinkAtAPoint(): void
+    {
+        $classes = self::read("class A\nclass B\nclass C\nA \"1\" *-- \"many\" B : has\nnote on link : n\nclass D\nD -- A\n(A, D) .. C");
+        $ends = \array_map(static fn ($link): array => [
+            $link->from,
+            $link->to,
+            $link->fromDecor->name,
+            $link->toDecor->name,
+            $link->length,
+            $link->label,
+            $link->firstLabel,
+            $link->secondLabel,
+            $link->dashed,
+        ], $classes->links);
+
+        $this->assertSame('point', $classes->entities['apoint#4']->type);
+        $this->assertSame(
+            [
+                ['A',        'B',        'Composition', 'None', 2, 'has', '1',  'many', false],
+                ['D',        'apoint#4', 'None',        'None', 2, null,  null, null,   false],
+                ['apoint#4', 'A',        'None',        'None', 2, null,  null, null,   false],
+                ['apoint#4', 'C',        'None',        'None', 1, null,  null, null,   true],
+            ],
+            $ends,
+        );
+        $this->assertSame(0, $classes->notes[0]->link);
+        // Written the other way round, from the association class to the point.
+        $links = self::read("class A\nclass B\nclass C\nC .. (A, B)")->links;
+        $this->assertSame(['C', 'apoint#3'], [$links[2]->from, $links[2]->to]);
+    }
+
     public function testQualifiersStandAtTheirEnds(): void
     {
         $links = self::read("A [key] --> B\nC --> [id] D\nE [k] -up-> F")->links;
@@ -267,6 +298,12 @@ final class ClassReaderTest extends TestCase
         yield 'map link' => ["map M {\n a *-> B\n}", 'The native PlantUML renderer does not draw: a *-> B'];
         yield 'map again' => ["class M\nmap M {\n}", 'PlantUML cannot declare M again as map'];
         yield 'object again' => ["class o\nobject o", 'PlantUML cannot declare o again as object'];
+        yield 'association of no class' => ["class A\n(A, B) .. C", 'No class B'];
+        yield 'second association' => ["class A\nclass B\n(A, B) .. C\n(A, B) .. D", 'The native PlantUML renderer does not draw: (A, B) .. D'];
+        yield 'association across a noted link' => [
+            "class A\nclass B\nA -- B\nnote on link : n\n(A, B) .. C",
+            'The native PlantUML renderer does not draw an association class across a link with a note',
+        ];
         yield 'separator twice' => ['class a..B', 'Bad name since . is a separator: a..B'];
         yield 'path through a class' => ["class a\nclass a.B", 'Not a package: a'];
         yield 'mixed in' => ["allowmixing\nclass A\nactor B", 'The native PlantUML renderer does not draw: actor B'];

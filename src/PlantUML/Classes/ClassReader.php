@@ -45,6 +45,8 @@ final class ClassReader
     private Direction $direction = Direction::TopBottom;
     private ?string $last = null;
     private bool $mixing = false;
+    /** @var array<string, true> the couples an association class stands on */
+    private array $associated = [];
     /** The namespace separator; null where `set separator none` turned it off. */
     private ?string $separator = '.';
     /** @var array<string, string> each entity's id by its path through the packages */
@@ -219,11 +221,84 @@ final class ClassReader
     {
         $from = $command->get('ENT1');
         $to = $command->get('ENT2');
-        if (null === $from || null === $to || !\in_array($command->get('INSIDE'), [null, '0'], strict: true)) {
+        $inside = $command->get('INSIDE');
+        if (!\in_array($inside, [null, '0'], strict: true) || (null === $from && null === $to) || ((null === $from || null === $to) && null !== $inside)) {
             throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
+        }
+        if (null === $from || null === $to) {
+            $this->association($command, null === $from ? 'COUPLE1' : 'COUPLE2');
+
+            return;
         }
         $link = ClassLinks::read($command, $this->end($from), $this->end($to));
         $this->links[] = $link;
+    }
+
+    /**
+     * An association class, `(A, B) .. C` or `C .. (A, B)`, as PlantUML's `Association` makes
+     * one: the link between A and B, or a plain one, split at a point between them, each half
+     * keeping its end's mark, the first its label; the point linked to C as written, a rank
+     * long, or two where A and B stood side by side.
+     */
+    private function association(PlantUmlCommand $command, string $couple): void
+    {
+        $first = 'COUPLE1' === $couple;
+        [$a, $b] = [$this->couple((string) $command->get($couple)), $this->couple((string) $command->get($couple, index: 1))];
+        // A second association class on one couple PlantUML links to the first's point: not drawn natively.
+        $pair = [$a, $b];
+        \sort($pair);
+        if (\array_key_exists(\implode("\0", $pair), $this->associated)) {
+            throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
+        }
+        $this->associated[\implode("\0", $pair)] = true;
+        $index = $this->linkBetween($a, $b);
+        $existing = null === $index ? new PlantUmlLink($a, $b, LinkDecor::None, LinkDecor::None, length: 2) : $this->links[$index];
+        if (null !== $index) {
+            \array_splice($this->links, $index, length: 1);
+        }
+        $group = $this->entities[$a]->group === $this->entities[$b]->group ? $this->entities[$a]->group : $this->current();
+        $point = 'apoint#'.\count($this->entities);
+        $this->entities[$point] = new ClassEntity($point, [''], 'point', $group);
+        $toPoint = self::styledLike(new PlantUmlLink($existing->from, $point, $existing->fromDecor, LinkDecor::None, $existing->length), $existing);
+        [$toPoint->label, $toPoint->labelArrow, $toPoint->firstLabel] = [$existing->label, $existing->labelArrow, $existing->firstLabel];
+        $fromPoint = self::styledLike(new PlantUmlLink($point, $existing->to, LinkDecor::None, $existing->toDecor, $existing->length), $existing);
+        $fromPoint->secondLabel = $existing->secondLabel;
+        $other = $this->end((string) $command->get($first ? 'ENT2' : 'ENT1'));
+        $link = ClassLinks::read($command, $first ? $point : $other, $first ? $other : $point);
+        \array_push($this->links, $toPoint, $fromPoint, $link->lengthened(1 === $existing->length && $a !== $b ? 2 : 1));
+    }
+
+    /** A class an association class names, which must be there, as PlantUML asks it. */
+    private function couple(string $name): string
+    {
+        $id = $this->reused(self::clean($name));
+        if (!\array_key_exists($id, $this->entities)) {
+            throw new PlantUmlRefusal('No class '.self::clean($name));
+        }
+
+        return $id;
+    }
+
+    /** The index of the last link written between two entities, either way; null for none. */
+    private function linkBetween(string $a, string $b): ?int
+    {
+        $found = null;
+        foreach ($this->links as $index => $link) {
+            $found = [$a, $b] === [$link->from, $link->to] || [$b, $a] === [$link->from, $link->to] ? $index : $found;
+        }
+        if (null !== $found && [] !== \array_filter($this->notes, static fn (PlantUmlNote $note): bool => null !== $note->link && $note->link >= $found)) {
+            throw new Unsupported('The native PlantUML renderer does not draw an association class across a link with a note');
+        }
+
+        return $found;
+    }
+
+    /** A link drawn as another is: its line's style and colour. */
+    private static function styledLike(PlantUmlLink $link, PlantUmlLink $as): PlantUmlLink
+    {
+        [$link->dashed, $link->dotted, $link->bold, $link->color, $link->thickness, $link->reversed] = [$as->dashed, $as->dotted, $as->bold, $as->color, $as->thickness, $as->reversed];
+
+        return $link;
     }
 
     /** What a link's end names: a package, as PlantUML links to one, else an entity, made a class when new. */

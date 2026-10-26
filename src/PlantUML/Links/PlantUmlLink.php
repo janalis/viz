@@ -42,6 +42,12 @@ final class PlantUmlLink
         public readonly int $length,
     ) {}
 
+    /** The link spanning as many ranks as given, all else kept. */
+    public function lengthened(int $length): self
+    {
+        return clone($this, ['length' => $length]);
+    }
+
     /** The link with its ends swapped, as an arrow pointing up or left is laid out. */
     public function inverted(): self
     {
