@@ -84,6 +84,8 @@ final class ClassReader
             'CommandRankDir' => $this->direction = \str_starts_with(\strtolower($command->line()), 'left') ? Direction::LeftRight : Direction::TopBottom,
             'CommandCreateClass' => $this->create($command, []),
             'CommandCreateClassMultilines' => $this->create($command, $command->body()),
+            'CommandCreateEntityObject' => $this->object($command, []),
+            'CommandCreateEntityObjectMultilines' => $this->object($command, $command->body()),
             'CommandAddMethod' => $this->member($command),
             'CommandLinkClass' => $this->link($command),
             'CommandStereotype' => self::stereotyped($this->entity((string) $command->get('NAME')), (string) $command->get('STEREO')),
@@ -136,6 +138,27 @@ final class ClassReader
         foreach (['EXTENDS' => 'class', 'IMPLEMENTS' => 'interface'] as $keyword => $parentType) {
             $this->inherit($entity, $command->get($keyword, 1), 'interface' === $entity->type ? 'interface' : $parentType);
         }
+    }
+
+    /**
+     * An object, as PlantUML's object commands make one in a class diagram: its fields its body.
+     *
+     * @param list<string> $body
+     */
+    private function object(PlantUmlCommand $command, array $body): void
+    {
+        $id = $this->resolve(self::clean((string) $command->lazy('CODE')));
+        if (\array_key_exists($id, $this->entities) && 'object' !== $this->entities[$id]->type) {
+            throw new PlantUmlRefusal('PlantUML cannot declare '.$id.' again as object');
+        }
+        $entity = $this->made($id, $command->lazy('DISPLAY'));
+        $entity->type = 'object';
+        if (null !== $command->get('STEREO')) {
+            self::stereotyped($entity, (string) $command->get('STEREO'));
+        }
+        $entity->color = $command->get('COLOR') ?? $entity->color;
+        $entity->body = [...$entity->body, ...$body];
+        $this->last = $entity->id;
     }
 
     /** `extends` and `implements`: each parent made if new, linked to the entity. */

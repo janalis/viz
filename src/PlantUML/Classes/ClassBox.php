@@ -106,6 +106,9 @@ final readonly class ClassBox
 
             return new self($entity, $style, $sheet, $plain, null, null, 0.0, [], false, $width, $height, 0.0, $letter);
         }
+        if ('object' === $entity->type) {
+            return self::object($entity, $sheet, $letter);
+        }
         $circle = $portions->shown($entity, 'circle');
         $compartments = ClassBody::of($entity, $portions)->compartments;
         $visibility = false;
@@ -145,6 +148,23 @@ final readonly class ClassBox
         );
     }
 
+    /**
+     * An object, as PlantUML's `EntityImageObject` sizes it: its name centred 2 below its top
+     * and 7 in from its sides at least, its fields below as a class's, or an empty row 16 tall.
+     */
+    private static function object(ClassEntity $entity, StyleSheet $sheet, float $letter): self
+    {
+        $style = $sheet->style(['root', 'element', 'objectDiagram', 'object'], $entity->stereotypes);
+        $name = PlantUmlText::styled($entity->display, $sheet->style(['root', 'element', 'objectDiagram', 'object', 'header'], $entity->stereotypes));
+        [$nameWidth, $nameHeight] = $name->size();
+        $fields = new PlantUmlText(\array_map(self::text(...), $entity->body), $style->fontSize(), sprites: $style->sprites);
+        $header = $nameHeight + 4;
+        $height = $header + ([] === $entity->body ? 16.0 : 8 + (\count($entity->body) * $fields->line()));
+        $width = \max($nameWidth + 14, [] === $entity->body ? 0.0 : $fields->size()[0] + 12);
+
+        return new self($entity, $style, $sheet, $name, null, null, 0.0, [[$entity->body, '', '']], false, $width, $height, $header, $letter);
+    }
+
     /** @return list<Mark> the box with its top left at a point */
     public function marks(float $x, float $y): array
     {
@@ -168,8 +188,12 @@ final readonly class ClassBox
             return [new Mark(MarkKind::Polygon, [[$cx, $y], [$x + 24, $cy], [$cx, $y + 24], [$x, $cy]], stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Path)];
         }
         $marks = Shadow::cast([self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))
-            ->with(['outline' => Outline::Block])], $this->style->number('Shadowing'));
-        \array_push($marks, ...$this->headerMarks($x, $y));
+            ->with(['outline' => 'object' === $this->entity->type ? Outline::Box : Outline::Block])], $this->style->number('Shadowing'));
+        \array_push($marks, ...'object' === $this->entity->type ? $this->name->marks($x, $y + 2, $this->width) : $this->headerMarks($x, $y));
+        if ('object' === $this->entity->type && [] !== $this->entity->body) {
+            // As PlantUML draws an object's fields: the line above them across its whole width, cut to its outline, which its limit finder takes uncut.
+            $marks[] = new Mark(MarkKind::Polygon, [[$x, $y + $this->header], [$x + $this->width, $y + $this->header]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
+        }
         $top = $y + $this->header;
         foreach ($this->compartments as [$lines, $separator, $title]) {
             \array_push($marks, ...self::separator($x, $top, $this->width, $separator, $title, $line, $stroke, $this->style));

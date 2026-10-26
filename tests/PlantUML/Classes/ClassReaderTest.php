@@ -232,6 +232,20 @@ final class ClassReaderTest extends TestCase
         $this->assertSame(['B', 'A', 'Q'], \array_keys($classes->entities));
     }
 
+    public function testObjectsTakeTheirFields(): void
+    {
+        $classes = self::read("object \"My Object\" as mo <<s>> #pink {\n x = 1\n}\nmo : y = 2\nobject b");
+
+        $this->assertSame(['object', ['My Object'], [' x = 1', 'y = 2'], ['s'], '#pink'], [
+            $classes->entities['mo']->type,
+            $classes->entities['mo']->display,
+            $classes->entities['mo']->body,
+            $classes->entities['mo']->stereotypes,
+            $classes->entities['mo']->color,
+        ]);
+        $this->assertSame(['object', []], [$classes->entities['b']->type, $classes->entities['b']->body]);
+    }
+
     public function testQualifiersStandAtTheirEnds(): void
     {
         $links = self::read("A [key] --> B\nC --> [id] D\nE [k] -up-> F")->links;
@@ -243,12 +257,13 @@ final class ClassReaderTest extends TestCase
     public static function refused(): iterable
     {
         yield 'middle circle' => ['A --0-- B', 'The native PlantUML renderer does not draw: A --0-- B'];
-        yield 'object' => ['object o', 'The native PlantUML renderer does not draw: object o'];
+        yield 'map' => ["map M {\n a => b\n}", 'The native PlantUML renderer does not draw: map M {'];
+        yield 'object again' => ["class o\nobject o", 'PlantUML cannot declare o again as object'];
         yield 'separator twice' => ['class a..B', 'Bad name since . is a separator: a..B'];
         yield 'path through a class' => ["class a\nclass a.B", 'Not a package: a'];
         yield 'mixed in' => ["allowmixing\nclass A\nactor B", 'The native PlantUML renderer does not draw: actor B'];
         yield 'mixed with a prefix' => ["class A\nmix_actor B", 'The native PlantUML renderer does not draw: mix_actor B'];
-        yield 'unsupported before a refusal' => ["class A\nobject o\nentity E\nclass E", 'PlantUML cannot declare E again as class'];
+        yield 'unsupported before a refusal' => ["class A\nmap o {\n}\nentity E\nclass E", 'PlantUML cannot declare E again as class'];
         yield 'note alone' => ["note left : alone\nclass A", 'The PlantUML note has no entity to stand beside: note left : alone'];
         yield 'note on no link' => ["class A\nnote on link : alone", 'The PlantUML note has no link to stand on: note on link : alone'];
         yield 'kind changed' => ["entity E\nclass E", 'PlantUML cannot declare E again as class'];

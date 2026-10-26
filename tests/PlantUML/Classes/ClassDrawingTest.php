@@ -506,6 +506,34 @@ final class ClassDrawingTest extends TestCase
         $this->assertContains('-x : int', \array_map(static fn (Mark $mark): string => $mark->text, $written->marks));
     }
 
+    public function testObjectsStandAsPlantUmlDrawsThem(): void
+    {
+        $drawing = self::draw("object user {\n  name = \"Dummy\"\n  id = 123\n}\nobject group\nuser --> group");
+        $texts = \array_values(\array_map(
+            static fn (Mark $mark): array => [$mark->text, \round($mark->points[0][1] / Units::POINT, precision: 2)],
+            \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind),
+        ));
+
+        // As the jar draws them: the name centred 2 below the top, the fields under a line, an object with none an empty row 16 tall.
+        $this->assertSame([154.0, 178.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertSame(
+            [
+                ['user',           22.54],
+                ['name = "Dummy"', 45.02],
+                ['id = 123',       61.51],
+                ['group',          144.0],
+            ],
+            $texts,
+        );
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+        $this->assertSame([63.0, 165.0], $size("class A\nobject o\nA --> o"));
+        $this->assertSame([99.0, 153.0], $size("object a\nobject b\nobject c\na --> b\na --> c"));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
