@@ -315,7 +315,7 @@ final class SequenceReaderTest extends TestCase
             [
                 new SequenceMark('divider', ['Divider ']),
                 new SequenceMark('delay', ['']),
-                new SequenceMark('delay', ['Later']),
+                new SequenceMark('delay', [' Later ']),
                 new SequenceMark('space'),
                 new SequenceMark('space', size: 45),
                 new SequenceMark('reference', ['Referenced'], ['A', 'B']),

@@ -262,7 +262,7 @@ final class TeozDrawingTest extends TestCase
                 end ref
                 B -> C : after
                 deactivate B
-                PUML, ['Phase', 'a while later', 'ref', 'spanning', 'one', 'two', 'after']];
+                PUML, ['Phase', ' a while later', 'ref', 'spanning', 'one', 'two', 'after']];
         yield 'parallel messages and groups' => [<<<'PUML'
                 participant A
                 participant B
@@ -492,5 +492,13 @@ final class TeozDrawingTest extends TestCase
         // As the jar draws them: a head over shoulders 54 wide, 61 tall; a hollow figure 26 wide, 33 tall.
         $this->assertSame([108.0, 207.0], $size('awesome'));
         $this->assertSame([79.0, 151.0], $size('hollow'));
+    }
+
+    public function testADelaysTextKeepsTheSpacesAroundIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nA -> B : 1\n... 5 minutes later and more text here ...\n@enduml"));
+
+        // As the jar draws it, 214 wide: the text and the spaces either side of it, as wide as the participants allow.
+        $this->assertSame([214.0, 172.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
 }

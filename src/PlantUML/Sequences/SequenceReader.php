@@ -456,7 +456,7 @@ final class SequenceReader
 
     private function delay(PlantUmlCommand $command): void
     {
-        $delay = new SequenceMark('delay', self::lines(\trim((string) $command->get('LABEL'))));
+        $delay = new SequenceMark('delay', self::lines((string) $command->get('LABEL')));
         $this->events[] = $delay;
         $this->lastDelay = $delay;
     }
