@@ -135,6 +135,16 @@ final class DotEngineTest extends TestCase
         // As `dot` sets three such labels 100 wide: 40 between the first two, 8 between the last two.
         $this->assertGreaterThanOrEqual(140.0, $lefts[1] - $lefts[0]);
         $this->assertLessThan(110.0, $lefts[2] - $lefts[1]);
+
+        // What follows them keeps the room the packed label would have taken: as dot sets c, 220 right of the first label.
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 50, 50), new LayoutNode('b', 'b', 50, 50), new LayoutNode('c', 'c', 50, 50)],
+            [new LayoutEdge(0, 'a', 'b', labelWidth: 77, labelHeight: 17), new LayoutEdge(1, 'a', 'b', labelWidth: 77, labelHeight: 17), new LayoutEdge(2, 'c', 'b')],
+            [],
+            Direction::TopBottom,
+            new Spacing(60, 35, 4),
+        )));
+        $this->assertGreaterThanOrEqual(215.0, $placement->endpoints['c']->x - ($placement->labels[0][0] - 38.5));
     }
 
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void

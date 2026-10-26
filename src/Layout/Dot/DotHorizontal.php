@@ -122,29 +122,60 @@ final class DotHorizontal
      * How far apart two neighbours stand, as `dot` is seen to set them: their sides, the room
      * each keeps, and the gap between; on a rank between nodes' ranks, the label nodes of two
      * edges joining the same two nodes, from the middle one of all such on the rank on, the
-     * label between them and 4.
+     * label between them and 4 — the last of them still keeping, from what follows, the room
+     * the packed ones would have taken.
      */
     private function apart(int $left, int $right): float
     {
-        $layers = $this->layers;
-        if (1 === ($layers->rank[$left] % 2) && null !== ($ends = $this->ends($left)) && $ends === $this->ends($right) && $this->beyondMiddle($left, $ends)) {
-            return ($layers->mirrored ? $layers->left[$right] : $layers->right[$left]) + 4;
+        $ends = 1 === ($this->layers->rank[$left] % 2) ? $this->ends($left) : null;
+        if (null === $ends) {
+            return $this->spaced($left, $right);
         }
+        $group = $this->group($left, $ends);
+        $index = (int) \array_search($left, $group, strict: true);
+        if (($group[$index + 1] ?? null) === $right) {
+            return $this->packs($group, $index) ? $this->packed($left, $right) : $this->spaced($left, $right);
+        }
+        $saved = 0.0;
+        for ($pair = 0, $last = \count($group) - 1; $index === $last && $pair < $last; ++$pair) {
+            $saved += $this->packs($group, $pair) ? $this->spaced($group[$pair], $group[$pair + 1]) - $this->packed($group[$pair], $group[$pair + 1]) : 0.0;
+        }
+
+        return $this->spaced($left, $right) + $saved;
+    }
+
+    private function spaced(int $left, int $right): float
+    {
+        $layers = $this->layers;
 
         return $layers->right[$left] + $this->after($left) + $this->gap($left, $right) + $this->before($right) + $layers->left[$right];
     }
 
+    private function packed(int $left, int $right): float
+    {
+        return ($this->layers->mirrored ? $this->layers->left[$right] : $this->layers->right[$left]) + 4;
+    }
+
     /**
-     * Whether a label node stands at or past the middle of the label nodes on its rank whose
-     * edges join the same two nodes, as `dot` is seen to pack only those past it.
+     * Whether a label node and the next of its group pack, as `dot` is seen to pack those from
+     * the middle one on.
+     *
+     * @param list<int> $group
+     */
+    private function packs(array $group, int $index): bool
+    {
+        return $index >= \intdiv(\count($group) - 1, num2: 2);
+    }
+
+    /**
+     * The label nodes on a label node's rank whose edges join the same two nodes, in order.
      *
      * @param array{int, int} $ends
+     * @return list<int>
      */
-    private function beyondMiddle(int $node, array $ends): bool
+    private function group(int $node, array $ends): array
     {
-        $group = \array_values(\array_filter($this->layers->ranks[$this->layers->rank[$node]], fn (int $other): bool => $this->ends($other) === $ends));
-
-        return (int) \array_search($node, $group, strict: true) >= \intdiv(\count($group) - 1, num2: 2);
+        return \array_values(\array_filter($this->layers->ranks[$this->layers->rank[$node]], fn (int $other): bool => $this->ends($other) === $ends));
     }
 
     /**
