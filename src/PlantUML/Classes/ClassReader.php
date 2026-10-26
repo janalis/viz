@@ -355,6 +355,10 @@ final class ClassReader
     /** What a link's end names: a floating note or a package, as PlantUML links to them, else an entity, made a class when new. */
     private function end(string $name): string
     {
+        // As PlantUML, a name with `::` in it, none so named, the separator another, names a port: its row, which a link leaves from.
+        if ('::' !== $this->separator && \str_contains($name, '::') && !\array_key_exists($this->reused(self::clean($name)), $this->entities)) {
+            throw new Unsupported('The native PlantUML renderer does not draw links to ports: '.$name);
+        }
         foreach ($this->notes as $note) {
             if (null === $note->entity && null === $note->link && $note->id === self::clean($name)) {
                 return $note->id;

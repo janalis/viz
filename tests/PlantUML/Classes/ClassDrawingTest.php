@@ -658,4 +658,17 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([63.0, 204.0], $size("class A\nmix_actor U\nU --> A"));
         $this->assertSame([81.0, 117.0], $size("rectangle R [\n  one\n  ----\n  two\n  ==t==\n  three\n]"));
     }
+
+    public function testAnObjectsStereotypesStandAboveItsName(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: the stereotype in italics at 12 points over the name, 5 in from the sides; a diamond taken 10 wider either side, as a polygon.
+        $this->assertSame([83.0, 185.0], $size("object a <<stereo>>\nobject b #pink\na --> b : label"));
+        $this->assertSame([65.0, 237.0], $size("diamond D\nobject A\nobject B\nA --> D\nD --> B"));
+    }
 }

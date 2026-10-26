@@ -306,6 +306,7 @@ final class ClassReaderTest extends TestCase
         ];
         yield 'separator twice' => ['class a..B', 'Bad name since . is a separator: a..B'];
         yield 'path through a class' => ["class a\nclass a.B", 'Not a package: a'];
+        yield 'a link to a port' => ["map M {\n  k => v\n}\nclass O\nM::k --> O", 'The native PlantUML renderer does not draw links to ports: M::k'];
         yield 'a state mixed in' => ["allowmixing\nclass A\nstate B", 'The native PlantUML renderer does not draw: state B'];
         yield 'a port mixed in with a prefix' => ["class A\nmix_port B", 'The native PlantUML renderer does not draw: mix_port B'];
         yield 'an element mixed in by its short form' => ["allowmixing\nclass A\nactor :B:", 'The native PlantUML renderer does not draw: actor :B:'];

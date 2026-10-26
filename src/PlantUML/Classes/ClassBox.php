@@ -111,7 +111,7 @@ final readonly class ClassBox
             return new self($entity, $sheet->style(['root', 'element', 'classDiagram', 'arrow']), $sheet, PlantUmlText::styled([], $style), null, null, 0.0, [], false, 4.0, 4.0, 0.0, $letter);
         }
         if (\in_array($entity->type, ['object', 'map'], strict: true)) {
-            return self::object($entity, $sheet, $letter);
+            return self::object($entity, $sheet, $letter, $labels);
         }
         $circle = $portions->shown($entity, 'circle');
         $compartments = ClassBody::of($entity, $portions)->compartments;
@@ -154,9 +154,12 @@ final readonly class ClassBox
 
     /**
      * An object, as PlantUML's `EntityImageObject` sizes it: its name centred 2 below its top
-     * and 7 in from its sides at least, its fields below as a class's, or an empty row 16 tall.
+     * and 7 in from its sides at least, its fields below as a class's, or an empty row 16 tall;
+     * its stereotypes above its name, in italics at 12 points, 5 in from its sides at least.
+     *
+     * @param list<string> $labels the stereotypes shown
      */
-    private static function object(ClassEntity $entity, StyleSheet $sheet, float $letter): self
+    private static function object(ClassEntity $entity, StyleSheet $sheet, float $letter, array $labels): self
     {
         $style = $sheet->style(['root', 'element', 'objectDiagram', $entity->type], $entity->stereotypes);
         $name = PlantUmlText::styled($entity->display, $sheet->style(['root', 'element', 'objectDiagram', $entity->type, 'header'], $entity->stereotypes));
@@ -168,12 +171,20 @@ final readonly class ClassBox
 
             return new self($entity, $style, $sheet, $name, null, null, 0.0, [], false, \max($nameWidth + 14, $columns), $nameHeight + 4 + $rows, $nameHeight + 4, $letter);
         }
+        $stereotypes = [] === $labels
+            ? null
+            : PlantUmlText::styled(
+                \array_map(static fn (string $label): string => '«'.$label.'»', $labels),
+                self::stereotyped($sheet->style(['root', 'element', 'objectDiagram', 'object', 'stereotype'], $entity->stereotypes)),
+                FontFace::Italic,
+            );
+        [$stereoWidth, $stereoHeight] = $stereotypes?->size() ?? [0.0, 0.0];
         $fields = new PlantUmlText(\array_map(self::text(...), $entity->body), $style->fontSize(), sprites: $style->sprites);
-        $header = $nameHeight + 4;
+        $header = $nameHeight + 4 + $stereoHeight;
         $height = $header + ([] === $entity->body ? 16.0 : 8 + (\count($entity->body) * $fields->line()));
-        $width = \max($nameWidth + 14, [] === $entity->body ? 0.0 : $fields->size()[0] + 12);
+        $width = \max(\max($nameWidth + 4, $stereoWidth) + 10, [] === $entity->body ? 0.0 : $fields->size()[0] + 12);
 
-        return new self($entity, $style, $sheet, $name, null, null, 0.0, [[$entity->body, '', '']], false, $width, $height, $header, $letter);
+        return new self($entity, $style, $sheet, $name, $stereotypes, null, 0.0, [[$entity->body, '', '']], false, $width, $height, $header, $letter);
     }
 
     /**
@@ -271,11 +282,17 @@ final readonly class ClassBox
         if ('diamond' === $this->entity->type) {
             [$cx, $cy] = [$x + 12, $y + 12];
 
-            return [new Mark(MarkKind::Polygon, [[$cx, $y], [$x + 24, $cy], [$cx, $y + 24], [$x, $cy]], stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Path)];
+            // As PlantUML draws it, a polygon, its limit finder taking it 10 wider either side.
+            return [new Mark(MarkKind::Polygon, [[$cx, $y], [$x + 24, $cy], [$cx, $y + 24], [$x, $cy]], stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Polygon)];
         }
         $marks = Shadow::cast([self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))
             ->with(['outline' => \in_array($this->entity->type, ['object', 'map'], strict: true) ? Outline::Box : Outline::Block])], $this->style->number('Shadowing'));
-        \array_push($marks, ...\in_array($this->entity->type, ['object', 'map'], strict: true) ? $this->name->marks($x, $y + 2, $this->width) : $this->headerMarks($x, $y));
+        \array_push(
+            $marks,
+            ...\in_array($this->entity->type, ['object', 'map'], strict: true)
+                ? [...($this->stereotypes?->marks($x, $y, $this->width) ?? []), ...$this->name->marks($x, $y + 2 + ($this->stereotypes?->size()[1] ?? 0.0), $this->width)]
+                : $this->headerMarks($x, $y),
+        );
         if ('map' === $this->entity->type) {
             return [...$marks, ...$this->mapMarks($x, $y)];
         }
