@@ -30,7 +30,7 @@ final class DotPosition
     public function __construct(
         private readonly DotLayers $layers,
         private readonly array $clusterLabels,
-        private readonly float $nodeSeparation,
+        public readonly float $nodeSeparation,
         public readonly float $rankSeparation,
         private readonly float $padding = 4.0,
         private readonly array $bands = [],

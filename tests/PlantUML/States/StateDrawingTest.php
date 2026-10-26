@@ -321,4 +321,12 @@ final class StateDrawingTest extends TestCase
         // As the jar draws it, 174 by 126: the regions 5 in from the left, the separator 8 past their foot.
         $this->assertSame([174.0, 126.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
+
+    public function testFlatTransitionsBetweenTheSameStatesStandOneAboveAnother(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nstate A\nstate B\nA -> B\nA -> C\nB -> C\nC -> A\n@enduml"));
+
+        // As the jar draws it, 116 tall: the second transition over B a third of the rank separation above the first.
+        $this->assertSame([242.0, 116.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
 }

@@ -144,14 +144,25 @@ final readonly class DotEngine implements LayoutEngine
     private static function flat(DotLayers $layers, DotPosition $position, \Closure $point, array $edgeIndexes, array $routes, array $splines, array $labels): array
     {
         $controls = [];
-        foreach ($layers->flat as [$tail, $head, $layered, $labelWidth, $labelHeight]) {
+        // Each flat edge's place among those between the same two nodes, in the order written, and how many there are.
+        [$places, $counts] = [[], []];
+        foreach ($layers->flat as $index => [$tail, $head, , $labelWidth, $labelHeight]) {
+            if ($labelWidth > 0 || $labelHeight > 0) {
+                continue;
+            }
+            $pair = \min($tail, $head).':'.\max($tail, $head);
+            $counts[$pair] = ($counts[$pair] ?? 0) + 1;
+            $places[$index] = [$pair, $counts[$pair]];
+        }
+        foreach ($layers->flat as $index => [$tail, $head, $layered, $labelWidth, $labelHeight]) {
             $original = $edgeIndexes[$layered];
             $routes[$original] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
             if ($labelWidth > 0 || $labelHeight > 0) {
                 $labels[$original] = $point(...self::flatLabel($layers, $position, $tail, $head, $labelHeight));
                 continue;
             }
-            $arc = DotArcs::route($layers, $position, $tail, $head);
+            [$pair, $k] = $places[$index];
+            $arc = DotArcs::route($layers, $position, $tail, $head, $k, $counts[$pair]);
             if (null === $arc) {
                 continue;
             }

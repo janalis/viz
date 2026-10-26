@@ -6,11 +6,13 @@ namespace Janalis\Viz\Layout\Dot;
 
 /**
  * A flat edge with nodes between its ends drawn over them, as `dot` is seen to draw one: from
- * its tail's centre up to half a rank separation above the rank, beside the first node between;
- * along to the last one; down to its head's centre. Three cubic pieces, each joining the next
- * smoothly, their shape as measured on dot's output: the rise ending at a slope that grows with
- * how steep it is, its last control 0.435 of its chord back along it; the run's controls at
- * 0.4045 of its length, along the slopes it meets.
+ * its tail's centre up above the rank, beside the first node between; along to the last one;
+ * down to its head's centre. Of n such edges between the same two nodes, the kth, in the order
+ * written, runs k rank separations in n + 1 above the rank, its corners half a node separation,
+ * to the point down, outside the nodes between, and k node separations in n + 1 back in. Three
+ * cubic pieces, each joining the next smoothly, as measured on dot's output: the rise reaching its
+ * corner at half the slope of its chord's angle, starting along nothing; each control 4/9 of its
+ * piece's chord from its end, along the slope there.
  */
 final class DotArcs
 {
@@ -22,7 +24,7 @@ final class DotArcs
      *
      * @return ?array{list<array{float, float}>, list<array{float, float}>, list<array{float, float}>} the curve, drawn in straight steps, its corners, and its pieces' points
      */
-    public static function route(DotLayers $layers, DotPosition $position, int $tail, int $head): ?array
+    public static function route(DotLayers $layers, DotPosition $position, int $tail, int $head, int $k = 1, int $n = 1): ?array
     {
         $rank = $layers->rank[$tail];
         $place = \array_flip($layers->ranks[$rank]);
@@ -34,22 +36,17 @@ final class DotArcs
         $x = $position->x;
         $y = $position->y[$rank];
         $half = \max(\array_map(static fn (int $node): float => $layers->height[$node] / 2, $layers->ranks[$rank]));
-        $level = $y - $half - ($position->rankSeparation / 2);
+        $level = $y - $half - (($k * $position->rankSeparation) / ($n + 1));
+        $inside = (($k * $position->nodeSeparation) / ($n + 1)) - \floor($position->nodeSeparation / 2);
         $sign = $x[$head] >= $x[$tail] ? 1.0 : -1.0;
         $near = $sign > 0 ? $between[0] : $between[\count($between) - 1];
         $far = $sign > 0 ? $between[\count($between) - 1] : $between[0];
-        $first = [$x[$near] - ($sign * ($sign > 0 ? $layers->left[$near] : $layers->right[$near])), $level];
-        $last = [$x[$far] + ($sign * ($sign > 0 ? $layers->right[$far] : $layers->left[$far])), $level];
-        [$rise, $leaving] = self::rise([$x[$tail], $y], $first, $sign);
-        [$fall, $reaching] = self::rise([$x[$head], $y], $last, -$sign);
-        $span = \abs($last[0] - $first[0]) * 0.4045;
-        $run = [
-            $first,
-            [$first[0] + ($sign * $span), $first[1] - ($span * $leaving)],
-            [$last[0] - ($sign * $span), $last[1] - ($span * $reaching)],
-            $last,
-        ];
-        $pieces = [$rise, $run, [$fall[3], $fall[2], $fall[1], $fall[0]]];
+        $first = [$x[$near] - ($sign * (($sign > 0 ? $layers->left[$near] : $layers->right[$near]) - $inside)), $level];
+        $last = [$x[$far] + ($sign * (($sign > 0 ? $layers->right[$far] : $layers->left[$far]) - $inside)), $level];
+        $gap = $position->nodeSeparation / 2;
+        [$rise, $leaving] = self::rise([$x[$tail], $y], $first, $sign, [$first[0] - ($sign * $gap), $y - $half]);
+        [$fall, $reaching] = self::rise([$x[$head], $y], $last, -$sign, [$last[0] + ($sign * $gap), $y - $half]);
+        $pieces = [$rise, self::run($first, $last, $sign, $leaving, $reaching), [$fall[3], $fall[2], $fall[1], $fall[0]]];
         $drawn = [$rise[0]];
         foreach ($pieces as $piece) {
             for ($step = 1; $step <= self::STEPS; ++$step) {
@@ -57,22 +54,43 @@ final class DotArcs
             }
         }
 
-        return [$drawn, [[$x[$tail], $y], $first, $last, [$x[$head], $y]], [...$rise, ...$run, ...$pieces[2]]];
+        return [$drawn, [[$x[$tail], $y], $first, $last, [$x[$head], $y]], [...$rise, ...$pieces[1], ...$pieces[2]]];
     }
 
     /**
-     * The piece from a node's centre up to a corner: starting along nothing, its last control on
-     * the slope it reaches the corner at, 0.435 of its chord back; and that slope.
+     * The piece along the top from one corner to the other, leaving and reaching them along the
+     * slopes it meets, each control 4/9 of its length from its corner.
+     *
+     * @param array{float, float} $first
+     * @param array{float, float} $last
+     * @return array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}
+     */
+    private static function run(array $first, array $last, float $sign, float $leaving, float $reaching): array
+    {
+        $reach = (4 / 9) * \abs($last[0] - $first[0]);
+        [$out, $in] = [$reach / \hypot(1.0, $leaving), $reach / \hypot(1.0, $reaching)];
+
+        return [$first, [$first[0] + ($sign * $out), $first[1] - ($out * $leaving)], [$last[0] - ($sign * $in), $last[1] - ($in * $reaching)], $last];
+    }
+
+    /**
+     * The piece from a node's centre up to a corner: starting along nothing, reaching the corner
+     * at half the slope of its chord's angle — or, where its chord passes below the rank's top
+     * half a node separation back from the corner, half that of the line from there — its last
+     * control 4/9 of its chord back along that slope; and that slope.
      *
      * @param array{float, float} $centre
      * @param array{float, float} $corner
+     * @param array{float, float} $edge where the rank's top is half a node separation back from the corner
      * @return array{array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}, float}
      */
-    private static function rise(array $centre, array $corner, float $sign): array
+    private static function rise(array $centre, array $corner, float $sign, array $edge): array
     {
         [$run, $rise] = [\abs($corner[0] - $centre[0]), $centre[1] - $corner[1]];
-        $slope = 0.12 + ((0.27 * $rise) / \max($run, 1.0));
-        $back = (0.435 * \hypot($run, $rise)) / \hypot(1.0, $slope);
+        [$across, $above] = [\abs($corner[0] - $edge[0]), $edge[1] - $corner[1]];
+        // As `dot`'s route bends round the rank's top where the chord would cut below it.
+        $slope = ($rise * $across) > ($run * $above) ? \tan(\atan2($above, $across) / 2) : \tan(\atan2($rise, $run) / 2);
+        $back = ((4 / 9) * \hypot($run, $rise)) / \hypot(1.0, $slope);
 
         return [[$centre, $centre, [$corner[0] - ($sign * $back), $corner[1] + ($back * $slope)], $corner], $slope];
     }
