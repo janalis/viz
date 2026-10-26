@@ -296,7 +296,8 @@ final class SequenceReaderTest extends TestCase
             \array_map(static fn (SequenceGroup $group): array => [$group->role, $group->type, $group->comment, $group->color, $group->background], \array_slice($groups, offset: 0, length: 3)),
         );
         $this->assertSame(['group', 'group'], [$groups[3]->type, $groups[3]->comment]);
-        $this->assertSame(['My own', 'label'], [$groups[5]->type, $groups[5]->comment]);
+        // As PlantUML reads it, the space before the label kept, which it measures.
+        $this->assertSame(['My own ', 'label'], [$groups[5]->type, $groups[5]->comment]);
         $this->assertTrue($groups[7]->parallel);
         $notes = \array_values(\array_filter($events, static fn ($event): bool => $event instanceof SequenceNote || $event instanceof SequenceNotes));
         $this->assertEquals(new SequenceNote(['A'], 'left', ['left']), $notes[0]);
@@ -312,7 +313,7 @@ final class SequenceReaderTest extends TestCase
         $marks = \array_values(\array_filter($events, static fn ($event): bool => $event instanceof SequenceMark));
         $this->assertEquals(
             [
-                new SequenceMark('divider', ['Divider']),
+                new SequenceMark('divider', ['Divider ']),
                 new SequenceMark('delay', ['']),
                 new SequenceMark('delay', ['Later']),
                 new SequenceMark('space'),

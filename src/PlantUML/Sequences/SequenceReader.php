@@ -368,10 +368,10 @@ final class SequenceReader
         $type = \strtolower((string) $command->get('TYPE'));
         $comment = (string) $command->get('COMMENT');
         $match = [];
-        // An empty `group` is labelled `group`; `group type [label]` names its own type.
+        // An empty `group` is labelled `group`; `group type [label]` names its own type, the spaces before its label kept, as PlantUML reads it.
         [$type, $comment] = match (true) {
             'group' === $type && '' === \trim($comment) => ['group', 'group'],
-            'group' === $type && 1 === \preg_match('/^(.*?)\s*\[(.*)\]$/', $comment, $match) => [$match[1], $match[2]],
+            'group' === $type && 1 === \preg_match('/^(.*\[\[.*\]\].*?|.*?)\[(.*)\]$/', $comment, $match) => [$match[1], $match[2]],
             default => [$type, $comment],
         };
         $role = match ($type) {
@@ -449,7 +449,7 @@ final class SequenceReader
     /** A divider, which closes off the message before it: an activation after it stands on its own. */
     private function divider(PlantUmlCommand $command): void
     {
-        $divider = new SequenceMark('divider', self::lines(\trim((string) $command->get('LABEL'))));
+        $divider = new SequenceMark('divider', self::lines((string) $command->get('LABEL')));
         $this->events[] = $divider;
         $this->lastWithDeactivate = $divider;
     }

@@ -68,7 +68,10 @@ final readonly class RoseText
     public function marks(float $x, float $y): array
     {
         if (null === $this->number) {
-            return $this->text->marks($x, $y, $this->text->size()[0], $this->align);
+            // As PlantUML writes a line: without the spaces it ends with, which it measures.
+            $written = new PlantUmlText(\array_map(\rtrim(...), $this->text->lines), $this->text->size, $this->text->face, $this->text->color, $this->text->sprites, $this->text->background);
+
+            return $written->marks($x, $y, $this->text->size()[0], $this->align);
         }
         [$numberWidth, $numberHeight] = $this->number->size();
         [$width, $height] = $this->text->size();

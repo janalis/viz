@@ -467,4 +467,17 @@ final class TeozDrawingTest extends TestCase
         }
         self::fail('No line at '.$y);
     }
+
+    public function testADividersAndAGroupsTitlesKeepTheSpaceTheyEndWith(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar sets them: `== Section ==` reads `Section `, `group G [label]` names its type `G `, each measured with its space.
+        $this->assertSame([111.0, 173.0], $size("A -> B\n== Section ==\nB -> A"));
+        $this->assertSame([158.0, 175.0], $size("A -> B\ngroup G [label]\n B -> A\nend"));
+    }
 }

@@ -67,7 +67,7 @@ final class SequenceModel
      */
     private static function grouped(SequenceGroup $group, array $open, array $steps): array
     {
-        $label = 'group' === $group->type && 'group' === $group->comment ? '' : $group->comment;
+        $label = 'group' === $group->type && 'group' === $group->comment ? '' : \trim($group->comment);
         if ('start' === $group->role) {
             \array_unshift($open, [self::kind($group->type), [], $label, []]);
 
@@ -179,8 +179,8 @@ final class SequenceModel
     private static function mark(SequenceMark $mark): array
     {
         return match ($mark->kind) {
-            'divider' => [new Separator(\implode("\n", $mark->text))],
-            'delay' => [new Separator(\implode("\n", $mark->text), delay: true)],
+            'divider' => [new Separator(\trim(\implode("\n", $mark->text)))],
+            'delay' => [new Separator(\trim(\implode("\n", $mark->text)), delay: true)],
             'reference' => [] === $mark->participants ? [] : [new Note(\implode("\n", $mark->text), NotePlacement::Over, $mark->participants)],
             default => [],
         };
