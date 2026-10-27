@@ -427,6 +427,8 @@ final readonly class ClassBox
                 stroke: $style->color('FontColor', '#000000'),
                 font: FontFace::Bold,
                 fontScale: Units::fontScale($font) / Units::POINT,
+                // As PlantUML draws it, a path, which its limit finder takes as inside its circle.
+                outline: Outline::Path,
             ),
         ];
     }

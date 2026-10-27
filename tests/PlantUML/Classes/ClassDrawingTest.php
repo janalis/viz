@@ -33,6 +33,16 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([[146.0, 70.0], [147.0, 70.0]], [$size('A - B : x'), $size('0-7: "A"')]);
     }
 
+    public function testABigCircledCharacterIsMeasuredInsideItsCircle(): void
+    {
+        $size = static fn (string $skin): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$skin}\nclass Order {\n  +id : int\n}\n@enduml")),
+        );
+
+        // As the jar sizes them: its letter a path inside its circle, not a line of text reaching above the box.
+        $this->assertSame([[100.0, 94.0], [96.0, 90.0]], [$size('skinparam circledCharacterFontSize 30'), $size('skinparam circledCharacterFontSize 24')]);
+    }
+
     public function testALayoutNewLineChangesNothing(): void
     {
         $size = static fn (string $between): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(

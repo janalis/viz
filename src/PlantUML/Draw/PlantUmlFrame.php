@@ -171,6 +171,9 @@ final class PlantUmlFrame
     /** @return list<array{float, float}> */
     private static function extent(Mark $mark): array
     {
+        if (MarkKind::Text === $mark->kind && Outline::Path === $mark->outline) {
+            return [...$mark->points, ...$mark->extent];
+        }
         if (MarkKind::Text === $mark->kind) {
             [$x, $y] = $mark->points[0];
             $half = (null === $mark->slots ? DisplayWidth::of($mark->text) * $mark->fontScale : \array_sum($mark->slots)) / 2;
