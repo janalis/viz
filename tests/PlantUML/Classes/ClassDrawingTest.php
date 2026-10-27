@@ -23,6 +23,16 @@ use PHPUnit\Framework\TestCase;
 
 final class ClassDrawingTest extends TestCase
 {
+    public function testAFlatLabelledLinkKeepsItsLabelsWidthBetweenItsEnds(): void
+    {
+        $size = static fn (string $link): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$link}\n@enduml")),
+        );
+
+        // As the jar sets them: its ends no two separations apart, but the label's width and one.
+        $this->assertSame([[146.0, 70.0], [147.0, 70.0]], [$size('A - B : x'), $size('0-7: "A"')]);
+    }
+
     public function testALayoutNewLineChangesNothing(): void
     {
         $size = static fn (string $between): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(

@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- The native dot layout keeps a labelled flat edge's ends as `dot` is seen to: its label's width and half a separation either side, rounded up to a point, the label a separation wide at least only where `rank=same` makes the edge flat, not a `minlen` of 0. A PlantUML link with one dash and a label, which svek writes with a `minlen` of 0, stood up to 27 too wide.
 - PlantUML's `layout_new_line` in a class diagram is read natively, where it was refused, and changes nothing, as the jar's drawing shows.
 - A PlantUML note in sections, or a sequence diagram's text, keeps `skinparam guillemet`: a `<<…>>` in it between the guillemets set, or as written for `false`.
 - A PlantUML component, deployment or use case diagram's stereotype is taken in its block 1 wider either side, as PlantUML draws it, so an actor's reaches its node's sides; a use case's ellipse is fitted as PlantUML's `Footprint` and `SmallestEnclosingCircle` fit it, round that block's corners and its lines', its text where its centre puts it.

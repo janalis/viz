@@ -81,7 +81,7 @@ final readonly class DotEngine implements LayoutEngine
             }
             [$labelWidth, $labelHeight] = $turned ? [$edge->labelHeight, $edge->labelWidth] : [$edge->labelWidth, $edge->labelHeight];
             // An edge that takes no part in ranking keeps its room across the ranks but, as `dot` is seen to, pulls nothing level.
-            $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->constraint ? $edge->weight : 0, $labelWidth, $labelHeight, $edge->tailPort, $edge->headPort];
+            $edges[$edge->index] = [$index[$edge->from], $index[$edge->to], $edge->constraint ? $edge->weight : 0, $labelWidth, $labelHeight, $edge->tailPort, $edge->headPort, $edge->minLength];
             if ($labelWidth > 0 || $labelHeight > 0) {
                 $labelSizes[$edge->index] = [$labelWidth, $labelHeight];
             }
@@ -418,7 +418,7 @@ final readonly class DotEngine implements LayoutEngine
      * the rest, each left to right in the order they were made, whatever order its edges are
      * written in.
      *
-     * @template T of array{int, int, mixed, mixed, mixed, mixed, mixed}
+     * @template T of array{int, int, int, float, float, float, float, int}
      * @param array<int, T> $edges by original index
      * @param list<int> $owner each node's cluster, -1 at the top
      * @return array<int, T>

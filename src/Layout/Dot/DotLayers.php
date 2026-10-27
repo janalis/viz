@@ -40,7 +40,7 @@ final class DotLayers
     public array $paths = [];
     /** @var array<int, int> the label node of each labelled original edge */
     public array $labels = [];
-    /** @var list<array{int, int, int, float, float}> flat edges: tail, head, original edge, and its label's width and height */
+    /** @var list<array{int, int, int, float, float, bool}> flat edges: tail, head, original edge, its label's width and height, and whether only its ends' ranks make it flat */
     public array $flat = [];
     /** @var list<array{int, int}> loops: node, original edge */
     public array $loops = [];
@@ -56,7 +56,7 @@ final class DotLayers
      * @param list<array{float, float}> $sizes each real node's width and height
      * @param list<int> $owner each real node's innermost cluster, -1 for none
      * @param list<int> $parents each cluster's parent, -1 for none
-     * @param list<array{0: int, 1: int, 2: int, 3: float, 4: float, 5?: float, 6?: float}> $edges tail, head, weight, label width, label height, and where across its tail and its head it ends, in authored order
+     * @param list<array{0: int, 1: int, 2: int, 3: float, 4: float, 5?: float, 6?: float, 7?: int}> $edges tail, head, weight, label width, label height, where across its tail and its head it ends, and its least length, in authored order
      * @param float $spread how much each edge after the first sharing a chain widens its virtual nodes
      * @param Concentration $concentration whether edges merge their chains, as dot's `concentrate`
      * @param bool $mirrored whether label nodes hold their label on their left, as `dot` is seen to set them in a layout to be turned left to right
@@ -88,7 +88,8 @@ final class DotLayers
                 continue;
             }
             if ($ranks[$tail] === $ranks[$head]) {
-                $this->flat[] = [$tail, $head, $index, $labelWidth, $labelHeight];
+                // Whether it is flat for its ends' ranks alone, not for a length of 0.
+                $this->flat[] = [$tail, $head, $index, $labelWidth, $labelHeight, ($edge[7] ?? 1) > 0];
                 continue;
             }
             $down = $ranks[$tail] < $ranks[$head];

@@ -77,8 +77,8 @@ final class DotEngineTest extends TestCase
 
     public function testALabelledFlatEdgeKeepsItsLabelBetweenItsEndsAndStandsAboveIt(): void
     {
-        // As `dot` is seen to set one: the separation and the label's width apart, two separations at
-        // least; the label midway between the ends' facing sides, half its height and 3 above the edge.
+        // As `dot` is seen to set one its ends' ranks make flat: half a separation either side of its label, a
+        // separation wide at least; the label midway between the ends' facing sides, half its height and 3 above the edge.
         foreach ([[60.0, 18.0 + 60.0], [10.0, 36.0]] as [$width, $room]) {
             $placement = Work::run(new DotEngine()->place(new LayoutGraph(
                 [new LayoutNode('a', 'a', 54, 36), new LayoutNode('b', 'b', 54, 36)],
@@ -90,6 +90,20 @@ final class DotEngineTest extends TestCase
 
             $this->assertSame(54.0 + $room, \abs($b->x - $a->x), 'label '.$width);
             $this->assertSame([($a->x + $b->x) / 2, $a->y - 10.0], $placement->labels[0], 'label '.$width);
+        }
+    }
+
+    public function testAFlatEdgeOfLengthZeroKeepsItsLabelsWidthAndHalfASeparationEitherSide(): void
+    {
+        // As `dot` is seen to set one: its label's width and half a separation either side, rounded up to a point, however narrow the label.
+        foreach ([[10.0, 54.0, 82.0], [60.0, 54.0, 132.0], [9.0, 41.66, 85.0]] as [$width, $node, $apart]) {
+            $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+                [new LayoutNode('a', 'a', $node, 36), new LayoutNode('b', 'b', $node, 36)],
+                [new LayoutEdge(0, 'a', 'b', minLength: 0, labelWidth: $width, labelHeight: 14.0)],
+                spacing: new Spacing(36, $node < 54 ? 35 : 18, 4),
+            )));
+
+            $this->assertSame($apart, \abs($placement->endpoints['b']->x - $placement->endpoints['a']->x), 'label '.$width);
         }
     }
 

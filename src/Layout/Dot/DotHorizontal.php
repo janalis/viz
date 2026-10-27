@@ -126,27 +126,39 @@ final class DotHorizontal
     {
         $layers = $this->layers;
 
-        return $layers->right[$left] + $this->after($left) + $this->gap($left, $right) + $this->before($right) + $layers->left[$right];
+        $sides = $layers->right[$left] + $this->after($left) + $this->before($right) + $layers->left[$right];
+        $flat = $this->flat($left, $right);
+
+        // Where a labelled flat edge joins them, rounded up to a point, as `dot` is seen to.
+        return null === $flat ? $sides + $this->gap($left, $right) : \ceil($sides + \max($this->gap($left, $right), $flat) - 1e-9);
     }
 
     /**
      * The room between two neighbours, as `dot` is seen to keep it: the node separation, to the
-     * nearest point; on the ranks a graph with edge labels puts between its nodes' ranks, 5;
-     * where a labelled flat edge joins them, room for its label and a separation besides, two
-     * separations at least.
+     * nearest point; on the ranks a graph with edge labels puts between its nodes' ranks, 5.
      */
     private function gap(int $left, int $right): float
     {
-        $separation = \round($this->nodeSeparation);
-        $gap = [] !== $this->layers->labels && 1 === ($this->layers->rank[$left] % 2) ? 5.0 : $separation;
-        foreach ($this->layers->flat as [$tail, $head, , $labelWidth, $labelHeight]) {
+        return [] !== $this->layers->labels && 1 === ($this->layers->rank[$left] % 2) ? 5.0 : \round($this->nodeSeparation);
+    }
+
+    /**
+     * The room a labelled flat edge joining two neighbours keeps between them, as `dot` is seen
+     * to keep it: its label's width and half a separation, rounded down to a point, either side;
+     * the label a separation wide at least where only its ends' ranks make it flat, not a length
+     * of 0. Null where none joins them.
+     */
+    private function flat(int $left, int $right): ?float
+    {
+        $room = null;
+        foreach ($this->layers->flat as [$tail, $head, , $labelWidth, $labelHeight, $ranked]) {
             if (($labelWidth <= 0 && $labelHeight <= 0) || ([$left, $right] !== [$tail, $head] && [$left, $right] !== [$head, $tail])) {
                 continue;
             }
-            $gap = \max($gap, 2 * $separation, $separation + $labelWidth);
+            $room = \max($room ?? 0.0, (2 * \floor($this->nodeSeparation / 2)) + ($ranked ? \max($labelWidth, \round($this->nodeSeparation)) : $labelWidth));
         }
 
-        return $gap;
+        return $room;
     }
 
     /**
