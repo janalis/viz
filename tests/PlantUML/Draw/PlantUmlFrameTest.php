@@ -36,6 +36,20 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertSame('#ffffff', $drawing->background);
     }
 
+    public function testWhatPlantUmlWarnsOfStandsInABannerAboveTheDiagram(): void
+    {
+        $drawing = static fn (string $source): array => (static fn ($drawn): array => [$drawn->width / Units::POINT, $drawn->height / Units::POINT, $drawn->marks])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+        [$width, $height, $marks] = $drawing("skinparam handwritten false\nskinparam handwritten true\nskinparam participantPadding 20\nA -> B");
+        $texts = \array_values(\array_filter(\array_map(static fn (Mark $mark): string => $mark->text, $marks), static fn (string $text): bool => \str_starts_with($text, 'Please')));
+
+        // As the jar draws it: each warning once, a line each, the diagram below.
+        $this->assertSame(["Please use '!option handwritten true' to enable handwritten ", 'Please use CSS style instead of skinparam ParticipantPadding'], $texts);
+        $this->assertSame([392.0, 158.0], \array_slice($drawing("skinparam handwritten false\nskinparam shadowing true\nA -> B : msg"), offset: 0, length: 2));
+        $this->assertSame([392.0, 159.0], [$width, $height]);
+    }
+
     public function testItsSizeIsInWholePointsRoundedUpAsPlantUmlWritesIt(): void
     {
         $drawing = PlantUmlFrame::drawing(PlantUmlDocument::read(PlantUmlSource::parse("@startuml\n@enduml")), [], 100.2, 50.0);

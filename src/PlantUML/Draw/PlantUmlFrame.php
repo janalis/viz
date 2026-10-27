@@ -9,6 +9,7 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Draw\Units;
+use Janalis\Viz\PlantUML\Creole\CreoleFont;
 use Janalis\Viz\PlantUML\Language\PlantUmlCaption;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\Text\DisplayWidth;
@@ -226,7 +227,7 @@ final class PlantUmlFrame
         foreach (['header', 'title'] as $kind) {
             $blocks[] = self::block($document, $kind, $captionRoom);
         }
-        [$marks, $width, $height] = self::mainframe($document, $marks, $width, $height, $content);
+        [$marks, $width, $height] = self::mainframe($document, ...self::warned($document, $marks, $width, $height), content: $content);
         // As PlantUML is seen to size a framed diagram: in whole points and 1 past, or as svek's says, whatever lays it out.
         $mainframed = \array_key_exists('mainframe', $document->captions);
         $whole = $mainframed ? null : $whole;
@@ -314,6 +315,34 @@ final class PlantUmlFrame
             $left + $frameWidth + $right,
             $top + $frameHeight + $bottom,
         ];
+    }
+
+    /**
+     * The diagram under the banner PlantUML draws what it warns of in, as its `DiagramChromeFactory`
+     * draws it: each warning's lines in 10-point monospace, 10 between warnings, in a box 3 in
+     * from the top left, rounded, filled pale yellow and edged 3 thick, as wide as the diagram or
+     * its widest line and 10 more, 5 short of the banner's height, the lines 10 in and 2 down.
+     *
+     * @param list<Mark> $marks
+     * @return array{list<Mark>, float, float}
+     */
+    private static function warned(PlantUmlDocument $document, array $marks, float $width, float $height): array
+    {
+        if ([] === $document->warnings) {
+            return [$marks, $width, $height];
+        }
+        $font = new CreoleFont(10.0, 'monospaced');
+        [$bannerWidth, $bannerHeight] = [\max(\array_map($font->width(...), $document->warnings)) + 20, (\count($document->warnings) * ($font->line() + 10)) - 10 + 10];
+        $full = \max($width, $bannerWidth);
+        $banner = [new Mark(MarkKind::Polygon, RoundedBox::points(3.0, 3.0, $full - 10, $bannerHeight - 5, 5.0), stroke: '#ffdd88', fill: '#ffffcc', strokeWidth: 3.0)];
+        $y = 2.0;
+        foreach ($document->warnings as $warning) {
+            $y += $font->line();
+            \array_push($banner, ...$font->marks($warning, 10.0, $y));
+            $y += 10;
+        }
+
+        return [[...$banner, ...\array_map(static fn (Mark $mark): Mark => self::moved($mark, 0.0, $bannerHeight), $marks)], $full, $height + $bannerHeight];
     }
 
     /** @return array{list<Mark>, float, float, string} a caption's marks from the origin, its size, and how it aligns */

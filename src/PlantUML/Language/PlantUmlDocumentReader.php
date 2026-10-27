@@ -11,6 +11,13 @@ use Janalis\Viz\Source\Unsupported;
 /** Reads the commands every PlantUML diagram shares out of a block's lines; see {@see PlantUmlDocument}. */
 final class PlantUmlDocumentReader
 {
+    /** What PlantUML's `CommandSkinParam` warns of, by the parameter written on its own line. */
+    private const array WARNINGS = [
+        'handwritten' => "Please use '!option handwritten true' to enable handwritten ",
+        'participantpadding' => 'Please use CSS style instead of skinparam ParticipantPadding',
+        'padding' => 'Please use CSS style instead of skinparam padding',
+    ];
+
     /** A classifier opening its body. */
     private const string CLASSIFIER = '/^(?:abstract\s+class|abstract|class|interface|enum|annotation|entity|protocol|struct|exception|metaclass|stereotype|dataclass|record|object|map|json)\s.*\{$/i';
     /** A note whose text runs over the next lines: neither `:` text nor quoted text on its line. */
@@ -28,6 +35,8 @@ final class PlantUmlDocumentReader
     private float $scale = 1.0;
     /** @var ?array{?float, ?float, bool} */
     private ?array $fit = null;
+    /** @var list<string> */
+    private array $warnings = [];
     /** @var list<string> */
     private array $kept = [];
 
@@ -64,7 +73,7 @@ final class PlantUmlDocumentReader
             }
         }
 
-        return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas, $kind, $this->fit);
+        return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas, $kind, $this->fit, \array_values(\array_unique($this->warnings)));
     }
 
     /**
@@ -179,9 +188,10 @@ final class PlantUmlDocumentReader
             return true;
         }
         if (1 === \preg_match('/^skinparam[\s\x{a0}]+([\w.]*(?:<<[^<>]*>>)?[\w.]*)[\s\x{a0}]+([^{}]*)$/iu', $line, $match)) {
-            // As PlantUML, which warns of these written so, and draws its warning above the diagram.
-            if (\in_array(\strtolower($match[1]), ['handwritten', 'participantpadding', 'padding'], strict: true)) {
-                throw new Unsupported('The native PlantUML renderer does not draw what PlantUML warns of: '.$line);
+            // As PlantUML's `CommandSkinParam`, which warns of these written so, and draws its warning above the diagram.
+            $warning = self::WARNINGS[\strtolower($match[1])] ?? null;
+            if (null !== $warning) {
+                $this->warnings[] = $warning;
             }
             $this->param($match[1], \trim($match[2]));
 

@@ -35,6 +35,8 @@ final readonly class PlantUmlDocument
         public string $kind = 'uml',
         /** @var ?array{?float, ?float, bool} the width and height `scale` fits the drawing to, either or both, and whether it only shrinks it, as `scale max` does; null for none */
         public ?array $fit = null,
+        /** @var list<string> what PlantUML warns of, each once, in its banner above the diagram */
+        public array $warnings = [],
     ) {}
 
     /** @throws Unsupported on a shared command left to PlantUML */
