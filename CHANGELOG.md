@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A dot flat edge drawn over the nodes between its ends gives its three curves' points with each curve's start its last's end, as a start then two controls and an end for each curve, so PlantUML trims it at the boxes it joins, where it was drawn from its tail's centre and stopped short of its head.
 - A PlantUML object with fields, the tallest node of its diagram, makes it as tall as the jar makes it, its fields measured down to its box's foot, where it was a point short.
 - PlantUML's `skinparam style strictuml` is drawn as the jar draws it: sequence diagrams with no footbox, filled arrowheads in sequence and activity diagrams as plain triangles, classes with no circled character, containers with square corners — a class diagram's packages as folders with a slanted tab — and objects' names underlined.
 - A PlantUML state diagram's `json` entity is drawn natively, where it was refused, as a class diagram draws it. A node svek writes as a table, a map's or a `json` entity's, is as big as dot's least node, 54 by 36, at least, its table centred in it: one narrower than that beside another stood 1 too close.

@@ -117,6 +117,17 @@ final class DotEngineTest extends TestCase
         $this->assertCount(4, $placement->controls[0]);
     }
 
+    public function testAFlatEdgeOverNodesIsThreeCurvesSharingTheirEnds(): void
+    {
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 54, 36), new LayoutNode('b', 'b', 54, 36), new LayoutNode('c', 'c', 54, 36)],
+            [new LayoutEdge(0, 'a', 'b', minLength: 0), new LayoutEdge(1, 'b', 'c', minLength: 0), new LayoutEdge(2, 'a', 'c', minLength: 0)],
+        )));
+
+        // A start, then two controls and an end for each of its rise, its run along the top and its fall.
+        $this->assertCount(10, $placement->controls[2]);
+    }
+
     public function testALabelOverAFlatEdgeBridgingNodesStandsHalfARankSeparationAboveThem(): void
     {
         $place = static fn (array $above): Placement => Work::run(new DotEngine()->place(new LayoutGraph(
