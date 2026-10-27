@@ -40,20 +40,24 @@ final class PlantUmlFrame
     /** How much of that room lies past the document's captions, below and to the right of everything. */
     private const float SVEK_OUTER = 5.0;
 
-    /** @param list<Mark> $marks the diagram's, in points, its top left at the origin */
-    public static function drawing(PlantUmlDocument $document, array $marks, float $width, float $height): Drawing
+    /**
+     * @param list<Mark> $marks the diagram's, in points, its top left at the origin
+     * @param ?array{float, float, float, float} $content how far it reaches across and down in a frame, and how far it moves into it; as measured by default
+     */
+    public static function drawing(PlantUmlDocument $document, array $marks, float $width, float $height, ?array $content = null): Drawing
     {
-        return self::framed($document, $marks, $width, $height, [self::MARGIN, self::MARGIN, self::MARGIN, self::MARGIN]);
+        return self::framed($document, $marks, $width, $height, [self::MARGIN, self::MARGIN, self::MARGIN, self::MARGIN], content: $content);
     }
 
     /**
      * A diagram as {@see drawing()} frames it, its size rounded down to whole points, and some points past, as PlantUML is seen to round a board's, and a chart's 1 past.
      *
      * @param list<Mark> $marks the diagram's, in points, its top left at the origin
+     * @param ?array{float, float, float, float} $content how far it reaches across and down in a frame, and how far it moves into it; as measured by default
      */
-    public static function roundedDown(PlantUmlDocument $document, array $marks, float $width, float $height, float $past = 0.0): Drawing
+    public static function roundedDown(PlantUmlDocument $document, array $marks, float $width, float $height, float $past = 0.0, ?array $content = null): Drawing
     {
-        return self::framed($document, $marks, $width, $height, [self::MARGIN, self::MARGIN, self::MARGIN, self::MARGIN], static fn (float $size): float => \floor($size) + $past);
+        return self::framed($document, $marks, $width, $height, [self::MARGIN, self::MARGIN, self::MARGIN, self::MARGIN], static fn (float $size): float => \floor($size) + $past, content: $content);
     }
 
     /**
@@ -61,10 +65,11 @@ final class PlantUmlFrame
      * still around it.
      *
      * @param list<Mark> $marks the diagram's, in points, its top left at the origin
+     * @param ?array{float, float, float, float} $content how far it reaches across and down in a frame, and how far it moves into it; as measured by default
      */
-    public static function bare(PlantUmlDocument $document, array $marks, float $width, float $height): Drawing
+    public static function bare(PlantUmlDocument $document, array $marks, float $width, float $height, ?array $content = null): Drawing
     {
-        return self::framed($document, $marks, $width, $height, [0.0, 0.0, 0.0, 0.0]);
+        return self::framed($document, $marks, $width, $height, [0.0, 0.0, 0.0, 0.0], content: $content);
     }
 
     /**
@@ -119,6 +124,8 @@ final class PlantUmlFrame
             // As PlantUML is seen to take them, rounding the diagram down: its captions 1 wider.
             captionRoom: 1.0,
             content: [$maxX - $minX + $inFrame[0], $maxY - $minY + $inFrame[1], $inFrame[2] - self::SVEK_INSET, $inFrame[3] - self::SVEK_INSET],
+            // In a frame, rounded up.
+            framedWhole: \ceil(...),
         );
     }
 
@@ -149,7 +156,7 @@ final class PlantUmlFrame
      * @param list<Mark> $marks
      * @return array{float, float, float, float}
      */
-    private static function limits(array $marks): array
+    public static function limits(array $marks): array
     {
         $box = [\INF, \INF, -\INF, -\INF];
         foreach ($marks as $mark) {
@@ -196,6 +203,7 @@ final class PlantUmlFrame
      * @param ?\Closure(float): float $whole how its size unscaled is rounded to whole points: up by default, as PlantUML writes it
      * @param float $captionRoom how much wider than they are its captions are taken
      * @param ?array{float, float, float, float} $content how far what is drawn reaches across and down in a frame, and how far it moves into it; as measured by default
+     * @param ?\Closure(float): float $framedWhole how its size is rounded in a frame: in whole points and 1 past by default
      */
     private static function framed(
         PlantUmlDocument $document,
@@ -206,6 +214,7 @@ final class PlantUmlFrame
         ?\Closure $whole = null,
         float $captionRoom = 0.0,
         ?array $content = null,
+        ?\Closure $framedWhole = null,
     ): Drawing {
         // A margin the document's style sets, as a theme's `root` does, stands for the diagram's own.
         $style = $document->styles->style(['root', 'document']);
@@ -215,8 +224,9 @@ final class PlantUmlFrame
             $blocks[] = self::block($document, $kind, $captionRoom);
         }
         [$marks, $width, $height] = self::mainframe($document, $marks, $width, $height, $content);
-        // As PlantUML is seen to size a framed diagram: rounded up, whatever lays it out.
-        $whole = ($document->captions['mainframe'] ?? null) instanceof PlantUmlCaption ? null : $whole;
+        // As PlantUML is seen to size a framed diagram: in whole points and 1 past, or as svek's says, whatever lays it out.
+        $mainframed = \array_key_exists('mainframe', $document->captions);
+        $whole = $mainframed ? null : $whole;
         $blocks[] = [[], $width, $height, 'center'];
         foreach (['legend', 'caption', 'footer'] as $kind) {
             $blocks[] = self::block($document, $kind, $captionRoom);
@@ -241,7 +251,7 @@ final class PlantUmlFrame
         $basis = $whole ?? static fn (float $size): float => $size;
         $factor = $document->scaleFactor($basis($full + $left + $right), $basis($y + $bottom));
         $scale = Units::POINT * $factor;
-        $whole ??= \ceil(...);
+        $whole ??= $mainframed ? $framedWhole ?? static fn (float $size): float => \floor($size) + 1 : \ceil(...);
         // As PlantUML writes its image's size: in whole points as it is unscaled, then scaled and rounded down.
         $sized = static fn (float $size): float => \max(1.0, \floor(($whole($size) * $factor) + 1e-9) * Units::POINT);
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');

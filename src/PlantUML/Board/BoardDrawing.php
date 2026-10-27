@@ -53,7 +53,8 @@ final class BoardDrawing
             }
         }
 
-        return PlantUmlFrame::roundedDown($diagram->document, $marks, $width + 10, $height + 10);
+        // As PlantUML frames it for `mainframe`: 1 short of its size either way.
+        return PlantUmlFrame::roundedDown($diagram->document, $marks, $width + 10, $height + 10, content: [$width - 1, $height - 1, 0.0, 0.0]);
     }
 
     /** @return list<Mark> PlantUML's `CardBox`, its top left at a point */

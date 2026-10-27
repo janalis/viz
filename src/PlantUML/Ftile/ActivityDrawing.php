@@ -53,6 +53,9 @@ final class ActivityDrawing
             \array_push($marks, ...$shape->moved(5 - $minX, 5 - $minY)->marks);
         }
 
-        return PlantUmlFrame::roundedDown($activity->document, $marks, $maxX - $minX + 15, $maxY - $minY + 15, past: 1.0);
+        // As PlantUML frames it for `mainframe`: as far as its shapes reach, not as what is drawn does.
+        $content = [$maxX - $minX + 5, $maxY - $minY + 5, 0.0, 0.0];
+
+        return PlantUmlFrame::roundedDown($activity->document, $marks, $maxX - $minX + 15, $maxY - $minY + 15, past: 1.0, content: $content);
     }
 }

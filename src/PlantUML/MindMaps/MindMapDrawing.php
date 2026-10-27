@@ -44,7 +44,10 @@ final class MindMapDrawing
             $height += $vertical ? $length : 2 * $half;
         }
 
-        return PlantUmlFrame::drawing($diagram->document, $marks, $width + 10, $height);
+        // As PlantUML frames it for `mainframe`: 1 wider than what is drawn reaches across, as tall as its branches stand.
+        [$minX, , $maxX] = [] === $marks ? [0.0, 0.0, 0.0] : PlantUmlFrame::limits($marks);
+
+        return PlantUmlFrame::drawing($diagram->document, $marks, $width + 10, $height, content: [$maxX - $minX + 1, $height, 0.0, 0.0]);
     }
 
     private static function half(?Finger $finger): float

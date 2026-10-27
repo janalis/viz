@@ -105,4 +105,23 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertEqualsWithDelta(20 * Units::POINT, $drawing->width, 1e-9);
         $this->assertNull($drawing->background);
     }
+
+    public function testAMainframeTakesEachKindOfDiagramAsPlantUmlMeasuresIt(): void
+    {
+        $size = static function (string $source): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing($source));
+
+            return [\round($drawing->width / Units::POINT, precision: 6), \round($drawing->height / Units::POINT, precision: 6)];
+        };
+
+        // As the jar frames them: an activity, a mind map, EBNF, a regex, a timing diagram, a network diagram and a board each as far as its own block reaches, in whole points and 1 past.
+        $this->assertSame([86.0, 206.0], $size("@startuml\nmainframe Hello\nstart\n:a;\nstop\n@enduml"));
+        $this->assertSame([180.0, 198.0], $size("@startmindmap\nmainframe F\n* root\n** a\n** b\n@endmindmap"));
+        $this->assertSame([182.0, 191.0], $size("@startebnf\nmainframe F\na = \"x\" | \"y\";\n@endebnf"));
+        $this->assertSame([299.0, 146.0], $size("@startregex\nmainframe F\n/ab[0-9]+c?/\n@endregex"));
+        $this->assertSame([183.0, 175.0], $size("@startuml\nmainframe F\nconcise \"Web\" as W\n@0\nW is A\n@10\nW is B\n@enduml"));
+        $this->assertSame([209.0, 184.0], $size("@startuml\nmainframe F\nrobust \"W\" as W\n@0\nW is Idle\n@5\nW is Busy\n@enduml"));
+        $this->assertSame([126.0, 185.0], $size("@startnwdiag\nmainframe F\nnwdiag {\n network n {\n  a;\n }\n}\n@endnwdiag"));
+        $this->assertSame([224.0, 247.0], $size("@startboard\nmainframe F\nA\n+B\n@endboard"));
+    }
 }

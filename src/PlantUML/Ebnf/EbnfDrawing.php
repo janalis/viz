@@ -39,7 +39,10 @@ final class EbnfDrawing
             $drawing->error();
         }
 
-        return PlantUmlFrame::drawing($diagram->document, $drawing->marks, $drawing->width, $drawing->height);
+        // As PlantUML frames it for `mainframe`: as far as what is drawn reaches across, its rules' height and as far as they rise above it.
+        [, $minY, $maxX] = [] === $drawing->marks ? [0.0, 0.0, 0.0] : PlantUmlFrame::limits($drawing->marks);
+
+        return PlantUmlFrame::drawing($diagram->document, $drawing->marks, $drawing->width, $drawing->height, content: [$maxX, $drawing->height - \min(0.0, $minY), 0.0, 0.0]);
     }
 
     public static function regex(PlantUmlRegex $diagram): Drawing

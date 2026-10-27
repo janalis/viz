@@ -62,7 +62,10 @@ final class TimingDrawing
         // With no moment written, PlantUML is seen to keep room for a tick more than it draws.
         $right += $unwritten ? $diagram->ruler->interval() : 0.0;
 
-        return PlantUmlFrame::drawing($diagram->document, $marks, \floor($right) + 1 - (2 * self::AROUND), \floor($bottom) + 1 - (2 * self::AROUND));
+        // As PlantUML frames it for `mainframe`: as far as it reaches, unrounded.
+        $content = [$right - (2 * self::AROUND), $bottom - (2 * self::AROUND), 0.0, 0.0];
+
+        return PlantUmlFrame::drawing($diagram->document, $marks, \floor($right) + 1 - (2 * self::AROUND), \floor($bottom) + 1 - (2 * self::AROUND), $content);
     }
 
     /** @return array{list<Mark>, float, float} */

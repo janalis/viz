@@ -74,7 +74,8 @@ final class NwDrawing
         $drawing->build();
         [$marks, $width, $height] = $drawing->paint();
 
-        return PlantUmlFrame::bare($diagram->document, $marks, $width, $height);
+        // As PlantUML frames it for `mainframe`: as large as it is.
+        return PlantUmlFrame::bare($diagram->document, $marks, $width, $height, [$width, $height, 0.0, 0.0]);
     }
 
     private function build(): void
