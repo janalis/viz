@@ -110,7 +110,7 @@ final readonly class DescriptionBox
         $stereoStyle = $sheet->style(['root', 'element', $diagram, $element->symbol, 'stereotype'], $element->stereotypes);
         $stereotypes = [] === $element->stereotypes || !$element->stereotypeShown
             ? null
-            : PlantUmlText::styled(\array_map(static fn (string $label): string => '«'.$label.'»', $element->stereotypes), $stereoStyle);
+            : PlantUmlText::styled(\array_map($sheet->stereotype(...), $element->stereotypes), $stereoStyle);
         // As PlantUML, a box's text set in sections where a line separates them; a use case's and an icon's name not.
         $body = 'usecase' === $element->symbol || \array_key_exists($element->shape ?? $element->symbol, self::ICONS) || !PlantUmlBody::sectioned($text->lines) ? null : new PlantUmlBody($text);
         [$textWidth, $textHeight] = null === $body ? $text->size() : $body->size();

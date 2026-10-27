@@ -48,7 +48,7 @@ final readonly class Rose
     public function participant(SequenceParticipant $participant, bool $head): Component
     {
         $style = $this->participantStyle($participant);
-        $lines = [...\array_map(static fn (string $stereotype): string => '<i>«'.$stereotype.'»</i>', $participant->stereotypes), ...$participant->display];
+        $lines = [...\array_map(fn (string $stereotype): string => '<i>'.$this->sheet->stereotype($stereotype).'</i>', $participant->stereotypes), ...$participant->display];
         $pen = Pen::of($style);
         $back = $style->color('BackGroundColor', '#e2e2f0');
 
@@ -120,7 +120,7 @@ final readonly class Rose
     {
         $style = $this->style('arrow');
         // As PlantUML's Rose: the style's width, else the skin parameter's.
-        $style = $style->number('MaximumWidth') > 0 || $this->messageWidth <= 0 ? $style : new Style([...$style->values, 'MaximumWidth' => (string) $this->messageWidth], $style->sprites);
+        $style = $style->number('MaximumWidth') > 0 || $this->messageWidth <= 0 ? $style : $style->withValues([...$style->values, 'MaximumWidth' => (string) $this->messageWidth]);
         $text = RoseText::of($lines, $style, [1.0, 7.0, 1.0, 7.0], $number);
         $pen = Pen::of($style);
         $pen = null === $arrow->color ? $pen : $pen->withColor(PlantUmlColor::parse($arrow->color) ?? $pen->color);
@@ -222,7 +222,7 @@ final readonly class Rose
             return $style;
         }
 
-        return new Style([...$style->values, 'BackGroundColor' => $color], $style->sprites);
+        return $style->withValues([...$style->values, 'BackGroundColor' => $color]);
     }
 
     /** @return list<string> */

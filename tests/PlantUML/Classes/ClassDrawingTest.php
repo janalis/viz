@@ -728,4 +728,19 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([68.0, 139.0], $size("class A\n\"Serial\" ()-- A"));
         $this->assertSame([100.0, 281.0], $size("class A\nclass B\nA --() Foo : \"1\" provided \"2\"\nB --> A"));
     }
+
+    public function testTheGuillemetSkinParamWritesStereotypesAsItSays(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: between `<<` and `>>` for false, alone for none, in a class, a description and a sequence diagram alike.
+        $this->assertSame([119.0, 76.0], $size("skinparam guillemet false\nclass A <<entity>>"));
+        $this->assertSame([80.0, 76.0], $size("skinparam guillemet none\nclass A <<entity>>"));
+        $this->assertSame([111.0, 177.0], $size("skinparam guillemet false\nparticipant P <<svc>>\nP -> P : x"));
+        $this->assertSame([132.0, 82.0], $size("skinparam guillemet false\nnode N <<box>>"));
+    }
 }

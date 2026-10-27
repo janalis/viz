@@ -89,7 +89,7 @@ final readonly class ClassBox
         $stereotypes = [] === $labels
             ? null
             : PlantUmlText::styled(
-                \array_map(static fn (string $label): string => '«'.$label.'»', $labels),
+                \array_map($sheet->stereotype(...), $labels),
                 self::stereotyped($sheet->style(['root', 'element', 'classDiagram', 'class', 'stereotype'], $entity->stereotypes)),
                 FontFace::Italic,
             );
@@ -180,7 +180,7 @@ final readonly class ClassBox
         $stereotypes = [] === $labels
             ? null
             : PlantUmlText::styled(
-                \array_map(static fn (string $label): string => '«'.$label.'»', $labels),
+                \array_map($sheet->stereotype(...), $labels),
                 self::stereotyped($sheet->style(['root', 'element', 'objectDiagram', 'object', 'stereotype'], $entity->stereotypes)),
                 FontFace::Italic,
             );
@@ -337,7 +337,7 @@ final readonly class ClassBox
     /** A class's stereotype style at 12 points, as PlantUML sets it whatever its styles' font size. */
     private static function stereotyped(Style $style): Style
     {
-        return new Style(['FontSize' => '12'] + $style->values, $style->sprites);
+        return $style->withValues(['FontSize' => '12'] + $style->values);
     }
 
     /** @return array{float, float} the header's width and height, as PlantUML's header layout gives them */

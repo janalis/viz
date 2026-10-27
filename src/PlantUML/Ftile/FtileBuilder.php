@@ -21,7 +21,6 @@ use Janalis\Viz\PlantUML\Activities\LinkRendering;
 use Janalis\Viz\PlantUML\Activities\PositionedNote;
 use Janalis\Viz\PlantUML\Activities\Stereogroup;
 use Janalis\Viz\PlantUML\Style\PlantUmlColor;
-use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\Source\Unsupported;
 
 /** An activity diagram's steps as tiles, each made as PlantUML's instructions make theirs. */
@@ -369,7 +368,7 @@ final readonly class FtileBuilder
     {
         $style = $this->factory->styles->activity($stereogroup);
 
-        return new FtileBox($label, new Style(['BackGroundColor' => $back] + $style->values, $style->sprites), Stereogroup::boxStyle($stereogroup), new LinkRendering());
+        return new FtileBox($label, $style->withValues(['BackGroundColor' => $back] + $style->values), Stereogroup::boxStyle($stereogroup), new LinkRendering());
     }
 
     /**

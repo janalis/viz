@@ -48,6 +48,8 @@ final readonly class PlantUmlText
         public string $color = '#000000',
         public array $sprites = [],
         public string $background = '#ffffff',
+        /** @var array{string, string} what a `<<…>>` in it stands between, as `skinparam guillemet` sets it */
+        public array $guillemet = ['«', '»'],
     ) {}
 
     /**
@@ -58,10 +60,10 @@ final readonly class PlantUmlText
      */
     public static function styled(array $lines, Style $style, ?FontFace $face = null): self
     {
-        $text = new self($lines, $style->fontSize(), $face ?? $style->face(), $style->color('FontColor', '#000000'), $style->sprites, $style->color('BackGroundColor', '#ffffff'));
+        $text = new self($lines, $style->fontSize(), $face ?? $style->face(), $style->color('FontColor', '#000000'), $style->sprites, $style->color('BackGroundColor', '#ffffff'), $style->guillemet);
         $maximum = $style->number('MaximumWidth');
 
-        return $maximum > 0 ? new self($text->wrapped($maximum), $text->size, $text->face, $text->color, $text->sprites, $text->background) : $text;
+        return $maximum > 0 ? new self($text->wrapped($maximum), $text->size, $text->face, $text->color, $text->sprites, $text->background, $text->guillemet) : $text;
     }
 
     /**
@@ -290,10 +292,21 @@ final readonly class PlantUmlText
                 continue;
             }
             // As PlantUML's Creole sets a line: a rule, or each `<<…>>` in it between guillemets.
-            $blocks[] = PlantUmlRule::of($line, $this) ?? (string) \preg_replace('/<<\s?((?:<&\w+>|[^<>])+?)\s?>>/u', replacement: '«$1»', subject: $line);
+            $blocks[] = PlantUmlRule::of($line, $this) ?? $this->guilleted($line);
         }
 
         return $blocks;
+    }
+
+    /** A line with each `<<…>>` in it between the guillemets it is given, as PlantUML's `Guillemet` sets it; as written for `<<` and `>>`. */
+    private function guilleted(string $line): string
+    {
+        if (['<<', '>>'] === $this->guillemet) {
+            return $line;
+        }
+        [$start, $end] = \array_map(static fn (string $mark): string => \str_replace(search: '$', replace: '\\$', subject: $mark), $this->guillemet);
+
+        return (string) \preg_replace('/<<\s?((?:<&\w+>|[^<>])+?)\s?>>/u', replacement: $start.'$1'.$end, subject: $line);
     }
 
     /**

@@ -61,6 +61,6 @@ final readonly class FtileStyles
             $values[$property] = (string) $color;
         }
 
-        return new Style($values, $style->sprites);
+        return $style->withValues($values);
     }
 }

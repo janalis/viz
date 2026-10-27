@@ -203,7 +203,7 @@ final class DescriptionDrawing
         $texts = [];
         if ([] !== $group->stereotypes && $group->stereotypeShown) {
             $style = $styles->style(['root', 'element', 'componentDiagram', $group->symbol, 'stereotype'], $group->stereotypes);
-            $texts[] = PlantUmlText::styled(\array_map(static fn (string $stereotype): string => '«'.$stereotype.'»', $group->stereotypes), $style);
+            $texts[] = PlantUmlText::styled(\array_map($styles->stereotype(...), $group->stereotypes), $style);
         }
         $texts[] = PlantUmlText::styled(
             ClassReader::split('' === $group->display ? $group->id : $group->display),

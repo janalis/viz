@@ -253,7 +253,7 @@ final class WbsBlock
         $style = $this->sheet->style($names, $this->stereotypes(), $this->element->level);
         $color = null === $this->element->color ? null : PlantUmlColor::parse($this->element->color);
 
-        return $this->style = null === $color ? $style : new Style([...$style->values, 'BackGroundColor' => $color], $style->sprites);
+        return $this->style = null === $color ? $style : $style->withValues([...$style->values, 'BackGroundColor' => $color]);
     }
 
     /** @return list<string> */

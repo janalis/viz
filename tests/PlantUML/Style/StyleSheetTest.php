@@ -67,6 +67,20 @@ final class StyleSheetTest extends TestCase
         $this->assertSame('3', $sheet->style(self::CLASS_NAMES)->value('Shadowing'));
     }
 
+    public function testTheGuillemetSkinParamSetsWhatAStereotypeStandsBetween(): void
+    {
+        $sheet = StyleSheet::skin();
+
+        // As PlantUML's `Guillemet` reads it.
+        $this->assertSame('«x»', $sheet->stereotype('x'));
+        $this->assertSame('<<x>>', $sheet->withSkinParam('guillemet', 'false')->stereotype('x'));
+        $this->assertSame('<<x>>', $sheet->withSkinParam('Guillemet', '<< >>')->stereotype('x'));
+        $this->assertSame('x', $sheet->withSkinParam('guillemet', 'none')->stereotype('x'));
+        $this->assertSame('[x]', $sheet->withSkinParam('guillemet', '[ ]')->stereotype('x'));
+        $this->assertSame('«x»', $sheet->withSkinParam('guillemet', 'true')->stereotype('x'));
+        $this->assertSame(['<<', '>>'], $sheet->withSkinParam('guillemet', 'false')->style(self::CLASS_NAMES)->withValues([])->guillemet);
+    }
+
     public function testAStyleThatDoesNotParseIsLeftToPlantUml(): void
     {
         $this->expectException(Unsupported::class);

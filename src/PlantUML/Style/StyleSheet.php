@@ -218,6 +218,8 @@ final class StyleSheet
 
     /** @var array<string, PlantUmlSprite> the sprites the document defines, by name */
     private array $sprites = [];
+    /** @var array{string, string} what a stereotype stands between, as `skinparam guillemet` sets it */
+    private array $guillemet = ['«', '»'];
 
     /**
      * @param array<string, array{StyleSignature, array<string, array{string, int}>}> $rules each declaration's values and their priority, by signature
@@ -265,11 +267,38 @@ final class StyleSheet
     public function withSkinParam(string $key, string $value): self
     {
         $sheet = clone $this;
+        if ('guillemet' === \strtolower($key)) {
+            $sheet->guillemet = self::guillemet(\trim($value));
+        }
         foreach (SkinParam::declarations($key, $value, self::skinParams()) as [$signature, $property, $declared]) {
             $sheet->declare($signature, $property, $declared, ++$sheet->counter);
         }
 
         return $sheet;
+    }
+
+    /** A stereotype as written: between guillemets, or what `skinparam guillemet` sets. */
+    public function stereotype(string $label): string
+    {
+        return $this->guillemet[0].$label.$this->guillemet[1];
+    }
+
+    /**
+     * What `skinparam guillemet` sets a stereotype between, as PlantUML's `Guillemet` reads it:
+     * `<<` and `>>` for `false` or `<< >>`, nothing for `none`, two words for two words, else guillemets.
+     *
+     * @return array{string, string}
+     */
+    private static function guillemet(string $value): array
+    {
+        $words = \explode(' ', (string) \preg_replace('/\s+/', replacement: ' ', subject: $value));
+
+        return match (true) {
+            'false' === \strtolower($value), '<< >>' === $value => ['<<', '>>'],
+            'none' === \strtolower($value) => ['', ''],
+            \count($words) > 1 => [$words[0], $words[1]],
+            default => ['«', '»'],
+        };
     }
 
     /**
@@ -296,7 +325,7 @@ final class StyleSheet
             }
         }
 
-        return new Style($values, $this->sprites);
+        return new Style($values, $this->sprites, $this->guillemet);
     }
 
     private function declare(StyleSignature $signature, string $property, string $value, int $priority): void

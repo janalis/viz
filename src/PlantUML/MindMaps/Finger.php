@@ -252,7 +252,7 @@ final class Finger
         $style = $this->sheet->style($names, $this->stereotypes(), $this->idea->level);
         $color = null === $this->idea->color ? null : PlantUmlColor::parse($this->idea->color);
 
-        return $this->style = null === $color ? $style : new Style([...$style->values, 'BackGroundColor' => $color], $style->sprites);
+        return $this->style = null === $color ? $style : $style->withValues([...$style->values, 'BackGroundColor' => $color]);
     }
 
     private function arrow(): Style

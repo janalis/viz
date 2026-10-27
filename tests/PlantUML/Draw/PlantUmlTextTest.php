@@ -42,6 +42,19 @@ final class PlantUmlTextTest extends TestCase
         $this->assertEqualsWithDelta([PlantUmlMetrics::width('plain', 12.0), 5 * PlantUmlText::lineHeight(12.0)], $text->size(), 1e-9);
     }
 
+    public function testAStereotypeInTextStandsBetweenTheGuillemetsItIsGiven(): void
+    {
+        $text = static fn (array $guillemet): string => \implode('', \array_map(
+            static fn (Mark $mark): string => (string) $mark->text,
+            new PlantUmlText(['a <<x>> $1'], guillemet: $guillemet)->marks(0.0, 0.0, 100.0),
+        ));
+
+        $this->assertSame('a «x» $1', $text(['«', '»']));
+        $this->assertSame('a [$x] $1', $text(['[$', ']']));
+        // As PlantUML, left as written between `<<` and `>>`.
+        $this->assertSame('a <<x>> $1', $text(['<<', '>>']));
+    }
+
     public function testTextWrapsAtItsStylesMaximumWidthAsPlantUmlWraps(): void
     {
         $style = new Style(['MaximumWidth' => '100', 'FontSize' => '14']);

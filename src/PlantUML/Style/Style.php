@@ -15,7 +15,19 @@ final readonly class Style
         public array $values = [],
         /** @var array<string, PlantUmlSprite> the document's sprites, by name, for its text to draw */
         public array $sprites = [],
+        /** @var array{string, string} what a stereotype stands between, as `skinparam guillemet` sets it */
+        public array $guillemet = ['«', '»'],
     ) {}
+
+    /**
+     * The style with these values instead, what the document gives every style kept.
+     *
+     * @param array<string, string> $values
+     */
+    public function withValues(array $values): self
+    {
+        return new self($values, $this->sprites, $this->guillemet);
+    }
 
     public function value(string $property, string $default = ''): string
     {
