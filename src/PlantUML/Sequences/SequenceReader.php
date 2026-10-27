@@ -63,6 +63,10 @@ final class SequenceReader
         if (null !== $unsupported) {
             throw $unsupported;
         }
+        // As PlantUML, whose sequence diagram with no participant fails, so the next kind is tried.
+        if ([] === $reader->ordered()) {
+            throw new PlantUmlRefusal('A sequence diagram with no participant');
+        }
 
         return new PlantUmlSequence($document->warned($reader->warnings), $reader->ordered(), $reader->events, $reader->boxes, $reader->footbox, null !== $reader->numbers, $reader->links);
     }

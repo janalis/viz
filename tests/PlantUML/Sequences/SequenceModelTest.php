@@ -112,11 +112,11 @@ final class SequenceModelTest extends TestCase
         );
     }
 
-    public function testANoteAcrossNobodyIsLeftOut(): void
+    public function testANoteAcrossNobodyIsNoSequenceDiagram(): void
     {
-        $diagram = new PlantUmlReader()->read("@startuml\nnote across : nobody\n@enduml");
+        // As PlantUML, which fails on it.
+        $this->expectExceptionMessage('A sequence diagram with no participant');
 
-        $this->assertInstanceOf(SequenceDiagram::class, $diagram);
-        $this->assertSame([], $diagram->steps);
+        new PlantUmlReader()->read("@startuml\nnote across : nobody\n@enduml");
     }
 }

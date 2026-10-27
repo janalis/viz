@@ -62,6 +62,21 @@ final class PlantUmlFrameTest extends TestCase
         ]);
     }
 
+    public function testADiagramOfCaptionsAloneIsAnEmptyClassDiagram(): void
+    {
+        $size = static fn (string $source): array => (static fn ($drawn): array => [$drawn->width / Units::POINT, $drawn->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar sizes them: an empty class diagram, 5 smaller than one laid out, its captions around it.
+        $this->assertSame([[74.0, 67.0], [36.0, 53.0], [16.0, 41.0], [48.0, 70.0]], [
+            $size("legend\nhello\nendlegend"),
+            $size('title T'),
+            $size("header H\nfooter F"),
+            $size('mainframe M'),
+        ]);
+    }
+
     public function testItsSizeIsInWholePointsRoundedUpAsPlantUmlWritesIt(): void
     {
         $drawing = PlantUmlFrame::drawing(PlantUmlDocument::read(PlantUmlSource::parse("@startuml\n@enduml")), [], 100.2, 50.0);

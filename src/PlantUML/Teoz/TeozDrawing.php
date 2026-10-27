@@ -31,9 +31,6 @@ final class TeozDrawing
      */
     public static function draw(PlantUmlSequence $sequence): \Generator
     {
-        if ([] === $sequence->participants) {
-            throw new Unsupported('The native PlantUML renderer does not draw sequence diagrams without participants');
-        }
         $document = $sequence->document;
         $messageWidth = $document->param('wrapMessageWidth', $document->param('maxMessageSize', ''));
         $boxPadding = $document->param('boxPadding', '');

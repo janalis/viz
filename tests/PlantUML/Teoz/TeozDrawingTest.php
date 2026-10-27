@@ -389,9 +389,10 @@ final class TeozDrawingTest extends TestCase
         }
     }
 
-    public function testADiagramWithoutParticipantsIsLeftToPlantUml(): void
+    public function testADiagramWithoutParticipantsIsNoSequenceDiagram(): void
     {
-        $this->expectExceptionObject(new Unsupported('The native PlantUML renderer does not draw sequence diagrams without participants'));
+        // As PlantUML, whose sequence diagram fails without one, so the next kind is tried.
+        $this->expectExceptionMessage('A sequence diagram with no participant');
 
         self::draw('== alone ==');
     }

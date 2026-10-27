@@ -163,16 +163,13 @@ final class SequenceModel
     private static function note(SequenceNote $note, array $codes): array
     {
         $participants = 'across' === $note->position ? $codes : $note->participants;
-        if ([] === $participants) {
-            return [];
-        }
         $placement = match ($note->position) {
             'left' => NotePlacement::Left,
             'right' => NotePlacement::Right,
             default => NotePlacement::Over,
         };
 
-        return [new Note(\implode("\n", $note->text), $placement, $participants)];
+        return [] === $participants ? [] : [new Note(\implode("\n", $note->text), $placement, $participants)];
     }
 
     /** @return list<Step> */

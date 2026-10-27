@@ -118,13 +118,14 @@ final class PlantUmlFrame
         return self::framed(
             $document,
             \array_map(static fn (Mark $mark): Mark => self::moved($mark, self::SVEK_INSET - $minX, self::SVEK_INSET - $minY), $marks),
-            $maxX - $minX + self::SVEK_INSET + $trail - self::SVEK_OUTER,
-            $maxY - $minY + self::SVEK_INSET + $trail - self::SVEK_OUTER,
+            // An empty one, as measured on PlantUML's output: 5 narrower and shorter.
+            $maxX - $minX + self::SVEK_INSET + $trail - self::SVEK_OUTER - ([] === $marks ? self::SVEK_OUTER : 0.0),
+            $maxY - $minY + self::SVEK_INSET + $trail - self::SVEK_OUTER - ([] === $marks ? self::SVEK_OUTER : 0.0),
             [0.0, self::SVEK_OUTER, self::SVEK_OUTER, 0.0],
             \floor(...),
             // As PlantUML is seen to take them, rounding the diagram down: its captions 1 wider.
             captionRoom: 1.0,
-            content: [$maxX - $minX + $inFrame[0], $maxY - $minY + $inFrame[1], $inFrame[2] - self::SVEK_INSET, $inFrame[3] - self::SVEK_INSET],
+            content: [$maxX - $minX + $inFrame[0], $maxY - $minY + ([] === $marks ? 0.0 : $inFrame[1]), $inFrame[2] - self::SVEK_INSET, $inFrame[3] - self::SVEK_INSET],
             // In a frame, rounded up.
             framedWhole: \ceil(...),
         );
