@@ -23,6 +23,16 @@ use PHPUnit\Framework\TestCase;
 
 final class ClassDrawingTest extends TestCase
 {
+    public function testALayoutNewLineChangesNothing(): void
+    {
+        $size = static fn (string $between): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\nclass A\nclass B\n{$between}class C\nclass D\n@enduml")),
+        );
+
+        // As the jar draws it: as without it, 141 by 178.
+        $this->assertSame([[141.0, 178.0], [141.0, 178.0]], [$size(''), $size("layout_new_line\n")]);
+    }
+
     public function testAGenericStandsInABoxPastTheClasssTopRightCorner(): void
     {
         $entity = new ClassEntity('Box', ['Box']);

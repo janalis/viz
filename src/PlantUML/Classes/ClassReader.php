@@ -86,7 +86,7 @@ final class ClassReader
     private function execute(PlantUmlCommand $command): void
     {
         match ($command->name) {
-            'CommandNope', 'CommandFootboxIgnored', 'CommandHideEmptyDescription' => null,
+            'CommandNope', 'CommandFootboxIgnored', 'CommandHideEmptyDescription', 'CommandLayoutNewLine' => null,
             'CommandRankDir' => $this->direction = \str_starts_with(\strtolower($command->line()), 'left') ? Direction::LeftRight : Direction::TopBottom,
             'CommandCreateClass' => $this->create($command, []),
             'CommandCreateClassMultilines' => $this->create($command, $command->body()),

@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- PlantUML's `layout_new_line` in a class diagram is read natively, where it was refused, and changes nothing, as the jar's drawing shows.
 - A PlantUML note in sections, or a sequence diagram's text, keeps `skinparam guillemet`: a `<<…>>` in it between the guillemets set, or as written for `false`.
 - A PlantUML component, deployment or use case diagram's stereotype is taken in its block 1 wider either side, as PlantUML draws it, so an actor's reaches its node's sides; a use case's ellipse is fitted as PlantUML's `Footprint` and `SmallestEnclosingCircle` fit it, round that block's corners and its lines', its text where its centre puts it.
 - PlantUML's `skinparam guillemet` is drawn natively, as PlantUML's `Guillemet` reads it: stereotypes between `<<` and `>>` for `false` or `<< >>`, alone for `none`, between any two words given, and a `<<…>>` in text left as written for `false`. A style rebuilt with other values, as a colour written on an element gives, keeps the document's sprites and guillemets.
