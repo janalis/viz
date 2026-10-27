@@ -10,7 +10,7 @@ use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionDrawing;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionShapes;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
-use Janalis\Viz\PlantUML\Style\StyleSheet;
+use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 
 /** A class diagram's package or container as PlantUML draws it: a tabbed frame, or its symbol's outline. */
 final class ClassPackage
@@ -36,8 +36,11 @@ final class ClassPackage
      * @param list<string> $signature the style it is drawn in: a package's, or an empty one's, drawn as an element
      * @return list<Mark>
      */
-    public static function marks(ClassGroup $group, StyleSheet $styles, float $x0, float $y0, float $x1, float $y1, array $signature = ['root', 'element', 'group', 'package']): array
+    public static function marks(ClassGroup $group, PlantUmlDocument $document, float $x0, float $y0, float $x1, float $y1, array $signature = ['root', 'element', 'group', 'package']): array
     {
+        $styles = $document->styles;
+        // As PlantUML's strict UML style, which rounds no container's corners.
+        $strict = $document->strictUml();
         $marks = [];
         $style = $styles->style($signature, null === $group->stereotype ? [] : ClassReader::stereotypes($group->stereotype));
         $title = PlantUmlText::styled(ClassReader::split('' === $group->display ? $group->id : $group->display), $styles->style(['root', 'element', 'package', 'title']));
@@ -51,7 +54,7 @@ final class ClassPackage
                 $marks,
                 ...'frame' === $symbol
                     ? DescriptionShapes::frame($x0, $y0, $x1 - $x0, $y1 - $y0, $line, $back, $thickness, ...$title->size())
-                    : DescriptionShapes::container($symbol, $x0, $y0, $x1 - $x0, $y1 - $y0, $line, $back, $thickness, $box->number('RoundCorner'), $title->size()),
+                    : DescriptionShapes::container($symbol, $x0, $y0, $x1 - $x0, $y1 - $y0, $line, $back, $thickness, $strict ? 0.0 : $box->number('RoundCorner'), $title->size()),
             );
             $tabbed = \in_array($symbol, ['folder', 'frame'], strict: true);
             [$tabX, $tabY] = 'frame' === $symbol ? [3.0, 1.0] : [4.0, 2.0];
@@ -75,7 +78,7 @@ final class ClassPackage
                 $box->color('LineColor', '#181818'),
                 ClassColors::back($group->color) ?? $box->color('BackGroundColor', 'none'),
                 $box->number('LineThickness', 1.0),
-                $box->number('RoundCorner', 5.0),
+                $strict ? 0.0 : $box->number('RoundCorner', 5.0),
             );
             \array_push($marks, ...$title->marks($x0, $y0 + 2, $x1 - $x0));
 
@@ -85,6 +88,10 @@ final class ClassPackage
         $line = $style->color('LineColor', '#000000');
         $stroke = $style->number('LineThickness', 1.5);
         $back = ClassColors::back($group->color) ?? $style->color('BackGroundColor', 'none');
+        if ($strict) {
+            // As `USymbolFolder` draws one with no round corner: a polygon, its tab's side slanting.
+            return [...DescriptionShapes::container('package', $x0, $y0, $x1 - $x0, $y1 - $y0, $line, $back, $stroke, 0.0, [$width, $height]), ...$title->marks($x0 + 4, $y0 + 2, $width)];
+        }
         $marks[] = new Mark(
             MarkKind::Polygon,
             [[$x0, $y0], [$x0 + $width + 12, $y0], [$x0 + $width + 12, $y0 + $tab], [$x1, $y0 + $tab], [$x1, $y1], [$x0, $y1]],

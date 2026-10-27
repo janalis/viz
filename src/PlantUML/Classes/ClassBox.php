@@ -519,6 +519,30 @@ final readonly class ClassBox
         return \round(($letter + 17) / 3) + 3;
     }
 
+    /**
+     * An object's name underlined, as PlantUML's strict UML style writes it: a line 1.5 under the
+     * foot of each of its lines, as wide as it; nothing for any other classifier.
+     *
+     * @return list<Mark>
+     */
+    public function underlined(float $x, float $y): array
+    {
+        if ('object' !== $this->entity->type) {
+            return [];
+        }
+        $lines = [];
+        foreach ($this->name->marks($x, $y + 2 + ($this->stereotypes?->size()[1] ?? 0.0), $this->width) as $mark) {
+            if (MarkKind::Text !== $mark->kind) {
+                continue;
+            }
+            [$width] = new PlantUmlText([$mark->text], $this->name->size, $this->name->face)->size();
+            [[$centre, $foot]] = $mark->points;
+            $lines[] = new Mark(MarkKind::Polyline, [[$centre - ($width / 2), $foot + 1.5], [$centre + ($width / 2), $foot + 1.5]], stroke: $mark->stroke, strokeWidth: 1.0);
+        }
+
+        return $lines;
+    }
+
     /** @return list<Mark> a member: its visibility's icon, then its text, underlined when static */
     private function member(string $member, float $left, float $top, PlantUmlText $text): array
     {

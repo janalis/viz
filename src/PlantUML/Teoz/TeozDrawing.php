@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\Teoz;
 
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\PlantUML\Draw\ArrowHead;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Sequences\PlantUmlSequence;
@@ -39,6 +40,7 @@ final class TeozDrawing
             \strtolower($document->param('actorStyle', '')),
             \is_numeric($messageWidth) ? (float) $messageWidth : 0.0,
             \is_numeric($boxPadding) ? (float) $boxPadding : 0.0,
+            ArrowHead::of($document),
         );
         $events = new TeozEvents($sequence->events);
         $xOrigin = RealImpl::origin();
@@ -79,7 +81,9 @@ final class TeozDrawing
             $boxes = \max($boxes, $doll->offset());
         }
         $below = 0.0 === $boxes ? 0.0 : 10.0;
-        $body = $height + (($sequence->footbox ? 2 : 1) * $headHeight);
+        // As PlantUML, which shows no footbox in the strict UML style.
+        $footbox = $sequence->footbox && !$document->strictUml();
+        $body = $height + (($footbox ? 2 : 1) * $headHeight);
         $marks = [];
         foreach ($dolls as $doll) {
             \array_push($marks, ...$doll->marks($body + $boxes + ($below / 2)));
@@ -92,7 +96,7 @@ final class TeozDrawing
             ...Marks::moved($background, 0.0, $top),
             ...Marks::moved($spaces->lifeMarks(0.0, $height), 0.0, $top),
             ...Marks::moved($spaces->heads(), 0.0, $boxes),
-            ...$sequence->footbox ? Marks::moved($spaces->feet(), 0.0, $top + $height) : [],
+            ...$footbox ? Marks::moved($spaces->feet(), 0.0, $top + $height) : [],
             ...Marks::moved($foreground, 0.0, $top),
         );
 

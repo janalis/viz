@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Teoz\Rose;
 
 use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\PlantUML\Draw\ArrowHead;
 
 /**
  * A message from a participant to itself, as Rose draws it, 4 down from its top: its label,
@@ -28,6 +29,7 @@ final readonly class SelfArrow implements ArrowComponent
         private ArrowConfig $config,
         private Pen $pen,
         private string $back,
+        private ArrowHead $head = ArrowHead::Notched,
     ) {}
 
     #[\Override]
@@ -223,7 +225,7 @@ final readonly class SelfArrow implements ArrowComponent
         $points = match ($this->config->part()) {
             'top' => [[$tip - 1, -self::DELTA_Y], [-1.0, 0.0], [$tip - 1, 0.0]],
             'bottom' => [[$tip - 1, 0.0], [-1.0, 0.0], [$tip - 1, self::DELTA_Y]],
-            default => [[$tip, -self::DELTA_Y], [0.0, 0.0], [$tip, self::DELTA_Y], [$tip - ($direction * 4), 0.0]],
+            default => $this->head->outline([[$tip, -self::DELTA_Y], [0.0, 0.0], [$tip, self::DELTA_Y], [$tip - ($direction * 4), 0.0]]),
         };
 
         return new Pen($this->pen->color)->shape(\array_map(static fn (array $point): array => [$x + $point[0], $y + $point[1]], $points), $this->pen->color);

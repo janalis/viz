@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Ftile;
 use Janalis\Viz\Draw\Drawing;
 use Janalis\Viz\PlantUML\Activities\Lane;
 use Janalis\Viz\PlantUML\Activities\PlantUmlActivity;
+use Janalis\Viz\PlantUML\Draw\ArrowHead;
 use Janalis\Viz\PlantUML\Draw\PlantUmlFrame;
 use Janalis\Viz\PlantUML\Teoz\Rose\Pen;
 use Janalis\Viz\Source\Unsupported;
@@ -53,6 +54,7 @@ final class ActivityDrawing
             \array_push($marks, ...$shape->moved(5 - $minX, 5 - $minY)->marks);
         }
 
+        $marks = ArrowHead::of($activity->document)->marks($marks);
         // As PlantUML frames it for `mainframe`: as far as its shapes reach, not as what is drawn does.
         $content = [$maxX - $minX + 5, $maxY - $minY + 5, 0.0, 0.0];
 

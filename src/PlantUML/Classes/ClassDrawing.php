@@ -104,7 +104,8 @@ final class ClassDrawing
     private function graph(): Svek
     {
         $svek = new Svek();
-        $portions = new ClassPortions($this->classes->visibility);
+        // As PlantUML's strict UML style, which draws no circled character.
+        $portions = new ClassPortions([...($this->classes->document->strictUml() ? [[false, null, false, 'circle']] : []), ...$this->classes->visibility]);
         $icons = $this->classes->document->param('classattributeiconsize', '10');
         $held = [];
         foreach ([...$this->classes->entities, ...$this->classes->notes] as $member) {
@@ -283,14 +284,14 @@ final class ClassDrawing
         foreach ($placement->graph->clusters as $cluster) {
             $group = $this->classes->groups[$cluster->name] ?? null;
             if (null !== $group && 'together' !== $group->type) {
-                \array_push($this->marks, ...ClassPackage::marks($group, $this->classes->document->styles, $cluster->x0, $cluster->y0, $cluster->x1, $cluster->y1));
+                \array_push($this->marks, ...ClassPackage::marks($group, $this->classes->document, $cluster->x0, $cluster->y0, $cluster->x1, $cluster->y1));
             }
         }
         foreach (\array_keys($this->empty) as $id) {
             $node = $placement->endpoints[$id];
             \array_push($this->marks, ...ClassPackage::marks(
                 $this->classes->groups[$id],
-                $this->classes->document->styles,
+                $this->classes->document,
                 $node->x - ($node->w / 2),
                 $node->y - ($node->h / 2),
                 $node->x + ($node->w / 2),
@@ -322,7 +323,8 @@ final class ClassDrawing
         }
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
-            $marks = $box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2));
+            [$x, $y] = [$node->x - ($node->w / 2), $node->y - ($node->h / 2)];
+            $marks = [...$box->marks($x, $y), ...($box instanceof ClassBox && $this->classes->document->strictUml() ? $box->underlined($x, $y) : [])];
             \array_key_exists($id, $this->hidden) ? \array_push($this->ghosts, ...$marks) : \array_push($this->marks, ...$marks);
         }
         $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->classes->notes), 1, 0);

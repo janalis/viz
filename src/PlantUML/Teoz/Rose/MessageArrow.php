@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Teoz\Rose;
 
 use Janalis\Viz\Draw\Mark;
+use Janalis\Viz\PlantUML\Draw\ArrowHead;
 
 /**
  * A message's arrow across its area, as Rose draws it, 4 down from its top: its label over
@@ -27,6 +28,7 @@ final readonly class MessageArrow implements Component, ArrowComponent
         private string $back,
         /** Where the label stands along the arrow: `left`, `center` or `right`. */
         private string $align = 'left',
+        private ArrowHead $head = ArrowHead::Notched,
     ) {}
 
     #[\Override]
@@ -187,7 +189,7 @@ final readonly class MessageArrow implements Component, ArrowComponent
         $points = match ($part) {
             'top' => [[$deltaX, -self::DELTA_Y], [0.0, 0.0], [$deltaX, 0.0]],
             'bottom' => [[$deltaX, 0.0], [0.0, 0.0], [$deltaX, self::DELTA_Y]],
-            default => [[$deltaX, -self::DELTA_Y], [0.0, 0.0], [$deltaX, self::DELTA_Y], [$deltaX - (4 * ($deltaX <=> 0)), 0.0]],
+            default => $this->head->outline([[$deltaX, -self::DELTA_Y], [0.0, 0.0], [$deltaX, self::DELTA_Y], [$deltaX - (4 * ($deltaX <=> 0)), 0.0]]),
         };
 
         return new Pen($this->pen->color)->shape(\array_map(static function (array $point) use ($x, $y, $angle): array {

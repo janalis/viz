@@ -60,6 +60,12 @@ final readonly class PlantUmlDocument
         );
     }
 
+    /** Whether it is drawn in the strict UML style, `skinparam style strictuml`. */
+    public function strictUml(): bool
+    {
+        return 'strictuml' === \strtolower(\trim($this->param('style')));
+    }
+
     /** @throws Unsupported on a shared command left to PlantUML */
     public static function read(PlantUmlSource $source): self
     {

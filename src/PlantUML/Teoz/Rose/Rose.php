@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Teoz\Rose;
 
 use Janalis\Viz\PlantUML\Classes\ClassReader;
+use Janalis\Viz\PlantUML\Draw\ArrowHead;
 use Janalis\Viz\PlantUML\Sequences\Arrow;
 use Janalis\Viz\PlantUML\Sequences\SequenceBox;
 use Janalis\Viz\PlantUML\Sequences\SequenceGroup;
@@ -30,6 +31,8 @@ final readonly class Rose
         private float $messageWidth = 0.0,
         /** `skinparam boxPadding`: room kept more either side of a box. */
         public float $boxPadding = 0.0,
+        /** How its messages' filled heads are drawn: plain triangles in the strict UML style. */
+        private ArrowHead $head = ArrowHead::Notched,
     ) {}
 
     /** @param list<string> $stereotypes */
@@ -126,10 +129,10 @@ final readonly class Rose
         $pen = null === $arrow->color ? $pen : $pen->withColor(PlantUmlColor::parse($arrow->color) ?? $pen->color);
         $back = $style->color('BackGroundColor', '#000000');
         if ($config->self) {
-            return new SelfArrow($text, $config, $pen, $back);
+            return new SelfArrow($text, $config, $pen, $back, $this->head);
         }
 
-        return new MessageArrow($text, $config, $pen, $back, \strtolower($style->value('HorizontalAlignment', 'left')));
+        return new MessageArrow($text, $config, $pen, $back, \strtolower($style->value('HorizontalAlignment', 'left')), $this->head);
     }
 
     public function note(SequenceNote $note): Component
