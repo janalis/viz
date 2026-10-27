@@ -224,16 +224,17 @@ final class DescriptionReader
                 return $note->id;
             }
         }
-        if (\str_starts_with($text, '()')) {
-            $element = $this->get(self::bare(\trim(\substr($text, offset: 2))));
+        // As PlantUML links to a container named so, written as an interface too.
+        $interface = \str_starts_with($text, '()');
+        $container = self::bare($interface ? \trim(\substr($text, offset: 2)) : $text);
+        if (\array_key_exists($container, $this->groups) && !\array_key_exists($container, $this->elements) && 'together' !== $this->groups[$container]->symbol) {
+            return $container;
+        }
+        if ($interface) {
+            $element = $this->get($container);
             $element->symbol = 'unknown' === $element->symbol ? 'interface' : $element->symbol;
 
             return $element->id;
-        }
-        // As PlantUML links to a container named so.
-        $container = self::bare($text);
-        if (\array_key_exists($container, $this->groups) && !\array_key_exists($container, $this->elements) && 'together' !== $this->groups[$container]->symbol) {
-            return $container;
         }
         $first = \strlen($text) > 2 ? $text[0] : '';
         $business = \str_ends_with($text, '/');
@@ -380,11 +381,24 @@ final class DescriptionReader
         }
         foreach ($this->links as $link) {
             foreach ([$link->from, $link->to] as $end) {
-                if (\array_key_exists($end, $this->groups) && !\array_key_exists($end, $held)) {
-                    throw new Unsupported('The native PlantUML renderer does not draw links to empty containers such as '.$end);
+                if (!\array_key_exists($end, $this->groups) || \array_key_exists($end, $held)) {
+                    continue;
                 }
+                $this->leaf($this->groups[$end]);
             }
         }
+    }
+
+    /** An empty container a link ends at, as PlantUML draws one: an element of its symbol, as its group's leaf. */
+    private function leaf(DescriptionGroup $group): void
+    {
+        unset($this->groups[$group->id]);
+        $element = new DescriptionElement($group->id, ClassReader::split($group->display), $group->symbol, $group->parent);
+        $element->stereotypes = $group->stereotypes;
+        $element->stereotypeShown = $group->stereotypeShown;
+        $element->color = $group->color;
+        $this->elements[$group->id] = $element;
+        $this->leaves[] = $group->id;
     }
 
     /** Whether a `hide` or `show` means an element or group: all, those of a stereotype, or one by name; never a class's kind. */
@@ -405,9 +419,6 @@ final class DescriptionReader
         if (!\array_key_exists($id, $this->elements) && !\array_key_exists($id, $this->groups)) {
             $this->elements[$id] = new DescriptionElement($id, ClassReader::split($display ?? $id), group: $this->current());
             $this->leaves[] = $id;
-        }
-        if (\array_key_exists($id, $this->groups)) {
-            throw new Unsupported('The native PlantUML renderer does not draw links to containers such as '.$id);
         }
         if (null !== $display) {
             $this->elements[$id]->display = ClassReader::split($display);

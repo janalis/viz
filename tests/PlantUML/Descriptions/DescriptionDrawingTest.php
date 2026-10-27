@@ -83,6 +83,21 @@ final class DescriptionDrawingTest extends TestCase
         ]);
     }
 
+    public function testAnEmptyContainerALinkEndsAtIsDrawnAsAnElement(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar draws them: an empty container linked to as an element of its symbol; a container written as an interface still the container.
+        $this->assertSame([[90.0, 162.0], [116.0, 179.0], [90.0, 183.0], [117.0, 179.0]], [
+            $size("node A\nrectangle R {\n}\nA --> R"),
+            $size("node A\nrectangle \"Long name\" as R <<st>> #pink {\n}\nA --> R"),
+            $size("node A\nnode R {\n}\nA --> R"),
+            $size("rectangle R {\n [B]\n}\n() R --> [B]"),
+        ]);
+    }
+
     public function testANodeContainerIsTakenTenWiderEitherSide(): void
     {
         $width = static fn (string $symbol): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$symbol} Server {\n  [App]\n}\n@enduml"))->width / Units::POINT;
