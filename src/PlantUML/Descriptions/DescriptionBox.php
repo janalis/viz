@@ -9,6 +9,7 @@ use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Draw\ActorFigure;
+use Janalis\Viz\PlantUML\Draw\ContainingEllipse;
 use Janalis\Viz\PlantUML\Draw\PlantUmlBody;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
@@ -84,8 +85,8 @@ final readonly class DescriptionBox
         private bool $alone = false,
         /** A package's title, its name in its tab, 6 room either side. */
         private ?PlantUmlText $title = null,
-        /** How far below a use case's top its text starts. */
-        private float $textTop = 0.0,
+        /** @var array{float, float} where in a use case its text's middle is across, and its top */
+        private array $textAt = [0.0, 0.0],
         /** Its text in sections at its separator lines, each set left, as PlantUML's `BodyEnhanced2` sets a box's. */
         private ?PlantUmlBody $body = null,
     ) {}
@@ -118,8 +119,9 @@ final readonly class DescriptionBox
         // As PlantUML is seen to measure it, a stereotype takes 2 more than its text.
         $labelWidth = \max($textWidth, null === $stereotypes ? 0.0 : $stereoWidth + 2);
         $labelHeight = $textHeight + $stereoHeight;
+        $footprint = self::footprint($stereotypes?->rows() ?? [], $text->rows(), $element->business ? 7.0 : 0.0);
         [$width, $height] = match (true) {
-            'usecase' === $element->symbol => self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()], $element->business ? 7.0 : 0.0),
+            'usecase' === $element->symbol => [$footprint[0], $footprint[1]],
             // As PlantUML: its flat sides as wide as its text, its points half as far again, 5 above and below.
             'hexagon' === $element->symbol => [2 * $labelWidth, $labelHeight + 10],
             'person' === $element->symbol => self::person($labelWidth + 20, $labelHeight + 20),
@@ -145,7 +147,7 @@ final readonly class DescriptionBox
             $flushLeft,
             title: $title,
             body: $body,
-            textTop: 'usecase' === $element->symbol ? self::footprint([...($stereotypes?->rows() ?? []), ...$text->rows()], $element->business ? 7.0 : 0.0)[2] : 0.0,
+            textAt: 'usecase' === $element->symbol ? [$footprint[2], $footprint[3]] : [0.0, 0.0],
         );
     }
 
@@ -179,7 +181,7 @@ final readonly class DescriptionBox
             ? [self::ellipse($x, $y, $this->width, $this->height, $line, $back, $stroke), ...($this->element->business ? [self::across($x, $y, $this->width, $this->height, $line, $stroke)] : [])]
             : DescriptionShapes::outline($symbol, $x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'), $this->tab());
         [$labelLeft, $labelTop, $labelWidth] = match ($symbol) {
-            'usecase' => [$x, $y + $this->textTop, $this->width],
+            'usecase' => [$x + $this->textAt[0] - ($this->width / 2), $y + $this->textAt[1], $this->width],
             'hexagon' => [$x + ($this->width / 4), $y + 5, $this->width / 2],
             'person' => [$x + $left, $y + (2 * DescriptionShapes::head($this->width, $this->height)) + $top, $this->width - $left - $right],
             default => [$x + $left, $y + $top + $this->tab()[1], $this->width - $left - $right],
@@ -190,7 +192,7 @@ final readonly class DescriptionBox
         $label = null === $this->body
             ? $this->label($labelLeft, $labelTop, $labelWidth)
             : [
-                ...($this->stereotypes?->marks($labelLeft, $labelTop, $labelWidth) ?? []),
+                ...$this->stereotyped($labelLeft, $labelTop, $labelWidth),
                 ...$this->body->marks($labelLeft, $labelTop + ($this->stereotypes?->size()[1] ?? 0.0), $labelWidth, 'left', $x, $x + $this->width, $line, $stroke),
             ];
 
@@ -213,7 +215,7 @@ final readonly class DescriptionBox
         // As PlantUML's simple symbols stack them: the stereotypes, the icon, the name; an interface's stereotypes ending 17 above its circle's centre, as its name starts 17 below.
         $interface = \in_array($symbol, ['interface', 'circle'], strict: true);
         $stereoHeight = null === $this->stereotypes ? 0.0 : $this->stereotypes->size()[1];
-        $stereotypes = null === $this->stereotypes ? [] : $this->stereotypes->marks($x, $interface ? $y + ($this->height / 2) - 17 - $stereoHeight : $y, $this->width);
+        $stereotypes = $this->stereotyped($x, $interface ? $y + ($this->height / 2) - 17 - $stereoHeight : $y, $this->width);
         $y += $interface ? 0.0 : $stereoHeight;
         $centre = $x + ($this->width / 2);
         $marks = match ($symbol) {
@@ -268,46 +270,35 @@ final readonly class DescriptionBox
 
     /**
      * The ellipse PlantUML's `TextBlockInEllipse` fits around lines centred one under another,
-     * as its `Footprint` and `ContainingEllipse` find it: the smallest around each line's corners,
+     * as its `Footprint` and `ContainingEllipse` find it: the smallest around each line's corners
+     * and two opposite corners of each block holding them, the stereotypes' 1 wider either side,
      * as flat as the lines but between a fifth and four fifths as tall as wide, 6 bigger; the
-     * lines drawn from its centre, 2 higher. A business use case's lines held 7 in from either side,
-     * the block they make, its margins with it, taken whole as well as each line's corners.
+     * lines drawn from its centre, 2 higher. A business use case's lines held 7 in from either side.
      *
-     * @param list<array{float, float, float}> $rows each line's width, height and how far above its top it is taken
-     * @return array{float, float, float} its width, its height, and how far below its top the lines start
+     * @param list<array{float, float, float}> $stereotypes each stereotype line's width, height and how far above its top it is taken
+     * @param list<array{float, float, float}> $rows each line's of its text
+     * @return array{float, float, float, float} its width, its height, and where in it the lines' middle is across, and their top
      */
-    private static function footprint(array $rows, float $margin): array
+    private static function footprint(array $stereotypes, array $rows, float $margin): array
     {
-        [$width, $height] = [([] === $rows ? 0.0 : \max(\array_column($rows, 0))) + (2 * $margin), \array_sum(\array_column($rows, 1))];
+        $stereoWidth = [] === $stereotypes ? 0.0 : \max(\array_column($stereotypes, 0));
+        $inner = \max([] === $stereotypes ? 0.0 : $stereoWidth + 2, [] === $rows ? 0.0 : \max(\array_column($rows, 0)));
+        [$width, $height, $middle] = [$inner + (2 * $margin), \array_sum(\array_column([...$stereotypes, ...$rows], 1)), $margin + ($inner / 2)];
         $aspect = $width > 0 ? \min(0.8, \max(0.2, $height / $width)) : 0.8;
-        // Each line's half width, and its top and bottom as measured, from the first line's top.
-        $spans = [];
+        // As drawn: the blocks' corners, then each line's.
+        $points = $margin > 0 ? [[0.0, 0.0], [$width, $height]] : [];
+        if ([] !== $stereotypes) {
+            $points = [...$points, [$middle - ($stereoWidth / 2) - 1, 0.0], [$middle + ($stereoWidth / 2) + 1, \array_sum(\array_column($stereotypes, 1))]];
+        }
         $top = 0.0;
-        foreach ($rows as [$rowWidth, $rowHeight, $above]) {
-            $spans[] = [$rowWidth / 2, $top - $above, $top + $rowHeight - $above];
+        foreach ([...$stereotypes, ...$rows] as [$rowWidth, $rowHeight, $above]) {
+            [$left, $right] = [$middle - ($rowWidth / 2), $middle + ($rowWidth / 2)];
+            $points = [...$points, [$left, $top - $above], [$left, $top + $rowHeight - $above], [$right, $top - $above], [$right, $top + $rowHeight - $above]];
             $top += $rowHeight;
         }
-        if ($margin > 0) {
-            $spans[] = [$width / 2, 0.0, $height];
-        }
-        // The lines centred, the circle's centre on their middle line: where, down it, the farthest corner is nearest.
-        $farthest = static function (float $centre) use ($spans, $aspect): float {
-            $far = 0.0;
-            foreach ($spans as [$half, $from, $to]) {
-                $far = \max($far, $half ** 2 + (\max(\abs($from - $centre), \abs($to - $centre)) / $aspect) ** 2);
-            }
+        [$radius, $centreX, $centreY] = ContainingEllipse::around($points, $aspect);
 
-            return $far;
-        };
-        [$low, $high] = [[] === $spans ? 0.0 : \min(\array_column($spans, 1)), [] === $spans ? 0.0 : \max(\array_column($spans, 2))];
-        for ($step = 0; $step < 100; ++$step) {
-            [$one, $two] = [$low + (($high - $low) / 3), $high - (($high - $low) / 3)];
-            [$low, $high] = $farthest($one) < $farthest($two) ? [$low, $two] : [$one, $high];
-        }
-        $centre = ($low + $high) / 2;
-        $radius = \sqrt($farthest($centre));
-
-        return [(2 * $radius) + 6, (2 * $radius * $aspect) + 6, ($radius * $aspect) + 3 - $centre - 2];
+        return [(2 * $radius) + 6, (2 * $radius * $aspect) + 6, $radius + 3 - $centreX + $middle, ($radius * $aspect) + 3 - $centreY - 2];
     }
 
     /** @return list<Mark> the stereotypes above the text, both centred within a width */
@@ -317,7 +308,26 @@ final readonly class DescriptionBox
             return $this->name($x, $y, $width);
         }
 
-        return [...$this->stereotypes->marks($x, $y, $width), ...$this->name($x, $y + $this->stereotypes->size()[1], $width)];
+        return [...$this->stereotyped($x, $y, $width), ...$this->name($x, $y + $this->stereotypes->size()[1], $width)];
+    }
+
+    /**
+     * The stereotypes centred within a width, as PlantUML draws them: in a block 1 wider on
+     * both sides, which its limit finder takes too.
+     *
+     * @return list<Mark>
+     */
+    private function stereotyped(float $x, float $y, float $width): array
+    {
+        if (null === $this->stereotypes) {
+            return [];
+        }
+        [$stereoWidth, $stereoHeight] = $this->stereotypes->size();
+        $left = $x + (($width - $stereoWidth) / 2) - 1;
+        $marks = $this->stereotypes->marks($x, $y, $width);
+        $marks[0] = $marks[0]->with(['extent' => [[$left, $y], [$left + $stereoWidth + 2, $y + $stereoHeight]]]);
+
+        return $marks;
     }
 
     /** @return list<Mark> the text alone, centred within a width */

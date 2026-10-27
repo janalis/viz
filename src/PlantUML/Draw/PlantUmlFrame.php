@@ -177,7 +177,7 @@ final class PlantUmlFrame
             // As PlantUML's limit finder takes a text, as measured on its output: its line moved 1.5 down from its baseline's top.
             $size = $mark->fontScale * Units::POINT * 12;
 
-            return [[$x - $half, $y - PlantUmlText::lineHeight($size) + 1.5], [$x + $half, $y + 1.5]];
+            return [[$x - $half, $y - PlantUmlText::lineHeight($size) + 1.5], [$x + $half, $y + 1.5], ...$mark->extent];
         }
         if (MarkKind::Polygon === $mark->kind) {
             [$near, $far] = match ($mark->outline) {

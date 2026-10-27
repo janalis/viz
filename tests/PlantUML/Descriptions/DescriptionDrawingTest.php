@@ -78,6 +78,18 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([162.0, 121.0], [$width('node'), $width('frame')]);
     }
 
+    public function testAStereotypeIsTakenInItsBlockOneWiderEitherSide(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
+            $drawing->width / Units::POINT,
+            $drawing->height / Units::POINT,
+        ])(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")));
+
+        // As the jar sizes them: an actor's stereotype reaching its node's sides, a use case's ellipse round its stereotype's block.
+        $this->assertSame([[170.0, 113.0], [168.0, 113.0]], [$size("[C]\nactor X <<person>>"), $size("actor X <<person>>\n[C]")]);
+        $this->assertSame([[167.0, 95.0], [151.0, 184.0]], [$size("usecase X <<person>>\nactor Y"), $size("usecase \"A longer name\\nand two lines\" as X <<stereo>>\nrectangle R\nX --> R")]);
+    }
+
     public function testPolygonsAreTakenTenWiderEitherSideAsPlantUmlsLimitFinderTakesThem(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
