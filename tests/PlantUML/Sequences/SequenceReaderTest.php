@@ -346,7 +346,7 @@ final class SequenceReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
-        yield 'note above a reference' => ["participant A\nref over A : r\nnote top : x", 'The native PlantUML renderer does not draw what PlantUML warns of: note top : x'];
+        yield 'note above a group' => ["participant A\ngroup G\nA -> A\nend\nnote top : x", 'The native PlantUML renderer does not draw what PlantUML warns of: note top : x'];
         yield 'url' => ["participant A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];
     }
 

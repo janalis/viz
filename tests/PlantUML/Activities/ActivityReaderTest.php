@@ -341,10 +341,6 @@ final class ActivityReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function unsupported(): iterable
     {
-        yield 'deprecated colour' => ["#pink:a\nb;", 'The native PlantUML renderer does not draw what PlantUML warns of: #pink:a'];
-        yield 'stereotype before' => ['<<x>> :a;', 'The native PlantUML renderer does not draw what PlantUML warns of: <<x>> :a;'];
-        yield 'repeat colour' => ["#pink:repeat\nrepeat while", 'The native PlantUML renderer does not draw what PlantUML warns of: #pink:repeat'];
-        yield 'group without bracket' => ["partition P\n:a;", 'The native PlantUML renderer does not draw what PlantUML warns of: partition P'];
         yield 'goto' => ["label a\ngoto a", 'The native PlantUML renderer does not draw: label a'];
     }
 

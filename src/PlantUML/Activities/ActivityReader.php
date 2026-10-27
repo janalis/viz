@@ -35,6 +35,9 @@ final class ActivityReader
     private readonly InstructionList $root;
     private Container $current;
     private LinkRendering $next;
+
+    /** @var list<string> what PlantUML warns of */
+    private array $warnings = [];
     /** @var array<string, Lane> the swimlanes, by name, in the order declared */
     private array $lanes = [];
     private ?Lane $lane = null;
@@ -72,7 +75,7 @@ final class ActivityReader
             throw $unsupported;
         }
 
-        return new PlantUmlActivity($document, $reader->root, $reader->next, \array_values($reader->lanes), $reader->laneOf);
+        return new PlantUmlActivity($document->warned($reader->warnings), $reader->root, $reader->next, \array_values($reader->lanes), $reader->laneOf);
     }
 
     private function execute(PlantUmlCommand $command): void
@@ -105,7 +108,8 @@ final class ActivityReader
             'CommandForkAgain3', 'CommandSplitAgain3' => $this->again($command),
             'CommandForkEnd3', 'CommandSplitEnd3' => $this->endFork($command),
             'CommandPartition3' => $this->group($command),
-            'CommandCloseGroup3', 'CommandCloseGroupLegacy3' => $this->current = $this->current instanceof InstructionGroup ? $this->current->parent : throw new PlantUmlRefusal('Cannot find group'),
+            'CommandCloseGroup3' => $this->close(),
+            'CommandCloseGroupLegacy3' => $this->close("You should use a bracket (}) instead of '".(string) $command->get('CMD')."'"),
             'CommandNote3' => $this->note($command, self::lines((string) $command->get('NOTE'))),
             'CommandNoteLong3' => $this->note($command, self::columns($command->body())),
             default => throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line()),
@@ -115,7 +119,8 @@ final class ActivityReader
     private function activity(PlantUmlCommand $command): void
     {
         $this->add(new InstructionSimple(self::lines((string) $command->get('LABEL')), $this->take(), $command->get('STEREOGROUP')));
-        self::warned($command, 'IGNORED');
+        $this->warn(null === $command->get('IGNORED') ? null : "You must use stereotype at the end of the line after the ';'");
+        $this->deprecated($command);
     }
 
     /** An action over several lines: its text from after the `:` to before the `;`. */
@@ -127,7 +132,7 @@ final class ActivityReader
         $lines[0] = (string) \preg_replace('/^[^:]*:/', replacement: '', subject: \ltrim($lines[0]));
         $lines[\count($lines) - 1] = $match[1] ?? '';
         $this->add(new InstructionSimple($lines, $this->take(), '' === ($match[2] ?? '') ? null : $match[2]));
-        self::warned($command, 'COLOR');
+        $this->deprecated($command);
     }
 
     private function terminal(string $kind, ?string $stereogroup): void
@@ -329,7 +334,7 @@ final class ActivityReader
         $repeat = new InstructionRepeat($this->current, $this->take(), self::display($command->get('LABEL')), $command->get('STEREOGROUP'));
         $this->place($repeat);
         $this->current = $repeat;
-        self::warned($command, 'COLOR');
+        $this->deprecated($command);
     }
 
     private function repeatWhile(PlantUmlCommand $command): void
@@ -413,9 +418,7 @@ final class ActivityReader
         );
         $this->place($group);
         $this->current = $group;
-        if ('' === (string) $command->get('BRACKET')) {
-            throw new Unsupported('The native PlantUML renderer does not draw what PlantUML warns of: '.$command->line());
-        }
+        $this->warn('' === (string) $command->get('BRACKET') ? "You should use a bracket ({) when defining your container '".(string) $command->get('TYPE')."' ".$name : null);
     }
 
     /** @param list<string> $text */
@@ -439,16 +442,24 @@ final class ActivityReader
         return $next;
     }
 
-    /**
-     * Leaves to PlantUML a command written in a form it warns of, once carried out.
-     *
-     * @throws Unsupported when the form was used
-     */
-    private static function warned(PlantUmlCommand $command, string $slot): void
+    /** What PlantUML warns of, where it warns of anything: in its banner above the diagram. */
+    private function warn(?string $warning): void
     {
-        if (null !== $command->get($slot)) {
-            throw new Unsupported('The native PlantUML renderer does not draw what PlantUML warns of: '.$command->line());
-        }
+        $this->warnings = null === $warning ? $this->warnings : [...$this->warnings, $warning];
+    }
+
+    /** A colour written before a step, which PlantUML ignores and warns of. */
+    private function deprecated(PlantUmlCommand $command): void
+    {
+        $color = $command->get('COLOR');
+        $this->warn(null === $color ? null : 'This syntax is deprecated, you must add <<'.$color.">> at the end of the line, after the ';'");
+    }
+
+    /** The end of a group, as `}` or as PlantUML warns of it. */
+    private function close(?string $warning = null): void
+    {
+        $this->current = $this->current instanceof InstructionGroup ? $this->current->parent : throw new PlantUmlRefusal('Cannot find group');
+        $this->warn($warning);
     }
 
     /** An arrow's colour and label written in parentheses, as on `else` and `backward`. */

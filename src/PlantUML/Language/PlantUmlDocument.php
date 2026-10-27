@@ -39,6 +39,27 @@ final readonly class PlantUmlDocument
         public array $warnings = [],
     ) {}
 
+    /**
+     * The document with more that PlantUML warns of, as its diagram commands warn of them: each
+     * warning once, in the order first met.
+     *
+     * @param list<string> $warnings
+     */
+    public function warned(array $warnings): self
+    {
+        return new self(
+            $this->lines,
+            $this->styles,
+            $this->params,
+            $this->captions,
+            $this->scale,
+            $this->pragmas,
+            $this->kind,
+            $this->fit,
+            \array_values(\array_unique([...$this->warnings, ...$warnings])),
+        );
+    }
+
     /** @throws Unsupported on a shared command left to PlantUML */
     public static function read(PlantUmlSource $source): self
     {

@@ -20,6 +20,8 @@ use Janalis\Viz\Source\Unsupported;
  */
 final class SequenceReader
 {
+    /** @var list<string> what PlantUML warns of */
+    private array $warnings = [];
     /** @var array<string, SequenceParticipant> in the order they stand */
     private array $participants = [];
     /** @var list<SequenceEvent> */
@@ -62,7 +64,7 @@ final class SequenceReader
             throw $unsupported;
         }
 
-        return new PlantUmlSequence($document, $reader->ordered(), $reader->events, $reader->boxes, $reader->footbox, null !== $reader->numbers, $reader->links);
+        return new PlantUmlSequence($document->warned($reader->warnings), $reader->ordered(), $reader->events, $reader->boxes, $reader->footbox, null !== $reader->numbers, $reader->links);
     }
 
     private function execute(PlantUmlCommand $command): void
@@ -450,9 +452,14 @@ final class SequenceReader
         if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo && !$last instanceof SequenceGroup && !$last instanceof SequenceMark) {
             return;
         }
-        // A reference or a group holds a note left or right of it, and warns of any other.
+        // A reference or a group holds a note left or right of it, and warns of any other: a reference drops it, a group keeps it.
         $position = \strtolower($command->get('POSITION') ?? 'right');
-        if (!$last instanceof SequenceMessage && !$last instanceof SequenceExo && 'left' !== $position && 'right' !== $position) {
+        if ($last instanceof SequenceMark && 'left' !== $position && 'right' !== $position) {
+            $this->warnings[] = 'This position is ignored: '.\strtoupper($position);
+
+            return;
+        }
+        if ($last instanceof SequenceGroup && 'left' !== $position && 'right' !== $position) {
             throw new Unsupported('The native PlantUML renderer does not draw what PlantUML warns of: '.$command->line());
         }
         $text = null === $command->get('NOTE') ? ActivityReader::columns($command->body()) : self::lines((string) $command->get('NOTE'));

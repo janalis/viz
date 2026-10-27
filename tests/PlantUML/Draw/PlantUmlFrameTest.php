@@ -48,6 +48,18 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertSame(["Please use '!option handwritten true' to enable handwritten ", 'Please use CSS style instead of skinparam ParticipantPadding'], $texts);
         $this->assertSame([392.0, 158.0], \array_slice($drawing("skinparam handwritten false\nskinparam shadowing true\nA -> B : msg"), offset: 0, length: 2));
         $this->assertSame([392.0, 159.0], [$width, $height]);
+        // As the jar warns of an activity's old forms, its colour then ignored, and of a note above a reference, then left out.
+        $this->assertSame([[444.0, 232.0], [564.0, 255.0], [236.0, 226.0]], [
+            \array_slice($drawing("start\ngroup G\n  :a;\nend group\nstop"), offset: 0, length: 2),
+            \array_slice($drawing("start\n#pink:colored;\n:<b>bold</b> text;\n:multi\nline;\nstop"), offset: 0, length: 2),
+            \array_slice(
+                $drawing(
+                    "!pragma teoz true\nparticipant A\nparticipant B\nparticipant C\nA -> B : x\nref over A, B : init\nnote right : on ref\nnote left : left one\nnote top : left out\nB -> C : y",
+                ),
+                offset: 0,
+                length: 2,
+            ),
+        ]);
     }
 
     public function testItsSizeIsInWholePointsRoundedUpAsPlantUmlWritesIt(): void
