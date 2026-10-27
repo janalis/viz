@@ -55,9 +55,9 @@ final class WireDrawing
         foreach ($block->prints as [$left, $top, $lines]) {
             \array_push($marks, ...self::text($lines, 10.0, '#000000', $x + $left, $y + $top));
         }
-        if ('' !== $block->name) {
-            \array_push($marks, ...self::text([\str_replace('_', replace: ' ', subject: $block->name)], 12.0, '#000000', $x + 5, $y));
-        }
+        // As PlantUML's `WBlock`, the root's empty name too, as a space its limit finder takes.
+        $name = self::text(['' === $block->name ? "\u{00A0}" : \str_replace('_', replace: ' ', subject: $block->name)], 12.0, '#000000', $x + 5, $y);
+        \array_push($marks, ...'' === $block->name ? \array_map(static fn (Mark $mark): Mark => $mark->with(['text' => ' ']), $name) : $name);
 
         return $marks;
     }

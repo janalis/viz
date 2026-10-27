@@ -120,6 +120,8 @@ final class PlantUmlFrameTest extends TestCase
         $this->assertSame([182.0, 191.0], $size("@startebnf\nmainframe F\na = \"x\" | \"y\";\n@endebnf"));
         $this->assertSame([299.0, 146.0], $size("@startregex\nmainframe F\n/ab[0-9]+c?/\n@endregex"));
         $this->assertSame([183.0, 175.0], $size("@startuml\nmainframe F\nconcise \"Web\" as W\n@0\nW is A\n@10\nW is B\n@enduml"));
+        // A wire diagram's root writes its empty name, a space whose line reaches above it.
+        $this->assertSame([162.0, 206.0], $size("@startwire\nmainframe F\n*A\n@endwire"));
         $this->assertSame([209.0, 184.0], $size("@startuml\nmainframe F\nrobust \"W\" as W\n@0\nW is Idle\n@5\nW is Busy\n@enduml"));
         $this->assertSame([126.0, 185.0], $size("@startnwdiag\nmainframe F\nnwdiag {\n network n {\n  a;\n }\n}\n@endnwdiag"));
         $this->assertSame([224.0, 247.0], $size("@startboard\nmainframe F\nA\n+B\n@endboard"));
