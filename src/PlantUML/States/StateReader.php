@@ -291,7 +291,7 @@ final class StateReader
     /** A state by name, made in the current composite state and region when new. */
     private function state(string $name, ?string $display = null): StateNode
     {
-        $id = \trim($name, characters: '"');
+        $id = $this->qualified(\trim($name, characters: '"'));
         if (\str_contains($id, '.') || \str_contains($id, '::')) {
             throw new Unsupported('The native PlantUML renderer does not draw namespaced names such as '.$id);
         }
@@ -304,6 +304,16 @@ final class StateReader
         }
 
         return $this->nodes[$id];
+    }
+
+    /** A state named by its composite state's name and its own, `A.B`, as PlantUML finds it: the state so named in that composite state; any other name as it stands. */
+    private function qualified(string $id): string
+    {
+        $at = \strrpos($id, needle: '.');
+        $leaf = false === $at ? null : \substr($id, $at + 1);
+        $composite = false === $at ? null : \substr($id, offset: 0, length: $at);
+
+        return null !== $leaf && \array_key_exists($leaf, $this->nodes) && $this->nodes[$leaf]->group === $composite ? $leaf : $id;
     }
 
     private function current(): ?string

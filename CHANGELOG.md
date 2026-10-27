@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML state named by its composite state's name and its own, `A.B`, is the state B in A, as PlantUML finds it, where it was refused; any other name with a dot in it is still left to PlantUML.
 - A PlantUML diagram of captions alone, a legend, a title, a header or a footer and nothing else, is drawn natively, where it was refused, as PlantUML draws it: an empty class diagram, as its sequence diagram with no participant fails, 5 narrower and shorter than one laid out, its captions around it.
 - A PlantUML component, deployment or use case diagram's empty container a link ends at is drawn natively, where it was refused, as PlantUML draws it: an element of its symbol, its name, stereotypes and colour with it; and a container a link names as an interface, `() R`, is the container.
 - More of what PlantUML warns of is drawn in its banner, where it was refused: a new activity diagram's group or partition opened without `{` or closed with `end group`, a colour written before a step, `#pink:a;`, which PlantUML then ignores, and a stereotype before one; a sequence diagram's note above or below a reference, which PlantUML then leaves out.

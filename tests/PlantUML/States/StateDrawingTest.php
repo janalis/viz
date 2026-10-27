@@ -20,6 +20,20 @@ use PHPUnit\Framework\TestCase;
 
 final class StateDrawingTest extends TestCase
 {
+    public function testAStateNamedByItsCompositeStatesNameIsThatState(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar draws them: `A.B` the state B in A, linked to or declared again.
+        $this->assertSame([[108.0, 208.0], [104.0, 216.0], [108.0, 122.0]], [
+            $size("state A {\n  state B\n  state C\n}\nA.B --> C"),
+            $size("state A {\n  state B\n}\nA.B --> X"),
+            $size("state A {\n  state B\n}\nstate A.B"),
+        ]);
+    }
+
     public function testAnSdlReceiveStateIsDrawnAsAFrame(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
