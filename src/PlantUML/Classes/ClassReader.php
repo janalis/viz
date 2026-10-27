@@ -142,7 +142,7 @@ final class ClassReader
             self::stereotyped($entity, (string) $command->get('STEREO'));
         }
         $entity->generic = $command->lazy('DISPLAY', 1) ?? $command->get('GENERIC') ?? $entity->generic;
-        $entity->color = $command->get('COLOR') ?? $entity->color;
+        $entity->color = PlantUmlColor::written($command->get('COLOR')) ?? $entity->color;
         $entity->body = [...$entity->body, ...$body];
         $this->last = $entity->id;
         foreach (['EXTENDS' => 'class', 'IMPLEMENTS' => 'interface'] as $keyword => $parentType) {
@@ -166,7 +166,7 @@ final class ClassReader
         if (null !== $command->get('STEREO')) {
             self::stereotyped($entity, (string) $command->get('STEREO'));
         }
-        $entity->color = $command->get('COLOR') ?? $entity->color;
+        $entity->color = PlantUmlColor::written($command->get('COLOR')) ?? $entity->color;
         $entity->body = [...$entity->body, ...$body];
         $this->last = $entity->id;
     }
@@ -188,7 +188,7 @@ final class ClassReader
         if (null !== $command->get('STEREO')) {
             self::stereotyped($entity, (string) $command->get('STEREO'));
         }
-        $entity->color = $command->get('COLOR') ?? $entity->color;
+        $entity->color = PlantUmlColor::written($command->get('COLOR')) ?? $entity->color;
         $entity->body = [...$entity->body, ...\array_map(\trim(...), $command->body())];
         $this->last = $entity->id;
     }
@@ -229,7 +229,7 @@ final class ClassReader
         $display = $command->lazy('DISPLAY');
         $entity = $this->made($id, null === $display ? null : self::clean($display));
         $entity->stereotypes = self::stereotypes((string) $command->lazy('STEREOTYPE'));
-        $entity->color = $command->get('COLOR') ?? $entity->color;
+        $entity->color = PlantUmlColor::written($command->get('COLOR')) ?? $entity->color;
         if ($known) {
             return;
         }
@@ -282,7 +282,7 @@ final class ClassReader
         $entity = $this->made($id, null);
         $entity->display = \array_values(\array_filter($lines, static fn (string $line): bool => '' !== $line));
         $entity->stereotypes = self::stereotypes((string) $command->get('STEREO'));
-        $entity->color = $command->get('COLOR') ?? $entity->color;
+        $entity->color = PlantUmlColor::written($command->get('COLOR')) ?? $entity->color;
         $entity->type = 'element';
         $entity->element = new DescriptionElement($id, $entity->display, \rtrim($symbol, characters: '/'), $entity->group, \str_ends_with($symbol, '/'));
         $entity->element->stereotypes = $entity->stereotypes;
@@ -430,7 +430,7 @@ final class ClassReader
         // As PlantUML, a container declared by its symbol, a package drawn so.
         $symbol = \strtolower((string) $command->get('SYMBOL'));
         $group->symbol = \in_array($symbol, ['', 'package'], strict: true) ? $group->symbol : $symbol;
-        $group->color = $command->get('COLOR') ?? $group->color;
+        $group->color = PlantUmlColor::written($command->get('COLOR')) ?? $group->color;
         $this->groups[$id] = $group;
 
         return $id;

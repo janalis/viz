@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Style;
 
+use Janalis\Viz\PlantUML\PlantUmlRefusal;
+
 /**
  * PlantUML colours as hex: `#` optional, one hex digit for a grey, three or six digits, eight
  * with an alpha that is dropped, or a colour name; `transparent` and `background` are none.
@@ -24,6 +26,25 @@ final class PlantUmlColor
         $parts = \explode("\0", (string) \preg_replace('/[-\\\\|\/]/', replacement: "\0", subject: $value, limit: 1));
 
         return 2 === \count($parts) && null !== self::simple($parts[1]) ? self::simple($parts[0]) : null;
+    }
+
+    /**
+     * A colour written on an element, as PlantUML's `ColorParser.simpleColor` takes it: a
+     * colour it knows, a gradient of two, but not `none`; one written with its parts, as
+     * `#back;line:red`, as written.
+     *
+     * @throws PlantUmlRefusal where PlantUML refuses it: no such colour
+     */
+    public static function written(?string $value): ?string
+    {
+        if (null === $value || \str_contains($value, ':') || \str_contains($value, ';')) {
+            return $value;
+        }
+        if ('none' === \strtolower(\ltrim(\trim($value), characters: '#')) || null === self::parse($value)) {
+            throw new PlantUmlRefusal('No such color');
+        }
+
+        return $value;
     }
 
     private static function simple(string $value): ?string

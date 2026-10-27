@@ -15,6 +15,7 @@ use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\PlantUmlRefusal;
+use Janalis\Viz\PlantUML\Style\PlantUmlColor;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -140,7 +141,7 @@ final class StateReader
             $state->kind = $kind ?? $state->kind;
         }
         $state->stereotypes = \array_values(\array_filter($stereotypes, static fn (string $stereotype): bool => !\array_key_exists(\strtolower($stereotype), self::KINDS)));
-        $state->color = $command->get('COLOR') ?? $state->color;
+        $state->color = PlantUmlColor::written($command->get('COLOR')) ?? $state->color;
         $field = $command->get('ADDFIELD');
         if (null !== $field) {
             $state->describe($field);

@@ -13,6 +13,7 @@ use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\PlantUmlRefusal;
+use Janalis\Viz\PlantUML\Style\PlantUmlColor;
 use Janalis\Viz\Source\Unsupported;
 
 /**
@@ -154,7 +155,7 @@ final class DescriptionReader
         $element->symbol = $symbol;
         $element->business = $business;
         $element->stereotypes = ClassReader::stereotypes((string) $command->lazy('STEREOTYPE'));
-        $element->color = $command->get('COLOR') ?? $command->get('COLOR2') ?? $element->color;
+        $element->color = PlantUmlColor::written($command->get('COLOR') ?? $command->get('COLOR2')) ?? $element->color;
         $this->last = $element->id;
     }
 
@@ -181,7 +182,7 @@ final class DescriptionReader
         $element->symbol = $symbol;
         $element->display = \array_values(\array_filter($lines, static fn (string $line): bool => '' !== $line));
         $element->stereotypes = ClassReader::stereotypes((string) $command->get('STEREO'));
-        $element->color = $command->get('COLOR') ?? $element->color;
+        $element->color = PlantUmlColor::written($command->get('COLOR')) ?? $element->color;
         $this->last = $element->id;
     }
 
@@ -265,7 +266,7 @@ final class DescriptionReader
         $id = self::bare($command->lazy('CODE') ?? $display);
         $group = $this->groups[$id] ?? new DescriptionGroup($id, $display, $symbol, $parent);
         $group->stereotypes = ClassReader::stereotypes((string) $command->lazy('STEREOTYPE'));
-        $group->color = $command->get('COLOR') ?? $group->color;
+        $group->color = PlantUmlColor::written($command->get('COLOR')) ?? $group->color;
         $this->groups[$id] = $group;
         unset($this->elements[$id]);
 

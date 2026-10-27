@@ -97,7 +97,7 @@ final class WbsReader
     /** @param list<string> $label */
     private function add(PlantUmlCommand $command, int $level, array $label, WbsShape $shape, ?string $stereotype): void
     {
-        $color = $command->lazy('BACKCOLOR');
+        $color = PlantUmlColor::written($command->lazy('BACKCOLOR'));
         if (0 === $level) {
             if (null !== $this->root) {
                 throw new PlantUmlRefusal('WBS diagram only accepts one root first declared.');
@@ -130,10 +130,7 @@ final class WbsReader
         $from = (string) $command->get('CODE1');
         $to = (string) $command->get('CODE2');
         // As PlantUML, which reads an arrow's colour before its ends: a plain colour it does not know is refused.
-        $color = $command->get('COLOR');
-        if (null !== $color && !\str_contains($color, ':') && !\str_contains($color, ';') && null === PlantUmlColor::parse($color)) {
-            throw new PlantUmlRefusal('No such color');
-        }
+        $color = PlantUmlColor::written($command->get('COLOR'));
         if ($from === $to) {
             throw new PlantUmlRefusal('PlantUML fails on an arrow from an element to itself: '.$command->line());
         }
