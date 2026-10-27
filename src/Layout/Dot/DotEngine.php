@@ -281,6 +281,7 @@ final readonly class DotEngine implements LayoutEngine
         $labels = [];
         $splines = [];
         $polylines = [];
+        $controls = [];
         $router = new DotSplines($layers, $position, $graph->spacing->nodeGap, \array_map(static fn ($node): Shape => $node->shape, $graph->nodes));
         // Merged, edges between the same two nodes are one line, none spread.
         $offsets = self::spread($layers, $graph->concentrate ? 0.0 : $graph->spacing->nodeGap * DotSplines::SPREAD);
@@ -289,8 +290,11 @@ final readonly class DotEngine implements LayoutEngine
             $spline = [];
             if (null !== $path) {
                 $routes[$original] = \array_map(static fn (int $node): array => $point($position->x[$node], $position->y[$layers->rank[$node]]), $path);
-                [$spline, $corners] = $router->route($path, $offsets[$layered]);
+                [$spline, $corners, $curve] = $router->route($path, $offsets[$layered]);
                 $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $spline);
+                if ([] !== $curve) {
+                    $controls[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $curve);
+                }
                 $polylines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $corners);
             }
             $label = self::label($layers, $position, $router, $layered, $labelSizes[$original] ?? null, $spline);
@@ -298,7 +302,8 @@ final readonly class DotEngine implements LayoutEngine
                 $labels[$original] = $point(...$label);
             }
         }
-        [$routes, $splines, $labels, $controls] = self::flat($layers, $position, $point, $edgeIndexes, $routes, $splines, $labels);
+        [$routes, $splines, $labels, $arcs] = self::flat($layers, $position, $point, $edgeIndexes, $routes, $splines, $labels);
+        $controls = $arcs + $controls;
 
         $pieces = [];
         if ($graph->concentrate) {

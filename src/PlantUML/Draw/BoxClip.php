@@ -50,7 +50,7 @@ final class BoxClip
     }
 
     /** @param array{float, float} $point */
-    private static function inside(array $point, GraphNode $box, string $shape): bool
+    public static function inside(array $point, GraphNode $box, string $shape): bool
     {
         if ($box->w <= 0 || $box->h <= 0) {
             return false;

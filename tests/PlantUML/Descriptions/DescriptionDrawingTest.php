@@ -297,10 +297,18 @@ final class DescriptionDrawingTest extends TestCase
 
     public function testANoteBesideAnElementStandsNextToItAsPlantUmlSetsIt(): void
     {
-        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n[A] --> [B]\n[B] --> [C]\nnote right of [B] : a note\n[A] --> [C]\n@enduml"));
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
+            \round($drawing->width / Units::POINT, precision: 6),
+            \round($drawing->height / Units::POINT, precision: 6),
+        ])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
 
-        // As the jar sets it: the note just right of B, A's link to C past it.
-        $this->assertSame([188.0, 280.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        // As the jar sets them: the note just right of B; or beside it, A's link to C on its other side.
+        $this->assertSame([[166.0, 280.0], [248.0, 173.0]], [
+            $size("[A] --> [B]\n[B] --> [C]\nnote right of [B] : a note"),
+            $size("[A] --> [B]\nnote right of [B] : a note\n[A] --> [C]"),
+        ]);
     }
 
     public function testTheComponentStyleSetsHowAComponentIsDrawn(): void

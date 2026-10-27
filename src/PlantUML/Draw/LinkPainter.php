@@ -73,7 +73,7 @@ final class LinkPainter
             dashed: $link->dashed || $link->dotted,
             strokeWidth: $stroke,
             dashes: self::dashes($link),
-            extent: $placement->controls[$edge] ?? [],
+            extent: CurveClip::clipped($placement->controls[$edge] ?? [], $from, $to, $shapes),
         );
         if ($link->middleCircle) {
             // As PlantUML's `MiddleCircle`: 6 across from where the line comes nearest midway between its ends, filled as the background.

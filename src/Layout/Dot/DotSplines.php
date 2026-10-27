@@ -58,7 +58,7 @@ final class DotSplines
      * further than its ends' outlines allow where it starts and ends.
      *
      * @param list<int> $path one edge's nodes, rank by rank, either way
-     * @return array{list<array{float, float}>, list<array{float, float}>} the curve, drawn in straight steps, and the corners
+     * @return array{list<array{float, float}>, list<array{float, float}>, list<array{float, float}>} the curve, drawn in straight steps, the corners, and the curve's control points, none for one moved across
      */
     public function route(array $path, float $offset = 0.0): array
     {
@@ -71,12 +71,14 @@ final class DotSplines
                 $drawn[] = self::at($curve, $step / self::STEPS);
             }
         }
+        $controls = [] === $curves ? [] : [$curves[0][0], ...\array_merge(...\array_map(static fn (array $curve): array => \array_slice($curve, offset: 1), $curves))];
         if (0.0 !== $offset) {
             $drawn = $this->spread($drawn, $offset, $path[0], $path[\count($path) - 1]);
             $points = $this->spread($points, $offset, $path[0], $path[\count($path) - 1]);
+            $controls = [];
         }
 
-        return $down ? [$drawn, $points] : [\array_reverse($drawn), \array_reverse($points)];
+        return $down ? [$drawn, $points, $controls] : [\array_reverse($drawn), \array_reverse($points), \array_reverse($controls)];
     }
 
     /**

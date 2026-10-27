@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML diagram svek lays out is measured with each link's curve by its control points, as PlantUML's limit finder measures the curves dot gives it: the native dot engine now keeps the control points of every edge it routes between ranks, not only of its flat arcs, and each curve is cut where it leaves the boxes it joins, as dot cuts it. Where the native fit splits a curve fewer times than dot, its control points reach further than dot's, and a diagram stands that much wider.
 - The native dot layout keeps a labelled flat edge's ends as `dot` is seen to: its label's width and half a separation either side, rounded up to a point, the label a separation wide at least only where `rank=same` makes the edge flat, not a `minlen` of 0. A PlantUML link with one dash and a label, which svek writes with a `minlen` of 0, stood up to 27 too wide.
 - PlantUML's `layout_new_line` in a class diagram is read natively, where it was refused, and changes nothing, as the jar's drawing shows.
 - A PlantUML note in sections, or a sequence diagram's text, keeps `skinparam guillemet`: a `<<…>>` in it between the guillemets set, or as written for `false`.
