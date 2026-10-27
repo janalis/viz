@@ -93,6 +93,7 @@ final class ClassReader
             'CommandCreateEntityObject' => $this->object($command, []),
             'CommandCreateEntityObjectMultilines' => $this->object($command, $command->body()),
             'CommandCreateMap' => $this->map($command),
+            'CommandCreateJson' => $this->json($command),
             'CommandAddMethod' => $this->member($command),
             'CommandLinkClass' => $this->link($command),
             'CommandStereotype' => self::stereotyped($this->entity((string) $command->get('NAME')), (string) $command->get('STEREO')),
@@ -168,6 +169,22 @@ final class ClassReader
         }
         $entity->color = PlantUmlColor::written($command->get('COLOR')) ?? $entity->color;
         $entity->body = [...$entity->body, ...$body];
+        $this->last = $entity->id;
+    }
+
+    /** A `json` entity, its data its body, as PlantUML's `CommandCreateJson` makes one: a name not made before. */
+    private function json(PlantUmlCommand $command): void
+    {
+        $code = self::clean((string) $command->lazy('CODE'));
+        $id = $this->resolve($code);
+        if (\array_key_exists($id, $this->entities)) {
+            throw new PlantUmlRefusal('JSON already exists: '.$code);
+        }
+        $entity = $this->made($id, $command->lazy('DISPLAY'));
+        $entity->type = 'json';
+        $entity->json = ClassJson::read($command->body());
+        $entity->stereotypes = self::stereotypes((string) $command->get('STEREO'));
+        $entity->color = PlantUmlColor::written($command->get('COLOR'));
         $this->last = $entity->id;
     }
 

@@ -76,6 +76,29 @@ final class ClassDrawingTest extends TestCase
         }
     }
 
+    public function testAJsonEntityIsDrawnAsPlantUmlDrawsItsData(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
+            \round($drawing->width / Units::POINT, precision: 6),
+            \round($drawing->height / Units::POINT, precision: 6),
+        ])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar sizes them: names beside values, arrays' items one under another, values as written; its stereotype above its name; 13 tall empty.
+        $this->assertSame([[57.0, 101.0], [87.0, 75.0], [38.0, 53.0]], [
+            $size("json J {\n  \"a\": 1,\n  \"b\": [1, 2]\n}"),
+            $size("json \"My data\" as J <<st>> #pink {\n  \"a\": 1\n}"),
+            $size("json J {\n}"),
+        ]);
+        $this->assertSame([[124.0, 163.0], [38.0, 81.0]], [
+            $size("json J {\n  \"name\": \"Bob\",\n  \"ok\": true,\n  \"none\": null,\n  \"deep\": {\"x\": 1, \"y\": [true, {\"z\": \"w\"}]}\n}"),
+            $size("json J {\n  [\"a\", \"b\"]\n}"),
+        ]);
+        $this->expectExceptionMessage('JSON already exists: J');
+        $size("class X\njson J {\n}\njson J {\n}");
+    }
+
     public function testALayoutNewLineChangesNothing(): void
     {
         $size = static fn (string $between): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(

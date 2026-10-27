@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\Classes;
 
 use Janalis\Viz\PlantUML\Descriptions\DescriptionElement;
+use Janalis\Viz\PlantUML\Json\JsonNode;
 
 /** A class, interface, enum or other classifier as a PlantUML class diagram declares it, filled in as its lines are read. */
 final class ClassEntity
@@ -23,6 +24,8 @@ final class ClassEntity
     public ?string $path = null;
     /** What it is drawn as where it is another kind of element, mixed in: an actor, a use case, a component…, as a description diagram draws one. */
     public ?DescriptionElement $element = null;
+    /** A `json` entity's data. */
+    public ?JsonNode $json = null;
 
     /** @param list<string> $display its name as shown, a line each */
     public function __construct(

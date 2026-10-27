@@ -161,6 +161,10 @@ final class ClassDrawing
             if ($box instanceof ClassBox && 'map' === $entity->type) {
                 $svek->rows($entity->id, $box->rows());
             }
+            // As svek writes a `json` entity: a table of one row, its height in whole points down.
+            if ($box instanceof ClassBox && 'json' === $entity->type) {
+                $svek->rows($entity->id, \floor($box->height));
+            }
         }
         $noteStyle = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'note']);
         foreach ($this->classes->notes as $note) {

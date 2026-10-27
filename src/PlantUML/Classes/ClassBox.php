@@ -11,6 +11,7 @@ use Janalis\Viz\Draw\Units;
 use Janalis\Viz\PlantUML\Descriptions\DescriptionBox;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
+use Janalis\Viz\PlantUML\Json\JsonNode;
 use Janalis\Viz\PlantUML\Style\Style;
 use Janalis\Viz\PlantUML\Style\StyleSheet;
 use Janalis\Viz\Text\FontFace;
@@ -119,7 +120,7 @@ final readonly class ClassBox
             // As PlantUML's `EntityImageAssociationPoint`: a dot 4 across.
             return new self($entity, $sheet->style(['root', 'element', 'classDiagram', 'arrow']), $sheet, PlantUmlText::styled([], $style), null, null, 0.0, [], false, 4.0, 4.0, 0.0, $letter);
         }
-        if (\in_array($entity->type, ['object', 'map'], strict: true)) {
+        if (\in_array($entity->type, ['object', 'map', 'json'], strict: true)) {
             return self::object($entity, $sheet, $letter, $labels);
         }
         $circle = $portions->shown($entity, 'circle');
@@ -188,8 +189,28 @@ final readonly class ClassBox
                 FontFace::Italic,
             );
         [$stereoWidth, $stereoHeight] = $stereotypes?->size() ?? [0.0, 0.0];
-        $fields = new PlantUmlText(\array_map(self::text(...), $entity->body), $style->fontSize(), sprites: $style->sprites);
         $header = $nameHeight + 4 + $stereoHeight;
+        if ('json' === $entity->type) {
+            // As PlantUML's `EntityImageJson`: its stereotypes over its name 2 in, 5 more either side, its data below them, 13 tall at least.
+            [$dataWidth, $dataHeight] = ClassJson::size($entity->json ?? JsonNode::object([]), $style);
+
+            return new self(
+                $entity,
+                $style,
+                $sheet,
+                $name,
+                $stereotypes,
+                null,
+                0.0,
+                [],
+                false,
+                \max(\max($nameWidth + 4, $stereoWidth) + 10, $dataWidth),
+                $header + ($dataHeight > 0 ? $dataHeight : 13.0),
+                $header,
+                $letter,
+            );
+        }
+        $fields = new PlantUmlText(\array_map(self::text(...), $entity->body), $style->fontSize(), sprites: $style->sprites);
         $height = $header + ([] === $entity->body ? 16.0 : 8 + (\count($entity->body) * $fields->line()));
         $width = \max(\max($nameWidth + 4, $stereoWidth) + 10, [] === $entity->body ? 0.0 : $fields->size()[0] + 12);
 
@@ -350,15 +371,18 @@ final readonly class ClassBox
             return [new Mark(MarkKind::Polygon, [[$cx, $y], [$x + 24, $cy], [$cx, $y + 24], [$x, $cy]], stroke: $line, fill: $back, strokeWidth: $stroke, outline: Outline::Polygon)];
         }
         $marks = Shadow::cast([self::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner'))
-            ->with(['outline' => \in_array($this->entity->type, ['object', 'map'], strict: true) ? Outline::Box : Outline::Block])], $this->style->number('Shadowing'));
+            ->with(['outline' => \in_array($this->entity->type, ['object', 'map', 'json'], strict: true) ? Outline::Box : Outline::Block])], $this->style->number('Shadowing'));
         \array_push(
             $marks,
-            ...\in_array($this->entity->type, ['object', 'map'], strict: true)
+            ...\in_array($this->entity->type, ['object', 'map', 'json'], strict: true)
                 ? [...($this->stereotypes?->marks($x, $y, $this->width) ?? []), ...$this->name->marks($x, $y + 2 + ($this->stereotypes?->size()[1] ?? 0.0), $this->width)]
                 : $this->headerMarks($x, $y),
         );
         if ('map' === $this->entity->type) {
             return [...$marks, ...$this->mapMarks($x, $y)];
+        }
+        if ('json' === $this->entity->type) {
+            return [...$marks, ...ClassJson::marks($this->entity->json ?? JsonNode::object([]), $this->style, $x, $y + $this->header, $this->width, $this->style->color('LineColor', '#181818'))];
         }
         if ('object' === $this->entity->type && [] !== $this->entity->body) {
             // As PlantUML draws an object's fields: the line above them as wide as they are, 6 either side, cut to its outline, which its limit finder takes uncut.
