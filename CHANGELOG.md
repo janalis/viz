@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML state whose one stereotype is `<<sdlreceive>>` is drawn natively, where it was refused, as PlantUML's `EntityImageState2` draws it: a frame round its name, its corner cut a third of the way across, its description left out; a plain state with its empty description hidden. `<<sdlReceive>>`, written otherwise, is a plain stereotype, as PlantUML takes it.
 - A PlantUML class's circled character is measured inside its circle, as PlantUML's limit finder measures the path it draws it as, not as a line of text: a class with a big `circledCharacterFontSize` stood up to 5 too tall.
 - The native dot layout sets a labelled flat edge with nodes between its ends as `dot` is seen to: its label midway between its ends, half the rank separation, to the point, above the rank's nodes, and the rank above as far again clear of its top. A PlantUML legacy activity's link drawn across to a step past the next stood 13 too short.
 - A colour written on a PlantUML class, object, map, package, component, deployment element, state or WBS item or link that PlantUML does not know, `#none` among them, is refused as PlantUML's `ColorParser` refuses it: no such colour. They were drawn as if uncoloured.

@@ -53,6 +53,7 @@ final readonly class StateBox
             'end', 'history', 'deephistory' => [22.0, 22.0],
             'choice' => [24.0, 24.0],
             'fork', 'join' => Direction::LeftRight === $states->direction ? [8.0, 80.0] : [80.0, 8.0],
+            'sdlreceive' => $line ? self::frame($name) : self::bare($name),
             default => $line ? self::size($name, $description) : self::bare($name),
         };
 
@@ -65,6 +66,19 @@ final readonly class StateBox
         [$nameWidth, $nameHeight] = $name->size();
 
         return [\max(50.0, $nameWidth + (2 * self::MARGIN)), \max(40.0, $nameHeight + (2 * self::MARGIN))];
+    }
+
+    /**
+     * A state drawn as PlantUML's `EntityImageState2` draws one, as its `USymbolFrame` sizes a
+     * frame: its name 6 in either side, 15 and 25 more across, 20 above and 10 below.
+     *
+     * @return array{float, float}
+     */
+    private static function frame(PlantUmlText $name): array
+    {
+        [$nameWidth, $nameHeight] = $name->size();
+
+        return [$nameWidth + 12 + 40, $nameHeight + 30];
     }
 
     /** @return array{float, float} */
@@ -115,6 +129,9 @@ final readonly class StateBox
     /** @return list<Mark> */
     private function state(float $x, float $y, string $line, string $back, float $stroke): array
     {
+        if ('sdlreceive' === $this->node->kind && $this->line) {
+            return $this->frameMarks($x, $y, $line, $back, $stroke);
+        }
         [, $nameHeight] = $this->name->size();
         $marks = Shadow::cast([ClassBox::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner', 25.0))], $this->style->number('Shadowing'));
         if (!$this->line) {
@@ -124,6 +141,23 @@ final readonly class StateBox
         $marks[] = new Mark(MarkKind::Polyline, [[$x, $rule], [$x + $this->width, $rule]], stroke: $line, strokeWidth: $stroke);
 
         return [...$marks, ...$this->name->marks($x, $y + self::MARGIN, $this->width), ...$this->description->marks($x + self::MARGIN, $rule + self::MARGIN, $this->width, 'left')];
+    }
+
+    /**
+     * As `USymbolFrame` draws a frame with no title: its corner a third of the way across and 12
+     * down, cut 7; its name 21 in and 20 down.
+     *
+     * @return list<Mark>
+     */
+    private function frameMarks(float $x, float $y, string $line, string $back, float $stroke): array
+    {
+        $tab = $x + ($this->width / 3);
+
+        return [
+            ...Shadow::cast([ClassBox::rectangle($x, $y, $this->width, $this->height, $line, $back, $stroke, $this->style->number('RoundCorner', 25.0))], $this->style->number('Shadowing')),
+            new Mark(MarkKind::Polyline, [[$tab, $y], [$tab, $y + 5], [$tab - 7, $y + 12], [$x, $y + 12]], stroke: $line, strokeWidth: $stroke),
+            ...$this->name->marks($x + 21, $y + 20, $this->name->size()[0]),
+        ];
     }
 
     public static function disc(float $x, float $y, float $radius, string $stroke, string $fill, float $width = 1.0): Mark

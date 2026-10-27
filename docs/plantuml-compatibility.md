@@ -74,7 +74,7 @@ Each scope is laid out as svek lays it out: a composite state no transition cros
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| `state`, `state "Name" as S`, `state S as "Name"`, descriptions after `:` or as `S : text`; `<<choice>>`, `<<fork>>`, `<<join>>`, `<<start>>`, `<<end>>`, `<<history>>`, `<<history*>>`, `<<entryPoint>>`, `<<exitPoint>>`, pins and expansion nodes; `#colours` | `<<sdlreceive>>`; `frame`; names with a namespace |
+| `state`, `state "Name" as S`, `state S as "Name"`, descriptions after `:` or as `S : text`; `<<choice>>`, `<<fork>>`, `<<join>>`, `<<start>>`, `<<end>>`, `<<history>>`, `<<history*>>`, `<<entryPoint>>`, `<<exitPoint>>`, pins and expansion nodes; `#colours`; `<<sdlreceive>>`, drawn as PlantUML's `EntityImageState2` draws it, a frame round its name | `frame`; names with a namespace |
 | Composite states with `{ … }` or `end state`, concurrent regions with `--` and `||`, a composite a transition crosses into a cluster with each region none crosses into an image in it | |
 | Transitions with `[*]`, `[H]`, `[H*]`, `S[H]`, `==bar==`, `x` at the start and `o` at the end, directions, styles and labels; notes beside states, floating, and on transitions; `hide empty description`; `hide`, `show`, `remove` and `restore` of states outside composite states, by name, stereotype or `@unlinked`; `left to right direction` | Those of composite states and of the states within them; URLs, maps and JSON |
 

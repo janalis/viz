@@ -20,6 +20,21 @@ use PHPUnit\Framework\TestCase;
 
 final class StateDrawingTest extends TestCase
 {
+    public function testAnSdlReceiveStateIsDrawnAsAFrame(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar draws them: a frame round its name, its description left out; with its empty description hidden, or another stereotype, a state.
+        $this->assertSame([[89.0, 177.0], [104.0, 83.0], [71.0, 161.0], [72.0, 71.0]], [
+            $size("state S1 <<sdlreceive>>\nS1 : text\nstate S2\nS1 --> S2"),
+            $size("state \"Two\\nlines\" as S1 <<sdlreceive>>"),
+            $size("hide empty description\nstate S1 <<sdlreceive>>\nstate S2\nS1 --> S2"),
+            $size('state S1 <<sdlReceive>>'),
+        ]);
+    }
+
     public function testAClusteredCompositeAndAHistoryStandAsPlantUmlDrawsThem(): void
     {
         $baselines = [];
