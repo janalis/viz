@@ -25,6 +25,9 @@ final readonly class ClassBox
 {
     /** A circle entity's radius, as PlantUML draws one. */
     public const float DOT = 8.0;
+    /** A map's value linked to an entity: a point 7 across, as PlantUML's `TextBlockMap` sizes it. */
+    private const float POINT = 7.0;
+
     /**
      * Each visibility's icon: its shape and its colour for a field, then for a method, which is filled.
      *
@@ -172,7 +175,7 @@ final readonly class ClassBox
         [$nameWidth, $nameHeight] = $name->size();
         if ('map' === $entity->type) {
             [$keys, $values] = self::entries($entity, $style);
-            $rows = \array_sum(\array_map(static fn (PlantUmlText $key, PlantUmlText $value): float => \max($key->size()[1], $value->size()[1]) + 4, $keys, $values));
+            $rows = \array_sum(\array_map(self::row(...), $keys, $values));
             $columns = self::column($keys) + self::column($values);
 
             return new self($entity, $style, $sheet, $name, null, null, 0.0, [], false, \max($nameWidth + 14, $columns), $nameHeight + 4 + $rows, $nameHeight + 4, $letter);
@@ -195,14 +198,21 @@ final readonly class ClassBox
 
     /**
      * A map's entries, each key's and value's text, as PlantUML's `TextBlockMap` takes them: a
-     * key without its visibility character.
+     * key without its visibility character; a key linked to an entity, `key *-> B`, its value a
+     * point.
      *
-     * @return array{list<PlantUmlText>, list<PlantUmlText>}
+     * @return array{list<PlantUmlText>, list<?PlantUmlText>}
      */
     private static function entries(ClassEntity $entity, Style $style): array
     {
         [$keys, $values] = [[], []];
         foreach ($entity->body as $entry) {
+            if (!\str_contains($entry, '=>')) {
+                $key = \trim((string) \preg_replace('/\*-+_?>.*$/', replacement: '', subject: $entry));
+                $keys[] = PlantUmlText::styled(ClassReader::split(\array_key_exists($key[0] ?? '', self::ICONS) ? \substr($key, offset: 1) : $key), $style);
+                $values[] = null;
+                continue;
+            }
             [$key, $value] = \array_map(\trim(...), \explode('=>', $entry, limit: 2));
             $key = \array_key_exists($key[0] ?? '', self::ICONS) ? \substr($key, offset: 1) : $key;
             $keys[] = PlantUmlText::styled(ClassReader::split($key), $style);
@@ -219,25 +229,63 @@ final readonly class ClassBox
      */
     public function rows(): float
     {
+        return \array_sum($this->table());
+    }
+
+    /**
+     * The rows svek writes for a map's ports: their height to the last entry's, and the row left
+     * below it, 0 where none is.
+     *
+     * @return array{int, int}
+     */
+    private function table(): array
+    {
         [$keys, $values] = self::entries($this->entity, $this->style);
         [$sum, $top] = [0, $this->header];
         foreach ($keys as $index => $key) {
-            $height = \max($key->size()[1], $values[$index]->size()[1]) + 4;
+            $height = self::row($key, $values[$index]);
             $sum += \max(0, (int) ($top - $sum)) + (int) $height;
             $top += $height;
         }
 
-        return $sum + \max(0, (int) ($this->height - $sum));
+        return [$sum, \max(0, (int) ($this->height - $sum))];
     }
 
     /**
-     * A map's column's width: its widest text and 5 either side.
+     * Where a map's row named by its key stands, below the box's top, how tall it is, and
+     * whether it ends the table of ports svek writes, no row left below it; null for no such row.
      *
-     * @param list<PlantUmlText> $texts
+     * @return ?array{float, float, bool}
+     */
+    public function port(string $name): ?array
+    {
+        [$keys, $values] = self::entries($this->entity, $this->style);
+        $top = $this->header;
+        foreach ($keys as $index => $key) {
+            $height = self::row($key, $values[$index]);
+            if (\implode("\n", $key->lines) === $name) {
+                return [$top, $height, (\count($keys) - 1) === $index && 0 === $this->table()[1]];
+            }
+            $top += $height;
+        }
+
+        return null;
+    }
+
+    /** A map's row's height: its key's or its value's and 2 above and below, or its value's point, 7 across. */
+    private static function row(PlantUmlText $key, ?PlantUmlText $value): float
+    {
+        return \max($key->size()[1] + 4, null === $value ? self::POINT : $value->size()[1] + 4);
+    }
+
+    /**
+     * A map's column's width: its widest text and 5 either side, or a value's point, 7 across.
+     *
+     * @param list<?PlantUmlText> $texts
      */
     private static function column(array $texts): float
     {
-        return [] === $texts ? 0.0 : \max(\array_map(static fn (PlantUmlText $text): float => $text->size()[0], $texts)) + 10;
+        return [] === $texts ? 0.0 : \max(\array_map(static fn (?PlantUmlText $text): float => null === $text ? self::POINT : $text->size()[0] + 10, $texts));
     }
 
     /**
@@ -255,11 +303,16 @@ final readonly class ClassBox
         $top = $y + $this->header;
         foreach ($keys as $index => $key) {
             $value = $values[$index];
-            $height = \max($key->size()[1], $value->size()[1]) + 4;
+            $height = self::row($key, $value);
             $marks[] = new Mark(MarkKind::Polyline, [[$x, $top], [$x + $this->width, $top]], stroke: $line, strokeWidth: 1.0);
-            \array_push($marks, ...$key->marks($x, $top + 2, $first), ...$value->marks($x + $first + 5, $top + 2, $value->size()[0]));
-            $marks[] = new Mark(MarkKind::Polyline, [[$x + $first, $top], [$x + $first, $top + $height]], stroke: $line, strokeWidth: 1.0);
             $top += $height;
+            // A key linked to an entity, centred across the map, its point not drawn.
+            if (null === $value) {
+                \array_push($marks, ...$key->marks($x, $top - $height + 2, $this->width));
+                continue;
+            }
+            \array_push($marks, ...$key->marks($x, $top - $height + 2, $first), ...$value->marks($x + $first + 5, $top - $height + 2, $value->size()[0]));
+            $marks[] = new Mark(MarkKind::Polyline, [[$x + $first, $top - $height], [$x + $first, $top]], stroke: $line, strokeWidth: 1.0);
         }
 
         return $marks;

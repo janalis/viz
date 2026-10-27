@@ -32,6 +32,8 @@ final class PlantUmlLink
     public ?string $toQualifier = null;
     /** Whether a circle stands midway along it, as `A --0-- B` draws one. */
     public bool $middleCircle = false;
+    /** The row its first end leaves from, as a map's `key *-> B` leaves its key's. */
+    public ?string $fromPort = null;
 
     /** @param int $length the dashes in the arrow, 1 for a link drawn across */
     public function __construct(

@@ -376,7 +376,35 @@ final class ClassDrawing
             }
             $qualifiers[$end][2] = $this->pushed[$index][$end] ?? 0.0;
         }
-        \array_push($this->marks, ...LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, $this->shapes($link), $qualifiers));
+        \array_push($this->marks, ...LinkPainter::marks($link, $this->ported($link, $placement, $edge), $edge, $this->label($index), $style, $background, $this->shapes($link), $qualifiers));
+    }
+
+    /**
+     * The layout a link leaving a map's row is drawn from, as dot draws one from a port: its
+     * line from the middle of its row, cut where it leaves the row, across to its rank or down
+     * from the row that ends svek's table; dot's curve out of the row's side otherwise left to
+     * PlantUML.
+     */
+    private function ported(PlantUmlLink $link, Placement $placement, int $edge): Placement
+    {
+        $box = $this->boxes[$link->from] ?? null;
+        $row = null === $link->fromPort || !$box instanceof ClassBox ? null : $box->port($link->fromPort);
+        if (null === $row) {
+            return $placement;
+        }
+        $node = $placement->endpoints[$link->from];
+        $to = $placement->endpoints[$link->to];
+        if (\abs($to->y - $node->y) > 1.0 && !($row[2] && $to->y > $node->y)) {
+            throw new Unsupported('The native PlantUML renderer does not draw a link from a map\'s row out of its side to an element above or below it: '.$link->from);
+        }
+        $cell = new GraphNode(0, $link->from, '', $node->x, $node->y - ($node->h / 2) + $row[0] + ($row[1] / 2), $node->w, $row[1], null, null, dashed: false);
+        $route = $placement->routes[$edge] ?? [[$node->x, $node->y], [$placement->endpoints[$link->to]->x, $placement->endpoints[$link->to]->y]];
+        $route[0] = [$cell->x, $cell->y];
+        [$routes, $splines, $controls] = [$placement->routes, $placement->splines, $placement->controls];
+        $routes[$edge] = $route;
+        unset($splines[$edge], $controls[$edge]);
+
+        return new Placement($placement->graph, [$link->from => $cell] + $placement->endpoints, $placement->directions, $routes, $placement->labels, $splines, controls: $controls);
     }
 
     /**

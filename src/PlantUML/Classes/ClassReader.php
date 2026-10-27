@@ -174,11 +174,7 @@ final class ClassReader
     /** A map, its entries `key => value` its body, as PlantUML's `CommandCreateMap` makes one. */
     private function map(PlantUmlCommand $command): void
     {
-        foreach ($command->body() as $line) {
-            if (!\str_contains($line, '=>')) {
-                throw new Unsupported('The native PlantUML renderer does not draw: '.\trim($line));
-            }
-        }
+        ClassMapLinks::check($command->body());
         $id = $this->resolve(self::clean((string) $command->get('NAME', 1)));
         if (\array_key_exists($id, $this->entities) && 'map' !== $this->entities[$id]->type) {
             throw new PlantUmlRefusal('PlantUML cannot declare '.$id.' again as map');
@@ -191,6 +187,7 @@ final class ClassReader
         $entity->color = PlantUmlColor::written($command->get('COLOR')) ?? $entity->color;
         $entity->body = [...$entity->body, ...\array_map(\trim(...), $command->body())];
         $this->last = $entity->id;
+        \array_push($this->links, ...ClassMapLinks::links($entity, $command->body(), $this->known(...)));
     }
 
     /** `extends` and `implements`: each parent made if new, linked to the entity. */
@@ -308,8 +305,8 @@ final class ClassReader
 
             return;
         }
-        $link = ClassLinks::read($command, $this->end($from), $this->end($to));
-        $this->links[] = $link;
+        $port = ClassMapLinks::port($from, $this->separator, $this->known(...));
+        $this->links[] = ClassMapLinks::ported(ClassLinks::read($command, $port[0] ?? $this->end($from), $this->end($to)), $port);
     }
 
     /**
@@ -378,6 +375,12 @@ final class ClassReader
         [$link->dashed, $link->dotted, $link->bold, $link->color, $link->thickness, $link->reversed] = [$as->dashed, $as->dotted, $as->bold, $as->color, $as->thickness, $as->reversed];
 
         return $link;
+    }
+
+    /** The entity a name stands for, null for none yet. */
+    private function known(string $name): ?ClassEntity
+    {
+        return $this->entities[$this->resolve(self::clean($name))] ?? null;
     }
 
     /** What a link's end names: a floating note or a package, as PlantUML links to them, else an entity, made a class when new. */

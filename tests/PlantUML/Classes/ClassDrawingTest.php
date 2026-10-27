@@ -43,6 +43,39 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([[100.0, 94.0], [96.0, 90.0]], [$size('skinparam circledCharacterFontSize 30'), $size('skinparam circledCharacterFontSize 24')]);
     }
 
+    public function testAMapsRowLinksAsPlantUmlDrawsAPortsLink(): void
+    {
+        $drawing = static fn (string $source): Drawing => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml"));
+        $size = static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        $linked = $drawing("object London\nmap CapitalCity {\n UK *-> London\n USA => Washington\n}");
+        $line = \array_values(\array_filter(
+            $linked->marks,
+            static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && $mark->strokeWidth >= Units::POINT && $mark->points[0][0] !== $mark->points[\count($mark->points) - 1][0],
+        ))[0];
+
+        // As the jar draws them: the key alone across the map, its link from its row; a port's link from its row.
+        $this->assertSame([[254.0, 83.0], [100.0, 161.0]], [$size($linked), $size($drawing("map M {\n  key => value\n}\nobject O\nM::key --> O"))]);
+        $this->assertEqualsWithDelta(37.7, $line->points[0][1] / Units::POINT, 0.1);
+        // A row none so named, the link from the map; a link read the other way, from its row too.
+        $this->assertSame([[100.0, 161.0], [64.0, 174.0]], [
+            $size($drawing("map M {\n  key => value\n}\nobject O\nM::none --> O")),
+            $size($drawing("map M {\n  k => v\n}\nclass O\nM::k <-- O")),
+        ]);
+        // As dot curves a link out of a row but the last to an element below, left to PlantUML.
+        try {
+            $drawing("map M {\n  a => b\n  key => value\n}\nobject O\nM::key --> O");
+            $this->fail('a row but the last');
+        } catch (Unsupported $refused) {
+            $this->assertStringContainsString('out of its side', $refused->getMessage());
+        }
+        try {
+            $drawing("class X\nmap M {\n UK *-> London\n}");
+            $this->fail('no such entity');
+        } catch (\Throwable $refused) {
+            $this->assertStringContainsString('No such entity London', $refused->getMessage());
+        }
+    }
+
     public function testALayoutNewLineChangesNothing(): void
     {
         $size = static fn (string $between): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(

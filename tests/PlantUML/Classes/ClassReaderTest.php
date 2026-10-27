@@ -295,7 +295,7 @@ final class ClassReaderTest extends TestCase
     public static function refused(): iterable
     {
         yield 'middle circle circled' => ['A --(0)-- B', 'The native PlantUML renderer does not draw: A --(0)-- B'];
-        yield 'map link' => ["map M {\n a *-> B\n}", 'The native PlantUML renderer does not draw: a *-> B'];
+        yield 'map line' => ["map M {\n a b\n}", 'The native PlantUML renderer does not draw: a b'];
         yield 'map again' => ["class M\nmap M {\n}", 'PlantUML cannot declare M again as map'];
         yield 'object again' => ["class o\nobject o", 'PlantUML cannot declare o again as object'];
         yield 'association of no class' => ["class A\n(A, B) .. C", 'No class B'];
@@ -306,7 +306,7 @@ final class ClassReaderTest extends TestCase
         ];
         yield 'separator twice' => ['class a..B', 'Bad name since . is a separator: a..B'];
         yield 'path through a class' => ["class a\nclass a.B", 'Not a package: a'];
-        yield 'a link to a port' => ["map M {\n  k => v\n}\nclass O\nM::k --> O", 'The native PlantUML renderer does not draw links to ports: M::k'];
+        yield 'a link from a class\'s port' => ["class A {\n  y\n}\nclass B\nA::y --> B", 'The native PlantUML renderer does not draw links to ports: A::y'];
         yield 'a state mixed in' => ["allowmixing\nclass A\nstate B", 'The native PlantUML renderer does not draw: state B'];
         yield 'a port mixed in with a prefix' => ["class A\nmix_port B", 'The native PlantUML renderer does not draw: mix_port B'];
         yield 'an element mixed in by its short form' => ["allowmixing\nclass A\nactor :B:", 'The native PlantUML renderer does not draw: actor :B:'];
