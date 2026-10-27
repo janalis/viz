@@ -406,15 +406,22 @@ final readonly class DotEngine implements LayoutEngine
 
     /**
      * Where a flat edge's label stands, as `dot` is seen to set it: midway between its ends'
-     * facing sides, half its height and 3 more above the edge.
+     * facing sides, half its height and 3 more above the edge; over the nodes between its
+     * ends, midway between theirs, half a rank separation, to the point, above the rank's nodes.
      *
      * @return array{float, float}
      */
     private static function flatLabel(DotLayers $layers, DotPosition $position, int $tail, int $head, float $height): array
     {
         [$left, $right] = $position->x[$tail] <= $position->x[$head] ? [$tail, $head] : [$head, $tail];
+        $rank = $layers->rank[$tail];
+        if (DotVertical::bridging($layers, $tail, $head)) {
+            $half = \max(\array_map(static fn (int $node): float => $layers->height[$node] / 2, $layers->ranks[$rank]));
 
-        return [($position->x[$left] + $layers->right[$left] + $position->x[$right] - $layers->left[$right]) / 2, $position->y[$layers->rank[$tail]] - ($height / 2) - 3];
+            return [($position->x[$left] + $position->x[$right]) / 2, $position->y[$rank] - $half - \ceil($position->rankSeparation - 1e-9) - ($height / 2)];
+        }
+
+        return [($position->x[$left] + $layers->right[$left] + $position->x[$right] - $layers->left[$right]) / 2, $position->y[$rank] - ($height / 2) - 3];
     }
 
     /**

@@ -84,13 +84,57 @@ final class DotVertical
         }
         [$above, $below, $graphAbove, $graphBelow] = $this->reach();
         $least = $this->beside();
-        $this->y = [];
-        $y = $this->padding + $graphAbove;
+        $lifts = $this->lifts();
+        $ys = [];
+        $y = $this->padding + \max($graphAbove, $lifts[0] ?? 0.0);
+        /** @var ?array{int, float} $filled the last rank with real nodes, and where it stands */
+        $filled = null;
         for ($rank = 0; $rank < $ranks; ++$rank) {
             $y += $rank > 0 ? \max($this->nodeBelow[$rank - 1] + $this->rankSeparation + $this->nodeAbove[$rank], $below[$rank - 1] + $above[$rank] + DotPosition::MARGIN, $least[$rank]) : 0.0;
-            $this->y[] = $y;
+            // A label over a flat edge keeps half a rank separation, to the point, from the last rank of real nodes above.
+            if (\array_key_exists($rank, $lifts) && null !== $filled) {
+                $y = \max($y, $filled[1] + $this->nodeBelow[$filled[0]] + $this->labelRoom() + $lifts[$rank]);
+            }
+            $filled = \in_array(DotLayers::REAL, \array_map(fn (int $node): int => $this->layers->kind[$node], $this->layers->ranks[$rank]), strict: true) ? [$rank, $y] : $filled;
+            $ys[] = $y;
         }
+        $this->y = $ys;
         $this->height = $y + $graphBelow + $this->padding;
+    }
+
+    /**
+     * How far above each rank its labels over flat edges reach, as `dot` is seen to set them: a
+     * label over a flat edge whose ends have nodes between them stands half the rank
+     * separation, to the point, above the rank's nodes.
+     *
+     * @return array<int, float> by rank, for those with such a label
+     */
+    private function lifts(): array
+    {
+        $lifts = [];
+        foreach ($this->layers->flat as [$tail, $head, , $labelWidth, $labelHeight]) {
+            if (($labelWidth <= 0 && $labelHeight <= 0) || !self::bridging($this->layers, $tail, $head)) {
+                continue;
+            }
+            $rank = $this->layers->rank[$tail];
+            $lifts[$rank] = \max($lifts[$rank] ?? 0.0, $this->nodeAbove[$rank] + $this->labelRoom() + $labelHeight);
+        }
+
+        return $lifts;
+    }
+
+    /** Half the rank separation, rounded up to a point: a graph with labels has its ranks halved. */
+    public function labelRoom(): float
+    {
+        return \ceil($this->rankSeparation - 1e-9);
+    }
+
+    /** Whether a flat edge's ends have nodes between them on their rank. */
+    public static function bridging(DotLayers $layers, int $tail, int $head): bool
+    {
+        $order = $layers->ranks[$layers->rank[$tail]];
+
+        return \abs((int) \array_search($tail, $order, strict: true) - (int) \array_search($head, $order, strict: true)) > 1;
     }
 
     /**

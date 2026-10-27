@@ -117,6 +117,30 @@ final class DotEngineTest extends TestCase
         $this->assertCount(4, $placement->controls[0]);
     }
 
+    public function testALabelOverAFlatEdgeBridgingNodesStandsHalfARankSeparationAboveThem(): void
+    {
+        $place = static fn (array $above): Placement => Work::run(new DotEngine()->place(new LayoutGraph(
+            [
+                ...\array_map(static fn (string $id): LayoutNode => new LayoutNode($id, $id, 54, 36), $above),
+                new LayoutNode('a', 'a', 54, 36),
+                new LayoutNode('b', 'b', 54, 36),
+                new LayoutNode('c', 'c', 54, 36),
+            ],
+            [
+                ...\array_map(static fn (string $id): LayoutEdge => new LayoutEdge(0, $id, 'a'), $above),
+                new LayoutEdge(1, 'a', 'b', minLength: 0),
+                new LayoutEdge(2, 'b', 'c', minLength: 0),
+                new LayoutEdge(3, 'a', 'c', minLength: 0, labelWidth: 8.0, labelHeight: 40.0),
+            ],
+            spacing: new Spacing(36, 18, 0),
+        )));
+        [$lone, $under] = [$place([]), $place(['s'])];
+
+        // As `dot` is seen to set it: midway between its ends, its bottom 18 above their tops, the rank above 18 clear of its top.
+        $this->assertSame([99.0, 20.0, 94.0], [$lone->labels[3][0], $lone->labels[3][1], $lone->graph->height]);
+        $this->assertSame([112.0, 74.0], [$under->endpoints['a']->y - $under->endpoints['s']->y, $under->labels[3][1]]);
+    }
+
     public function testChainsKeepTheRoomDotIsSeenToKeepBetweenThem(): void
     {
         // Two edges' chains side by side keep two separations between them; on the ranks a graph

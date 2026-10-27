@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- The native dot layout sets a labelled flat edge with nodes between its ends as `dot` is seen to: its label midway between its ends, half the rank separation, to the point, above the rank's nodes, and the rank above as far again clear of its top. A PlantUML legacy activity's link drawn across to a step past the next stood 13 too short.
 - A colour written on a PlantUML class, object, map, package, component, deployment element, state or WBS item or link that PlantUML does not know, `#none` among them, is refused as PlantUML's `ColorParser` refuses it: no such colour. They were drawn as if uncoloured.
 - A PlantUML wire diagram's root writes its empty name as PlantUML's `WBlock` does, a space, which `mainframe` takes as reaching above the diagram: a framed wire diagram stood 2 too short.
 - A PlantUML link whose curve dot's layout knows is drawn as PlantUML's `DotPath` draws it: each end drawn back for its mark with the curve's nearest control point, which the limit finder then takes where it has moved. The native dot engine gives an edge spread beside others between the same two nodes its curve's control points too, its middle the full spread across, its ends as far as they start.
