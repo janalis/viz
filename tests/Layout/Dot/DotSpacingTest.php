@@ -49,6 +49,44 @@ final class DotSpacingTest extends TestCase
         ];
     }
 
+    /** @return iterable<string, array{string, array<string, float>}> */
+    public static function clusters(): iterable
+    {
+        $pulled = static fn (string $cluster, int $weight): string => (
+            'digraph { p; m [width=4]; q; {rank=same; p; m; q} '.$cluster.' p -> a [weight='.$weight.']; q -> b [weight='.$weight.']; m -> a [style=invis, weight=0] }'
+        );
+
+        yield 'a cluster holding its sides in against edges of 127' => [$pulled('subgraph cluster_0 { a; b }', weight: 127), ['a' => 125.0, 'b' => 197.0]];
+        yield 'a cluster spread by edges of 129' => [$pulled('subgraph cluster_0 { a; b }', weight: 129), ['a' => 47.0, 'b' => 425.0]];
+        yield 'a nested cluster holding its sides in against edges of 255' => [$pulled('subgraph cluster_0 { subgraph cluster_1 { a; b } }', weight: 255), ['a' => 125.0, 'b' => 197.0]];
+        yield 'a nested cluster spread by edges of 257' => [$pulled('subgraph cluster_0 { subgraph cluster_1 { a; b } }', weight: 257), ['a' => 55.0, 'b' => 433.0]];
+        yield 'a cluster of one node, midway between its parents' => ['digraph { a -> c; b -> c; subgraph cluster_1 { c } }', ['a' => 31.0, 'c' => 67.0, 'b' => 103.0]];
+        yield 'a cluster of one node, midway under a cluster of its parents' => [
+            'digraph { subgraph cluster_0 { a; b } a -> c; b -> c; subgraph cluster_1 { c } }',
+            ['a' => 47.0, 'b' => 119.0, 'c' => 83.0],
+        ];
+    }
+
+    /** @param array<string, float> $expected */
+    #[DataProvider('clusters')]
+    public function testClustersHoldTheirSidesInAsDotSetsThem(string $source, array $expected): void
+    {
+        $this->assertEqualsWithDelta($expected, self::across($source, $expected, 'x'), 0.01);
+    }
+
+    public function testALabelNodeInAClusterGivesWayToItsEdgeAsDotSetsIt(): void
+    {
+        // As dot sets them: the label node a separation inside the cluster's left, the edge's ends
+        // drawn in towards it as far as the label lets the cluster narrow, unless the edge pulls harder.
+        foreach ([0 => [33.0, 34.0], 1 => [41.0, 26.0], 100 => [43.0, 26.0]] as $weight => $expected) {
+            $graph = Work::run(new DotParser()->parse('digraph { '.self::NODES.' subgraph cluster_x { a -> b [weight='.$weight.', label='.self::label(16).'] } }'));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())));
+            [$cluster, $a] = [$placement->graph->clusters[0], $placement->graph->nodes[0]];
+
+            $this->assertEqualsWithDelta($expected, [$a->x - $cluster->x0, $cluster->x1 - $a->x], 0.01, (string) $weight);
+        }
+    }
+
     /** @param array<string, float> $expected */
     #[DataProvider('graphs')]
     public function testNodesStandAsDotSetsThem(string $source, array $expected): void

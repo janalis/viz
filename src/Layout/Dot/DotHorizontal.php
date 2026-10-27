@@ -10,12 +10,20 @@ namespace Janalis\Viz\Layout\Dot;
  * outermost clusters two neighbours do not share keep a margin apart, and from the graph's
  * edge. Each layered edge pulls its ends level through a slack node, its weight times 8
  * between two virtual nodes, so long edges run straight, and 1 otherwise, as dot pulls them. Each cluster is bounded
- * by a node either side that holds its nodes, sub-clusters and label a margin inside.
+ * by a node either side that holds its nodes, sub-clusters and label a margin inside, and
+ * that pulls the other in 128 times as hard as a plain edge.
  */
 final class DotHorizontal
 {
     /** How much harder a stretch between two virtual nodes pulls its ends level. */
     private const int STRAIGHT = 8;
+
+    /**
+     * How hard each cluster holds its sides in, as `dot` is seen to: two nodes of a cluster pulled
+     * apart by edges of weight 128 each only start to spread it, of 129 spread it; nested in another
+     * cluster, by edges of 256 and 257.
+     */
+    private const int COMPACT = 128;
 
     /** @var list<float> each node's x */
     public array $x = [];
@@ -188,16 +196,15 @@ final class DotHorizontal
 
     /**
      * The room a label node keeps inside its cluster on the side away from its label, as `dot` is
-     * seen to: half a separation, rounded down, and its label's width, a whole separation at most.
+     * seen to: the node separation, to the point, its own width included, whatever the label's size.
      */
     private function held(int $node): float
     {
         if (DotLayers::LABEL !== $this->layers->kind[$node]) {
             return 0.0;
         }
-        $label = $this->layers->mirrored ? $this->layers->left[$node] : $this->layers->right[$node];
 
-        return \min(\round($this->nodeSeparation), \floor($this->nodeSeparation / 2) + $label) - ($this->layers->mirrored ? $this->layers->right[$node] : $this->layers->left[$node]);
+        return \round($this->nodeSeparation) - ($this->layers->mirrored ? $this->layers->right[$node] : $this->layers->left[$node]);
     }
 
     /** Clusters hold their nodes, sub-clusters and label inside a margin, and hang off the graph's left bound. */
@@ -216,8 +223,12 @@ final class DotHorizontal
             $this->edges[] = [$node, $this->right($cluster), self::length($this->layers->right[$node] + ($this->layers->mirrored ? $this->held($node) : 0.0) + DotPosition::MARGIN), 0];
         }
         foreach ($this->layers->parents as $cluster => $parent) {
-            $this->edges[] = [$this->left($cluster), $this->right($cluster), self::length(\max($this->labelWidths[$cluster] + (2 * DotPosition::MARGIN), 2 * DotPosition::MARGIN)), 1];
-            $this->edges[] = [$this->rootLeft, $this->left($cluster), 0, 0];
+            $this->edges[] = [$this->left($cluster), $this->right($cluster), self::length(\max($this->labelWidths[$cluster] + (2 * DotPosition::MARGIN), 2 * DotPosition::MARGIN)), self::COMPACT];
+            // Only a cluster holding nothing hangs off the graph's left bound, to stand somewhere: one
+            // holding nodes is held by them alone, so that it slides with them, as `dot` is seen to centre it.
+            if (!\in_array($cluster, $this->layers->cluster, strict: true) && !\in_array($cluster, $this->layers->parents, strict: true)) {
+                $this->edges[] = [$this->rootLeft, $this->left($cluster), 0, 0];
+            }
             if (-1 === $parent) {
                 continue;
             }
