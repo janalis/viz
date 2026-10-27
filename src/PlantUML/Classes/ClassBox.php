@@ -385,9 +385,16 @@ final readonly class ClassBox
             return [...$marks, ...ClassJson::marks($this->entity->json ?? JsonNode::object([]), $this->style, $x, $y + $this->header, $this->width, $this->style->color('LineColor', '#181818'))];
         }
         if ('object' === $this->entity->type && [] !== $this->entity->body) {
-            // As PlantUML draws an object's fields: the line above them as wide as they are, 6 either side, cut to its outline, which its limit finder takes uncut.
+            // As PlantUML draws an object's fields: the line above them as wide as they are, 6 either side, cut to its outline, which its limit finder takes uncut, and their block down to the box's foot, as measured on its output.
             [$fields] = new PlantUmlText(\array_map(self::text(...), $this->entity->body), $this->style->fontSize(), sprites: $this->style->sprites)->size();
-            $marks[] = new Mark(MarkKind::Polygon, [[$x, $y + $this->header], [$x + $fields + 12, $y + $this->header]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
+            $marks[] = new Mark(
+                MarkKind::Polygon,
+                [[$x, $y + $this->height], [$x, $y + $this->header], [$x + $fields + 12, $y + $this->header]],
+                stroke: 'none',
+                fill: 'none',
+                strokeWidth: 0.0,
+                outline: Outline::Path,
+            );
         }
         $top = $y + $this->header;
         foreach ($this->compartments as [$lines, $separator, $title]) {

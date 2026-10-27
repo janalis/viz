@@ -76,6 +76,14 @@ final class ClassDrawingTest extends TestCase
         }
     }
 
+    public function testAnObjectsFieldsReachItsFootForTheLimitFinder(): void
+    {
+        $height = static fn (string $source): float => \round(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml"))->height / Units::POINT, precision: 6);
+
+        // As the jar sizes them: an object with fields, the tallest, as tall as its box to its foot.
+        $this->assertSame([66.0, 83.0], [$height("object O {\n f = 1\n}\nmap M {\n a => b\n}"), $height("object O {\n f = 1\n f = 2\n}\nclass Z")]);
+    }
+
     public function testAJsonEntityIsDrawnAsPlantUmlDrawsItsData(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
