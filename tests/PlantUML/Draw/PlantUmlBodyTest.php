@@ -25,6 +25,20 @@ final class PlantUmlBodyTest extends TestCase
         $this->assertEqualsWithDelta([$plainWidth + 6, $plainHeight + 8 + $title[1] + 4 + 8 + 8], new PlantUmlBody($text)->size(), 1e-9);
     }
 
+    public function testASectionKeepsItsTextsGuillemets(): void
+    {
+        $texts = static fn (string $guillemet): array => \array_values(\array_map(
+            static fn (Mark $mark): string => $mark->text,
+            \array_filter(
+                Work::run(PlantUmlPipeline::native()->drawing("@startuml\nskinparam guillemet {$guillemet}\nclass A\nnote \"a <<b>> c\" as N\n@enduml"))->marks,
+                static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && \str_starts_with($mark->text, 'a '),
+            ),
+        ));
+
+        // As the jar draws them: between the guillemets set, or as written, its `<b>` then bold.
+        $this->assertSame([['a "[b]" c'], ['a <']], [$texts('"[ ]"'), $texts('false')]);
+    }
+
     public function testATitleWiderThanItsSectionWidensIt(): void
     {
         [$titleWidth] = new PlantUmlText(['a much longer title'], 13.0)->size();

@@ -60,7 +60,7 @@ final readonly class PlantUmlBody
     /** @param list<string> $lines */
     private function with(array $lines): PlantUmlText
     {
-        return new PlantUmlText($lines, $this->text->size, $this->text->face, $this->text->color, $this->text->sprites, $this->text->background);
+        return new PlantUmlText($lines, $this->text->size, $this->text->face, $this->text->color, $this->text->sprites, $this->text->background, $this->text->guillemet);
     }
 
     /** @return array{float, float} */

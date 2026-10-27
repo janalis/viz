@@ -95,7 +95,15 @@ final readonly class RoseText
         }
         if (null === $this->number) {
             // As PlantUML writes a line: without the spaces it ends with, which it measures.
-            $written = new PlantUmlText(\array_map(\rtrim(...), $this->text->lines), $this->text->size, $this->text->face, $this->text->color, $this->text->sprites, $this->text->background);
+            $written = new PlantUmlText(
+                \array_map(\rtrim(...), $this->text->lines),
+                $this->text->size,
+                $this->text->face,
+                $this->text->color,
+                $this->text->sprites,
+                $this->text->background,
+                $this->text->guillemet,
+            );
 
             return $written->marks($x, $y, $this->text->size()[0], $this->align);
         }
