@@ -30,10 +30,20 @@ final class LinkPainter
     /**
      * @param array<string, string> $shapes `oval` or `diamond` by node name, for a node its line stops at the outline of
      * @param array{?array{PlantUmlText, Style, float}, ?array{PlantUmlText, Style, float}} $qualifiers the qualifier at its first end and at its second, with the style its box is drawn in and how far across it is pushed from its place
+     * @param array<string, array{float, float}> $tabs the tab's width and height by node name, for a package or a folder whose tab pushes a link meeting it
      * @return list<Mark>
      */
-    public static function marks(PlantUmlLink $link, Placement $placement, int $edge, LinkLabel $label, Style $style, string $background, array $shapes = [], array $qualifiers = [null, null]): array
-    {
+    public static function marks(
+        PlantUmlLink $link,
+        Placement $placement,
+        int $edge,
+        LinkLabel $label,
+        Style $style,
+        string $background,
+        array $shapes = [],
+        array $qualifiers = [null, null],
+        array $tabs = [],
+    ): array {
         if ($link->hidden) {
             return [];
         }
@@ -45,26 +55,12 @@ final class LinkPainter
         $whole = $points;
         $color = ClassColors::back($link->color) ?? $style->color('LineColor', '#181818');
         $stroke = $link->thickness ?? ($link->bold ? 2.0 : $style->number('LineThickness', 1.0));
-        $marks = [];
-        $boxes = [];
-        foreach ([[$link->toDecor, false, $qualifiers[1]], [$link->fromDecor, true, $qualifiers[0]]] as [$decor, $reversed, $qualifier]) {
-            $points = $reversed ? \array_reverse($points) : $points;
-            [$tip, $along] = Route::end($points);
-            [$box, $delta] = null === $qualifier
-                ? [[], [0.0, 0.0]]
-                : self::qualifier($qualifier[0], $qualifier[1], [$tip[0] + ($reversed ? 0.0 : $qualifier[2]), $tip[1]], 1 === $link->length, $reversed);
-            \array_push($boxes, ...$box);
-            // As PlantUML's `Kal`, a qualifier pushes its end's mark past it, and the line's end with it.
-            $moved = [$tip[0] + $delta[0], $tip[1] + $delta[1]];
-            [$ends, $short] = Extremity::marks($decor, $moved, $along, $color, 'none' === $background ? '#ffffff' : $background, $stroke);
-            \array_push($marks, ...$ends);
-            if (null !== $qualifier && LinkDecor::None !== $decor) {
-                $points = Route::shorten($points, $short + \hypot(...$delta))[0];
-                $points[\count($points) - 1] = [$moved[0] - ($along[0] * $short), $moved[1] - ($along[1] * $short)];
-            }
-            $points = $short > 0 && (null === $qualifier || LinkDecor::None === $decor) ? Route::shorten($points, $short)[0] : $points;
-            $points = $reversed ? \array_reverse($points) : $points;
-        }
+        $controls = CurveClip::clipped($placement->controls[$edge] ?? MagneticPath::straight($points[0], $points[\count($points) - 1]), $from, $to, $shapes);
+        $forces = [MagneticPath::force($tabs[$link->from] ?? null, $from, $controls[0]), MagneticPath::force($tabs[$link->to] ?? null, $to, $controls[\count($controls) - 1])];
+        // A tab pushing an end, the line is drawn as dot's curve moved; else as it runs, its qualifiers' boxes with it.
+        [$points, $marks, $boxes, $extent] = [[0.0, 0.0], [0.0, 0.0]] === $forces
+            ? [...self::ended($link, $points, $qualifiers, $color, $background, $stroke), CurveClip::clipped($placement->controls[$edge] ?? [], $from, $to, $shapes)]
+            : MagneticPath::drawn($link, $controls, $forces, $color, 'none' === $background ? '#ffffff' : $background, $stroke);
         // As PlantUML's limit finder takes dot's curve: by its control points too, where they are known.
         $marks[] = new Mark(
             MarkKind::Polyline,
@@ -73,7 +69,7 @@ final class LinkPainter
             dashed: $link->dashed || $link->dotted,
             strokeWidth: $stroke,
             dashes: self::dashes($link),
-            extent: CurveClip::clipped($placement->controls[$edge] ?? [], $from, $to, $shapes),
+            extent: $extent,
         );
         if ($link->middleCircle) {
             // As PlantUML's `MiddleCircle`: 6 across from where the line comes nearest midway between its ends, filled as the background.
@@ -95,6 +91,40 @@ final class LinkPainter
         \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes, $placement->directions[''] ?? Direction::TopBottom));
 
         return $marks;
+    }
+
+    /**
+     * The line with the mark at each end, the line stopping short to meet it, and the
+     * qualifiers' boxes.
+     *
+     * @param list<array{float, float}> $points
+     * @param array{?array{PlantUmlText, Style, float}, ?array{PlantUmlText, Style, float}} $qualifiers
+     * @return array{list<array{float, float}>, list<Mark>, list<Mark>} the line, its end marks, the qualifiers' boxes
+     */
+    private static function ended(PlantUmlLink $link, array $points, array $qualifiers, string $color, string $background, float $stroke): array
+    {
+        $marks = [];
+        $boxes = [];
+        foreach ([[$link->toDecor, false, $qualifiers[1]], [$link->fromDecor, true, $qualifiers[0]]] as [$decor, $reversed, $qualifier]) {
+            $points = $reversed ? \array_reverse($points) : $points;
+            [$tip, $along] = Route::end($points);
+            [$box, $delta] = null === $qualifier
+                ? [[], [0.0, 0.0]]
+                : self::qualifier($qualifier[0], $qualifier[1], [$tip[0] + ($reversed ? 0.0 : $qualifier[2]), $tip[1]], 1 === $link->length, $reversed);
+            \array_push($boxes, ...$box);
+            // As PlantUML's `Kal`, a qualifier pushes its end's mark past it, and the line's end with it.
+            $moved = [$tip[0] + $delta[0], $tip[1] + $delta[1]];
+            [$ends, $short] = Extremity::marks($decor, $moved, $along, $color, 'none' === $background ? '#ffffff' : $background, $stroke);
+            \array_push($marks, ...$ends);
+            if (null !== $qualifier && LinkDecor::None !== $decor) {
+                $points = Route::shorten($points, $short + \hypot(...$delta))[0];
+                $points[\count($points) - 1] = [$moved[0] - ($along[0] * $short), $moved[1] - ($along[1] * $short)];
+            }
+            $points = $short > 0 && (null === $qualifier || LinkDecor::None === $decor) ? Route::shorten($points, $short)[0] : $points;
+            $points = $reversed ? \array_reverse($points) : $points;
+        }
+
+        return [$points, $marks, $boxes];
     }
 
     /**

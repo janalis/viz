@@ -199,6 +199,22 @@ final readonly class DescriptionBox
         return [...Shadow::cast($outline, $this->style->number('Shadowing')), ...$title, ...$label];
     }
 
+    /**
+     * The tab a link meeting a package or a folder is pushed below, as PlantUML's `USymbolFolder`
+     * gives it a magnetic border: as wide and as tall as its title and 6 more.
+     *
+     * @return ?array{float, float}
+     */
+    public function magnet(): ?array
+    {
+        if (!\in_array($this->element->symbol, ['package', 'folder'], strict: true)) {
+            return null;
+        }
+        [$width, $height] = $this->tab();
+
+        return [$width + 6, $height + 6];
+    }
+
     /** @return array{float, float} the title a folder's or a package's tab holds: a package's name and 6 either side, the 40 by 15 a folder keeps for one it does not show */
     private function tab(): array
     {

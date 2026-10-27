@@ -276,9 +276,10 @@ final class DescriptionDrawing
         $placement = new Placement($placement->graph, $endpoints, $placement->directions, $placement->routes, $placement->labels, $placement->splines, controls: $placement->controls);
         $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'arrow']);
         $background = $this->diagram->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
+        $tabs = \array_filter(\array_map(static fn (DescriptionBox $box): ?array => $box->magnet(), $this->boxes));
         foreach ($this->edges as $index => $edge) {
             $link = $this->diagram->links[$index];
-            $this->put($marks, LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background), $link->from, $link->to);
+            $this->put($marks, LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, tabs: $tabs), $link->from, $link->to);
         }
         foreach ($this->diagram->notes as $note) {
             if (null === $note->entity || !\array_key_exists($note->id, $this->notes)) {

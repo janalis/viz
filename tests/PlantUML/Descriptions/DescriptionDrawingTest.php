@@ -295,6 +295,16 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([160.0, 343.0], $size("rectangle R {\n actor U\n}\nfolder F {\n [C]\n}\nR ..> F : uses"));
     }
 
+    public function testALinkMeetingAPackagesTabSideIsPushedBelowIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\npackage X\nrectangle R\nX -> R\n@enduml"));
+        $line = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && \count($mark->points) > 2))[0];
+
+        // As the jar draws it: from below the tab, 22.5 down from where dot ends it, curving up to R; 3 taller for it.
+        $this->assertEqualsWithDelta(48.24, $line->points[0][1] / Units::POINT, 0.01);
+        $this->assertSame([135.0, 63.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
     public function testANoteBesideAnElementStandsNextToItAsPlantUmlSetsIt(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
