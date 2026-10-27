@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML state diagram's `json` entity is drawn natively, where it was refused, as a class diagram draws it. A node svek writes as a table, a map's or a `json` entity's, is as big as dot's least node, 54 by 36, at least, its table centred in it: one narrower than that beside another stood 1 too close.
 - A PlantUML class diagram's `json` entity is drawn natively, where it was refused, as PlantUML's `EntityImageJson` and `TextBlockCucaJSon` draw it: its stereotypes over its name, its data below as tables of names beside values, arrays' items one under another, each value as written 5 in and 2 down, 13 tall when empty; its body read as an object's members, else as it stands, and a name made before refused, as PlantUML refuses it.
 - A PlantUML state named by its composite state's name and its own, `A.B`, is the state B in A, as PlantUML finds it, where it was refused; any other name with a dot in it is still left to PlantUML.
 - A PlantUML diagram of captions alone, a legend, a title, a header or a footer and nothing else, is drawn natively, where it was refused, as PlantUML draws it: an empty class diagram, as its sequence diagram with no participant fails, 5 narrower and shorter than one laid out, its captions around it.

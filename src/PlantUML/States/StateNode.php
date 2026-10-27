@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\PlantUML\States;
 
 use Janalis\Viz\PlantUML\Classes\ClassReader;
+use Janalis\Viz\PlantUML\Json\JsonNode;
 
 /**
  * A state as a PlantUML state diagram declares it — or a pseudostate: `start` and `end` for
@@ -22,6 +23,8 @@ final class StateNode
     public bool $hidden = false;
     /** Taken out with its transitions and notes, as `remove` takes it out. */
     public bool $removed = false;
+    /** A `json` entity's data, which it is drawn as. */
+    public ?JsonNode $json = null;
 
     /** @param list<string> $display */
     public function __construct(

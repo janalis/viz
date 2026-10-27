@@ -95,6 +95,8 @@ final class ClassDrawingTest extends TestCase
             $size("json J {\n  \"name\": \"Bob\",\n  \"ok\": true,\n  \"none\": null,\n  \"deep\": {\"x\": 1, \"y\": [true, {\"z\": \"w\"}]}\n}"),
             $size("json J {\n  [\"a\", \"b\"]\n}"),
         ]);
+        // A table smaller than dot's least node, 54 across, centred in it, beside a class.
+        $this->assertSame([[143.0, 70.0], [143.0, 70.0]], [$size("json J {\n \"a\": 1\n}\nclass A"), $size("map M {\n a => 1\n}\nclass A")]);
         $this->expectExceptionMessage('JSON already exists: J');
         $size("class X\njson J {\n}\njson J {\n}");
     }

@@ -34,6 +34,22 @@ final class StateDrawingTest extends TestCase
         ]);
     }
 
+    public function testAJsonEntityIsDrawnAsAClassDiagramDrawsIt(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar draws them: its data as a class diagram's, beside or under a state, in a composite state too.
+        $this->assertSame([[72.0, 176.0], [152.0, 71.0], [171.0, 134.0]], [
+            $size("state A\njson J {\n \"a\": 1\n}\nA --> J"),
+            $size("json J {\n \"a\": 1\n}\nstate A"),
+            $size("state S {\n  state A\n  json J {\n   \"k\": [1, 2]\n  }\n}"),
+        ]);
+        $this->expectExceptionMessage('JSON already exists: J');
+        $size("state A\njson J {\n}\njson J {\n}");
+    }
+
     public function testAnSdlReceiveStateIsDrawnAsAFrame(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(

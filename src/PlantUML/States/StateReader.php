@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\States;
 
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Activities\ActivityReader;
+use Janalis\Viz\PlantUML\Classes\ClassJson;
 use Janalis\Viz\PlantUML\Classes\ClassLinks;
 use Janalis\Viz\PlantUML\Classes\ClassPortions;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
@@ -95,6 +96,7 @@ final class StateReader
             ],
             'CommandHideEmptyDescription' => $this->hideEmpty = 'hide' === \strtolower((string) $command->get('HIDE')),
             'CommandCreateState' => $this->create($command),
+            'CommandCreateJson' => $this->json($command),
             'CommandCreatePackageState' => $this->composite($command),
             'CommandEndState' => \array_pop($this->open),
             'CommandConcurrentState' => $this->region((string) $command->get('TYPE')),
@@ -286,6 +288,21 @@ final class StateReader
             link: \count($this->links) - 1,
             color: $command->get('COLOR'),
         );
+    }
+
+    /** A `json` entity, drawn as a class diagram draws one, as PlantUML's `CommandCreateJson` makes it: a name not made before. */
+    private function json(PlantUmlCommand $command): void
+    {
+        $code = \trim((string) $command->lazy('CODE'), characters: '"');
+        if (\array_key_exists($code, $this->nodes)) {
+            throw new PlantUmlRefusal('JSON already exists: '.$code);
+        }
+        $node = $this->state($code, $command->lazy('DISPLAY'));
+        $node->kind = 'json';
+        $node->json = ClassJson::read($command->body());
+        $node->stereotypes = ClassReader::stereotypes((string) $command->get('STEREO'));
+        $node->color = PlantUmlColor::written($command->get('COLOR'));
+        $this->last = $node->id;
     }
 
     /** A state by name, made in the current composite state and region when new. */

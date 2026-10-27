@@ -176,17 +176,50 @@ final class Svek
     }
 
     /**
+     * Each node written as a table standing as its own cell, which its links end at.
+     *
+     * @param array<array-key, GraphNode> $endpoints
+     * @return array<array-key, GraphNode>
+     */
+    private function cells(array $endpoints): array
+    {
+        foreach ($this->margins as $id => [$top, $right, $bottom, $left]) {
+            [$node, [, $width, $height], $table] = [$endpoints[$id], $this->nodes[$id], $this->tabled($id)];
+            // The table 8 in and 4 down in its node, centred in one dot keeps bigger.
+            $across = ($node->w - $table[0]) > ((2 * self::TABLE_SIDE) + 0.01) ? ($node->w - $table[0]) / 2 : self::TABLE_SIDE;
+            $down = ($node->h - $table[1]) > ((2 * self::TABLE_TOP) + 0.01) ? ($node->h - $table[1]) / 2 : self::TABLE_TOP;
+            [$x, $y] = [$node->x - ($node->w / 2) + $across + \floor($left), $node->y - ($node->h / 2) + $down + \floor($top)];
+            $endpoints[$id] = $node->at($x + ($width / 2), $y + ($height / 2))->sized($width, $height);
+        }
+
+        return $endpoints;
+    }
+
+    /**
      * The size of a node written as a table, as dot is seen to give it: each size svek writes
-     * taken in whole points down, and 8 more either side across, 4 above and below.
+     * taken in whole points down, and 8 more either side across, 4 above and below; dot's
+     * least node, 54 by 36, at least.
      *
      * @return array{float, float}
      */
     private function table(string $id): array
     {
+        [$width, $height] = $this->tabled($id);
+
+        return [\max(54.0, $width + (2 * self::TABLE_SIDE)), \max(36.0, $height + (2 * self::TABLE_TOP))];
+    }
+
+    /**
+     * The table svek writes for a node, its cells' sizes in whole points down.
+     *
+     * @return array{float, float}
+     */
+    private function tabled(string $id): array
+    {
         [$top, $right, $bottom, $left] = \array_map(\floor(...), $this->margins[$id]);
         [, $width, $height] = $this->nodes[$id];
 
-        return [\floor($width) + $left + $right + (2 * self::TABLE_SIDE), ($this->rows[$id] ?? \floor($height)) + $top + $bottom + (2 * self::TABLE_TOP)];
+        return [\floor($width) + $left + $right, ($this->rows[$id] ?? \floor($height)) + $top + $bottom];
     }
 
     /** How far right of where its links end svek reads a point on a border to stand, from its port's column. */
@@ -301,12 +334,7 @@ final class Svek
 
         $endpoints = $this->read($placement->endpoints);
         // A point written as a port has its links end at its port's square, which dot keeps at its centre.
-        // A node written as a table stands as its own cell, which its links end at.
-        foreach ($this->margins as $id => [$top, $right, $bottom, $left]) {
-            [$node, [, $width, $height]] = [$endpoints[$id], $this->nodes[$id]];
-            [$x, $y] = [$node->x - ($node->w / 2) + self::TABLE_SIDE + \floor($left), $node->y - ($node->h / 2) + self::TABLE_TOP + \floor($top)];
-            $endpoints[$id] = $node->at($x + ($width / 2), $y + ($height / 2))->sized($width, $height);
-        }
+        $endpoints = $this->cells($endpoints);
         foreach (\array_keys($this->ports) as $id) {
             $endpoints[$id] = $endpoints[$id]->sized(12.0, 12.0);
         }
