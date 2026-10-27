@@ -140,9 +140,6 @@ final class DescriptionReader
         }
         $business = \str_ends_with((string) $symbol, '/') || \str_ends_with($display ?? $code, ')/') || \str_ends_with($display ?? $code, ':/');
         $symbol = \rtrim(\strtolower($first ?? (string) $symbol), characters: '/');
-        if (!\in_array($symbol, self::SYMBOLS, strict: true)) {
-            throw new Unsupported('The native PlantUML renderer does not draw '.$symbol.' elements');
-        }
         $code = \str_starts_with($code, '()') ? \trim(\substr($code, offset: 2)) : $code;
         self::undeclared($this->elements[self::bare($code)] ?? null);
         if (\array_key_exists(self::bare($code), $this->groups)) {
@@ -151,6 +148,9 @@ final class DescriptionReader
         $element = $this->get(self::bare($code), null === $display ? null : self::bare($display));
         if ('unknown' !== $element->symbol && $element->symbol !== $symbol) {
             throw new PlantUmlRefusal('This element ('.$element->id.') is already defined');
+        }
+        if (\in_array($symbol, DescriptionBox::PORTS, strict: true) && null === $element->group) {
+            throw new Unsupported('The native PlantUML renderer draws ports only on a container: '.$element->id);
         }
         $element->symbol = $symbol;
         $element->business = $business;

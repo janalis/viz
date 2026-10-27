@@ -64,6 +64,8 @@ final class Svek
     private array $ports = [];
     /** @var array<string, true> the clusters with points on their border */
     private array $bordered = [];
+    /** @var array<string, true> the clusters with ports on their border, which svek writes otherwise */
+    private array $ported = [];
     /** @var array<string, float> how tall svek writes the rows of a node it writes as a table of them */
     private array $rows = [];
     /** @var array<string, array{float, float, float, float}> the room svek keeps around a node, as its table's cells about the node's own: top, right, bottom and left */
@@ -145,6 +147,16 @@ final class Svek
         $this->nodes[$id] = [$id, $width, $height, $cluster];
         $this->borders[$id] = $input;
         $this->bordered[$cluster] = true;
+    }
+
+    /**
+     * A container's port on its border, as svek writes one: as a pin, but its cluster holding
+     * its title in a node of its own, which each rank of ports runs on to.
+     */
+    public function containerPort(string $id, string $cluster, bool $input): void
+    {
+        $this->pin($id, $cluster, $input, 12.0, 12.0);
+        $this->ported[$cluster] = true;
     }
 
     /**
@@ -239,7 +251,8 @@ final class Svek
                 headPort: $this->port($to, $direction),
             );
         }
-        // Svek writes links laid side by side before the nodes, and the others after them.
+        \array_push($edges, ...$this->portEdges());
+        // Svek writes links laid side by side before the nodes, and the others after them, a cluster's own within it.
         \usort($edges, static fn (LayoutEdge $a, LayoutEdge $b): int => [(int) (0 !== $a->minLength), $a->index] <=> [(int) (0 !== $b->minLength), $b->index]);
         // As svek, each cluster stands in a cluster of its own and holds its content in another,
         // with no label: protections, each keeping dot's margin around what it holds.
@@ -259,7 +272,9 @@ final class Svek
             if (\array_key_exists($id, $this->bordered)) {
                 // No protections: the points' ranks in the cluster, the title and content in one more.
                 $clusters[] = new LayoutCluster($id, '', $holder, order: \count($clusters));
-                $clusters[] = new LayoutCluster(self::BORDERED.$id, '', $id, minWidth: $titleWidth, labelHeight: $titleHeight, order: \count($clusters));
+                // With ports, its title in a node of its own.
+                $ported = \array_key_exists($id, $this->ported);
+                $clusters[] = new LayoutCluster(self::BORDERED.$id, '', $id, minWidth: $ported ? 0.0 : $titleWidth, labelHeight: $ported ? 0.0 : $titleHeight, order: \count($clusters));
                 if ($linked) {
                     $clusters[] = new LayoutCluster(self::WITHIN.$id, '', self::BORDERED.$id, order: \count($clusters));
                 }
@@ -272,17 +287,7 @@ final class Svek
             }
             $clusters[] = new LayoutCluster(self::INNER.$id, '', $linked ? self::WITHIN.$id : $id, order: \count($clusters));
         }
-        // As svek, a cluster holding nothing but its points holds a point in their place.
-        foreach ($this->clusters as [$cluster]) {
-            if (!\array_key_exists($cluster, $this->bordered)) {
-                continue;
-            }
-            $nodes = \array_filter($this->nodes, fn (array $node): bool => $node[3] === $cluster && !\array_key_exists($node[0], $this->borders));
-            if ([] === $nodes && [] === \array_filter($this->clusters, static fn (array $child): bool => $child[1] === $cluster)) {
-                $this->nodes[self::EMPTY.$cluster] = [self::EMPTY.$cluster, 0.72, 0.72, $cluster];
-                $this->points[self::EMPTY.$cluster] = true;
-            }
-        }
+        $this->placeholders();
         $graph = new LayoutGraph($this->ordered(), $edges, $clusters, $direction, new Spacing($rankSeparation, $nodeSeparation, 4.0), rankSets: $this->ranks());
         $placing = new DotEngine()->place($graph);
         yield from $placing;
@@ -379,7 +384,7 @@ final class Svek
             foreach ([...$entries, ...$exits, ...\array_diff_key($mine, $entries, $exits)] as [$id, $width, $height, $owner]) {
                 $holder = match (true) {
                     null === $owner, \array_key_exists($id, $this->borders) => $owner,
-                    \array_key_exists($id, $this->points) => \array_key_exists($owner, $this->bordered) ? self::BORDERED.$owner : $owner,
+                    \array_key_exists($id, $this->points) => $this->pointHolder($owner),
                     default => $this->holder($owner),
                 };
                 [$width, $height] = \array_key_exists($id, $this->margins) ? $this->table($id) : [$width, $height];
@@ -397,6 +402,75 @@ final class Svek
         }
 
         return $ordered;
+    }
+
+    /**
+     * As svek, a cluster with ports holds its title in a node of its own, and a cluster holding
+     * nothing but its points holds a point in their place.
+     */
+    private function placeholders(): void
+    {
+        foreach ($this->clusters as [$cluster]) {
+            if (!\array_key_exists($cluster, $this->bordered)) {
+                continue;
+            }
+            $nodes = \array_filter($this->nodes, fn (array $node): bool => $node[3] === $cluster && !\array_key_exists($node[0], $this->borders));
+            if (\array_key_exists($cluster, $this->ported)) {
+                [, , $titleWidth, $titleHeight] = $this->clusters[$cluster];
+                // As dot is seen to size a box round the title's table: 8 either side across, each half to the point up, 4 above and below; the point a link ends at, where one does.
+                $title = $this->titleNode($cluster);
+                $this->nodes[$title] = [$title, 2 * \ceil(($titleWidth + 16) / 2), $titleHeight + 8, $cluster];
+                continue;
+            }
+            if ([] === $nodes && [] === \array_filter($this->clusters, static fn (array $child): bool => $child[1] === $cluster)) {
+                $this->nodes[self::EMPTY.$cluster] = [self::EMPTY.$cluster, 0.72, 0.72, $cluster];
+                $this->points[self::EMPTY.$cluster] = true;
+            }
+        }
+    }
+
+    /**
+     * The edges svek writes in a cluster with ports: each rank of ports from one to the next,
+     * the last on to the title's node; numbered below nought, before every link.
+     *
+     * @return list<LayoutEdge>
+     */
+    private function portEdges(): array
+    {
+        $edges = [];
+        foreach (\array_keys($this->ported) as $cluster) {
+            $mine = \array_filter($this->borders, fn (string $id): bool => $this->nodes[$id][3] === $cluster, \ARRAY_FILTER_USE_KEY);
+            foreach ([\array_keys(\array_filter($mine)), \array_keys(\array_diff_key($mine, \array_filter($mine)))] as $ports) {
+                $chain = [] === $ports ? [] : [...$ports, $this->titleNode($cluster)];
+                for ($at = 1, $count = \count($chain); $at < $count; ++$at) {
+                    $edges[] = new LayoutEdge(-1 - \count($edges), $chain[$at - 1], $chain[$at], minLength: 1);
+                }
+            }
+        }
+
+        return $edges;
+    }
+
+    /** The cluster a point stands in: in a cluster with points on its border, inside their ranks; with ports, the title's node in the cluster a link to it adds. */
+    private function pointHolder(string $owner): string
+    {
+        if (!\array_key_exists($owner, $this->bordered)) {
+            return $owner;
+        }
+
+        return \array_key_exists($owner, $this->ported) ? $this->holder($owner) : self::BORDERED.$owner;
+    }
+
+    /** The node a cluster with ports holds its title in, as svek writes it: the point a link to it ends at, where one does; else one of its own. */
+    private function titleNode(string $cluster): string
+    {
+        foreach (\array_keys($this->points) as $id) {
+            if ($this->nodes[$id][3] === $cluster) {
+                return $id;
+            }
+        }
+
+        return self::EMPTY.$cluster;
     }
 
     /** @return list<LayoutRankSet> each cluster's entries on its first rank and its exits on its last, alone */

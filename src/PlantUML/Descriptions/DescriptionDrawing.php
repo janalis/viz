@@ -23,6 +23,7 @@ use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\StackedText;
 use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
+use Janalis\Viz\PlantUML\Svek\Frontier;
 use Janalis\Viz\PlantUML\Svek\Squares;
 use Janalis\Viz\PlantUML\Svek\Svek;
 
@@ -139,7 +140,9 @@ final class DescriptionDrawing
             $box = DescriptionBox::of($element, $this->diagram->document->styles);
             $box = \array_key_exists($element->id, $beside) ? $box->beside() : $box;
             $this->boxes[$element->id] = $box;
-            $svek->node($element->id, $box->width, $box->height, $element->group);
+            \in_array($element->symbol, DescriptionBox::PORTS, strict: true)
+                ? $svek->containerPort($element->id, (string) $element->group, 'portout' !== $element->symbol)
+                : $svek->node($element->id, $box->width, $box->height, $element->group);
         }
         $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'note']);
         foreach ($notes as $note) {
@@ -233,33 +236,70 @@ final class DescriptionDrawing
         ]));
     }
 
+    /**
+     * Each container's frame: its cluster's box; through its ports, as PlantUML's frontier
+     * calculator finds it from what it holds.
+     *
+     * @return array<string, array{float, float, float, float}>
+     */
+    private function frames(Placement $placement): array
+    {
+        $frames = [];
+        foreach ($placement->graph->clusters as $box) {
+            $frames[$box->name] = [$box->x0, $box->y0, $box->x1, $box->y1];
+        }
+        foreach ($frames as $name => $frame) {
+            [$insides, $points] = [[], []];
+            foreach ($this->diagram->elements as $element) {
+                if ($element->group !== $name || !\array_key_exists($element->id, $this->boxes)) {
+                    continue;
+                }
+                $at = $placement->endpoints[$element->id];
+                \in_array($element->symbol, DescriptionBox::PORTS, strict: true)
+                    ? ($points[] = [$at->x, $at->y])
+                    : ($insides[] = [$at->x - ($at->w / 2), $at->y - ($at->h / 2), $at->x + ($at->w / 2), $at->y + ($at->h / 2)]);
+            }
+            if ([] === $points) {
+                continue;
+            }
+            foreach ($this->diagram->groups as $group) {
+                \array_key_exists($group->id, $frames) && $group->parent === $name ? ($insides[] = $frames[$group->id]) : null;
+            }
+            $frames[$name] = Frontier::of($frame, $insides, $points, $this->diagram->direction, $this->title($this->diagram->groups[$name])->size()[0]);
+        }
+
+        return $frames;
+    }
+
     /** @return list<Mark> */
     private function paint(Placement $placement): array
     {
         $marks = [];
+        $frames = $this->frames($placement);
         foreach ($placement->graph->clusters as $box) {
             $group = $this->diagram->groups[$box->name];
             if ('together' === $group->symbol) {
                 continue;
             }
+            [$x0, $y0, $x1, $y1] = $frames[$box->name];
             $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', $group->symbol], $group->stereotypes);
             $line = ClassColors::line($group->color) ?? $style->color('LineColor', '#181818');
             $back = ClassColors::back($group->color) ?? 'none';
             $title = $this->title($group);
-            [$width, $height, $thickness] = [$box->x1 - $box->x0, $box->y1 - $box->y0, $style->number('LineThickness', 1.0)];
+            [$width, $height, $thickness] = [$x1 - $x0, $y1 - $y0, $style->number('LineThickness', 1.0)];
             \array_push(
                 $marks,
                 ...'frame' === $group->symbol
-                    ? DescriptionShapes::frame($box->x0, $box->y0, $width, $height, $line, $back, $thickness, ...$title->size())
-                    : DescriptionShapes::container($group->symbol, $box->x0, $box->y0, $width, $height, $line, $back, $thickness, $style->number('RoundCorner'), $title->size()),
+                    ? DescriptionShapes::frame($x0, $y0, $width, $height, $line, $back, $thickness, ...$title->size())
+                    : DescriptionShapes::container($group->symbol, $x0, $y0, $width, $height, $line, $back, $thickness, $style->number('RoundCorner'), $title->size()),
             );
             // A package's, a folder's or a frame's title sits in its tab; any other container's is centred at its top, lower for the symbols PlantUML draws it lower in.
             $tabbed = \in_array($group->symbol, ['package', 'folder', 'frame'], strict: true);
             [$tabX, $tabY] = 'frame' === $group->symbol ? [3.0, 1.0] : [4.0, 2.0];
             \array_push($marks, ...$title->marks(
-                $tabbed ? $box->x0 + $tabX : $box->x0 + ('node' === $group->symbol ? -4.0 : 0.0),
-                $box->y0 + ($tabbed ? $tabY : self::TITLE_TOPS[$group->symbol] ?? 2.0),
-                $tabbed ? $title->size()[0] : $box->x1 - $box->x0,
+                $tabbed ? $x0 + $tabX : $x0 + ('node' === $group->symbol ? -4.0 : 0.0),
+                $y0 + ($tabbed ? $tabY : self::TITLE_TOPS[$group->symbol] ?? 2.0),
+                $tabbed ? $title->size()[0] : $x1 - $x0,
                 $tabbed ? 'left' : 'center',
             ));
         }
@@ -270,8 +310,8 @@ final class DescriptionDrawing
         }
         // A link to a container is cut where it meets the container's outline.
         $endpoints = $placement->endpoints;
-        foreach ($placement->graph->clusters as $box) {
-            $endpoints[$box->name] = new GraphNode(0, $box->name, '', ($box->x0 + $box->x1) / 2, ($box->y0 + $box->y1) / 2, $box->x1 - $box->x0, $box->y1 - $box->y0, null, null, dashed: false);
+        foreach ($frames as $name => [$x0, $y0, $x1, $y1]) {
+            $endpoints[$name] = new GraphNode(0, $name, '', ($x0 + $x1) / 2, ($y0 + $y1) / 2, $x1 - $x0, $y1 - $y0, null, null, dashed: false);
         }
         $placement = new Placement($placement->graph, $endpoints, $placement->directions, $placement->routes, $placement->labels, $placement->splines, controls: $placement->controls);
         $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'arrow']);
@@ -293,6 +333,10 @@ final class DescriptionDrawing
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
             $this->put($marks, $box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)), $id);
+            $group = $this->diagram->elements[$id]->group;
+            if (null !== $group && \in_array($this->diagram->elements[$id]->symbol, DescriptionBox::PORTS, strict: true)) {
+                $this->put($marks, $box->portName($node->x - ($node->w / 2), $node->y - ($node->h / 2), ($frames[$group][1] + $frames[$group][3]) / 2), $id);
+            }
         }
         $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->diagram->notes), 1, 0);
         foreach ($this->notes as $id => $note) {

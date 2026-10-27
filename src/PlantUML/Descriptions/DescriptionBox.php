@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\Descriptions;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
+use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Draw\ActorFigure;
 use Janalis\Viz\PlantUML\Draw\ContainingEllipse;
@@ -69,6 +70,9 @@ final readonly class DescriptionBox
         'circle' => [18.0, 18.0],
     ];
 
+    /** The symbols of a container's ports, as PlantUML's `EntityImagePort` draws them on its border: a square 12 across. */
+    public const array PORTS = ['port', 'portin', 'portout'];
+
     /** The room a folder keeps for its title, which an element does not show. */
     private const array FOLDER_TITLE = [40.0, 15.0];
 
@@ -121,6 +125,7 @@ final readonly class DescriptionBox
         $labelHeight = $textHeight + $stereoHeight;
         $footprint = self::footprint($stereotypes?->rows() ?? [], $text->rows(), $element->business ? 7.0 : 0.0);
         [$width, $height] = match (true) {
+            \in_array($element->symbol, self::PORTS, strict: true) => [12.0, 12.0],
             'usecase' === $element->symbol => [$footprint[0], $footprint[1]],
             // As PlantUML: its flat sides as wide as its text, its points half as far again, 5 above and below.
             'hexagon' === $element->symbol => [2 * $labelWidth, $labelHeight + 10],
@@ -173,6 +178,9 @@ final readonly class DescriptionBox
         $back = ClassColors::back($this->element->color) ?? $this->style->color('BackGroundColor', '#f1f1f1');
         $stroke = $this->style->number('LineThickness', 0.5);
         $symbol = $this->element->shape ?? $this->element->symbol;
+        if (\in_array($symbol, self::PORTS, strict: true)) {
+            return [ClassBox::rectangle($x, $y, 12.0, 12.0, $line, $back, 1.5, 0.0)];
+        }
         if (\array_key_exists($symbol, self::ICONS)) {
             return $this->icon($symbol, $x, $y, $line, $back, $stroke);
         }
@@ -315,6 +323,19 @@ final readonly class DescriptionBox
         [$radius, $centreX, $centreY] = ContainingEllipse::around($points, $aspect);
 
         return [(2 * $radius) + 6, (2 * $radius * $aspect) + 6, $radius + 3 - $centreX + $middle, ($radius * $aspect) + 3 - $centreY - 2];
+    }
+
+    /**
+     * A port's name as PlantUML sets it, centred on the port: 12 above it when it stands above
+     * its container's middle, else 12 below its top.
+     *
+     * @return list<Mark>
+     */
+    public function portName(float $x, float $y, float $middle): array
+    {
+        [$width, $height] = $this->text->size();
+
+        return $this->text->marks($x - (($width - 12.0) / 2), $y < $middle ? $y - 12.0 - $height : $y + 12.0, $width);
     }
 
     /** @return list<Mark> the stereotypes above the text, both centred within a width */

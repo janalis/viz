@@ -70,6 +70,19 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertEqualsWithDelta(129.648, $width(name: 'Long name here', symbol: 'rectangle', stereotype: 's'), 2e-3);
     }
 
+    public function testAContainersPortsStandOnItsBorderAsPlantUmlDrawsThem(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar sets them: inputs on its top, outputs on its bottom, its frame through them; its title in a node its ports run on to, which a link to it ends at.
+        $this->assertSame([[110.0, 306.0], [159.0, 182.0]], [
+            $size("component A {\n port p1\n portin p2\n portout p3\n}\n[X] --> p2"),
+            $size("component C {\n  port p1\n}\n[X] --> C"),
+        ]);
+    }
+
     public function testANodeContainerIsTakenTenWiderEitherSide(): void
     {
         $width = static fn (string $symbol): float => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$symbol} Server {\n  [App]\n}\n@enduml"))->width / Units::POINT;
