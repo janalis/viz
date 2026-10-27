@@ -57,10 +57,11 @@ final class LinkPainter
         $stroke = $link->thickness ?? ($link->bold ? 2.0 : $style->number('LineThickness', 1.0));
         $controls = CurveClip::clipped($placement->controls[$edge] ?? MagneticPath::straight($points[0], $points[\count($points) - 1]), $from, $to, $shapes);
         $forces = [MagneticPath::force($tabs[$link->from] ?? null, $from, $controls[0]), MagneticPath::force($tabs[$link->to] ?? null, $to, $controls[\count($controls) - 1])];
-        // A tab pushing an end, the line is drawn as dot's curve moved; else as it runs, its qualifiers' boxes with it.
-        [$points, $marks, $boxes, $extent] = [[0.0, 0.0], [0.0, 0.0]] === $forces
-            ? [...self::ended($link, $points, $qualifiers, $color, $background, $stroke), CurveClip::clipped($placement->controls[$edge] ?? [], $from, $to, $shapes)]
-            : MagneticPath::drawn($link, $controls, $forces, $color, 'none' === $background ? '#ffffff' : $background, $stroke);
+        // Where dot's curve is known, or a tab pushes an end, the line is drawn as the curve moved; else as it runs, its qualifiers' boxes with it.
+        [$points, $marks, $boxes, $extent] =
+            [[0.0, 0.0], [0.0, 0.0]] === $forces && ([null, null] !== $qualifiers || !\array_key_exists($edge, $placement->controls))
+                ? [...self::ended($link, $points, $qualifiers, $color, $background, $stroke), CurveClip::clipped($placement->controls[$edge] ?? [], $from, $to, $shapes)]
+                : MagneticPath::drawn($link, $controls, $forces, $color, 'none' === $background ? '#ffffff' : $background, $stroke);
         // As PlantUML's limit finder takes dot's curve: by its control points too, where they are known.
         $marks[] = new Mark(
             MarkKind::Polyline,

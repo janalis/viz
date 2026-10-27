@@ -75,7 +75,7 @@ final class DotSplines
         if (0.0 !== $offset) {
             $drawn = $this->spread($drawn, $offset, $path[0], $path[\count($path) - 1]);
             $points = $this->spread($points, $offset, $path[0], $path[\count($path) - 1]);
-            $controls = [];
+            $controls = 1 === \count($curves) ? $this->spreadCurve($curves[0], $offset, $path[0], $path[\count($path) - 1]) : [];
         }
 
         return $down ? [$drawn, $points, $controls] : [\array_reverse($drawn), \array_reverse($points), \array_reverse($controls)];
@@ -148,15 +148,41 @@ final class DotSplines
     }
 
     /**
+     * A curve moved across as its drawing is: its ends as far as they start, its controls so far
+     * that its middle stands the full offset across, as dot's are seen to stand.
+     *
+     * @param array{array{float, float}, array{float, float}, array{float, float}, array{float, float}} $curve
+     * @return list<array{float, float}>
+     */
+    private function spreadCurve(array $curve, float $offset, int $tail, int $head): array
+    {
+        $ends = $this->ends($offset, $tail, $head);
+        $controls = ((8 * $offset) - (2 * $ends)) / 6;
+
+        return [
+            [$curve[0][0] + $ends, $curve[0][1]],
+            [$curve[1][0] + $controls, $curve[1][1]],
+            [$curve[2][0] + $controls, $curve[2][1]],
+            [$curve[3][0] + $ends, $curve[3][1]],
+        ];
+    }
+
+    /** How far across a spread edge starts and ends: as dot is seen to start them, at three fifths of their spread midway, no further out than a little past the narrower end's side. */
+    private function ends(float $offset, int $tail, int $head): float
+    {
+        $layers = $this->layers;
+        $narrowest = \min($layers->left[$tail], $layers->right[$tail], $layers->left[$head], $layers->right[$head]) + self::START;
+
+        return \max(-$narrowest, \min($narrowest, $offset * self::ENDS));
+    }
+
+    /**
      * @param list<array{float, float}> $points
      * @return list<array{float, float}>
      */
     private function spread(array $points, float $offset, int $tail, int $head): array
     {
-        $layers = $this->layers;
-        // As dot is seen to start them, at three fifths of their spread midway, no further out than a little past the narrower end's side.
-        $narrowest = \min($layers->left[$tail], $layers->right[$tail], $layers->left[$head], $layers->right[$head]) + self::START;
-        $ends = \max(-$narrowest, \min($narrowest, $offset * self::ENDS));
+        $ends = $this->ends($offset, $tail, $head);
         $lengths = [0.0];
         for ($index = 1, $count = \count($points); $index < $count; ++$index) {
             $lengths[] = $lengths[$index - 1] + \hypot($points[$index][0] - $points[$index - 1][0], $points[$index][1] - $points[$index - 1][1]);

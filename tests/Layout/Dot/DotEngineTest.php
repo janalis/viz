@@ -107,6 +107,16 @@ final class DotEngineTest extends TestCase
         }
     }
 
+    public function testAnEdgeSpreadBesideAnotherKeepsItsCurvesMiddleWhereItIsDrawn(): void
+    {
+        $placement = self::place(['a', 'b'], [['a', 'b'], ['a', 'b']]);
+        [$p0, $p1, $p2, $p3] = $placement->controls[1];
+
+        // As dot's are seen to: its curve's middle the full spread across, where its drawing's is.
+        $this->assertEqualsWithDelta($placement->splines[1][6][0], ($p0[0] + (3 * $p1[0]) + (3 * $p2[0]) + $p3[0]) / 8, 1e-6);
+        $this->assertCount(4, $placement->controls[0]);
+    }
+
     public function testChainsKeepTheRoomDotIsSeenToKeepBetweenThem(): void
     {
         // Two edges' chains side by side keep two separations between them; on the ranks a graph
