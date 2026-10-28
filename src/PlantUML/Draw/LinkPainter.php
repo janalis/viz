@@ -76,6 +76,7 @@ final class LinkPainter
         if ('' !== $link->middle) {
             \array_push($marks, ...self::circled($link->middle, $points, $color, 'none' === $background ? '#ffffff' : $background));
         }
+        $labelBox = null;
         if (!$label->empty()) {
             $margin = Svek::labelMargin($link->from, $link->to);
             [$width, $height] = $label->size($margin);
@@ -85,16 +86,25 @@ final class LinkPainter
                 ? [$x - (\floor($width) / 2), $y - (\floor($height) / 2)]
                 : [$x - ($width / 2), $y - ($height / 2)];
             \array_push($marks, ...$label->marks($left, $top, $margin));
+            $labelBox = [$left, $top, $left + \floor($width), $top + \floor($height)];
             \array_push($marks, ...self::labelArrow($link, $from, $to, $left + ($margin / 2) + 4, $y, $color));
         }
         \array_push($marks, ...$boxes);
+        $direction = $placement->directions[''] ?? Direction::TopBottom;
+        $flat = $link->from !== $link->to && self::flat($from, $to, $direction);
         \array_push($marks, ...self::endLabels(
             $link->firstLabel,
             $link->secondLabel,
             $whole,
             $style->fontSize(),
             $placement->graph->nodes,
-            $link->from === $link->to ? self::loopSides($placement->directions[''] ?? Direction::TopBottom) : self::sides($placement->directions[''] ?? Direction::TopBottom),
+            match (true) {
+                $link->from === $link->to => self::loopSides($direction),
+                $flat => self::flatSides($direction, $whole),
+                default => self::sides($direction),
+            },
+            // On a link along a rank, its label stands in the way too.
+            $flat && null !== $labelBox ? [$labelBox] : [],
         ));
 
         return $marks;
@@ -264,24 +274,22 @@ final class LinkPainter
 
     /**
      * The labels at a link's ends, as dot sets a tail and a head label: each with a corner on
-     * the end of the line, on the sides it is given, but the head's turned where it would
-     * overlap the tail's.
+     * the end of the line, on the sides it is given, but turned where it would overlap what
+     * stands in its way, or the head's the tail's.
      *
      * As svek then, each is moved away from any node it comes within 8 of.
      *
      * @param list<array{float, float}> $points from the tail to the head, two at least
      * @param array<int, GraphNode> $nodes
-     * @param array{array{int, int}, array{int, int}, ?array{int, int}} $sides the tail's, the head's, and how the head's turn where they would overlap, if they do
+     * @param array{array{int, int}, array{int, int}, ?array{int, int}} $sides the tail's, the head's, and how they turn where they would overlap, if they do
+     * @param list<array{float, float, float, float}> $obstacles what else stands in their way
      * @return list<Mark>
      */
-    private static function endLabels(?string $tail, ?string $head, array $points, float $size, array $nodes, array $sides): array
+    private static function endLabels(?string $tail, ?string $head, array $points, float $size, array $nodes, array $sides, array $obstacles = []): array
     {
         [$tailSides, $headSides, $flip] = $sides;
-        $tailBox = self::endBox($tail, $points[0], $tailSides, $size);
-        $headBox = self::endBox($head, $points[\count($points) - 1], $headSides, $size);
-        if (null !== $flip && null !== $tailBox && null !== $headBox && self::overlap($tailBox[1], $headBox[1])) {
-            $headBox = self::endBox($head, $points[\count($points) - 1], [$flip[0] * $headSides[0], $flip[1] * $headSides[1]], $size);
-        }
+        $tailBox = self::placed($tail, $points[0], $tailSides, $flip, $size, $obstacles);
+        $headBox = self::placed($head, $points[\count($points) - 1], $headSides, $flip, $size, null === $tailBox ? $obstacles : [...$obstacles, $tailBox[1]]);
         $marks = [];
         foreach ([$tailBox, $headBox] as $box) {
             if (null === $box) {
@@ -316,6 +324,31 @@ final class LinkPainter
         };
     }
 
+    /** Whether a link runs along a rank: its ends level across the layout, within the rounding of their sizes. */
+    private static function flat(GraphNode $from, GraphNode $to, Direction $direction): bool
+    {
+        return \in_array($direction, [Direction::TopBottom, Direction::BottomTop], strict: true) ? \abs($from->y - $to->y) < 0.5 : \abs($from->x - $to->x) < 0.5;
+    }
+
+    /**
+     * Where `dot` is seen to set them on a link along a rank: the tail's reaching on along the
+     * line, the head's back along it, both on the side of the line the layout comes from — above
+     * it laid out down, below it bottom up, left of it left to right, right of it right to left —
+     * each turned to the other side where it would meet what stands in its way.
+     *
+     * @param list<array{float, float}> $points from the tail to the head
+     * @return array{array{int, int}, array{int, int}, array{int, int}}
+     */
+    private static function flatSides(Direction $direction, array $points): array
+    {
+        [$start, $end] = [$points[0], $points[\count($points) - 1]];
+        $across = \in_array($direction, [Direction::TopBottom, Direction::BottomTop], strict: true);
+        $along = ($across ? $end[0] - $start[0] : $end[1] - $start[1]) < 0 ? -1 : 1;
+        $side = \in_array($direction, [Direction::TopBottom, Direction::LeftRight], strict: true) ? -1 : 1;
+
+        return $across ? [[$along, $side], [-$along, $side], [1, -1]] : [[$side, $along], [$side, -$along], [-1, 1]];
+    }
+
     /**
      * Where `dot` is seen to set them on a link to itself, which it loops on the node's right, or
      * above it laid out left to right: both on the loop's outer side, reaching back against the
@@ -331,6 +364,24 @@ final class LinkPainter
             Direction::LeftRight => [[-1, -1], [-1, -1], [-1, 1]],
             Direction::RightLeft => [[1, -1], [1, -1], [-1, 1]],
         };
+    }
+
+    /**
+     * An end's label where it stands: on the sides it is given, or turned where it would meet
+     * what stands in its way.
+     *
+     * @param array{float, float} $end
+     * @param array{int, int} $sides
+     * @param ?array{int, int} $flip
+     * @param list<array{float, float, float, float}> $obstacles
+     * @return ?array{PlantUmlText, array{float, float, float, float}}
+     */
+    private static function placed(?string $text, array $end, array $sides, ?array $flip, float $size, array $obstacles): ?array
+    {
+        $box = self::endBox($text, $end, $sides, $size);
+        $meets = null !== $box && \array_any($obstacles, static fn (array $obstacle): bool => self::overlap($box[1], $obstacle));
+
+        return null !== $flip && $meets ? self::endBox($text, $end, [$flip[0] * $sides[0], $flip[1] * $sides[1]], $size) : $box;
     }
 
     /**

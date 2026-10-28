@@ -61,6 +61,21 @@ final class ClassReader
     private array $pathOf = [];
 
     /**
+     * The links as PlantUML's `ClassDiagram` settles them once read: a link between two entities
+     * that one drawn across joins, either way round, drawn across too.
+     *
+     * @param list<PlantUmlLink> $links
+     * @return list<PlantUmlLink>
+     */
+    private static function across(array $links): array
+    {
+        $pair = static fn (PlantUmlLink $link): string => \min($link->from, $link->to)."\n".\max($link->from, $link->to);
+        $across = \array_flip(\array_map($pair, \array_filter($links, static fn (PlantUmlLink $link): bool => 1 === $link->length)));
+
+        return \array_map(static fn (PlantUmlLink $link): PlantUmlLink => \array_key_exists($pair($link), $across) ? $link->lengthened(1) : $link, $links);
+    }
+
+    /**
      * @param list<PlantUmlCommand> $commands the class diagram commands the lines matched
      * @throws Unsupported when a command is not drawn natively
      */
@@ -80,7 +95,7 @@ final class ClassReader
             throw $unsupported;
         }
 
-        return new PlantUmlClasses($document, $reader->entities, $reader->links, $reader->groups, $reader->notes, $reader->visibility, $reader->direction, $reader->leaves);
+        return new PlantUmlClasses($document, $reader->entities, self::across($reader->links), $reader->groups, $reader->notes, $reader->visibility, $reader->direction, $reader->leaves);
     }
 
     private function execute(PlantUmlCommand $command): void

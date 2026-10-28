@@ -610,6 +610,30 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([152.0, 70.0], $size("left to right direction\nclass A\nnote right of A : x"));
     }
 
+    public function testLinksAlongARankSetTheirEndLabelsAsDotDoesAndKeepTheirPairAcross(): void
+    {
+        $left = static function (Drawing $drawing, string $text): array {
+            foreach ($drawing->marks as $mark) {
+                if ($text === $mark->text) {
+                    return [\round(($mark->points[0][0] - (\array_sum($mark->slots ?? []) / 2)) / Units::POINT, precision: 1), \round($mark->points[0][1] / Units::POINT, precision: 1)];
+                }
+            }
+            self::fail('No '.$text);
+        };
+
+        // As the jar sets them, to a quarter of a point: above the line, the tail's right of its start, the head's left of its end; laid out left to right, left of it, the tail's below its start, the head's above its end.
+        $drawing = self::draw("class A\nclass B\nA \"t\" - \"h\" B");
+        $this->assertEqualsWithDelta([[56.7, 26.1], [67.7, 26.1]], [$left($drawing, text: 't'), $left($drawing, text: 'h')], 0.25);
+        $drawing = self::draw("left to right direction\nclass A\nclass B\nA \"t\" - \"h\" B");
+        $this->assertEqualsWithDelta([[23.4, 75.7], [18.8, 79.1]], [$left($drawing, text: 't'), $left($drawing, text: 'h')], 0.25);
+        // The tail's below the line where its label stands in the way above.
+        $drawing = self::draw("class A {\n}\nA \"0..*\" - Bee : < has");
+        $this->assertEqualsWithDelta([56.6, 45.3], $left($drawing, text: '0..*'), 0.25);
+        // A link down between two classes a link across joins is across too, as PlantUML's `ClassDiagram` settles it.
+        $drawing = self::draw("class Bee\nclass A\nBee \"1\" --> A\nBee -> A");
+        $this->assertSame([154.0, 70.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
     public function testAHeadLabelThatWouldOverlapTheTailLabelStandsOnTheOtherSide(): void
     {
         $centre = static function (Drawing $drawing, string $text, float $side = 0.0): float {
