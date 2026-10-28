@@ -93,12 +93,15 @@ final class PlantUmlFrame
     {
         $inner = self::MARGIN / 2;
 
-        return self::framed($document, \array_map(static fn (Mark $mark): Mark => self::moved($mark, $inner, $inner), $marks), $width + (2 * $inner), $height + (2 * $inner), [
-            $inner,
-            $inner,
-            $inner,
-            $inner,
-        ]);
+        return self::framed(
+            $document,
+            \array_map(static fn (Mark $mark): Mark => self::moved($mark, $inner, $inner), $marks),
+            $width + (2 * $inner),
+            $height + (2 * $inner),
+            [$inner, $inner, $inner, $inner],
+            // As its `SvgGraphics` makes the size it sees visible: in whole points, 1 past, a whole size too.
+            written: static fn (float $size): float => \floor($size) + 1,
+        );
     }
 
     /**
@@ -209,6 +212,7 @@ final class PlantUmlFrame
      * @param float $captionRoom how much wider than they are its captions are taken
      * @param ?array{float, float, float, float} $content how far what is drawn reaches across and down in a frame, and how far it moves into it; as measured by default
      * @param ?\Closure(float): float $framedWhole how its size is rounded in a frame: in whole points and 1 past by default
+     * @param ?\Closure(float): float $written how its size is rounded out of a frame, where nothing else rounds it: up by default
      */
     private static function framed(
         PlantUmlDocument $document,
@@ -220,6 +224,7 @@ final class PlantUmlFrame
         float $captionRoom = 0.0,
         ?array $content = null,
         ?\Closure $framedWhole = null,
+        ?\Closure $written = null,
     ): Drawing {
         // A margin the document's style sets, as a theme's `root` does, stands for the diagram's own.
         $style = $document->styles->style(['root', 'document']);
@@ -256,7 +261,7 @@ final class PlantUmlFrame
         $basis = $whole ?? static fn (float $size): float => $size;
         $factor = $document->scaleFactor($basis($full + $left + $right), $basis($y + $bottom));
         $scale = Units::POINT * $factor;
-        $whole ??= $mainframed ? $framedWhole ?? static fn (float $size): float => \floor($size) + 1 : \ceil(...);
+        $whole ??= $mainframed ? $framedWhole ?? static fn (float $size): float => \floor($size) + 1 : $written ?? \ceil(...);
         // As PlantUML writes its image's size: in whole points as it is unscaled, then scaled and rounded down.
         $sized = static fn (float $size): float => \max(1.0, \floor(($whole($size) * $factor) + 1e-9) * Units::POINT);
         $background = $document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');

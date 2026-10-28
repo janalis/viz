@@ -16,6 +16,9 @@ use Janalis\Viz\Text\FontFace;
  */
 final class PlantUmlMetrics
 {
+    /** Each family's ascent, descent and leading, in 2048ths of its size, as Java measures its logical fonts. */
+    private const array LINES = ['sans' => [1980, 432, 0], 'serif' => [1825, 443, 87], 'monospaced' => [1901, 483, 0]];
+
     /** @var ?array<string, array<string, array<string, float>>> each family's advances, by face, by character */
     private static ?array $advances = null;
 
@@ -43,6 +46,31 @@ final class PlantUmlMetrics
 
         // A wide character not measured, as an ideograph, takes its whole size, as Java sets it.
         return \array_map(static fn (string $char): float => ($advances[$char] ?? (2 === DisplayWidth::of($char) ? 1.0 : $advances['n'] ?? 0.55)) * $size, \mb_str_split($text));
+    }
+
+    /**
+     * A line in a family, as Java measures it, for each point of size.
+     *
+     * @return array{float, float} its height, its leading above its ascent, and how far it reaches below its baseline
+     */
+    public static function line(string $family = 'sans'): array
+    {
+        [$ascent, $descent, $leading] = self::LINES[$family] ?? self::LINES['sans'];
+
+        return [($ascent + $descent + $leading) / 2048, $descent / 2048];
+    }
+
+    /**
+     * The family a font's name is measured in, as Java finds it: its serif or monospaced font, by
+     * its own name or the one it stands for, as measured on the jar; any other its sans serif.
+     */
+    public static function family(string $name): string
+    {
+        return match (\strtolower(\trim($name, characters: " \"'"))) {
+            'monospaced', 'courier' => 'monospaced',
+            'serif', 'times new roman' => 'serif',
+            default => 'sans',
+        };
     }
 
     /** @return array<string, array<string, array<string, float>>> */

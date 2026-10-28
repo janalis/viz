@@ -21,13 +21,6 @@ use Janalis\Viz\Text\FontFace;
  */
 final readonly class PlantUmlText
 {
-    /**
-     * A line's height for each point of font size, as Java measures PlantUML's default font,
-     * its SansSerif: 1.1777 times its size, as PlantUML's goldens set it.
-     */
-    private const float LINE = 603 / 512;
-    /** How far below its baseline that font reaches for each point of size. */
-    private const float DESCENT = 0.210_937_5;
     /** The least height of a line, as PlantUML sets small text: the room below the text. */
     private const float SHORTEST = 10.0;
 
@@ -50,6 +43,8 @@ final readonly class PlantUmlText
         public string $background = '#ffffff',
         /** @var array{string, string} what a `<<…>>` in it stands between, as `skinparam guillemet` sets it */
         public array $guillemet = ['«', '»'],
+        /** The family it is measured in: `sans`, `serif` or `monospaced`. */
+        public string $family = 'sans',
     ) {}
 
     /**
@@ -60,10 +55,19 @@ final readonly class PlantUmlText
      */
     public static function styled(array $lines, Style $style, ?FontFace $face = null): self
     {
-        $text = new self($lines, $style->fontSize(), $face ?? $style->face(), $style->color('FontColor', '#000000'), $style->sprites, $style->color('BackGroundColor', '#ffffff'), $style->guillemet);
+        $text = new self(
+            $lines,
+            $style->fontSize(),
+            $face ?? $style->face(),
+            $style->color('FontColor', '#000000'),
+            $style->sprites,
+            $style->color('BackGroundColor', '#ffffff'),
+            $style->guillemet,
+            PlantUmlMetrics::family($style->value('FontName')),
+        );
         $maximum = $style->number('MaximumWidth');
 
-        return $maximum > 0 ? new self($text->wrapped($maximum), $text->size, $text->face, $text->color, $text->sprites, $text->background, $text->guillemet) : $text;
+        return $maximum > 0 ? new self($text->wrapped($maximum), $text->size, $text->face, $text->color, $text->sprites, $text->background, $text->guillemet, $text->family) : $text;
     }
 
     /**
@@ -90,7 +94,7 @@ final readonly class PlantUmlText
             foreach (\explode(' ', $text) as $word) {
                 $last = \array_key_last($pieces);
                 $candidate = null === $last ? $word : $pieces[$last].' '.$word;
-                if (null !== $last && self::measured($candidate, $size, $face) > $maximum) {
+                if (null !== $last && self::measured($candidate, $size, $face, $this->family) > $maximum) {
                     $pieces[] = $word;
                     continue;
                 }
@@ -103,11 +107,11 @@ final readonly class PlantUmlText
     }
 
     /** A stretch of Creole as PlantUML measures it, each part at the size its `<size:…>` gives it. */
-    private static function measured(string $text, float $size, FontFace $face): float
+    private static function measured(string $text, float $size, FontFace $face, string $family): float
     {
         $width = 0.0;
         foreach (self::stretches($text, $size) as [$part, $at]) {
-            $width += PlantUmlMetrics::width($part, $at, $face);
+            $width += PlantUmlMetrics::width($part, $at, $face, $family);
         }
 
         return $width;
@@ -247,7 +251,7 @@ final readonly class PlantUmlText
                 continue;
             }
             $atoms = $this->atoms($block);
-            $rows[] = [...$this->lineSize($atoms, $this->fontSize($block), $block), self::below($this->tallestOf($atoms, $this->fontSize($block))) - 1.5];
+            $rows[] = [...$this->lineSize($atoms, $this->fontSize($block), $block), $this->below($this->tallestOf($atoms, $this->fontSize($block))) - 1.5];
         }
 
         return $rows;
@@ -396,9 +400,9 @@ final readonly class PlantUmlText
     private function lineSize(array $atoms, float $size, string $line): array
     {
         $width = 0.0;
-        $height = self::lineHeight($this->tallestOf($atoms, $size));
+        $height = self::lineHeight($this->tallestOf($atoms, $size), $this->family);
         foreach ($atoms as [$text, $sprite, $scale]) {
-            $width += null === $sprite ? self::shown($text, $size, $this->faceOf($line, $text)) : $sprite->width * $scale;
+            $width += null === $sprite ? self::shown($text, $size, $this->faceOf($line, $text), $this->family) : $sprite->width * $scale;
             $height = \max($height, null === $sprite ? 0.0 : $sprite->height * $scale);
         }
 
@@ -407,13 +411,13 @@ final readonly class PlantUmlText
 
     public function line(): float
     {
-        return self::lineHeight($this->size);
+        return self::lineHeight($this->size, $this->family);
     }
 
     /** How far below the top of its first line the text's baseline stands, as Java measures the font. */
     public function ascent(): float
     {
-        return self::lineHeight($this->size) - self::below($this->size);
+        return self::lineHeight($this->size, $this->family) - $this->below($this->size);
     }
 
     /**
@@ -427,16 +431,16 @@ final readonly class PlantUmlText
     {
         $past = [];
         foreach ($this->blocks() as $line) {
-            $past[] = $line instanceof PlantUmlTable || $line instanceof PlantUmlRule ? 0.0 : self::below($this->tallestOf($this->atoms($line), $this->fontSize($line))) - 1.5;
+            $past[] = $line instanceof PlantUmlTable || $line instanceof PlantUmlRule ? 0.0 : $this->below($this->tallestOf($this->atoms($line), $this->fontSize($line))) - 1.5;
         }
 
         return [$past[0] ?? 0.0, $past[\count($past) - 1] ?? 0.0];
     }
 
-    /** A line's height at a font size in points, as PlantUML measures its default font: 10 at least. */
-    public static function lineHeight(float $size): float
+    /** A line's height at a font size in points, as Java measures a family, PlantUML's default font unless given: 10 at least. */
+    public static function lineHeight(float $size, string $family = 'sans'): float
     {
-        return \max(self::SHORTEST, $size * self::LINE);
+        return \max(self::SHORTEST, $size * PlantUmlMetrics::line($family)[0]);
     }
 
     /**
@@ -476,8 +480,8 @@ final readonly class PlantUmlText
                 $icon = [];
                 [$mark, $advance] = match (true) {
                     null !== $sprite => $this->picture($sprite, $scale, $color, $left, $foot),
-                    1 === \preg_match('/^<&([\w-]+)>$/', $text, $icon) => [PlantUmlIcon::marks($icon[1], $left, $foot - self::below($tallest), $size, $this->color), PlantUmlIcon::width($size)],
-                    default => $this->word($line, $text, $size, $left, $foot - self::below($tallest)),
+                    1 === \preg_match('/^<&([\w-]+)>$/', $text, $icon) => [PlantUmlIcon::marks($icon[1], $left, $foot - $this->below($tallest), $size, $this->color), PlantUmlIcon::width($size)],
+                    default => $this->word($line, $text, $size, $left, $foot - $this->below($tallest)),
                 };
                 \array_push($marks, ...$mark);
                 $left += $advance;
@@ -504,18 +508,20 @@ final readonly class PlantUmlText
     }
 
     /** How far below its baseline a line of text at a size reaches, as tall as Java measures it: the font's descent, and the room a short line keeps. */
-    private static function below(float $size): float
+    private function below(float $size): float
     {
-        return self::lineHeight($size) - ((self::LINE - self::DESCENT) * $size);
+        [$line, $descent] = PlantUmlMetrics::line($this->family);
+
+        return self::lineHeight($size, $this->family) - (($line - $descent) * $size);
     }
 
     /** As wide as the bundled font draws a stretch, each piece at its size. */
-    private static function shown(string $text, float $size, FontFace $face): float
+    private static function shown(string $text, float $size, FontFace $face, string $family): float
     {
         if (1 === \preg_match('/^<&[\w-]+>$/', $text)) {
             return PlantUmlIcon::width($size);
         }
-        $family = self::family($text);
+        $family = self::family($text, $family);
         if (!\str_contains(\strtolower($text), '<size')) {
             return PlantUmlMetrics::width(self::plain($text), $size, $face, $family);
         }
@@ -527,10 +533,10 @@ final readonly class PlantUmlText
         return $width;
     }
 
-    /** The font family a stretch is measured in: the monospaced one in `""` markup, as PlantUML's Creole sets it, else its own. */
-    private static function family(string $text): string
+    /** The font family a stretch is measured in: the monospaced one in `""` markup, as PlantUML's Creole sets it, else the text's own. */
+    private static function family(string $text, string $own): string
     {
-        return 1 === \preg_match('/^"".+""$/su', $text) ? 'monospaced' : 'sans';
+        return 1 === \preg_match('/^"".+""$/su', $text) ? 'monospaced' : $own;
     }
 
     /** @return array{list<Mark>, float} a stretch of text's mark, standing on its baseline, and its width */
@@ -538,7 +544,7 @@ final readonly class PlantUmlText
     {
         $plain = self::plain($text);
         $face = $this->faceOf($line, $text);
-        $shown = self::shown($text, $size, $face);
+        $shown = self::shown($text, $size, $face, $this->family);
         $size = self::drawn($text, $size);
         // As PlantUML, which writes no text of a transparent colour.
         if ('' === \trim($plain) || 'none' === $this->color) {
@@ -558,7 +564,7 @@ final readonly class PlantUmlText
             stroke: $color,
             font: $face,
             fontScale: Units::fontScale($size) / Units::POINT,
-            slots: self::slots($plain, $size, $face, $shown, self::family($text)),
+            slots: self::slots($plain, $size, $face, $shown, self::family($text, $this->family)),
         );
 
         $underline = new Mark(MarkKind::Polyline, [[$left, $baseline + 1.5], [$left + $shown, $baseline + 1.5]], stroke: $color, strokeWidth: 1.0);

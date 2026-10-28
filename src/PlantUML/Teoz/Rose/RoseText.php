@@ -39,7 +39,7 @@ final readonly class RoseText
             $text,
             \strtolower($style->value('HorizontalAlignment', 'left')),
             $padding,
-            null === $number ? null : new PlantUmlText([$number], $text->size, $text->face, $text->color),
+            null === $number ? null : new PlantUmlText([$number], $text->size, $text->face, $text->color, family: $text->family),
         );
     }
 
@@ -103,6 +103,7 @@ final readonly class RoseText
                 $this->text->sprites,
                 $this->text->background,
                 $this->text->guillemet,
+                $this->text->family,
             );
 
             return $written->marks($x, $y, $this->text->size()[0], $this->align);
