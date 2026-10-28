@@ -329,7 +329,15 @@ final class DescriptionReader
             throw new PlantUmlRefusal('The PlantUML note has no element to stand beside: '.$command->line());
         }
         $lines = 'CommandFactoryNoteOnEntity$1' === $command->name ? ClassReader::split((string) $command->get('NOTE')) : ActivityReader::columns($command->body());
-        $this->notes[] = new PlantUmlNote('note#'.\count($this->notes), $lines, $element, \strtolower((string) $command->get('POSITION')), color: $command->get('COLOR'), group: $this->current());
+        $this->notes[] = new PlantUmlNote(
+            'note#'.\count($this->notes),
+            $lines,
+            $element,
+            \strtolower((string) $command->get('POSITION')),
+            color: $command->get('COLOR'),
+            group: $this->current(),
+            direction: $this->direction,
+        );
     }
 
     private function onLink(PlantUmlCommand $command): void

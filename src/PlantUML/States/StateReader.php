@@ -336,6 +336,7 @@ final class StateReader
             \strtolower((string) $command->get('POSITION')),
             color: $command->get('COLOR'),
             group: $this->nodes[$state]->group,
+            direction: $this->direction,
         );
     }
 

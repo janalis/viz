@@ -597,6 +597,19 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([313.0, 115.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
     }
 
+    public function testANotesSideTurnsWithTheDirectionAsItStoodWhenTheNoteWasRead(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar lays them out: read before the direction, right of the class on its rank, below it laid out left to right; read after, turned below it, a rank to its right.
+        $this->assertSame([63.0, 130.0], $size("class A\nnote right of A : x\nleft to right direction"));
+        $this->assertSame([152.0, 70.0], $size("left to right direction\nclass A\nnote right of A : x"));
+    }
+
     public function testAHeadLabelThatWouldOverlapTheTailLabelStandsOnTheOtherSide(): void
     {
         $centre = static function (Drawing $drawing, string $text, float $side = 0.0): float {

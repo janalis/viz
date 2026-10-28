@@ -46,6 +46,8 @@ final class StateDrawing
 
     /** @var list<Mark> what the hidden states would draw, with their transitions and notes: measured, as PlantUML's limit finder takes them, not drawn */
     private array $ghosts = [];
+    /** @var array<string, int> the edge of each note beside a state, in its scope's graph, by note */
+    private array $noteEdges = [];
 
     private function __construct(
         private readonly PlantUmlStates $states,
@@ -151,6 +153,7 @@ final class StateDrawing
                 $link->reversed,
             );
         }
+        $this->noteEdges($svek, $notes);
         // As svek, a composite state's inner image is laid out with dot's own separations: its
         // graph is written without the diagram's nodesep and ranksep lines.
         $placing = null === $group ? $svek->place($this->states->direction) : $svek->place($this->states->direction, self::DOT_NODESEP, self::DOT_RANKSEP);
@@ -405,14 +408,27 @@ final class StateDrawing
             $boxes[$note->id] = $box;
             [$width, $height] = $box->size();
             $svek->node($note->id, $width, $height, null === $note->entity ? null : $this->clusterOf($note->entity, $group));
-            if (null === $note->entity) {
-                continue;
-            }
-            $across = \in_array($note->position, ['left', 'right'], strict: true) ? 1 : 2;
-            \in_array($note->position, ['left', 'top'], strict: true) ? $svek->edge($note->id, $note->entity, $across) : $svek->edge($note->entity, $note->id, $across);
         }
 
         return $boxes;
+    }
+
+    /**
+     * Lays each note beside a state out an edge from it or to it, after the transitions, as svek
+     * writes the links PlantUML made in that order.
+     *
+     * @param array<string, NoteBox> $notes the scope's notes
+     */
+    private function noteEdges(Svek $svek, array $notes): void
+    {
+        foreach ($this->states->notes as $note) {
+            if (null === $note->entity || !\array_key_exists($note->id, $notes)) {
+                continue;
+            }
+            $side = $note->side();
+            $across = \in_array($side, ['left', 'right'], strict: true) ? 1 : 2;
+            $this->noteEdges[$note->id] = \in_array($side, ['left', 'top'], strict: true) ? $svek->edge($note->id, $note->entity, $across) : $svek->edge($note->entity, $note->id, $across);
+        }
     }
 
     /** The cluster of a scope's graph that holds a state, null at its top. */
@@ -483,15 +499,22 @@ final class StateDrawing
             }
         }
         $placement = self::framed($placement, $frames);
+        // The notes svek draws pointing at the states they stand beside; any other's line as dot draws its edge.
+        $pointers = NoteLine::pointers($placement, $this->states->notes, $notes, $this->noteEdges, $this->states->links, $edges, $boxes);
         foreach ($edges as $index => $edge) {
             $link = $this->states->links[$index];
             $this->put($marks, LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background), $link->from, $link->to);
         }
         foreach ($this->states->notes as $note) {
-            if (null === $note->entity || !\array_key_exists($note->id, $notes)) {
+            if (null === $note->entity || !\array_key_exists($note->id, $notes) || \array_key_exists($note->id, $pointers)) {
                 continue;
             }
-            $this->put($marks, [NoteLine::straight($placement, $note->id, $note->entity)], $note->entity);
+            $this->put($marks, NoteLine::routed($note, $placement, $this->noteEdges[$note->id], $style, $this->states->document->styles->style([
+                'root',
+                'element',
+                'stateDiagram',
+                'note',
+            ])), $note->entity);
         }
         foreach ($boxes as $id => $box) {
             $node = $placement->endpoints[$id];
@@ -512,7 +535,8 @@ final class StateDrawing
         $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->states->notes), 1, 0);
         foreach ($notes as $id => $note) {
             $node = $placement->endpoints[$id];
-            $this->put($marks, $note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)), $attached[$id] ?? '');
+            [$x, $y] = [$node->x - ($node->w / 2), $node->y - ($node->h / 2)];
+            $this->put($marks, \array_key_exists($id, $pointers) ? $note->pointing($x, $y, $pointers[$id][0], $pointers[$id][1]) : $note->marks($x, $y), $attached[$id] ?? '');
         }
 
         return $marks;

@@ -472,7 +472,15 @@ final class ClassReader
             throw new PlantUmlRefusal('The PlantUML note has no entity to stand beside: '.$command->line());
         }
         $lines = 'CommandFactoryNoteOnEntity$1' === $command->name ? self::split((string) $command->get('NOTE')) : ActivityReader::columns($command->body());
-        $this->notes[] = new PlantUmlNote('note#'.\count($this->notes), $lines, $entity, \strtolower((string) $command->get('POSITION')), color: $command->get('COLOR'), group: $this->current());
+        $this->notes[] = new PlantUmlNote(
+            'note#'.\count($this->notes),
+            $lines,
+            $entity,
+            \strtolower((string) $command->get('POSITION')),
+            color: $command->get('COLOR'),
+            group: $this->current(),
+            direction: $this->direction,
+        );
     }
 
     private function onLink(PlantUmlCommand $command): void

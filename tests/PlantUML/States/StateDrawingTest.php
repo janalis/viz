@@ -401,6 +401,32 @@ final class StateDrawingTest extends TestCase
         return $diagram;
     }
 
+    public function testANoteBesideAStateStandsAsSvekLaysItOutAndPointsAtItAsItsOpale(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: laid out left to right, a note right of a state below it, wherever the direction is written, the notes read after it.
+        $this->assertSame([160.0, 71.0], $size("state A\nnote right of A : x\nleft to right direction"));
+        // Its edge written after the transitions, as svek writes the links PlantUML made.
+        $this->assertSame(
+            [358.0, 181.0],
+            $size("state \"S1\" as N0\nstate \"S2\" as N1\nstate \"Long State\" as N2\n[*] --> N0\nN2 -> N0\nnote left of N1 : two\\nlines\nnote top of N2 : two\\nlines\nnote bottom of N1 : a note"),
+        );
+        // Pointing at its state, its link not drawn.
+        $drawing = self::draw("[*] --> S1\nnote right of S1 : a note");
+        $this->assertSame([167.0, 150.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertCount(1, \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 8 === \count($mark->points)));
+        $this->assertCount(0, \array_filter($drawing->marks, static fn (Mark $mark): bool => $mark->dashed));
+        // A second note beside it, its edge over the first: its line drawn as dot draws it.
+        $drawing = self::draw("state A\nnote right of A : a note\nnote right of A : a longer note");
+        $this->assertSame([308.0, 116.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertCount(1, \array_filter($drawing->marks, static fn (Mark $mark): bool => $mark->dashed));
+    }
+
     private static function draw(string $lines): Drawing
     {
         return Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));

@@ -195,8 +195,9 @@ final class ClassDrawing
             if (null === $end) {
                 continue;
             }
-            $across = \in_array($note->position, ['left', 'right'], strict: true) ? 1 : 2;
-            $this->noteEdges[$note->id] = \in_array($note->position, ['left', 'top'], strict: true) ? $svek->edge($note->id, $end, $across) : $svek->edge($end, $note->id, $across);
+            $side = $note->side();
+            $across = \in_array($side, ['left', 'right'], strict: true) ? 1 : 2;
+            $this->noteEdges[$note->id] = \in_array($side, ['left', 'top'], strict: true) ? $svek->edge($note->id, $end, $across) : $svek->edge($end, $note->id, $across);
         }
     }
 
