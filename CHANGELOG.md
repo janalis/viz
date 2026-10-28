@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML legacy activity diagram's `hide` and `show` are drawn natively, where they were refused: an activity hidden by name, stereotype or `@unlinked` laid out but not drawn, nor its links, as PlantUML hides it; a circle, members or stereotypes to show or hide changing nothing, as in PlantUML.
 - A PlantUML state diagram's `map` entity is drawn natively, where it was refused, as a class diagram draws it: a table svek lays out by its rows. A map's row linking out is still refused.
 - A PlantUML component, deployment or use case diagram's `json` and `map` entities are drawn natively, where they were refused, as a class diagram draws them: tables svek lays out by their rows. A map's row linking out is still refused.
 - A PlantUML class diagram's half lollipop, `A --(( I` or `I ))-- A`, is drawn natively, where it was refused, as PlantUML's `EntityImageLollipopInterface` draws one: half its circle, open towards the way its line comes in, as svek's `addImpact` takes it, measured as the whole circle.

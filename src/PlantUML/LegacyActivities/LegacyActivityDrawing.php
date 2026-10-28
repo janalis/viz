@@ -46,7 +46,10 @@ final class LegacyActivityDrawing
         yield from $placing;
         $placement = $placing->getReturn();
 
-        return PlantUmlFrame::svek($diagram->document, $drawing->paint($placement));
+        [$marks, $hidden] = $drawing->paint($placement);
+
+        // What is hidden is measured as drawn, as PlantUML lays it out unseen.
+        return PlantUmlFrame::svek($diagram->document, $marks, measured: [...$marks, ...$hidden]);
     }
 
     /** @return array{float, float} svek's least separations for activity diagrams, or `nodesep` and `ranksep` as written */
@@ -137,10 +140,11 @@ final class LegacyActivityDrawing
         return \count($placement->routes[$edge] ?? []) <= 2;
     }
 
-    /** @return list<Mark> */
+    /** @return array{list<Mark>, list<Mark>} what is drawn, and what is hidden */
     private function paint(Placement $placement): array
     {
         $marks = [];
+        $hidden = [];
         $styles = $this->diagram->document->styles;
         foreach ($placement->graph->clusters as $box) {
             $group = $this->diagram->groups[$box->name];
@@ -173,14 +177,16 @@ final class LegacyActivityDrawing
             if (\in_array($index, $pointers, strict: true)) {
                 continue;
             }
-            \array_push($marks, ...LinkPainter::marks($this->diagram->links[$index], $placement, $edge, $this->label($index), $style, $background, $shapes));
+            $link = $this->diagram->links[$index];
+            $drawn = LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, $shapes);
+            $this->diagram->entities[$link->from]->hidden || $this->diagram->entities[$link->to]->hidden ? \array_push($hidden, ...$drawn) : \array_push($marks, ...$drawn);
         }
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
             [$x, $y] = [$node->x - ($node->w / 2), $node->y - ($node->h / 2)];
             $index = $pointers[$id] ?? null;
             if (null === $index) {
-                \array_push($marks, ...$box->marks($x, $y));
+                $this->diagram->entities[$id]->hidden ? \array_push($hidden, ...$box->marks($x, $y)) : \array_push($marks, ...$box->marks($x, $y));
                 continue;
             }
             $link = $this->diagram->links[$index];
@@ -194,6 +200,6 @@ final class LegacyActivityDrawing
             \array_push($marks, ...$box->pointing($x, $y, $route[0], $route[\count($route) - 1]));
         }
 
-        return $marks;
+        return [$marks, $hidden];
     }
 }

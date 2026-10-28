@@ -13,6 +13,8 @@ final class LegacyEntity
 {
     public ?string $color = null;
     public ?string $stereotype = null;
+    /** Laid out but not drawn, nor its links, as `hide` hides it. */
+    public bool $hidden = false;
 
     /** @param list<string> $display */
     public function __construct(

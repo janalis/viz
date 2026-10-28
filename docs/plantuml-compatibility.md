@@ -121,9 +121,9 @@ The legacy syntax (`(*) --> "A"`) is read natively with PlantUML's rules — a l
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| Activities over one or several lines, with `as`, stereotypes and colours; `(*)` start and end, synchronization bars `===B===`; `if`, `else`, `endif` with tests and `as` | Inner activities (`{`), URLs, links to partitions, `hide` and `show` |
+| Activities over one or several lines, with `as`, stereotypes and colours; `(*)` start and end, synchronization bars `===B===`; `if`, `else`, `endif` with tests and `as` | Inner activities (`{`), URLs, links to partitions |
 | Arrows with labels, dashes, directions, `-*->` and `[hidden]`; `left to right direction`, `skinparam nodesep` and `ranksep` | |
-| `partition` with colours and stereotypes, nested, `in` a partition; notes beside the last activity, over several lines, pointing at it as svek draws them, and on links | |
+| `partition` with colours and stereotypes, nested, `in` a partition; notes beside the last activity, over several lines, pointing at it as svek draws them, and on links; `hide` and `show` by name, stereotype or `@unlinked`, an activity hidden laid out but not drawn, nor its links | |
 
 ### Mind maps
 

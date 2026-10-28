@@ -7,6 +7,7 @@ namespace Janalis\Viz\PlantUML\LegacyActivities;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Activities\ActivityReader;
 use Janalis\Viz\PlantUML\Classes\ClassLinks;
+use Janalis\Viz\PlantUML\Classes\ClassPortions;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
@@ -40,6 +41,8 @@ final class LegacyActivityReader
     private ?string $last = null;
     private Direction $direction = Direction::TopBottom;
     private int $sequence = 0;
+    /** @var list<array{bool, ?string, bool, string}> the `hide` and `show` rules, in turn */
+    private array $visibility = [];
 
     /**
      * @param list<PlantUmlCommand> $commands
@@ -52,14 +55,31 @@ final class LegacyActivityReader
         foreach ($commands as $command) {
             $reader->execute($command);
         }
+        $reader->hide();
 
         return new PlantUmlLegacyActivity($document, $reader->entities, $reader->groups, $reader->links, $reader->notes, $reader->direction);
+    }
+
+    /** Marks the entities `hide` hides, by name, stereotype or `@unlinked`, as PlantUML matches them. */
+    private function hide(): void
+    {
+        $portions = new ClassPortions($this->visibility);
+        $linked = [];
+        foreach ($this->links as $link) {
+            $linked[$link->from] = true;
+            $linked[$link->to] = true;
+        }
+        foreach ($this->entities as $entity) {
+            $entity->hidden = $portions->hides($entity->id, ClassReader::stereotypes((string) $entity->stereotype), \array_key_exists($entity->id, $linked));
+        }
     }
 
     private function execute(PlantUmlCommand $command): void
     {
         match ($command->name) {
-            'CommandNope', 'UBrexCommandFootboxIgnored', 'CommandHideEmptyDescription' => null,
+            // As PlantUML, whose legacy activities have no circle, members or stereotype to show or hide.
+            'CommandNope', 'UBrexCommandFootboxIgnored', 'CommandHideEmptyDescription', 'CommandHideShowByGender' => null,
+            'UBrexCommandHideShow2' => $this->visibility[] = [1 === \preg_match('/^show/i', (string) $command->get('COMMAND')), \trim((string) $command->get('WHAT')), false, 'entity'],
             'UBrexCommandRankDir' => $this->direction = \str_starts_with(\strtolower((string) $command->get('DIRECTION')), 'left') ? Direction::LeftRight : Direction::TopBottom,
             'CommandLinkActivity' => $this->link($command),
             'CommandLinkLongActivity' => $this->long($command),

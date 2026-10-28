@@ -193,13 +193,29 @@ final class LegacyActivityReaderTest extends TestCase
         }
     }
 
+    public function testAnActivityHiddenIsLaidOutButNotDrawnNorItsLinks(): void
+    {
+        $drawn = static fn (string $rule): array => (static fn ($drawing): array => [
+            $drawing->width / Units::POINT,
+            $drawing->height / Units::POINT,
+            \count(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind)),
+        ])(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n(*) --> \"First\" <<s>>\n\"First\" --> (*)\n{$rule}\n@enduml")));
+
+        // As the jar draws them: by name or stereotype, its place kept; a circle, members or stereotypes to hide, as an unlinked one, none.
+        $this->assertEqualsWithDelta(
+            [[66.0, 176.0, 0], [66.0, 176.0, 0], [66.0, 176.0, 1], [66.0, 176.0, 1]],
+            [$drawn('hide First'), $drawn('hide <<s>>'), $drawn('hide circle'), $drawn('hide @unlinked')],
+            1e-9,
+        );
+    }
+
     /** @return iterable<string, array{string, string}> */
     public static function unsupported(): iterable
     {
         yield 'inner activity' => ['(*) --> {', 'The native PlantUML renderer does not draw inner activities'];
         yield 'url' => ["(*) --> A\nA [[http://a]]--> B", 'The native PlantUML renderer does not draw URLs: A [[http://a]]--> B'];
+        yield 'a namespace separator' => ["(*) --> A\nset separator none", 'The native PlantUML renderer does not draw: set separator none'];
         yield 'link to a partition' => ["partition P {\n(*) --> A\n}\nA --> P", 'The native PlantUML renderer does not draw links to partitions'];
-        yield 'hide' => ["(*) --> A\nhide A", 'The native PlantUML renderer does not draw: hide A'];
     }
 
     #[DataProvider('unsupported')]
