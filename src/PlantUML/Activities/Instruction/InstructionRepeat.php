@@ -34,6 +34,8 @@ final class InstructionRepeat implements Container
     public ?string $stereogroup2 = null;
     /** The swimlane `repeat while` was written in, where its test stands. */
     public ?string $laneOut = null;
+    /** The swimlane its `repeat` was written in, a single one included, as PlantUML picks its way back by. */
+    public ?string $lane = null;
     /** The swimlane its `backward` was written in. */
     public ?string $laneBackward = null;
 

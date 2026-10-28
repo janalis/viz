@@ -332,6 +332,7 @@ final class ActivityReader
     private function startRepeat(PlantUmlCommand $command): void
     {
         $repeat = new InstructionRepeat($this->current, $this->take(), self::display($command->get('LABEL')), $command->get('STEREOGROUP'));
+        $repeat->lane = $this->lane?->name;
         $this->place($repeat);
         $this->current = $repeat;
         $this->deprecated($command);

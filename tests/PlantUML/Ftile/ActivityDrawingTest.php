@@ -33,6 +33,21 @@ final class ActivityDrawingTest extends TestCase
         $this->assertEqualsWithDelta(97.0, $drawing->height / Units::POINT, 1e-9);
     }
 
+    public function testARepeatGoesBackTheWayItsSwimlanesAsWrittenSay(): void
+    {
+        $size = static fn (string $lines): array => (static fn (Drawing $drawing): array => [
+            \round($drawing->width / Units::POINT, precision: 6),
+            \round($drawing->height / Units::POINT, precision: 6),
+        ])(self::draw($lines));
+
+        // As the jar draws them: round its right in a single swimlane, as without; across when never closed, there or among several.
+        $this->assertSame([[129.0, 239.0], [90.0, 124.0], [135.0, 152.0]], [
+            $size("|A|\nstart\nrepeat\n:a;\nrepeat while (again?)\nstop"),
+            $size("|A|\nrepeat"),
+            $size("|A|\n|B|\nrepeat"),
+        ]);
+    }
+
     public function testItsSizeIsRoundedDownAndOneMoreAsPlantUmlSizesIt(): void
     {
         $width = static fn (string $text): float => self::draw("start\n:{$text};\nstop")->width / Units::POINT;

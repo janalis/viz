@@ -333,8 +333,9 @@ final readonly class FtileBuilder
             $diamond2 = new FtileLane($diamond2, (string) $laneOut);
             $backward = null === $backward ? null : new FtileLane($backward, (string) $laneBackward);
         }
+        // As PlantUML, which picks its way back by the swimlanes as written, a single one too: across when its test stands in another, or none, never closed.
         $way = match (true) {
-            $lane !== $laneOut => 'across',
+            $repeat->lane !== $repeat->laneOut => 'across',
             FtileLane::leftOfAll($lane, FtileLane::all($block), $this->order) => 'left',
             default => 'right',
         };
