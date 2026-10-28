@@ -560,6 +560,25 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame('#ffffff', $drawing->background);
     }
 
+    public function testAClassLinkedToItselfIsLaidOutItsLabelsOnTheLoopsOuterSide(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = self::draw($lines);
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar draws them: laid out by dot, not alone, the loop on its right; or above it laid out left to right, its labels left of its ends.
+        $this->assertSame([98.0, 70.0], $size("class A\nA --> A"));
+        $this->assertSame([156.0, 70.0], $size("class A\nclass B\nA --> A"));
+        $this->assertSame([64.0, 104.0], $size("left to right direction\nclass A\nA \"1\" --> \"2\" A"));
+        // Its tail label right of the loop's start and above it, moved off the box.
+        $drawing = self::draw("class A\nA \"1\" --> A");
+        $this->assertSame([98.0, 73.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $label = \array_values(\array_filter($drawing->marks, static fn (Mark $mark): bool => '1' === $mark->text))[0];
+        $this->assertEqualsWithDelta(19.811 * Units::POINT, $label->points[0][1], 0.1 * Units::POINT);
+    }
+
     public function testAHeadLabelThatWouldOverlapTheTailLabelStandsOnTheOtherSide(): void
     {
         $centre = static function (Drawing $drawing, string $text, float $side = 0.0): float {
@@ -570,9 +589,10 @@ final class ClassDrawingTest extends TestCase
             }
             self::fail('No '.$text);
         };
-        // Labels short enough leave both ends on the line's left, as dot sets them: their right sides by it, a point apart at most, as the jar sets them.
+        // Labels short enough leave both ends on the line's left, as dot sets them: each from the corner of the table svek writes, its text's width cut down to whole points, the tail's then moved off its node; where the jar sets them.
         $short = self::draw('A "t" --> "h" B');
-        $this->assertEqualsWithDelta($centre($short, text: 't', side: 1.0), $centre($short, text: 'h', side: 1.0), Units::POINT);
+        $this->assertEqualsWithDelta(23.448 * Units::POINT, $centre($short, text: 't', side: -1.0), 0.1 * Units::POINT);
+        $this->assertEqualsWithDelta(18.815 * Units::POINT, $centre($short, text: 'h', side: -1.0), 0.1 * Units::POINT);
         // Labels tall enough to meet put the head's on the right.
         $tall = self::draw("A \"t\\n1\\n2\\n3\" --> \"h\\n1\\n2\\n3\" B");
         $this->assertGreaterThan($centre($tall, text: 't'), $centre($tall, text: 'h'));

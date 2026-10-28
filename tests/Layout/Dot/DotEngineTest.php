@@ -179,6 +179,47 @@ final class DotEngineTest extends TestCase
         $this->assertSame(36.0, $placement->endpoints['c']->x - $placement->endpoints['b']->x - 54.0);
     }
 
+    public function testLoopsKeepTheRoomDotKeepsThemWhateverTheNodeSeparation(): void
+    {
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 54, 36), new LayoutNode('b', 'b', 54, 36)],
+            \array_map(static fn (int $index, float $width): LayoutEdge => new LayoutEdge($index, 'a', 'a', labelWidth: $width, labelHeight: 15), [0, 1, 2], [40.0, 10.0, 40.0]),
+            [],
+            Direction::TopBottom,
+            new Spacing(60, 35, 4),
+        )));
+        $right = $placement->endpoints['a']->x + 27;
+
+        // As `dot` keeps it: 18 for each loop and its label's width, then the node separation.
+        $this->assertEqualsWithDelta((18 * 3) + 90 + 35, $placement->endpoints['b']->x - 27 - $right, 1.0);
+        // Each loop reaching a node separation past the one before, or past that one's label where wider; its label just past it.
+        $this->assertSame([35.0, 75.0, 110.0], \array_map(static fn (array $points): float => \round(\max(\array_column($points, 0)) - $right, precision: 2), \array_values($placement->routes)));
+        $this->assertSame([55.0, 80.0, 130.0], \array_map(static fn (array $at): float => \round($at[0] - $right, precision: 2), \array_values($placement->labels)));
+    }
+
+    public function testLoopsStandAboveTheirNodeLaidOutLeftToRightAndBulgeDownFirstLaidOutBottomUp(): void
+    {
+        $place = static fn (Direction $direction): Placement => Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 42, 48)],
+            [new LayoutEdge(0, 'a', 'a', labelWidth: 30, labelHeight: 15)],
+            [],
+            $direction,
+            new Spacing(60, 35, 4),
+        )));
+        $across = $place(Direction::LeftRight);
+        $node = $across->endpoints['a'];
+
+        // As `dot` draws it: out a node separation above the node, first to its left, its label just above.
+        $this->assertEqualsWithDelta($node->y - 24 - 35, \min(\array_column($across->splines[0], 1)), 1e-9);
+        $this->assertLessThan($node->x, $across->splines[0][1][0]);
+        $this->assertEqualsWithDelta([$node->x, $node->y - 24 - 35 - 7.5], $across->labels[0], 1e-9);
+        // Bounded above by its label, past the room the loop keeps.
+        $this->assertEqualsWithDelta(4 + 15 + 35 + 24, $node->y, 1e-9);
+        // Bottom up, it bulges down first.
+        $up = $place(Direction::BottomTop);
+        $this->assertGreaterThan($up->endpoints['a']->y, $up->splines[0][1][1]);
+    }
+
     public function testParallelEdgesKeepTheirRoomTheirLabelsFollowingTheirLinesAsDotSetsThem(): void
     {
         $edges = \array_map(static fn (int $index): LayoutEdge => new LayoutEdge($index, 'a', 'b', labelWidth: 100, labelHeight: 17), [0, 1, 2]);
@@ -369,8 +410,8 @@ final class DotEngineTest extends TestCase
         $this->assertCount(3, $placement->routes[0], 'its chain runs through the label rank');
         $this->assertSame($placement->routes[1], $placement->routes[2], 'parallel edges share one chain');
         $this->assertCount(2, $placement->routes[4], 'a flat edge runs straight between its ends');
-        // As dot draws it, a loop runs out a node separation past its node's right and back to its centre.
-        $this->assertEqualsWithDelta($placement->endpoints['b']->x + ($placement->endpoints['b']->w / 2) + 6, \max(\array_column($placement->splines[3], 0)), 1e-9, 'a loop has its curve');
+        // As dot draws it laid out left to right, a loop runs out a node separation above its node and back to its centre.
+        $this->assertEqualsWithDelta($placement->endpoints['b']->y - ($placement->endpoints['b']->h / 2) - 6, \min(\array_column($placement->splines[3], 1)), 1e-9, 'a loop has its curve');
         $this->assertArrayNotHasKey(5, $placement->routes, 'an edge to no node is dropped');
         $this->assertSame($placement->endpoints['b']->x, $placement->endpoints['c']->x, 'b and c share a rank');
     }

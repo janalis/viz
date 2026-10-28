@@ -72,8 +72,8 @@ final class ClassDrawing
         $placement = $placing->getReturn();
 
         // As PlantUML is seen to leave a lone class, which it lays out without dot, 2 less room past it, and to measure it without its type parameters.
-        // A classifier removed still counts, as PlantUML counts its leaves; a package, empty or not, makes it laid out.
-        $alone = 1 === \count($placement->graph->nodes) && [] === $classes->groups && \count($classes->entities) <= 1;
+        // A classifier removed still counts, as PlantUML counts its leaves; a package, empty or not, makes it laid out, as does a link, even to itself.
+        $alone = 1 === \count($placement->graph->nodes) && [] === $classes->groups && [] === $classes->links && \count($classes->entities) <= 1;
         $marks = $drawing->paint($placement);
         if ($alone && [] !== $drawing->notes) {
             // As PlantUML draws a lone note: as its box 7 in from its sides.

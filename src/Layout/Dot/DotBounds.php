@@ -9,6 +9,7 @@ use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphCluster;
 use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Model\Direction;
 
 /** A dot layout's bounds, as `dot` is seen to set them: around what it draws. */
 final class DotBounds
@@ -108,12 +109,15 @@ final class DotBounds
         foreach ($graph->edges as $edge) {
             $sizes[$edge->index] = [$edge->labelWidth, $edge->labelHeight];
         }
+        // Laid out left to right, the loops stand above their node, each keeping its label's height.
+        $turned = \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true);
         $loops = [];
         foreach ($layers->loops as [$node, $layered]) {
-            $loops[$node] = ($loops[$node] ?? 0.0) + $graph->spacing->nodeGap + ($sizes[$edgeIndexes[$layered]][0] ?? 0.0);
+            $loops[$node] = ($loops[$node] ?? 0.0) + DotLayers::LOOP + ($sizes[$edgeIndexes[$layered]][$turned ? 1 : 0] ?? 0.0);
         }
         foreach ($nodes as $id => $node) {
-            $take($node->x - ($node->w / 2), $node->y - ($node->h / 2), $node->x + ($node->w / 2) + ($loops[$id] ?? 0.0), $node->y + ($node->h / 2));
+            [$right, $top] = $turned ? [0.0, $loops[$id] ?? 0.0] : [$loops[$id] ?? 0.0, 0.0];
+            $take($node->x - ($node->w / 2), $node->y - ($node->h / 2) - $top, $node->x + ($node->w / 2) + $right, $node->y + ($node->h / 2));
         }
         // A cluster that holds nothing takes no room.
         foreach (\array_filter($clusters, static fn (GraphCluster $cluster): bool => $cluster->x1 > $cluster->x0 && $cluster->y1 > $cluster->y0) as $cluster) {

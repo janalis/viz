@@ -56,6 +56,7 @@ final class LinkPainter
         $color = ClassColors::back($link->color) ?? $style->color('LineColor', '#181818');
         $stroke = $link->thickness ?? ($link->bold ? 2.0 : $style->number('LineThickness', 1.0));
         $controls = CurveClip::clipped($placement->controls[$edge] ?? MagneticPath::straight($points[0], $points[\count($points) - 1]), $from, $to, $shapes);
+        $whole = \array_key_exists($edge, $placement->controls) ? [$controls[0], $controls[\count($controls) - 1]] : $whole;
         $forces = [MagneticPath::force($tabs[$link->from] ?? null, $from, $controls[0]), MagneticPath::force($tabs[$link->to] ?? null, $to, $controls[\count($controls) - 1])];
         // Where dot's curve is known, or a tab pushes an end, the line is drawn as the curve moved; else as it runs, its qualifiers' boxes with it.
         [$points, $marks, $boxes, $extent] =
@@ -87,7 +88,14 @@ final class LinkPainter
             \array_push($marks, ...self::labelArrow($link, $from, $to, $left + ($margin / 2) + 4, $y, $color));
         }
         \array_push($marks, ...$boxes);
-        \array_push($marks, ...self::endLabels($link->firstLabel, $link->secondLabel, $whole, $style->fontSize(), $placement->graph->nodes, $placement->directions[''] ?? Direction::TopBottom));
+        \array_push($marks, ...self::endLabels(
+            $link->firstLabel,
+            $link->secondLabel,
+            $whole,
+            $style->fontSize(),
+            $placement->graph->nodes,
+            $link->from === $link->to ? self::loopSides($placement->directions[''] ?? Direction::TopBottom) : self::sides($placement->directions[''] ?? Direction::TopBottom),
+        ));
 
         return $marks;
     }
@@ -256,31 +264,23 @@ final class LinkPainter
 
     /**
      * The labels at a link's ends, as dot sets a tail and a head label: each with a corner on
-     * the end of the line, on its left going from tail to head — the side the line turns to
-     * 25 degrees off it — but the head's on the other side where it would overlap the tail's.
+     * the end of the line, on the sides it is given, but the head's turned where it would
+     * overlap the tail's.
      *
      * As svek then, each is moved away from any node it comes within 8 of.
      *
      * @param list<array{float, float}> $points from the tail to the head, two at least
      * @param array<int, GraphNode> $nodes
+     * @param array{array{int, int}, array{int, int}, ?array{int, int}} $sides the tail's, the head's, and how the head's turn where they would overlap, if they do
      * @return list<Mark>
      */
-    private static function endLabels(?string $tail, ?string $head, array $points, float $size, array $nodes, Direction $direction): array
+    private static function endLabels(?string $tail, ?string $head, array $points, float $size, array $nodes, array $sides): array
     {
-        $last = \count($points) - 1;
-        // As `dot` is seen to set head and tail labels, whatever the line's slope: laid out down, the head's above its end and the tail's below its start, both on its left; turned with the layout.
-        $across = \in_array($direction, [Direction::TopBottom, Direction::BottomTop], strict: true);
-        [$tailSides, $headSides] = match ($direction) {
-            Direction::TopBottom => [[-1, 1], [-1, -1]],
-            Direction::BottomTop => [[-1, -1], [-1, 1]],
-            Direction::LeftRight => [[1, 1], [-1, 1]],
-            Direction::RightLeft => [[-1, 1], [1, 1]],
-        };
+        [$tailSides, $headSides, $flip] = $sides;
         $tailBox = self::endBox($tail, $points[0], $tailSides, $size);
-        $headBox = self::endBox($head, $points[$last], $headSides, $size);
-        // Laid out down, labels that would meet put the head's on the line's other side, as `dot` sets them.
-        if ($across && null !== $tailBox && null !== $headBox && self::overlap($tailBox[1], $headBox[1])) {
-            $headBox = self::endBox($head, $points[$last], [-$headSides[0], $headSides[1]], $size);
+        $headBox = self::endBox($head, $points[\count($points) - 1], $headSides, $size);
+        if (null !== $flip && null !== $tailBox && null !== $headBox && self::overlap($tailBox[1], $headBox[1])) {
+            $headBox = self::endBox($head, $points[\count($points) - 1], [$flip[0] * $headSides[0], $flip[1] * $headSides[1]], $size);
         }
         $marks = [];
         foreach ([$tailBox, $headBox] as $box) {
@@ -299,6 +299,41 @@ final class LinkPainter
     }
 
     /**
+     * Where `dot` is seen to set head and tail labels, whatever the line's slope: laid out down,
+     * the head's above its end and the tail's below its start, both on its left — the side the
+     * line turns to 25 degrees off it — the head's on the line's other side where they would
+     * meet; turned with the layout, where they stay apart.
+     *
+     * @return array{array{int, int}, array{int, int}, ?array{int, int}}
+     */
+    private static function sides(Direction $direction): array
+    {
+        return match ($direction) {
+            Direction::TopBottom => [[-1, 1], [-1, -1], [-1, 1]],
+            Direction::BottomTop => [[-1, -1], [-1, 1], [-1, 1]],
+            Direction::LeftRight => [[1, 1], [-1, 1], null],
+            Direction::RightLeft => [[-1, 1], [1, 1], null],
+        };
+    }
+
+    /**
+     * Where `dot` is seen to set them on a link to itself, which it loops on the node's right, or
+     * above it laid out left to right: both on the loop's outer side, reaching back against the
+     * layout; the head's reaching the other way along it where they would meet.
+     *
+     * @return array{array{int, int}, array{int, int}, array{int, int}}
+     */
+    private static function loopSides(Direction $direction): array
+    {
+        return match ($direction) {
+            Direction::TopBottom => [[1, -1], [1, -1], [1, -1]],
+            Direction::BottomTop => [[1, 1], [1, 1], [1, -1]],
+            Direction::LeftRight => [[-1, -1], [-1, -1], [-1, 1]],
+            Direction::RightLeft => [[1, -1], [1, -1], [-1, 1]],
+        };
+    }
+
+    /**
      * A label with a corner on a line's end, reaching from it across and down, each by -1 or 1.
      *
      * @param array{float, float} $end
@@ -312,8 +347,9 @@ final class LinkPainter
         }
         $label = new PlantUmlText(ClassReader::split($text), $size);
         [$width, $height] = $label->size();
-        $x = $sides[0] < 0 ? $end[0] - $width : $end[0];
-        $y = $sides[1] < 0 ? $end[1] - $height : $end[1];
+        // As svek writes it to dot: a table its size in whole points, cut down, from whose corner PlantUML sets the text.
+        $x = $sides[0] < 0 ? $end[0] - \floor($width) : $end[0];
+        $y = $sides[1] < 0 ? $end[1] - \floor($height) : $end[1];
 
         return [$label, [$x, $y, $x + $width, $y + $height]];
     }

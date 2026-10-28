@@ -17,7 +17,7 @@ final class DotLayers
     public const int REAL = 0;
     public const int VIRTUAL = 1;
     public const int LABEL = 2;
-    /** How far a loop reaches out to its node's right, before its label. */
+    /** The room a loop keeps on its node's right, besides its label's, as `dot` is seen to keep it whatever its node separation. */
     public const float LOOP = 18.0;
 
     /** @var list<int> each node's rank */
@@ -70,8 +70,6 @@ final class DotLayers
         private readonly float $spread = 0.0,
         private readonly Concentration $concentration = Concentration::Apart,
         public readonly bool $mirrored = false,
-        /** How far each loop reaches past the one before, besides its label: a node separation, as `dot` is seen to draw them. */
-        private readonly float $loop = self::LOOP,
     ) {
         $this->parents = $parents;
         foreach ($ranks as $node => $rank) {
@@ -82,9 +80,9 @@ final class DotLayers
         foreach ($edges as $index => $edge) {
             [$tail, $head, $weight, $labelWidth, $labelHeight] = $edge;
             if ($tail === $head) {
-                // Loops are drawn to a node's right, one beside the other: the node is as wide as they reach.
+                // Loops are drawn to a node's right, one beside the other, or above it turned left to right, its left here: the node is as wide as the room they keep.
                 $this->loops[] = [$tail, $index];
-                $this->right[$tail] += $this->loop + $labelWidth;
+                $this->mirrored ? ($this->left[$tail] += self::LOOP + $labelWidth) : ($this->right[$tail] += self::LOOP + $labelWidth);
                 continue;
             }
             if ($ranks[$tail] === $ranks[$head]) {

@@ -104,7 +104,6 @@ final readonly class DotEngine implements LayoutEngine
             $graph->spacing->nodeGap,
             $graph->concentrate ? Concentration::Merged : Concentration::Apart,
             $turned,
-            $graph->spacing->nodeGap,
         );
         $constrained = \array_column(\array_map(static fn ($edge): array => [$edge->index, $edge->constraint], $graph->edges), 1, 0);
         $loose = \array_keys(\array_filter(\array_keys($edges), static fn (int $original): bool => !$constrained[$original]));
@@ -321,7 +320,8 @@ final readonly class DotEngine implements LayoutEngine
             }
         }
 
-        [$loops, $loopLabels] = DotLoops::place($graph, $layers, $nodes, $edgeIndexes);
+        [$loops, $loopLabels, $loopControls] = DotLoops::place($graph, $layers, $nodes, $edgeIndexes);
+        $controls += $loopControls;
         $splines += $loops;
         $routes += $loops;
         $labels += $loopLabels;
