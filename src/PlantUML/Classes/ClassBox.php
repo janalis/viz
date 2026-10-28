@@ -232,21 +232,23 @@ final readonly class ClassBox
      */
     private static function entries(ClassEntity $entity, Style $style): array
     {
+        // As PlantUML keeps a map's entries by key: a key written again in its first row, with its last value.
         [$keys, $values] = [[], []];
         foreach ($entity->body as $entry) {
             if (!\str_contains($entry, '=>')) {
                 $key = \trim((string) \preg_replace('/\*-+_?>.*$/', replacement: '', subject: $entry));
-                $keys[] = PlantUmlText::styled(ClassReader::split(\array_key_exists($key[0] ?? '', self::ICONS) ? \substr($key, offset: 1) : $key), $style);
-                $values[] = null;
+                $key = \array_key_exists($key[0] ?? '', self::ICONS) ? \substr($key, offset: 1) : $key;
+                $keys[$key] = PlantUmlText::styled(ClassReader::split($key), $style);
+                $values[$key] = null;
                 continue;
             }
             [$key, $value] = \array_map(\trim(...), \explode('=>', $entry, limit: 2));
             $key = \array_key_exists($key[0] ?? '', self::ICONS) ? \substr($key, offset: 1) : $key;
-            $keys[] = PlantUmlText::styled(ClassReader::split($key), $style);
-            $values[] = PlantUmlText::styled(ClassReader::split($value), $style);
+            $keys[$key] = PlantUmlText::styled(ClassReader::split($key), $style);
+            $values[$key] = PlantUmlText::styled(ClassReader::split($value), $style);
         }
 
-        return [$keys, $values];
+        return [\array_values($keys), \array_values($values)];
     }
 
     /**

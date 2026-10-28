@@ -145,37 +145,13 @@ final class ClassDrawing
         $document = $this->classes->document;
         $letter = $document->param('circledCharacterFontSize', $document->param('defaultFontSize'));
         $letter = 1 === \preg_match('/^\d+$/', $letter) && (int) $letter > 0 ? (int) $letter : 17;
-        foreach ($this->classes->entities as $entity) {
-            if ($portions->hidden($entity, \array_key_exists($entity->id, $linked), 'removed')) {
-                continue;
-            }
-            if ($portions->hidden($entity, \array_key_exists($entity->id, $linked))) {
-                // As PlantUML, a hidden classifier keeps its place, drawn with nothing that touches it.
-                $this->hidden[$entity->id] = true;
-            }
-            // As PlantUML, an element mixed in drawn as a description diagram draws it, in the class diagram's styles.
-            $box = null === $entity->element
-                ? ClassBox::of($entity, $this->classes->document->styles, $portions, \is_numeric($icons) ? (float) $icons : 10.0, $letter)
-                : DescriptionBox::of($entity->element, $this->classes->document->styles, diagram: 'classDiagram');
-            $this->boxes[$entity->id] = $box;
-            $svek->node($entity->id, $box->width, $box->height, $entity->group);
-            if ($box instanceof ClassBox && 'map' === $entity->type) {
-                $svek->rows($entity->id, $box->rows());
-            }
-            // As svek writes a `json` entity: a table of one row, its height in whole points down.
-            if ($box instanceof ClassBox && 'json' === $entity->type) {
-                $svek->rows($entity->id, \floor($box->height));
-            }
-        }
-        $noteStyle = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'note']);
+        // As svek, the classifiers and the floating notes in the order they were made, then the notes beside them.
+        $notes = [];
         foreach ($this->classes->notes as $note) {
-            $box = NoteBox::sectioned(PlantUmlText::styled($note->lines, $noteStyle), $noteStyle, ClassColors::back($note->color));
-            if (!$this->placed($note)) {
-                continue;
-            }
-            $this->notes[$note->id] = $box;
-            [$width, $height] = $box->size();
-            $svek->node($note->id, $width, $height, $note->group);
+            $notes[$note->id] = $note;
+        }
+        foreach (\array_unique([...$this->classes->leaves, ...\array_keys($this->classes->entities), ...\array_keys($notes)]) as $id) {
+            \array_key_exists($id, $this->classes->entities) ? $this->classifier($svek, $this->classes->entities[$id], $portions, $linked, $icons, $letter) : $this->note($svek, $notes[$id]);
         }
         foreach ($this->classes->links as $index => $link) {
             [$from, $to] = [$this->end($svek, $link->from, $held), $this->end($svek, $link->to, $held)];
@@ -344,6 +320,44 @@ final class ClassDrawing
         }
 
         return $this->marks;
+    }
+
+    /**
+     * A classifier as a node: as PlantUML has it, hidden keeping its place, drawn with nothing that touches it, or removed.
+     *
+     * @param array<string, true> $linked
+     */
+    private function classifier(Svek $svek, ClassEntity $entity, ClassPortions $portions, array $linked, string $icons, int $letter): void
+    {
+        if ($portions->hidden($entity, \array_key_exists($entity->id, $linked), 'removed')) {
+            return;
+        }
+        if ($portions->hidden($entity, \array_key_exists($entity->id, $linked))) {
+            $this->hidden[$entity->id] = true;
+        }
+        // As PlantUML, an element mixed in drawn as a description diagram draws it, in the class diagram's styles.
+        $box = null === $entity->element
+            ? ClassBox::of($entity, $this->classes->document->styles, $portions, \is_numeric($icons) ? (float) $icons : 10.0, $letter)
+            : DescriptionBox::of($entity->element, $this->classes->document->styles, diagram: 'classDiagram');
+        $this->boxes[$entity->id] = $box;
+        $svek->node($entity->id, $box->width, $box->height, $entity->group);
+        // As svek writes a map's rows, or a `json` entity's one, its height in whole points down: a table.
+        if ($box instanceof ClassBox && \in_array($entity->type, ['map', 'json'], strict: true)) {
+            $svek->rows($entity->id, 'map' === $entity->type ? $box->rows() : \floor($box->height));
+        }
+    }
+
+    /** A note laid out as a node. */
+    private function note(Svek $svek, PlantUmlNote $note): void
+    {
+        $style = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'note']);
+        if (!$this->placed($note)) {
+            return;
+        }
+        $box = NoteBox::sectioned(PlantUmlText::styled($note->lines, $style), $style, ClassColors::back($note->color));
+        $this->notes[$note->id] = $box;
+        [$width, $height] = $box->size();
+        $svek->node($note->id, $width, $height, $note->group);
     }
 
     /** Whether a note is laid out as a node: not one on a link, which stands in its label, nor one on a classifier removed, which goes with it, as PlantUML has them. */

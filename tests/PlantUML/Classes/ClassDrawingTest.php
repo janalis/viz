@@ -76,6 +76,20 @@ final class ClassDrawingTest extends TestCase
         }
     }
 
+    public function testAMapKeepsAKeyOnceAndANoteStandsWhereItWasWritten(): void
+    {
+        $drawing = static fn (string $source): Drawing => Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml"));
+        $texts = static fn (Drawing $drawing): array => \array_values(\array_map(
+            static fn (Mark $mark): string => $mark->text,
+            \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind),
+        ));
+        $size = static fn (Drawing $drawing): array => [\round($drawing->width / Units::POINT, precision: 6), \round($drawing->height / Units::POINT, precision: 6)];
+
+        // As the jar draws them: a key written again in its first row, with its last value; a floating note before the object written after it.
+        $this->assertSame(['M', 'a', '3', 'b', '2'], $texts($drawing("map M {\n  a => 1\n  b => 2\n  a => 3\n}")));
+        $this->assertSame([[108.0, 57.0], [125.0, 70.0]], [$size($drawing("note \"a\" as N0\nobject O")), $size($drawing("note \"a\" as N0\nclass C"))]);
+    }
+
     public function testAClassBodyIsSizedAsPlantUmlSizesIt(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
