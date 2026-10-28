@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML classifier's body is sized as PlantUML sizes it: a titled separator with nothing under it its title's height and a half; room for the visibility icons only in a compartment with a member that has one; each icon as PlantUML's `VisibilityModifier` draws it, in a block 10 across beside its row, a diamond's or a triangle's a polygon PlantUML's limit finder takes 10 wider either side, unless the classifier is laid out alone.
 - A PlantUML Gantt task keeps its start and end once worked out, as PlantUML's `TaskImpl` caches them until the task itself changes: a task another starts at, before the weekends are closed, keeps the days it was worked out over.
 - A PlantUML activity diagram's `repeat` goes back the way PlantUML picks by its swimlanes as written, a single one too: round its steps' right when its test stands in its own, across when in another or never closed — where a single swimlane sent it across, and a repeat never closed went round.
 - A PlantUML legacy activity diagram's `hide` and `show` are drawn natively, where they were refused: an activity hidden by name, stereotype or `@unlinked` laid out but not drawn, nor its links, as PlantUML hides it; a circle, members or stereotypes to show or hide changing nothing, as in PlantUML.

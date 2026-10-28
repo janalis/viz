@@ -139,9 +139,15 @@ final readonly class ClassBox
             $text = new PlantUmlText(\array_map($iconSize > 0 ? self::text(...) : self::written(...), $lines), $style->fontSize(), sprites: $style->sprites);
             [$textWidth] = $text->size();
             [$titleWidth, $titleHeight] = self::title($title, $style)?->size() ?? [0.0, 0.0];
-            // As PlantUML, a compartment under a titled line 8 wider than its title at least, and half its title's height above and below the line.
-            $width = \max($width, $textWidth + 12 + ($iconSize > 0 && $visibility ? self::room($letter) : 0.0), '' === $title ? 0.0 : $titleWidth + 8);
-            $height += ('' === $title ? 8 : $titleHeight + 4) + (\count($lines) * $line);
+            // As PlantUML, a compartment under a titled line 8 wider than its title at least, and half its title's height above and below the line, or, holding nothing, its title's height and a half; room for icons only where a member of its own has one.
+            $width = \max($width, $textWidth + 12 + ($iconSize > 0 && self::iconic($lines) ? self::room($letter) : 0.0), '' === $title ? 0.0 : $titleWidth + 8);
+            $height +=
+                match (true) {
+                    '' === $title => 8,
+                    [] === $lines => 1.5 * $titleHeight,
+                    default => $titleHeight + 4,
+                }
+                + (\count($lines) * $line);
         }
 
         return new self(
@@ -345,6 +351,19 @@ final readonly class ClassBox
         return [...$this->bare($x, $y), ...$this->genericMarks($x, $y)];
     }
 
+    /**
+     * The box as PlantUML measures a classifier it lays out alone, without dot: without its type
+     * parameters, its members' icons taken as drawn.
+     *
+     * @return list<Mark>
+     */
+    public function alone(float $x, float $y): array
+    {
+        $marks = $this->bare($x, $y);
+
+        return 'diamond' === $this->entity->type ? $marks : \array_map(static fn (Mark $mark): Mark => Outline::Polygon === $mark->outline ? $mark->with(['outline' => Outline::Box]) : $mark, $marks);
+    }
+
     /** @return list<Mark> the box with its top left at a point, without its type parameters */
     public function bare(float $x, float $y): array
     {
@@ -406,13 +425,13 @@ final readonly class ClassBox
                 sprites: $this->style->sprites,
                 background: $back,
             );
-            $left = $x + 6 + ($this->icons ? self::room($this->letter) : 0.0);
+            $left = $x + 6 + ($this->icons && self::iconic($lines) ? self::room($this->letter) : 0.0);
             $above = '' === $title ? 4.0 : self::title($title, $this->style)?->size()[1] ?? 0.0;
             foreach ($lines as $index => $member) {
                 $rowTop = $top + $above + ($index * $text->line());
                 \array_push($marks, ...$this->member($member, $left, $rowTop, $text));
             }
-            $top += $above + 4 + (\count($lines) * $text->line());
+            $top += $above + ('' !== $title && [] === $lines ? $above / 2 : 4) + (\count($lines) * $text->line());
         }
 
         return $marks;
@@ -580,7 +599,8 @@ final readonly class ClassBox
         $marks = [];
         $visibility = \ltrim($member)[0] ?? '';
         if ($this->icons && \array_key_exists($visibility, self::ICONS)) {
-            \array_push($marks, ...self::icon(self::ICONS[$visibility], ClassBody::method($member) ? 2 : 1, $left - self::room($this->letter) + 4, $top + ($text->line() / 2)));
+            // As PlantUML sets a member's icon: in a block 10 across, its line's height less that halved and 1.5 more below the row's top.
+            \array_push($marks, ...self::icon(self::ICONS[$visibility], ClassBody::method($member) ? 2 : 1, $left - self::room($this->letter), $top + (($text->line() - 10) / 2) + 1.5));
         }
         $row = new PlantUmlText(
             [$this->shown($member)],
@@ -600,6 +620,22 @@ final readonly class ClassBox
     }
 
     /**
+     * Whether a compartment's members take room for icons: one of them has a visibility.
+     *
+     * @param list<string> $lines
+     */
+    private static function iconic(array $lines): bool
+    {
+        foreach ($lines as $member) {
+            if (\array_key_exists(\ltrim($member)[0] ?? '', self::ICONS)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * A visibility's icon: outlined for a field, filled for a method.
      *
      * @param array{string, string, string} $icon its shape, and its colours for a field and for a method
@@ -610,15 +646,17 @@ final readonly class ClassBox
     {
         [$shape] = $icon;
         $color = $icon[$kind];
-        $size = 3.5;
+        // As PlantUML's `VisibilityModifier` draws them in a block 10 across from its top left: a square or a circle 6 across 2 in; a diamond or a triangle in 8, 1 in.
         $points = match ($shape) {
-            'square' => self::corners($x - $size, $y - $size, 2 * $size, 2 * $size),
-            'diamond' => [[$x, $y - $size - 1], [$x + $size + 1, $y], [$x, $y + $size + 1], [$x - $size - 1, $y]],
-            'triangle' => [[$x, $y - $size - 1], [$x + $size + 1, $y + $size], [$x - $size - 1, $y + $size]],
-            default => \array_map(static fn (int $step): array => [$x + ($size * \cos(($step * \M_PI) / 8)), $y + ($size * \sin(($step * \M_PI) / 8))], \range(start: 0, end: 15)),
+            'square' => self::corners($x + 2, $y + 2, 6, 6),
+            'diamond' => [[$x + 5, $y], [$x + 9, $y + 4], [$x + 5, $y + 8], [$x + 1, $y + 4]],
+            'triangle' => [[$x + 5, $y + 1], [$x + 1, $y + 7], [$x + 9, $y + 7]],
+            default => \array_map(static fn (int $step): array => [$x + 5 + (3 * \cos(($step * \M_PI) / 8)), $y + 5 + (3 * \sin(($step * \M_PI) / 8))], \range(start: 0, end: 15)),
         };
+        // A diamond and a triangle are polygons, which its limit finder takes 10 wider either side.
+        $outline = \in_array($shape, ['diamond', 'triangle'], strict: true) ? Outline::Polygon : Outline::Box;
 
-        return [new Mark(MarkKind::Polygon, $points, stroke: $color, fill: 2 === $kind ? $color : 'none', strokeWidth: 1.0)];
+        return [new Mark(MarkKind::Polygon, $points, stroke: $color, fill: 2 === $kind ? $color : 'none', strokeWidth: 1.0, outline: $outline)];
     }
 
     /** @return list<Mark> the line above a compartment, and its title */

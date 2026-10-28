@@ -76,6 +76,24 @@ final class ClassDrawingTest extends TestCase
         }
     }
 
+    public function testAClassBodyIsSizedAsPlantUmlSizesIt(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
+            \round($drawing->width / Units::POINT, precision: 6),
+            \round($drawing->height / Units::POINT, precision: 6),
+        ])(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")));
+
+        // As the jar sizes them: a titled line with nothing under it its title's height and a half; icons' room only where a member of the compartment has one;
+        // a diamond's or a triangle's icon a polygon its limit finder takes 10 wider either side, unless the class is laid out alone.
+        $this->assertSame([[61.0, 84.0], [61.0, 109.0], [135.0, 100.0], [183.0, 86.0], [93.0, 84.0]], [
+            $size("class A {\n  -- dash --\n}"),
+            $size("class A {\n  == S ==\n  == S ==\n}"),
+            $size("annotation A {\n  +id : int\n  method() : void\n}"),
+            $size("class A0 {\n  #count()\n}\nclass A1"),
+            $size("class A0 {\n  #count()\n}"),
+        ]);
+    }
+
     public function testAnObjectsFieldsReachItsFootForTheLimitFinder(): void
     {
         $height = static fn (string $source): float => \round(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml"))->height / Units::POINT, precision: 6);

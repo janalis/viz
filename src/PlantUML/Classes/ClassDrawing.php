@@ -373,7 +373,7 @@ final class ClassDrawing
         $marks = [];
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
-            \array_push($marks, ...$box instanceof ClassBox ? $box->bare($node->x - ($node->w / 2), $node->y - ($node->h / 2)) : $box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
+            \array_push($marks, ...$box instanceof ClassBox ? $box->alone($node->x - ($node->w / 2), $node->y - ($node->h / 2)) : $box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)));
         }
 
         // Alone, laid out without dot, a box is taken at its size, as PlantUML takes its image's.
