@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Descriptions;
 
+use Janalis\Viz\PlantUML\Classes\ClassEntity;
+
 /**
  * An element of a component, deployment or use case diagram as declared: its symbol —
  * `actor`, `usecase`, `component`, `node`, `database`, `interface` and the rest, or `unknown`
@@ -18,6 +20,8 @@ final class DescriptionElement
     public bool $stereotypeShown = true;
     /** The symbol it is drawn as, where it is not its own: a component as `skinparam componentStyle` draws it, `component1` or `rectangle`; an actor as `skinparam actorStyle` does, `awesome` or `hollow`. */
     public ?string $shape = null;
+    /** A `json` or `map` entity's, drawn as a class diagram draws it; null for any other element. */
+    public ?ClassEntity $table = null;
 
     /** @param list<string> $display its text, a line each */
     public function __construct(

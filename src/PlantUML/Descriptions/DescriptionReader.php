@@ -6,7 +6,10 @@ namespace Janalis\Viz\PlantUML\Descriptions;
 
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Activities\ActivityReader;
+use Janalis\Viz\PlantUML\Classes\ClassEntity;
+use Janalis\Viz\PlantUML\Classes\ClassJson;
 use Janalis\Viz\PlantUML\Classes\ClassLinks;
+use Janalis\Viz\PlantUML\Classes\ClassMapLinks;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Language\PlantUmlDocument;
@@ -118,6 +121,7 @@ final class DescriptionReader
             'CommandRankDir' => $this->direction = \str_starts_with(\strtolower($command->line()), 'left') ? Direction::LeftRight : Direction::TopBottom,
             'CommandCreateElementFull' => $this->element($command),
             'CommandCreateElementMultilines' => $this->multiline($command),
+            'CommandCreateJson', 'CommandCreateMap' => $this->table($command),
             'CommandLinkElement' => $this->link($command),
             'CommandPackageWithUSymbol', 'CommandTogether' => $this->open[] = $this->group($command),
             'CommandEndPackage' => \array_pop($this->open),
@@ -165,6 +169,34 @@ final class DescriptionReader
         if (null !== $element && 'unknown' === $element->symbol) {
             throw new PlantUmlRefusal('This element ('.$element->id.') is already defined');
         }
+    }
+
+    /**
+     * `json J { … }` or `map M { … }`: an entity drawn as a class diagram draws it, as PlantUML's
+     * `CommandCreateJson` and `CommandCreateMap` make them; a map's row linking out left to PlantUML.
+     */
+    private function table(PlantUmlCommand $command): void
+    {
+        $json = 'CommandCreateJson' === $command->name;
+        $code = \trim((string) ($json ? $command->lazy('CODE') : $command->get('NAME', 1)), characters: '"');
+        if ($json && \array_key_exists($code, $this->elements)) {
+            throw new PlantUmlRefusal('JSON already exists: '.$code);
+        }
+        foreach ($json ? [] : $command->body() as $line) {
+            ClassMapLinks::check([$line]);
+            if (null !== ClassMapLinks::linked($line)) {
+                throw new Unsupported('The native PlantUML renderer does not draw: '.\trim($line));
+            }
+        }
+        $element = $this->get($code, $json ? $command->lazy('DISPLAY') : $command->get('NAME'));
+        $table = new ClassEntity($element->id, $element->display, $json ? 'json' : 'map');
+        $table->json = $json ? ClassJson::read($command->body()) : null;
+        $table->body = $json ? [] : \array_map(\trim(...), $command->body());
+        $table->stereotypes = ClassReader::stereotypes((string) $command->get('STEREO'));
+        $table->color = PlantUmlColor::written($command->get('COLOR'));
+        $element->symbol = $table->type;
+        $element->table = $table;
+        $this->last = $element->id;
     }
 
     /** `rectangle R [` … `]` and `component C "` … `"`: an element whose text runs over several lines. */

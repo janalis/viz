@@ -185,6 +185,8 @@ final class DescriptionReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
+        yield 'a map row linking out' => ["component C\nmap M {\n a *-> C\n}", 'The native PlantUML renderer does not draw: a *-> C'];
+        yield 'a json again' => ["component C\njson C {\n}", 'JSON already exists: C'];
         yield 'lone name' => ["node N\nfoo", 'PlantUML does not read a lone name: foo'];
         yield 'port' => ["node N\nport P", 'The native PlantUML renderer draws ports only on a container: P'];
         yield 'multiline other' => ["node N\nportin P [\nx\n]", 'The native PlantUML renderer does not draw portin elements'];

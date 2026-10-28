@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML component, deployment or use case diagram's `json` and `map` entities are drawn natively, where they were refused, as a class diagram draws them: tables svek lays out by their rows. A map's row linking out is still refused.
 - A PlantUML class diagram's half lollipop, `A --(( I` or `I ))-- A`, is drawn natively, where it was refused, as PlantUML's `EntityImageLollipopInterface` draws one: half its circle, open towards the way its line comes in, as svek's `addImpact` takes it, measured as the whole circle.
 - A PlantUML class, component, deployment or use case diagram's link with a circle in its middle and an arc round it, `-0)-`, `-(0-` or `-(0)-`, is drawn natively, as PlantUML's `MiddleCircleCircled` draws it: a quarter turn 10 across about the line's way on its head's side, its tail's, or both over a disc of the background, where it was refused.
 - A PlantUML state diagram's `frame F { … }` is drawn natively, where it was refused: a cluster round its states, however they are linked, with a state's corners, clear, its name in bold in a tab, as PlantUML's `USymbolFrame` draws it. One with a stereotype, a link or colours is still refused.

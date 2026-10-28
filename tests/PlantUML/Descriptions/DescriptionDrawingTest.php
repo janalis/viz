@@ -20,6 +20,21 @@ use PHPUnit\Framework\TestCase;
 
 final class DescriptionDrawingTest extends TestCase
 {
+    public function testAJsonOrAMapEntityIsDrawnAsAClassDiagramDrawsIt(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
+            \round($drawing->width / Units::POINT, precision: 6),
+            \round($drawing->height / Units::POINT, precision: 6),
+        ])(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")));
+
+        // As the jar draws them: a table each, linked to like any element.
+        $this->assertSame([[70.0, 173.0], [70.0, 173.0], [128.0, 95.0]], [
+            $size("component C\njson J {\n \"a\": 1\n}\nC --> J"),
+            $size("component C\nmap M {\n a => b\n}\nC --> M"),
+            $size("actor U\njson J {\n \"a\": [1, 2]\n}"),
+        ]);
+    }
+
     public function testACircleInALinksMiddleIsDrawnAsAClassDiagramDrawsIt(): void
     {
         $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\ncomponent A\ncomponent B\nA -0- B\n@enduml"));

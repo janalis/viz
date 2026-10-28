@@ -325,7 +325,8 @@ final class ClassDrawing
             $node = $placement->endpoints[$id];
             [$x, $y] = [$node->x - ($node->w / 2), $node->y - ($node->h / 2)];
             // A half lollipop's one link.
-            $line = $box instanceof ClassBox && $this->classes->entities[$id]->half ? \array_find_key($this->classes->links, static fn (PlantUmlLink $link): bool => \in_array(
+            $line = $box instanceof ClassBox && $this->classes->entities[$id]->half
+                ? \array_find_key($this->classes->links, static fn (PlantUmlLink $link): bool => \in_array(
                     $id,
                     [$link->from, $link->to],
                     strict: true,

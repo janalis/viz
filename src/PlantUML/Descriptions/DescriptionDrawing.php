@@ -12,6 +12,7 @@ use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
+use Janalis\Viz\PlantUML\Classes\ClassEntity;
 use Janalis\Viz\PlantUML\Classes\ClassPortions;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
@@ -37,6 +38,8 @@ final class DescriptionDrawing
 {
     /** @var array<string, DescriptionBox> */
     private array $boxes = [];
+    /** @var array<string, ClassBox> the `json` and `map` entities, drawn as a class diagram draws them */
+    private array $tables = [];
     /** @var array<string, NoteBox> */
     private array $notes = [];
     /** @var array<int, int> */
@@ -137,6 +140,10 @@ final class DescriptionDrawing
             if (\array_key_exists($element->id, $removed)) {
                 continue;
             }
+            if (null !== $element->table) {
+                $this->table($svek, $element, $element->table);
+                continue;
+            }
             $box = DescriptionBox::of($element, $this->diagram->document->styles);
             $box = \array_key_exists($element->id, $beside) ? $box->beside() : $box;
             $this->boxes[$element->id] = $box;
@@ -170,7 +177,10 @@ final class DescriptionDrawing
         foreach ([...$this->diagram->elements, ...$notes] as $leaf) {
             $groups[$leaf->id] = $leaf->group;
         }
-        $drawn = \array_values(\array_filter($this->diagram->leaves, fn (string $id): bool => \array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->notes)));
+        $drawn = \array_values(\array_filter(
+            $this->diagram->leaves,
+            fn (string $id): bool => \array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->tables) || \array_key_exists($id, $this->notes),
+        ));
         Squares::put($svek, $drawn, $groups, [null, ...\array_keys($this->diagram->groups)], \array_values($links), \array_values($notes));
         foreach ($notes as $note) {
             if (null === $note->entity) {
@@ -342,20 +352,38 @@ final class DescriptionDrawing
             $this->put($marks, $line, $note->entity);
         }
         foreach ($this->boxes as $id => $box) {
-            $node = $placement->endpoints[$id];
-            $this->put($marks, $box->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)), $id);
+            $this->put($marks, $box->marks(...self::corner($placement, $id)), $id);
             $group = $this->diagram->elements[$id]->group;
             if (null !== $group && \in_array($this->diagram->elements[$id]->symbol, DescriptionBox::PORTS, strict: true)) {
-                $this->put($marks, $box->portName($node->x - ($node->w / 2), $node->y - ($node->h / 2), ($frames[$group][1] + $frames[$group][3]) / 2), $id);
+                $this->put($marks, $box->portName(...[...self::corner($placement, $id), ($frames[$group][1] + $frames[$group][3]) / 2]), $id);
             }
+        }
+        foreach ($this->tables as $id => $table) {
+            $this->put($marks, $table->marks(...self::corner($placement, $id)), $id);
         }
         $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->diagram->notes), 1, 0);
         foreach ($this->notes as $id => $note) {
-            $node = $placement->endpoints[$id];
-            $this->put($marks, $note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2)), $attached[$id] ?? '');
+            $this->put($marks, $note->marks(...self::corner($placement, $id)), $attached[$id] ?? '');
         }
 
         return $marks;
+    }
+
+    /** A `json` or `map` entity, as svek writes one: a table, its rows each, or a `json` entity's one, its height in whole points down. */
+    private function table(Svek $svek, DescriptionElement $element, ClassEntity $entity): void
+    {
+        $table = ClassBox::of($entity, $this->diagram->document->styles, new ClassPortions([]));
+        $this->tables[$element->id] = $table;
+        $svek->node($element->id, $table->width, $table->height, $element->group);
+        $svek->rows($element->id, 'map' === $entity->type ? $table->rows() : \floor($table->height));
+    }
+
+    /** @return array{float, float} a node's top left corner */
+    private static function corner(Placement $placement, string $id): array
+    {
+        $node = $placement->endpoints[$id];
+
+        return [$node->x - ($node->w / 2), $node->y - ($node->h / 2)];
     }
 
     /**
