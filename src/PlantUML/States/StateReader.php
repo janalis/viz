@@ -8,6 +8,7 @@ use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Activities\ActivityReader;
 use Janalis\Viz\PlantUML\Classes\ClassJson;
 use Janalis\Viz\PlantUML\Classes\ClassLinks;
+use Janalis\Viz\PlantUML\Classes\ClassMapLinks;
 use Janalis\Viz\PlantUML\Classes\ClassPortions;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
@@ -128,6 +129,7 @@ final class StateReader
             'CommandHideEmptyDescription' => $this->hideEmpty = 'hide' === \strtolower((string) $command->get('HIDE')),
             'CommandCreateState' => $this->create($command),
             'CommandCreateJson' => $this->json($command),
+            'CommandCreateMap' => $this->map($command),
             'CommandCreatePackageState' => $this->composite($command),
             'CommandCreatePackage2' => $this->frame($command),
             'CommandEndState' => \array_pop($this->open),
@@ -362,6 +364,23 @@ final class StateReader
         $node = $this->state($code, $command->lazy('DISPLAY'));
         $node->kind = 'json';
         $node->json = ClassJson::read($command->body());
+        $node->stereotypes = ClassReader::stereotypes((string) $command->get('STEREO'));
+        $node->color = PlantUmlColor::written($command->get('COLOR'));
+        $this->last = $node->id;
+    }
+
+    /** A `map` entity, drawn as a class diagram draws one, as PlantUML's `CommandCreateMap` makes it; a row linking out left to PlantUML. */
+    private function map(PlantUmlCommand $command): void
+    {
+        foreach ($command->body() as $line) {
+            ClassMapLinks::check([$line]);
+            if (null !== ClassMapLinks::linked($line)) {
+                throw new Unsupported('The native PlantUML renderer does not draw: '.\trim($line));
+            }
+        }
+        $node = $this->state((string) $command->get('NAME', 1), $command->get('NAME'));
+        $node->kind = 'map';
+        $node->rows = \array_map(\trim(...), $command->body());
         $node->stereotypes = ClassReader::stereotypes((string) $command->get('STEREO'));
         $node->color = PlantUmlColor::written($command->get('COLOR'));
         $this->last = $node->id;

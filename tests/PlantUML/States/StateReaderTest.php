@@ -185,6 +185,7 @@ final class StateReaderTest extends TestCase
         yield 'a state of a later region named outside it' => ["state A {\n  [*] --> B\n  --\n  [*] --> C\n}\nX --> C", 'The state C cannot be used here.'];
         yield 'a state named outside from within a later region' => ["state X\nstate A {\n  [*] --> B\n  --\n  C --> X\n}", 'The state X cannot be used here.'];
         yield 'url' => ["state A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];
+        yield 'a map row linking out' => ["state A\nmap M {\n a *-> A\n}", 'The native PlantUML renderer does not draw: a *-> A'];
         yield 'a coloured frame' => ["state A\nframe F #pink {\n}", 'The native PlantUML renderer does not draw: frame F #pink {'];
         yield 'a composite removed' => ["state A {\n  state B\n}\nremove A", 'The native PlantUML renderer does not hide or remove a composite state or a state inside one: A'];
         yield 'a state in a composite hidden' => ["state A {\n  state B\n}\nhide B", 'The native PlantUML renderer does not hide or remove a composite state or a state inside one: B'];

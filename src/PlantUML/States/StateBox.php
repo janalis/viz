@@ -15,6 +15,7 @@ use Janalis\Viz\PlantUML\Classes\ClassPortions;
 use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Draw\Shadow;
 use Janalis\Viz\PlantUML\Style\Style;
+use Janalis\Viz\PlantUML\Svek\Svek;
 
 /**
  * A state or pseudostate drawn as PlantUML draws it, in points: a state as a rounded box with
@@ -38,9 +39,19 @@ final readonly class StateBox
         private bool $line,
         public float $width,
         public float $height,
-        /** A `json` entity, drawn as a class diagram draws one. */
-        private ?ClassBox $json = null,
+        /** A `json` or `map` entity, drawn as a class diagram draws one. */
+        private ?ClassBox $table = null,
     ) {}
+
+    /** A `json` or `map` entity as svek writes it: a table, a map's rows each, a `json` entity's one, its height in whole points down; nothing for any other state. */
+    public function table(Svek $svek): void
+    {
+        match ($this->node->kind) {
+            'map' => $svek->rows($this->node->id, (float) $this->table?->rows()),
+            'json' => $svek->rows($this->node->id, \floor($this->height)),
+            default => null,
+        };
+    }
 
     public static function of(StateNode $node, PlantUmlStates $states): self
     {
@@ -50,12 +61,12 @@ final readonly class StateBox
         $name = PlantUmlText::styled($node->display, $sheet->style(['root', 'element', 'stateDiagram', 'state', 'name'], $node->stereotypes));
         $description = PlantUmlText::styled($node->description, $style);
         $line = !($states->hideEmptyDescription && [] === $node->description);
-        if ('json' === $node->kind) {
-            $entity = new ClassEntity($node->id, $node->display, 'json');
-            [$entity->json, $entity->stereotypes, $entity->color] = [$node->json, $node->stereotypes, $node->color];
-            $json = ClassBox::of($entity, $sheet, new ClassPortions([]));
+        if (\in_array($node->kind, ['json', 'map'], strict: true)) {
+            $entity = new ClassEntity($node->id, $node->display, $node->kind);
+            [$entity->json, $entity->body, $entity->stereotypes, $entity->color] = [$node->json, $node->rows, $node->stereotypes, $node->color];
+            $table = ClassBox::of($entity, $sheet, new ClassPortions([]));
 
-            return new self($node, $style, $circle, $name, $description, $line, $json->width, $json->height, $json);
+            return new self($node, $style, $circle, $name, $description, $line, $table->width, $table->height, $table);
         }
         [$width, $height] = match ($node->kind) {
             'start' => [20.0, 20.0],
@@ -111,7 +122,7 @@ final readonly class StateBox
         [$cx, $cy] = [$x + ($this->width / 2), $y + ($this->height / 2)];
 
         return match ($this->node->kind) {
-            'json' => $this->json?->marks($x, $y) ?? [],
+            'json', 'map' => $this->table?->marks($x, $y) ?? [],
             'start' => [self::disc($cx, $cy, 10.0, $dark, $dark)],
             'end' => [self::disc($cx, $cy, 11.0, $dark, 'none'), self::disc($cx, $cy, 6.0, $dark, $dark)],
             // As PlantUML draws a point on a composite state's border: a circle 12 across, an exit's crossed about a centre half a point off.

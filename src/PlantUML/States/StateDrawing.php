@@ -115,8 +115,7 @@ final class StateDrawing
             $input = StateBox::BORDER[$node->kind] ?? null;
             if (null === $input) {
                 $svek->node($node->id, $box->width, $box->height, $cluster);
-                // As svek writes a `json` entity: a table of one row, its height in whole points down.
-                'json' === $node->kind ? $svek->rows($node->id, \floor($box->height)) : null;
+                $box->table($svek);
                 continue;
             }
             if (null === $cluster) {

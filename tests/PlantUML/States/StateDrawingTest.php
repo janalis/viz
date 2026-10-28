@@ -45,6 +45,15 @@ final class StateDrawingTest extends TestCase
         $this->assertSame([187.0, 265.0], $size("[*] --> Idle\nIdle --> Busy\nnote \"Shared note\" as N1"));
     }
 
+    public function testAMapIsDrawnAsAClassDiagramDrawsIt(): void
+    {
+        $drawing = self::draw("state A\nmap M {\n a => b\n c => d\n}\nA --> M");
+
+        // As the jar draws it: a table of its rows, linked to like any state.
+        $this->assertSame([72.0, 197.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertSame(['a', 'b', 'c', 'd'], \array_values(\array_intersect(self::texts($drawing), ['a', 'b', 'c', 'd'])));
+    }
+
     public function testAFrameIsDrawnRoundItsStatesAsPlantUmlDrawsIt(): void
     {
         $drawing = self::draw("frame F {\n state B\n state C\n}\nframe \"Long frame title\" as G {\n frame H {\n  state D\n }\n}\nB --> D");

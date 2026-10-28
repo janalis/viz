@@ -25,6 +25,8 @@ final class StateNode
     public bool $removed = false;
     /** A `json` entity's data, which it is drawn as. */
     public ?JsonNode $json = null;
+    /** @var list<string> a `map` entity's rows, `key => value`, which it is drawn as */
+    public array $rows = [];
 
     /** @param list<string> $display */
     public function __construct(
