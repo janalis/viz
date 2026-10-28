@@ -30,6 +30,8 @@ final class PlantUmlDocumentReader
     private StyleSheet $styles;
     /** @var array<string, string> */
     private array $params = [];
+    /** @var array<string, list<array{int, string}>> */
+    private array $history = [];
     /** @var array<string, PlantUmlCaption> */
     private array $captions = [];
     private float $scale = 1.0;
@@ -73,7 +75,18 @@ final class PlantUmlDocumentReader
             }
         }
 
-        return new PlantUmlDocument($this->kept, $this->styles, $this->params, $this->captions, $this->scale, $pragmas, $kind, $this->fit, \array_values(\array_unique($this->warnings)));
+        return new PlantUmlDocument(
+            $this->kept,
+            $this->styles,
+            $this->params,
+            $this->captions,
+            $this->scale,
+            $pragmas,
+            $kind,
+            $this->fit,
+            \array_values(\array_unique($this->warnings)),
+            $this->history,
+        );
     }
 
     /**
@@ -227,6 +240,7 @@ final class PlantUmlDocumentReader
             throw new Unsupported('The native PlantUML renderer leaves skinparam padding to PlantUML');
         }
         $this->params[\strtolower($name)] = $value;
+        $this->history[\strtolower($name)][] = [\count($this->kept), $value];
         $this->styles = $this->styles->withSkinParam($name, $value);
     }
 

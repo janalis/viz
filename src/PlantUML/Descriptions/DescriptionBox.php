@@ -130,8 +130,8 @@ final readonly class DescriptionBox
             // As PlantUML: its flat sides as wide as its text, its points half as far again, 5 above and below.
             'hexagon' === $element->symbol => [2 * $labelWidth, $labelHeight + 10],
             'person' === $element->symbol => self::person($labelWidth + 20, $labelHeight + 20),
-            // As svek writes an interface, and dot sizes it: its circle in a cell 18 across, its name's height above and below and as wide as its name, in whole points, 4 around, 54 wide at least; its stereotypes outside it.
-            \in_array($element->symbol, ['interface', 'circle'], strict: true) => [\max(54.0, 18 + (2 * \round(\max(0.5, ($labelWidth - 18) / 2))) + 8), (2 * \floor($textHeight)) + 26],
+            // As svek writes an interface, and dot sizes it: its circle in a cell 18 across, a cell either side half the rest of its label's width, in whole points down, its name's height above and below, 8 around, 54 wide at least; its stereotypes outside it.
+            \in_array($element->symbol, ['interface', 'circle'], strict: true) => [\max(54.0, 18 + (2 * \floor(\max(0.0, ($labelWidth - 18) / 2))) + 16), (2 * \floor($textHeight)) + 26],
             \array_key_exists($element->shape ?? $element->symbol, self::ICONS) => [
                 \max(self::ICONS[$element->shape ?? $element->symbol][0], $labelWidth),
                 self::ICONS[$element->shape ?? $element->symbol][1] + $labelHeight,

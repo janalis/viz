@@ -80,6 +80,10 @@ final class DescriptionReader
     /** @var list<string> the elements and floating notes, as PlantUML makes its leaves, in order */
     private array $leaves = [];
     private ?string $last = null;
+    /** The index of the diagram's line the command being run starts at. */
+    private int $at = 0;
+    /** @var array<string, int> the line each element was made at, by its id */
+    private array $madeAt = [];
 
     /**
      * @param list<PlantUmlCommand> $commands
@@ -92,6 +96,7 @@ final class DescriptionReader
         // A command not drawn natively is reported only once every command has run: one after it may yet make PlantUML refuse the lines.
         $unsupported = null;
         foreach ($commands as $command) {
+            $reader->at = self::locate($document->lines, $command, $reader->at);
             try {
                 $reader->execute($command);
             } catch (Unsupported $notDrawn) {
@@ -101,7 +106,7 @@ final class DescriptionReader
         if (null !== $unsupported) {
             throw $unsupported;
         }
-        $reader->settle(\strtolower($document->param('componentStyle', '')), \strtolower($document->param('actorStyle', '')));
+        $reader->settle($document);
         $reader->linkedContainers();
 
         return new PlantUmlDescriptions($document, $reader->elements, $reader->groups, $reader->links, $reader->notes, $reader->direction, $reader->leaves, $reader->visibility);
@@ -372,10 +377,27 @@ final class DescriptionReader
     }
 
     /**
-     * @param string $componentStyle `skinparam componentStyle`, as PlantUML's `ComponentStyle` reads it: `uml1`, `uml2` or `rectangle`
-     * @param string $actorStyle     `skinparam actorStyle`, as its `ActorStyle` reads it: `stickman`, `awesome` or `hollow`, a business actor a stick man whatever it says
+     * The index of the diagram's line a command starts at: the first so written from where the last one did.
+     *
+     * @param list<string> $lines
      */
-    private function settle(string $componentStyle, string $actorStyle): void
+    private static function locate(array $lines, PlantUmlCommand $command, int $from): int
+    {
+        $first = \trim($command->lines[0] ?? '');
+        $index = $from;
+        while (($index + 1) < \count($lines) && \trim($lines[$index]) !== $first) {
+            ++$index;
+        }
+
+        return $index;
+    }
+
+    /**
+     * Each element's symbol and shape: `skinparam componentStyle`, as PlantUML's `ComponentStyle` reads it, `uml1`, `uml2` or
+     * `rectangle`, and `skinparam actorStyle`, as its `ActorStyle` reads it, `stickman`, `awesome` or `hollow` — a business
+     * actor a stick man whatever it says — each as it stood when the first component, or actor, was made, as PlantUML is seen to read it once.
+     */
+    private function settle(PlantUmlDocument $document): void
     {
         foreach ([...$this->elements, ...$this->groups] as $entity) {
             foreach ($this->stereotypeRules as [$show, $gender]) {
@@ -387,6 +409,17 @@ final class DescriptionReader
         $default = $usecase ? 'actor' : 'interface';
         foreach ($this->elements as $element) {
             $element->symbol = 'unknown' === $element->symbol ? $default : $element->symbol;
+        }
+        $first = fn (string $symbol): int => \min([
+            \PHP_INT_MAX,
+            ...\array_map(
+                fn (DescriptionElement $element): int => $this->madeAt[$element->id] ?? 0,
+                \array_filter($this->elements, static fn (DescriptionElement $element): bool => $element->symbol === $symbol && !$element->business),
+            ),
+        ]);
+        $componentStyle = \strtolower($document->paramAt('componentStyle', $first('component')));
+        $actorStyle = \strtolower($document->paramAt('actorStyle', $first('actor')));
+        foreach ($this->elements as $element) {
             $element->shape = match (true) {
                 'component' === $element->symbol => ['uml1' => 'component1', 'rectangle' => 'rectangle'][$componentStyle] ?? null,
                 'actor' === $element->symbol && !$element->business => ['awesome' => 'awesome', 'hollow' => 'hollow'][$actorStyle] ?? null,
@@ -449,6 +482,7 @@ final class DescriptionReader
         if (!\array_key_exists($id, $this->elements) && !\array_key_exists($id, $this->groups)) {
             $this->elements[$id] = new DescriptionElement($id, ClassReader::split($display ?? $id), group: $this->current());
             $this->leaves[] = $id;
+            $this->madeAt[$id] = $this->at;
         }
         if (null !== $display) {
             $this->elements[$id]->display = ClassReader::split($display);

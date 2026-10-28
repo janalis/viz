@@ -37,6 +37,8 @@ final readonly class PlantUmlDocument
         public ?array $fit = null,
         /** @var list<string> what PlantUML warns of, each once, in its banner above the diagram */
         public array $warnings = [],
+        /** @var array<string, list<array{int, string}>> each skin parameter's values, by its lower-case name, each with how many of the diagram's lines came before it */
+        public array $history = [],
     ) {}
 
     /**
@@ -77,6 +79,17 @@ final readonly class PlantUmlDocument
     public function param(string $name, string $default = ''): string
     {
         return $this->params[\strtolower($name)] ?? $default;
+    }
+
+    /** A skin parameter as it stood before one of the diagram's lines, by its index; the default where none was set yet. */
+    public function paramAt(string $name, int $line, string $default = ''): string
+    {
+        $value = $default;
+        foreach ($this->history[\strtolower($name)] ?? [] as [$before, $set]) {
+            $value = $before <= $line ? $set : $value;
+        }
+
+        return $value;
     }
 
     /**

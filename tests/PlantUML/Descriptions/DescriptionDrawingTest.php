@@ -20,6 +20,24 @@ use PHPUnit\Framework\TestCase;
 
 final class DescriptionDrawingTest extends TestCase
 {
+    public function testAStyleIsReadAsItStandsWhenItsFirstElementIsMade(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
+            \round($drawing->width / Units::POINT, precision: 6),
+            \round($drawing->height / Units::POINT, precision: 6),
+        ])(Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")));
+
+        // As the jar draws them: a component or an actor style set after the first of them changes none.
+        $this->assertSame([[69.0, 66.0], [118.0, 57.0], [139.0, 96.0], [110.0, 232.0]], [
+            $size("component A\nskinparam componentStyle rectangle"),
+            $size("skinparam componentStyle uml1\ncomponent A\nskinparam componentStyle rectangle\ncomponent B"),
+            $size("usecase U\nskinparam actorStyle awesome\nactor B"),
+            $size("actor A\nusecase U\nskinparam actorStyle awesome\nactor B"),
+        ]);
+        // As dot sizes an interface's table: a cell either side half the rest of its label, in whole points down, 8 around.
+        $this->assertSame([[220.0, 77.0], [182.0, 89.0]], [$size("interface \"a longer name\" as E1\nnode N"), $size("interface \"x\" as E1 <<stereo>>\nnode N")]);
+    }
+
     public function testAJsonOrAMapEntityIsDrawnAsAClassDiagramDrawsIt(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [
