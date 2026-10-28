@@ -45,9 +45,9 @@ final class StateModelTest extends TestCase
 
         $this->assertInstanceOf(StateDiagram::class, $diagram);
         $this->assertSame(['Machine', Direction::LeftRight], [$diagram->title, $diagram->direction]);
+        // As PlantUML makes them: those declared first, then those only transitions name.
         $this->assertEquals(
             [
-                new State('*start*', kind: StateKind::Initial),
                 new State(
                     'Active',
                     'Running hot',
@@ -60,6 +60,7 @@ final class StateModelTest extends TestCase
                 new State('Pick', kind: StateKind::Choice),
                 new State('Split', kind: StateKind::Fork),
                 new State('Merge', kind: StateKind::Join),
+                new State('*start*', kind: StateKind::Initial),
                 new State('==bar', kind: StateKind::Fork),
                 new State('*end*', kind: StateKind::Final),
             ],

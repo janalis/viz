@@ -19,6 +19,7 @@ final readonly class PlantUmlStates implements PlantUmlDiagram
      * @param array<string, list<string>> $composites each composite state's region separators, by its id
      * @param list<PlantUmlLink> $links
      * @param list<PlantUmlNote> $notes
+     * @param array<string, string> $before each floating note's id by that of the first state made after it, as svek writes them in turn
      */
     public function __construct(
         public PlantUmlDocument $document,
@@ -28,6 +29,7 @@ final readonly class PlantUmlStates implements PlantUmlDiagram
         public array $notes = [],
         public bool $hideEmptyDescription = false,
         public Direction $direction = Direction::TopBottom,
+        public array $before = [],
     ) {}
 
     #[\Override]

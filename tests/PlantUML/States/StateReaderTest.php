@@ -161,12 +161,13 @@ final class StateReaderTest extends TestCase
             end note
             PUML);
 
+        // As PlantUML makes them: the floating ones first, then those beside a state or on a transition, with the transitions.
         $this->assertEquals(
             [
-                new PlantUmlNote('note#0', ['beside'], 'A', 'left'),
-                new PlantUmlNote('note#1', ['the last'], 'A', 'right'),
                 new PlantUmlNote('N', ['floating']),
                 new PlantUmlNote('M', ['several']),
+                new PlantUmlNote('note#2', ['beside'], 'A', 'left'),
+                new PlantUmlNote('note#3', ['the last'], 'A', 'right'),
                 new PlantUmlNote('note#4', ['inside'], 'C', 'top', group: 'B'),
                 new PlantUmlNote('note#5', ['on it'], position: 'bottom', link: 0),
                 new PlantUmlNote('note#6', ['link note'], position: 'left', link: 0),
@@ -180,6 +181,7 @@ final class StateReaderTest extends TestCase
     {
         yield 'region outside' => ["state A\n--", 'A PlantUML region separator stands outside any composite state'];
         yield 'namespaced' => ['state a.b', 'The native PlantUML renderer does not draw namespaced names such as a.b'];
+        yield 'namespaced in a transition' => ["state A\nA --> a.b", 'The native PlantUML renderer does not draw namespaced names such as a.b'];
         yield 'a state of a later region named outside it' => ["state A {\n  [*] --> B\n  --\n  [*] --> C\n}\nX --> C", 'The state C cannot be used here.'];
         yield 'a state named outside from within a later region' => ["state X\nstate A {\n  [*] --> B\n  --\n  C --> X\n}", 'The state X cannot be used here.'];
         yield 'url' => ["state A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];

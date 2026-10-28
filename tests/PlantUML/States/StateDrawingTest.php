@@ -34,6 +34,17 @@ final class StateDrawingTest extends TestCase
         ]);
     }
 
+    public function testStatesAreMadeAsPlantUmlMakesThemDeclaredFirstThenByTheirTransitions(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar draws them: a state a transition names before it is declared in a composite state the one in it; a floating note before the states only transitions name.
+        $this->assertSame('C', self::read("A --> B\nstate C {\n state B\n}")->nodes['B']->group);
+        $this->assertSame([187.0, 265.0], $size("[*] --> Idle\nIdle --> Busy\nnote \"Shared note\" as N1"));
+    }
+
     public function testAJsonEntityIsDrawnAsAClassDiagramDrawsIt(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(

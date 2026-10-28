@@ -43,6 +43,20 @@ final class StateReader
         'expansionoutput' => 'expansionoutput',
     ];
 
+    /**
+     * The commands PlantUML's state diagram is seen to run once every other has run: its
+     * transitions, and the notes beside a state or on a transition. A state only they name is
+     * made after every other, in the composite state open where they stand.
+     */
+    private const array LATE = [
+        'CommandLinkState',
+        'CommandLinkStateReverse',
+        'CommandFactoryNoteOnEntity$1',
+        'CommandFactoryNoteOnEntity$2',
+        'CommandFactoryNoteOnLink$1',
+        'CommandFactoryNoteOnLink$2',
+    ];
+
     /** @var array<string, StateNode> */
     private array $nodes = [];
     /** @var array<string, list<string>> each composite state's region separators, `--` or `||`, by its id */
@@ -58,6 +72,10 @@ final class StateReader
     private array $visibility = [];
     private Direction $direction = Direction::TopBottom;
     private ?string $last = null;
+    /** @var array<string, string> each floating note's id by that of the first state made after it */
+    private array $before = [];
+    /** @var list<string> the floating notes made since the last state */
+    private array $pending = [];
 
     /**
      * @param list<PlantUmlCommand> $commands
@@ -68,9 +86,22 @@ final class StateReader
         $reader = new self();
         // A command not drawn natively is reported only once every command has run: one after it may yet make PlantUML refuse the lines.
         $unsupported = null;
-        foreach ($commands as $command) {
+        // The state made last where each command stands, which a note beside no state named stands beside.
+        $lasts = [];
+        foreach ($commands as $index => $command) {
+            $lasts[$index] = $reader->last;
             try {
-                $reader->execute($command);
+                \in_array($command->name, self::LATE, strict: true) ? null : $reader->execute($command);
+            } catch (Unsupported $notDrawn) {
+                $unsupported ??= $notDrawn;
+            }
+        }
+        // Then the transitions and the notes beside them, each in the composite state and region it stands in.
+        $reader->open = [];
+        foreach ($commands as $index => $command) {
+            $reader->last = $lasts[$index];
+            try {
+                $reader->late($command);
             } catch (Unsupported $notDrawn) {
                 $unsupported ??= $notDrawn;
             }
@@ -80,7 +111,7 @@ final class StateReader
         }
         $reader->hideOrRemove();
 
-        return new PlantUmlStates($document, $reader->nodes, $reader->composites, $reader->links, $reader->notes, $reader->hideEmpty, $reader->direction);
+        return new PlantUmlStates($document, $reader->nodes, $reader->composites, $reader->links, $reader->notes, $reader->hideEmpty, $reader->direction, $reader->before);
     }
 
     private function execute(PlantUmlCommand $command): void
@@ -106,6 +137,17 @@ final class StateReader
             'CommandFactoryNoteOnEntity$1', 'CommandFactoryNoteOnEntity$2' => $this->beside($command),
             'CommandFactoryNoteOnLink$1', 'CommandFactoryNoteOnLink$2' => $this->onLink($command),
             default => throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line()),
+        };
+    }
+
+    /** A command run once every other has, or one opening or closing the scope it stands in. */
+    private function late(PlantUmlCommand $command): void
+    {
+        match ($command->name) {
+            'CommandCreatePackageState' => $this->open[] = [$this->state((string) $command->lazy('CODE'))->id, 0],
+            'CommandEndState' => \array_pop($this->open),
+            'CommandConcurrentState' => [] === $this->open ? null : $this->open[\count($this->open) - 1][1]++,
+            default => \in_array($command->name, self::LATE, strict: true) ? $this->execute($command) : null,
         };
     }
 
@@ -255,6 +297,7 @@ final class StateReader
     {
         $lines = 'CommandFactoryNote$1' === $command->name ? ClassReader::split((string) $command->get('DISPLAY')) : ActivityReader::columns($command->body());
         $this->notes[] = new PlantUmlNote((string) $command->get('CODE'), $lines, color: $command->get('COLOR'), group: $this->current());
+        $this->pending[] = (string) $command->get('CODE');
     }
 
     private function beside(PlantUmlCommand $command): void
@@ -315,6 +358,10 @@ final class StateReader
         if (!\array_key_exists($id, $this->nodes)) {
             [$group, $region] = [] === $this->open ? [null, 0] : $this->open[\count($this->open) - 1];
             $this->nodes[$id] = new StateNode($id, ClassReader::split($display ?? $id), group: $group, region: $region);
+            foreach ($this->pending as $note) {
+                $this->before[$note] = $id;
+            }
+            $this->pending = [];
         }
         if (null !== $display) {
             $this->nodes[$id]->display = ClassReader::split($display);

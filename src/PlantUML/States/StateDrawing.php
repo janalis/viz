@@ -78,7 +78,10 @@ final class StateDrawing
         $owners = [];
         /** @var array<string, float> $shifts how far right of where its links end each point on a border stands */
         $shifts = [];
+        $early = [];
         foreach ($this->members($group, $region) as [$node, $cluster]) {
+            // As svek, a floating note made before a state comes before it.
+            $early += $this->notes($svek, [], $group, $region, $node->id);
             $placed[$node->id] = true;
             $owners[$node->id] = $cluster;
             if (\array_key_exists($node->id, $this->states->composites) && !$this->autarkic($node->id)) {
@@ -122,7 +125,7 @@ final class StateDrawing
                 : $svek->pin($node->id, $cluster, $input, $box->width, $box->height);
             $shifts[$node->id] = $svek->shift($node->id);
         }
-        $notes = $this->notes($svek, $placed, $group, $region);
+        $notes = $early + $this->notes($svek, $placed, $group, $region, skip: $early);
         foreach ($this->states->notes as $note) {
             if (null === $note->entity || !\array_key_exists($note->id, $notes)) {
                 continue;
@@ -362,18 +365,22 @@ final class StateDrawing
     }
 
     /**
-     * The notes of a scope as nodes of its graph, each beside its state.
+     * The notes of a scope as nodes of its graph, each beside its state: the floating ones made
+     * just before a state, or all those not yet laid out.
      *
      * @param array<string, true> $placed
+     * @param ?string $before the state the floating notes are made just before, null for all the notes
+     * @param array<string, NoteBox> $skip the notes already laid out
      * @return array<string, NoteBox>
      */
-    private function notes(Svek $svek, array $placed, ?string $group, int $region): array
+    private function notes(Svek $svek, array $placed, ?string $group, int $region, ?string $before = null, array $skip = []): array
     {
         $style = $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'note']);
         $boxes = [];
         foreach ($this->states->notes as $note) {
             $mine = null === $note->entity ? 0 === $region && $note->group === $group && null === $note->link : \array_key_exists($note->entity, $placed);
-            if (!$mine) {
+            $now = null === $before ? !\array_key_exists($note->id, $skip) : null === $note->entity && ($this->states->before[$note->id] ?? null) === $before;
+            if (!$mine || !$now) {
                 continue;
             }
             $box = NoteBox::sectioned(PlantUmlText::styled($note->lines, $style), $style, ClassColors::back($note->color));
