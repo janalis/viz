@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML Gantt task keeps its start and end once worked out, as PlantUML's `TaskImpl` caches them until the task itself changes: a task another starts at, before the weekends are closed, keeps the days it was worked out over.
 - A PlantUML activity diagram's `repeat` goes back the way PlantUML picks by its swimlanes as written, a single one too: round its steps' right when its test stands in its own, across when in another or never closed — where a single swimlane sent it across, and a repeat never closed went round.
 - A PlantUML legacy activity diagram's `hide` and `show` are drawn natively, where they were refused: an activity hidden by name, stereotype or `@unlinked` laid out but not drawn, nor its links, as PlantUML hides it; a circle, members or stereotypes to show or hide changing nothing, as in PlantUML.
 - A PlantUML state diagram's `map` entity is drawn natively, where it was refused, as a class diagram draws it: a table svek lays out by its rows. A map's row linking out is still refused.

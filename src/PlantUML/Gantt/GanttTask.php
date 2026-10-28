@@ -9,7 +9,8 @@ namespace Janalis\Viz\PlantUML\Gantt;
  * the last two set, the third worked out by integrating the load over the days it may be
  * worked: the chart's open days, its own, less its pauses; or its resources' days, each at
  * its share. A start is never set earlier than it was; a start falling on a day off moves to
- * the next day on.
+ * the next day on. Its start and end, once worked out, are kept until it changes itself, as
+ * `TaskImpl` caches them: a day closed after, for the whole chart, leaves them as they were.
  */
 final class GanttTask extends GanttEntry implements GanttMoment
 {
@@ -18,9 +19,11 @@ final class GanttTask extends GanttEntry implements GanttMoment
     /** @var list<array{GanttResource, int}> each resource and its share, in percent */
     public array $resources = [];
     /** @var array<int, true> */
-    public array $pausedDays = [];
+    public private(set) array $pausedDays = [];
     /** @var array<int, true> */
-    public array $pausedWeekdays = [];
+    public private(set) array $pausedWeekdays = [];
+    private ?int $cachedStart = null;
+    private ?int $cachedEnd = null;
     public bool $diamond = false;
     public int $completion;
     /** @var list<array{?string, ?string}> one colour, or two for its completion, each a centre and a border */
@@ -58,9 +61,26 @@ final class GanttTask extends GanttEntry implements GanttMoment
         $this->set('load', $load);
     }
 
-    /** As PlantUML's `TaskImpl.getStart`. */
+    public function pauseDay(int $day): void
+    {
+        $this->pausedDays[$day] = true;
+        $this->forget();
+    }
+
+    public function pauseWeekday(int $weekday): void
+    {
+        $this->pausedWeekdays[$weekday] = true;
+        $this->forget();
+    }
+
+    /** As PlantUML's `TaskImpl.getStart`, kept once worked out. */
     #[\Override]
     public function start(): int
+    {
+        return $this->cachedStart ??= $this->workedStart();
+    }
+
+    private function workedStart(): int
     {
         $start = $this->solver['start'] ?? GanttIntegrator::backward($this->solver['end'] ?? 0, $this->solver['load'] ?? GanttTime::DAY, $this->rate());
         if ($this->diamond) {
@@ -74,10 +94,11 @@ final class GanttTask extends GanttEntry implements GanttMoment
         return $start;
     }
 
+    /** As PlantUML's `TaskImpl.getEnd`, kept once worked out. */
     #[\Override]
     public function end(): int
     {
-        return $this->solver['end'] ?? GanttIntegrator::forward($this->solver['start'] ?? 0, $this->solver['load'] ?? GanttTime::DAY, $this->rate());
+        return $this->cachedEnd ??= $this->solver['end'] ?? GanttIntegrator::forward($this->solver['start'] ?? 0, $this->solver['load'] ?? GanttTime::DAY, $this->rate());
     }
 
     /** The day after its last day, at its start: its end less a day, as PlantUML's `getEndMinusOneDayTOBEREMOVED`. */
@@ -172,10 +193,18 @@ final class GanttTask extends GanttEntry implements GanttMoment
                 continue;
             }
             $this->resources[$index] = [$resource, $share];
+            $this->forget();
 
             return;
         }
         $this->resources[] = [$resource, $share];
+        $this->forget();
+    }
+
+    /** As `invalidateCache`: its start and end worked out again. */
+    private function forget(): void
+    {
+        [$this->cachedStart, $this->cachedEnd] = [null, null];
     }
 
     /** As PlantUML's `Solver.setData`: a start never earlier than one set before; only the last two kept. */
@@ -190,5 +219,6 @@ final class GanttTask extends GanttEntry implements GanttMoment
         if (\count($this->solver) > 2) {
             \array_shift($this->solver);
         }
+        $this->forget();
     }
 }

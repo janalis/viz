@@ -123,6 +123,18 @@ final class GanttDrawingTest extends TestCase
         $this->assertSame($expected, self::extent(self::draw($lines)));
     }
 
+    public function testATaskWorkedOutBeforeADayIsClosedKeepsItsDays(): void
+    {
+        $texts = static fn (string $lines): array => \array_values(\array_map(
+            static fn (Mark $mark): string => $mark->text,
+            \array_filter(self::draw($lines)->marks, static fn (Mark $mark): bool => MarkKind::Text === $mark->kind && \str_starts_with($mark->text, 'Day')),
+        ));
+
+        // As the jar draws them: B worked out when T starts at its end, before the weekends close; T's own start, worked out after, past them.
+        $this->assertSame(['Day 1', 'Day 9', 'Day 12', 'Day 12'], $texts("[B] lasts 9 days\n[T] starts at [B]'s end\nsaturday are closed\nsunday are closed"));
+        $this->assertSame(['Day 1', 'Day 13', 'Day 14', 'Day 14'], $texts("saturday are closed\nsunday are closed\n[B] lasts 9 days\n[T] starts at [B]'s end"));
+    }
+
     public function testTheTableWritesATimeOfDayAsPlantUmlWritesIt(): void
     {
         $drawing = self::draw("show column start\nshow column end\nProject starts 2021-01-04\n[A] starts 2021-01-04 10:30:15\n[A] requires 2 days\n[B] starts 2021-01-04 10:30\n[B] requires 1 day");

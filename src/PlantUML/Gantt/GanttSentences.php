@@ -226,7 +226,7 @@ final class GanttSentences
             19 => self::pause($task, self::interval($chart, $words)),
             20 => self::pause($task, self::smartInterval($chart, $words)),
             21 => self::pause($task, [self::date($chart, $words)]),
-            22 => $task->pausedWeekdays[GanttTime::weekdayNamed($words['COMPLEMENT'] ?? '')] = true,
+            22 => $task->pauseWeekday(GanttTime::weekdayNamed($words['COMPLEMENT'] ?? '')),
             23 => null,
             // The last of the phrases the grammar names: is displayed as.
             default => $task->displayString = $words['ANYTHING'] ?? '',
@@ -329,7 +329,7 @@ final class GanttSentences
     private static function pause(GanttTask $task, array $days): void
     {
         foreach ($days as $day) {
-            $task->pausedDays[$day] = true;
+            $task->pauseDay($day);
         }
     }
 
