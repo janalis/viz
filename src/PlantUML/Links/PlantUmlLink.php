@@ -30,8 +30,8 @@ final class PlantUmlLink
     /** The qualifier written at its first end, as `A [key] --> B`, and at its second. */
     public ?string $fromQualifier = null;
     public ?string $toQualifier = null;
-    /** Whether a circle stands midway along it, as `A --0-- B` draws one. */
-    public bool $middleCircle = false;
+    /** The mark in its middle, as PlantUML writes it: `0` a circle, `0)` and `(0` one with an arc on its head's side or its tail's, `(0)` both; empty for none. */
+    public string $middle = '';
     /** The row its first end leaves from, as a map's `key *-> B` leaves its key's. */
     public ?string $fromPort = null;
 
@@ -60,7 +60,8 @@ final class PlantUmlLink
         $link->reversed = !$this->reversed;
         [$link->firstLabel, $link->secondLabel] = [$this->secondLabel, $this->firstLabel];
         [$link->fromQualifier, $link->toQualifier] = [$this->toQualifier, $this->fromQualifier];
-        $link->middleCircle = $this->middleCircle;
+        // As PlantUML's `getInversed`: an arc on one side is on the other.
+        $link->middle = ['0)' => '(0', '(0' => '0)'][$this->middle] ?? $this->middle;
 
         return $link;
     }

@@ -84,6 +84,27 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([66.0, 83.0], [$height("object O {\n f = 1\n}\nmap M {\n a => b\n}"), $height("object O {\n f = 1\n f = 2\n}\nclass Z")]);
     }
 
+    public function testACircleInALinksMiddleTakesItsArcsAsPlantUmlDrawsThem(): void
+    {
+        $arcs = static fn (string $link): array => \array_values(\array_map(
+            static fn (Mark $mark): array => [\round($mark->points[0][0] / Units::POINT, precision: 2), \round($mark->points[0][1] / Units::POINT, precision: 2)],
+            \array_filter(
+                Work::run(PlantUmlPipeline::native()->drawing("@startuml\n[A] {$link} [B]\n@enduml"))->marks,
+                static fn (Mark $mark): bool => (
+                    MarkKind::Polyline === $mark->kind
+                    && 13 === \count($mark->points)
+                    && 14.14 === \round(\hypot($mark->points[12][0] - $mark->points[0][0], $mark->points[12][1] - $mark->points[0][1]) / Units::POINT, precision: 2)
+                ),
+            ),
+        ));
+
+        // As the jar draws them: a quarter turn 10 across about the line's way, on its head's side, its tail's, or both.
+        $this->assertSame([[38.9, 90.56]], $arcs('-0)-'));
+        $this->assertSame([[24.76, 76.42]], $arcs('-(0-'));
+        $this->assertSame([[38.9, 90.56], [24.76, 76.42]], $arcs('-(0)-'));
+        $this->assertSame([], $arcs('-0-'));
+    }
+
     public function testAJsonEntityIsDrawnAsPlantUmlDrawsItsData(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [

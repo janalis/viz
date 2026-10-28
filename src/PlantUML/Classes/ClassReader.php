@@ -314,7 +314,7 @@ final class ClassReader
         $from = $command->get('ENT1');
         $to = $command->get('ENT2');
         $inside = $command->get('INSIDE');
-        if (!\in_array($inside, [null, '0'], strict: true) || (null === $from && null === $to) || ((null === $from || null === $to) && null !== $inside)) {
+        if ((null === $from && null === $to) || ((null === $from || null === $to) && null !== $inside)) {
             throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
         }
         if (null === $from || null === $to) {

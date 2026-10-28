@@ -72,10 +72,8 @@ final class LinkPainter
             dashes: self::dashes($link),
             extent: $extent,
         );
-        if ($link->middleCircle) {
-            // As PlantUML's `MiddleCircle`: 6 across from where the line comes nearest midway between its ends, filled as the background.
-            [$cx, $cy] = self::middle($points);
-            $marks[] = DescriptionBox::ellipse($cx - 6, $cy - 6, 12, 12, $color, 'none' === $background ? '#ffffff' : $background, 1.5);
+        if ('' !== $link->middle) {
+            \array_push($marks, ...self::circled($link->middle, $points, $color, 'none' === $background ? '#ffffff' : $background));
         }
         if (!$label->empty()) {
             $margin = Svek::labelMargin($link->from, $link->to);
@@ -129,18 +127,46 @@ final class LinkPainter
     }
 
     /**
-     * The point of a line nearest midway between its ends, as PlantUML's `DotPath` finds its
-     * middle: the least sum of its squared distances to them.
+     * The mark in a link's middle, as PlantUML's `MiddleCircle` and `MiddleCircleCircled` draw
+     * it where the line comes nearest midway between its ends: a circle 6 across filled as the
+     * background; an arc 10 across of a quarter turn about the line's way there on its head's
+     * side, its tail's, or both over a disc of the background.
      *
      * @param list<array{float, float}> $points
-     * @return array{float, float}
+     * @return list<Mark>
+     */
+    private static function circled(string $middle, array $points, string $color, string $background): array
+    {
+        [[$cx, $cy], $angle] = self::middle($points);
+        $marks = '(0)' === $middle ? [DescriptionBox::ellipse($cx - 10, $cy - 10, 20, 20, $background, $background, 1.5)] : [];
+        foreach (['0)' => 0.0, '(0' => \M_PI] as $mark => $turn) {
+            if ($mark !== $middle && '(0)' !== $middle) {
+                continue;
+            }
+            $arc = [];
+            for ($step = 0; $step <= 12; ++$step) {
+                $at = $angle + $turn - (\M_PI / 4) + (($step / 12) * (\M_PI / 2));
+                $arc[] = [$cx + (10 * \cos($at)), $cy + (10 * \sin($at))];
+            }
+            $marks[] = new Mark(MarkKind::Polyline, $arc, stroke: $color, strokeWidth: 1.5);
+        }
+
+        return [...$marks, DescriptionBox::ellipse($cx - 6, $cy - 6, 12, 12, $color, $background, 1.5)];
+    }
+
+    /**
+     * The point of a line nearest midway between its ends, as PlantUML's `DotPath` finds its
+     * middle: the least sum of its squared distances to them, and the line's way there.
+     *
+     * @param list<array{float, float}> $points
+     * @return array{array{float, float}, float}
      */
     private static function middle(array $points): array
     {
         // The least sum lies nearest the midpoint of its ends.
         [$start, $end] = [$points[0], $points[\count($points) - 1]];
         $mid = [($start[0] + $end[0]) / 2, ($start[1] + $end[1]) / 2];
-        [$best, $distance] = [$start, \INF];
+        [$best, $distance, $way] = [$start, \INF, 0.0];
         for ($index = 1, $count = \count($points); $index < $count; ++$index) {
             [$a, $b] = [$points[$index - 1], $points[$index]];
             [$dx, $dy] = [$b[0] - $a[0], $b[1] - $a[1]];
@@ -148,10 +174,10 @@ final class LinkPainter
             $t = $length > 0 ? \max(0.0, \min(1.0, ((($mid[0] - $a[0]) * $dx) + (($mid[1] - $a[1]) * $dy)) / $length)) : 0.0;
             $point = [$a[0] + ($t * $dx), $a[1] + ($t * $dy)];
             $away = \hypot($point[0] - $mid[0], $point[1] - $mid[1]);
-            [$best, $distance] = $away < $distance ? [$point, $away] : [$best, $distance];
+            [$best, $distance, $way] = $away < $distance ? [$point, $away, \atan2($dy, $dx)] : [$best, $distance, $way];
         }
 
-        return $best;
+        return [$best, $way];
     }
 
     /**

@@ -294,11 +294,11 @@ final class ClassReaderTest extends TestCase
     /** @return iterable<string, array{string, string}> */
     public static function refused(): iterable
     {
-        yield 'middle circle circled' => ['A --(0)-- B', 'The native PlantUML renderer does not draw: A --(0)-- B'];
         yield 'map line' => ["map M {\n a b\n}", 'The native PlantUML renderer does not draw: a b'];
         yield 'map again' => ["class M\nmap M {\n}", 'PlantUML cannot declare M again as map'];
         yield 'object again' => ["class o\nobject o", 'PlantUML cannot declare o again as object'];
         yield 'association of no class' => ["class A\n(A, B) .. C", 'No class B'];
+        yield 'association with a middle circle' => ["class A\nclass B\nclass C\n(A, B) -0- C", 'The native PlantUML renderer does not draw: (A, B) -0- C'];
         yield 'second association' => ["class A\nclass B\n(A, B) .. C\n(A, B) .. D", 'The native PlantUML renderer does not draw: (A, B) .. D'];
         yield 'association across a noted link' => [
             "class A\nclass B\nA -- B\nnote on link : n\n(A, B) .. C",

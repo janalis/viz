@@ -188,7 +188,6 @@ final class DescriptionReaderTest extends TestCase
         yield 'lone name' => ["node N\nfoo", 'PlantUML does not read a lone name: foo'];
         yield 'port' => ["node N\nport P", 'The native PlantUML renderer draws ports only on a container: P'];
         yield 'multiline other' => ["node N\nportin P [\nx\n]", 'The native PlantUML renderer does not draw portin elements'];
-        yield 'middle half circle' => ['[A] -0)- [B]', 'The native PlantUML renderer does not draw: [A] -0)- [B]'];
         yield 'an element named as a container' => ["rectangle R {\n [B]\n}\ncomponent R", 'This element (R) is already defined'];
         yield 'namespaced' => ['node a.b', 'The native PlantUML renderer does not draw namespaced names such as a.b'];
         yield 'archimate' => ["node N\narchimate #Business \"Thing\" as T", 'The native PlantUML renderer does not draw: archimate #Business "Thing" as T'];

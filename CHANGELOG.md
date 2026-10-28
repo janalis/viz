@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML class, component, deployment or use case diagram's link with a circle in its middle and an arc round it, `-0)-`, `-(0-` or `-(0)-`, is drawn natively, as PlantUML's `MiddleCircleCircled` draws it: a quarter turn 10 across about the line's way on its head's side, its tail's, or both over a disc of the background, where it was refused.
 - A PlantUML state diagram's `frame F { … }` is drawn natively, where it was refused: a cluster round its states, however they are linked, with a state's corners, clear, its name in bold in a tab, as PlantUML's `USymbolFrame` draws it. One with a stereotype, a link or colours is still refused.
 - A PlantUML component, deployment or use case diagram's link with a circle in its middle, `-0-`, is drawn natively, as a class diagram draws it, where it was refused.
 - A PlantUML state diagram is read as PlantUML is seen to read one: its declarations first — states, composite states, floating notes — then its transitions and the notes beside a state or on a transition, each in the composite state and region it stands in. A state a transition names before it is declared in a composite state is that one, and the states only transitions name, and the notes beside them, come after the rest, as svek writes them, so a floating note written last stands before them.

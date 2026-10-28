@@ -188,10 +188,6 @@ final class DescriptionReader
 
     private function link(PlantUmlCommand $command): void
     {
-        // A circle in a link's middle, `-0-`, drawn as a class diagram draws it; any other mark there left to PlantUML.
-        if (!\in_array($command->get('INSIDE'), [null, '0'], strict: true)) {
-            throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
-        }
         $renamed = new PlantUmlCommand(
             'CommandLinkClass',
             [
