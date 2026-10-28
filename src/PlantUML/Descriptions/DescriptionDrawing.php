@@ -338,18 +338,23 @@ final class DescriptionDrawing
         $style = $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'arrow']);
         $background = $this->diagram->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
         $tabs = \array_filter(\array_map(static fn (DescriptionBox $box): ?array => $box->magnet(), $this->boxes));
-        foreach ($this->edges as $index => $edge) {
+        // The notes svek draws pointing at the elements they stand beside, or are linked to; the link they point along not drawn.
+        $pointers = NoteLine::pointers($placement, $this->diagram->notes, $this->notes, $this->noteEdges, $this->diagram->links, $this->edges, [...$this->boxes, ...$this->tables]);
+        foreach (\array_diff($this->edges, \array_map(static fn (array $pointer): int => $pointer[2], $pointers)) as $index => $edge) {
             $link = $this->diagram->links[$index];
             $this->put($marks, LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, tabs: $tabs), $link->from, $link->to);
         }
+        // Any other note's line to what it stands beside, as dot draws its edge.
         foreach ($this->diagram->notes as $note) {
-            if (null === $note->entity || !\array_key_exists($note->id, $this->notes)) {
+            if (null === $note->entity || !\array_key_exists($note->id, $this->notes) || \array_key_exists($note->id, $pointers)) {
                 continue;
             }
-            $line = \array_key_exists($note->entity, $this->diagram->groups)
-                ? NoteLine::routed($note, $placement, $this->noteEdges[$note->id], $style, $this->diagram->document->styles->style(['root', 'element', 'componentDiagram', 'note']))
-                : [NoteLine::straight($placement, $note->id, $note->entity)];
-            $this->put($marks, $line, $note->entity);
+            $this->put($marks, NoteLine::routed($note, $placement, $this->noteEdges[$note->id], $style, $this->diagram->document->styles->style([
+                'root',
+                'element',
+                'componentDiagram',
+                'note',
+            ])), $note->entity);
         }
         foreach ($this->boxes as $id => $box) {
             $this->put($marks, $box->marks(...self::corner($placement, $id)), $id);
@@ -361,12 +366,24 @@ final class DescriptionDrawing
         foreach ($this->tables as $id => $table) {
             $this->put($marks, $table->marks(...self::corner($placement, $id)), $id);
         }
-        $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->diagram->notes), 1, 0);
-        foreach ($this->notes as $id => $note) {
-            $this->put($marks, $note->marks(...self::corner($placement, $id)), $attached[$id] ?? '');
-        }
+        $this->drawNotes($marks, $placement, $pointers);
 
         return $marks;
+    }
+
+    /**
+     * The notes, each pointing at what it stands beside where svek draws it so.
+     *
+     * @param list<Mark> $marks
+     * @param array<string, array{array{float, float}, array{float, float}, int}> $pointers
+     */
+    private function drawNotes(array &$marks, Placement $placement, array $pointers): void
+    {
+        $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->diagram->notes), 1, 0);
+        foreach ($this->notes as $id => $note) {
+            [$x, $y] = self::corner($placement, $id);
+            $this->put($marks, \array_key_exists($id, $pointers) ? $note->pointing($x, $y, $pointers[$id][0], $pointers[$id][1]) : $note->marks($x, $y), $attached[$id] ?? '');
+        }
     }
 
     /** A `json` or `map` entity, as svek writes one: a table, its rows each, or a `json` entity's one, its height in whole points down. */

@@ -278,6 +278,22 @@ final class DotEngineTest extends TestCase
         }
     }
 
+    public function testAFlatEdgesRunOverWideNodesKeepsWithinTheRoomAboveItsCorners(): void
+    {
+        // As dot fits a -> c over b: its run's controls 4/9 of its length from its corners, halved while it would rise further above them than they stand above the rank.
+        foreach (['2' => 4 / 9, '4' => 2 / 9] as $width => $share) {
+            $graph = Work::run(new DotParser()->parse(
+                'digraph { nodesep=0.486111; ranksep=0.833333; node [shape=rect,label=""]; a [width=0.77,height=0.666667]; c [width=0.84,height=0.35]; b [width='
+                .$width
+                .',height=0.35]; a -> c [minlen=0]; a -> b [minlen=0]; }',
+            ));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            [$first, $control, , $last] = \array_slice($placement->controls[0], offset: 3, length: 4);
+            $slope = ($first[1] - $control[1]) / ($control[0] - $first[0]);
+            $this->assertEqualsWithDelta($share, (($control[0] - $first[0]) * \hypot(1.0, $slope)) / ($last[0] - $first[0]), 1e-9, (string) $width);
+        }
+    }
+
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

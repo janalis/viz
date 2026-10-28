@@ -282,7 +282,10 @@ final class ClassDrawing
             ));
         }
         $this->push($placement);
-        foreach ($this->edges as $index => $edge) {
+        // The notes svek draws pointing at the classifiers they stand beside, or are linked to.
+        $pointers = NoteLine::pointers($placement, $this->classes->notes, $this->notes, $this->noteEdges, $this->classes->links, $this->edges, $this->boxes);
+        // A note's link it points along is not drawn.
+        foreach (\array_diff($this->edges, \array_map(static fn (array $pointer): int => $pointer[2], $pointers)) as $index => $edge) {
             $link = $this->classes->links[$index];
             $drawn = $this->marks;
             // A hidden link, as PlantUML draws it unseen: measured as drawn.
@@ -294,7 +297,7 @@ final class ClassDrawing
                 $this->marks = $drawn;
             }
         }
-        foreach ($this->classes->notes as $note) {
+        foreach (\array_filter($this->classes->notes, static fn (PlantUmlNote $note): bool => !\array_key_exists($note->id, $pointers)) as $note) {
             $this->noteLink($note, $placement);
         }
         foreach ($this->boxes as $id => $box) {
@@ -312,14 +315,25 @@ final class ClassDrawing
             \array_push($marks, ...$box instanceof ClassBox && $this->classes->document->strictUml() ? $box->underlined($x, $y) : []);
             \array_key_exists($id, $this->hidden) ? \array_push($this->ghosts, ...$marks) : \array_push($this->marks, ...$marks);
         }
+        $this->drawNotes($placement, $pointers);
+
+        return $this->marks;
+    }
+
+    /**
+     * The notes, each pointing at what it stands beside where svek draws it so.
+     *
+     * @param array<string, array{array{float, float}, array{float, float}, int}> $pointers
+     */
+    private function drawNotes(Placement $placement, array $pointers): void
+    {
         $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->classes->notes), 1, 0);
         foreach ($this->notes as $id => $note) {
             $node = $placement->endpoints[$id];
-            $marks = $note->marks($node->x - ($node->w / 2), $node->y - ($node->h / 2));
+            [$x, $y] = [$node->x - ($node->w / 2), $node->y - ($node->h / 2)];
+            $marks = \array_key_exists($id, $pointers) ? $note->pointing($x, $y, $pointers[$id][0], $pointers[$id][1]) : $note->marks($x, $y);
             \array_key_exists($attached[$id] ?? '', $this->hidden) ? \array_push($this->ghosts, ...$marks) : \array_push($this->marks, ...$marks);
         }
-
-        return $this->marks;
     }
 
     /**
@@ -519,27 +533,21 @@ final class ClassDrawing
         return [PlantUmlText::styled(ClassReader::split($text), $style), $style, 0.0];
     }
 
-    /** The dashed line from a note to the entity it stands beside. */
+    /** The dashed line from a note to the entity it stands beside, as PlantUML draws it: its edge as dot draws it. */
     private function noteLink(PlantUmlNote $note, Placement $placement): void
     {
         $entity = (string) $note->entity;
-        // As PlantUML, a note's line to a package is its edge as dot draws it; to a classifier shown, a straight line.
-        $routed = \array_key_exists($note->id, $this->noteEdges) && \array_key_exists($entity, $this->classes->groups);
-        if (!$routed && (!\array_key_exists($note->id, $this->notes) || !\array_key_exists($entity, $this->boxes) || \array_key_exists($entity, $this->hidden))) {
+        $shown = \array_key_exists($note->id, $this->notes) && \array_key_exists($entity, $this->boxes) && !\array_key_exists($entity, $this->hidden);
+        if (!\array_key_exists($note->id, $this->noteEdges) || !$shown && !\array_key_exists($entity, $this->classes->groups)) {
             return;
         }
         $styles = $this->classes->document->styles;
-        \array_push(
-            $this->marks,
-            ...$routed
-                ? NoteLine::routed(
-                    $note,
-                    $placement,
-                    $this->noteEdges[$note->id],
-                    $styles->style(['root', 'element', 'classDiagram', 'arrow']),
-                    $styles->style(['root', 'element', 'classDiagram', 'note']),
-                )
-                : [NoteLine::straight($placement, $note->id, $entity)],
-        );
+        \array_push($this->marks, ...NoteLine::routed(
+            $note,
+            $placement,
+            $this->noteEdges[$note->id],
+            $styles->style(['root', 'element', 'classDiagram', 'arrow']),
+            $styles->style(['root', 'element', 'classDiagram', 'note']),
+        ));
     }
 }

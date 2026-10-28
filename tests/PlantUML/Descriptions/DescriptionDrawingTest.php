@@ -396,6 +396,10 @@ final class DescriptionDrawingTest extends TestCase
             $size("[A] --> [B]\n[B] --> [C]\nnote right of [B] : a note"),
             $size("[A] --> [B]\nnote right of [B] : a note\n[A] --> [C]"),
         ]);
+        // Two notes beside it: the far one's line over the near one, as dot draws its edge; the near one pointing at it, as svek's opale.
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n[Comp]\nnote right of Comp : a note\nnote right of Comp : two\n@enduml"));
+        $this->assertSame([276.0, 102.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertCount(1, \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 8 === \count($mark->points)));
     }
 
     public function testTheComponentStyleSetsHowAComponentIsDrawn(): void

@@ -579,6 +579,24 @@ final class ClassDrawingTest extends TestCase
         $this->assertEqualsWithDelta(19.811 * Units::POINT, $label->points[0][1], 0.1 * Units::POINT);
     }
 
+    public function testANoteWithASingleLinkPointsAtWhatItStandsBesideAsSvekDrawsItsOpale(): void
+    {
+        $dashed = static fn (Drawing $drawing): int => \count(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && $mark->dashed));
+        $pointing = static fn (Drawing $drawing): int => \count(\array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 8 === \count($mark->points)));
+
+        // As the jar draws them: beside a class, or linked to one alone, its outline reaching out to it, no line drawn.
+        foreach (["class A\nclass B\nA --> B\nnote right of A : a note", "class A\nnote \"x\" as N\nN .. A"] as $lines) {
+            $drawing = self::draw($lines);
+            $this->assertSame([0, 1], [$dashed($drawing), $pointing($drawing)], $lines);
+        }
+        // Linked to two classes, its lines drawn.
+        $this->assertSame(2, $dashed(self::draw("class A\nclass B\nnote \"x\" as N\nN .. A\nN .. B")));
+        // Its link routed over another note, its line drawn as dot draws it: the diagram as tall as the jar makes it.
+        $drawing = self::draw("class Bee\nnote right of Bee : a note\nnote right of Bee : a longer note");
+        $this->assertSame([1, 1], [$dashed($drawing), $pointing($drawing)]);
+        $this->assertSame([313.0, 115.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+    }
+
     public function testAHeadLabelThatWouldOverlapTheTailLabelStandsOnTheOtherSide(): void
     {
         $centre = static function (Drawing $drawing, string $text, float $side = 0.0): float {

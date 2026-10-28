@@ -46,7 +46,7 @@ final class DotArcs
         $gap = $position->nodeSeparation / 2;
         [$rise, $leaving] = self::rise([$x[$tail], $y], $first, $sign, [$first[0] - ($sign * $gap), $y - $half]);
         [$fall, $reaching] = self::rise([$x[$head], $y], $last, -$sign, [$last[0] + ($sign * $gap), $y - $half]);
-        $pieces = [$rise, self::run($first, $last, $sign, $leaving, $reaching), [$fall[3], $fall[2], $fall[1], $fall[0]]];
+        $pieces = [$rise, self::run($first, $last, $sign, [$leaving, $reaching], $y - $half - $level), [$fall[3], $fall[2], $fall[1], $fall[0]]];
         $drawn = [$rise[0]];
         foreach ($pieces as $piece) {
             for ($step = 1; $step <= self::STEPS; ++$step) {
@@ -59,18 +59,29 @@ final class DotArcs
 
     /**
      * The piece along the top from one corner to the other, leaving and reaching them along the
-     * slopes it meets, each control 4/9 of its length from its corner.
+     * slopes it meets, each control 4/9 of its length from its corner — halved, as `dot` is seen
+     * to fit it, while it would rise further above its corners than they stand above the rank.
      *
      * @param array{float, float} $first
      * @param array{float, float} $last
+     * @param array{float, float} $slopes the slopes it leaves and reaches its corners along
+     * @param float $room how far its corners stand above the rank
      * @return array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}
      */
-    private static function run(array $first, array $last, float $sign, float $leaving, float $reaching): array
+    private static function run(array $first, array $last, float $sign, array $slopes, float $room): array
     {
-        $reach = (4 / 9) * \abs($last[0] - $first[0]);
-        [$out, $in] = [$reach / \hypot(1.0, $leaving), $reach / \hypot(1.0, $reaching)];
+        $piece = static function (float $share) use ($first, $last, $sign, $slopes): array {
+            $reach = $share * \abs($last[0] - $first[0]);
+            [$out, $in] = [$reach / \hypot(1.0, $slopes[0]), $reach / \hypot(1.0, $slopes[1])];
 
-        return [$first, [$first[0] + ($sign * $out), $first[1] - ($out * $leaving)], [$last[0] - ($sign * $in), $last[1] - ($in * $reaching)], $last];
+            return [$first, [$first[0] + ($sign * $out), $first[1] - ($out * $slopes[0])], [$last[0] - ($sign * $in), $last[1] - ($in * $slopes[1])], $last];
+        };
+        $share = 4 / 9;
+        while (($first[1] - \min(\array_map(static fn (int $step): float => self::at($piece($share), $step / 64)[1], \range(0, end: 64)))) > $room) {
+            $share /= 2;
+        }
+
+        return $piece($share);
     }
 
     /**
