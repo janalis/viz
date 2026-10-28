@@ -15,6 +15,7 @@ use Janalis\Viz\Model\Direction;
 use Janalis\Viz\PlantUML\Classes\ClassBox;
 use Janalis\Viz\PlantUML\Classes\ClassColors;
 use Janalis\Viz\PlantUML\Classes\ClassReader;
+use Janalis\Viz\PlantUML\Descriptions\DescriptionShapes;
 use Janalis\Viz\PlantUML\Draw\LinkLabel;
 use Janalis\Viz\PlantUML\Draw\LinkPainter;
 use Janalis\Viz\PlantUML\Draw\NoteBox;
@@ -25,6 +26,7 @@ use Janalis\Viz\PlantUML\Language\PlantUmlNote;
 use Janalis\Viz\PlantUML\Svek\Frontier;
 use Janalis\Viz\PlantUML\Svek\Svek;
 use Janalis\Viz\Source\Unsupported;
+use Janalis\Viz\Text\FontFace;
 
 /**
  * A native state diagram laid out as svek lays it out and drawn as PlantUML draws it. Each
@@ -210,6 +212,10 @@ final class StateDrawing
     /** Whether no transition joins a state inside a composite state to one outside it, and no point stands on its border. */
     private function autarkic(string $composite): bool
     {
+        // As svek, a frame is a cluster however its states are linked.
+        if ('frame' === $this->states->nodes[$composite]->kind) {
+            return false;
+        }
         foreach ($this->states->links as $link) {
             if ($this->inside($link->from, $composite) !== $this->inside($link->to, $composite)) {
                 return false;
@@ -318,6 +324,16 @@ final class StateDrawing
         $style = $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'state'], $node->stereotypes);
         $line = ClassColors::line($node->color) ?? $style->color('LineColor', '#181818');
         $stroke = $style->number('LineThickness', 0.5);
+        if ('frame' === $node->kind) {
+            // As PlantUML's `USymbolFrame` draws a frame group: its corners a state's, clear, its name in a tab 10 wider and 3 taller, 3 in and 1 down.
+            [$titleWidth] = $title->size();
+
+            return [
+                ClassBox::rectangle($x, $y, $width, $height, $line, 'none', $stroke, $style->number('RoundCorner', 25.0)),
+                DescriptionShapes::frame($x, $y, $width, $height, $line, 'none', $stroke, $titleWidth, $titleHeight)[1],
+                ...$title->marks($x + 3, $y + 1, $titleWidth, 'left'),
+            ];
+        }
         $rule = $y + $titleTop + $titleHeight + $below;
 
         $band = ClassColors::back($node->color) ?? $style->color('BackGroundColor', '#f1f1f1');
@@ -340,9 +356,14 @@ final class StateDrawing
         ];
     }
 
+    /** A composite state's name, or a frame's, in bold. */
     private function title(StateNode $node): PlantUmlText
     {
-        return PlantUmlText::styled($node->display, $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'state', 'name'], $node->stereotypes));
+        return PlantUmlText::styled(
+            $node->display,
+            $this->states->document->styles->style(['root', 'element', 'stateDiagram', 'state', 'name'], $node->stereotypes),
+            'frame' === $node->kind ? FontFace::Bold : null,
+        );
     }
 
     private function description(StateNode $node): PlantUmlText

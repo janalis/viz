@@ -129,6 +129,7 @@ final class StateReader
             'CommandCreateState' => $this->create($command),
             'CommandCreateJson' => $this->json($command),
             'CommandCreatePackageState' => $this->composite($command),
+            'CommandCreatePackage2' => $this->frame($command),
             'CommandEndState' => \array_pop($this->open),
             'CommandConcurrentState' => $this->region((string) $command->get('TYPE')),
             'CommandAddField' => $this->state((string) ($command->get('CODE3') ?? $command->get('CODE4')))->describe((string) $command->get('FIELD')),
@@ -145,6 +146,7 @@ final class StateReader
     {
         match ($command->name) {
             'CommandCreatePackageState' => $this->open[] = [$this->state((string) $command->lazy('CODE'))->id, 0],
+            'CommandCreatePackage2' => $this->open[] = [$this->state((string) ($command->get('CODE1') ?? $command->get('CODE2')))->id, 0],
             'CommandEndState' => \array_pop($this->open),
             'CommandConcurrentState' => [] === $this->open ? null : $this->open[\count($this->open) - 1][1]++,
             default => \in_array($command->name, self::LATE, strict: true) ? $this->execute($command) : null,
@@ -196,6 +198,23 @@ final class StateReader
     private function composite(PlantUmlCommand $command): void
     {
         $state = $this->create($command);
+        $this->composites[$state->id] ??= [];
+        $this->open[] = [$state->id, 0];
+    }
+
+    /**
+     * `frame F { … }`: a group PlantUML's `CommandCreatePackage2` makes, drawn round the states
+     * in it; its stereotype, link and colours left to PlantUML.
+     */
+    private function frame(PlantUmlCommand $command): void
+    {
+        foreach (['STEREOTYPE', 'URL', 'COLOR', 'LINECOLOR'] as $slot) {
+            if (null !== $command->get($slot)) {
+                throw new Unsupported('The native PlantUML renderer does not draw: '.$command->line());
+            }
+        }
+        $state = $this->state((string) ($command->get('CODE1') ?? $command->get('CODE2')), $command->get('DISPLAY1') ?? $command->get('DISPLAY2'));
+        $state->kind = 'frame';
         $this->composites[$state->id] ??= [];
         $this->open[] = [$state->id, 0];
     }

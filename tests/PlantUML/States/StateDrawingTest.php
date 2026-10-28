@@ -45,6 +45,23 @@ final class StateDrawingTest extends TestCase
         $this->assertSame([187.0, 265.0], $size("[*] --> Idle\nIdle --> Busy\nnote \"Shared note\" as N1"));
     }
 
+    public function testAFrameIsDrawnRoundItsStatesAsPlantUmlDrawsIt(): void
+    {
+        $drawing = self::draw("frame F {\n state B\n state C\n}\nframe \"Long frame title\" as G {\n frame H {\n  state D\n }\n}\nB --> D");
+        $tabs = \array_values(\array_map(
+            static fn (Mark $mark): array => \array_map(static fn (array $point): array => [
+                \round($point[0] / Units::POINT, precision: 2),
+                \round($point[1] / Units::POINT, precision: 2),
+            ], $mark->points),
+            \array_filter($drawing->marks, static fn (Mark $mark): bool => MarkKind::Polyline === $mark->kind && 4 === \count($mark->points)),
+        ));
+
+        // As the jar draws them: clusters with a state's corners, each name in bold in a tab 10 wider and 3 taller than it.
+        $this->assertSame([212.0, 314.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $this->assertSame([[49.04, 7.0], [49.04, 16.49], [39.04, 26.49], [31.0, 26.49]], $tabs[0]);
+        $this->assertSame('G', self::read("frame \"Long frame title\" as G {\n frame H {\n  state D\n }\n}")->nodes['H']->group);
+    }
+
     public function testAJsonEntityIsDrawnAsAClassDiagramDrawsIt(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
