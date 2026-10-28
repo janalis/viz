@@ -45,6 +45,18 @@ final class StateDrawingTest extends TestCase
         $this->assertSame([187.0, 265.0], $size("[*] --> Idle\nIdle --> Busy\nnote \"Shared note\" as N1"));
     }
 
+    public function testStatesStandInTheOrderWrittenAndAChoiceIsMeasuredAsAPolygon(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(self::draw($source));
+
+        // As the jar draws them: a choice taken 10 wider either side; a composite state drawn as an image of its own where it was written, after a fork.
+        $this->assertSame([[65.0, 45.0], [223.0, 122.0], [176.0, 122.0]], [
+            $size('state S0 <<choice>>'),
+            $size("state S0 <<fork>>\nstate S1 {\n  state S1a\n}"),
+            $size("state S0 <<choice>>\nstate S1 {\n  state S1a\n}"),
+        ]);
+    }
+
     public function testAMapIsDrawnAsAClassDiagramDrawsIt(): void
     {
         $drawing = self::draw("state A\nmap M {\n a => b\n c => d\n}\nA --> M");

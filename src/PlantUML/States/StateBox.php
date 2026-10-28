@@ -135,14 +135,14 @@ final readonly class StateBox
                 self::disc($cx, $cy, 11.0, $line, $back),
                 ...new PlantUmlText(['history' === $this->node->kind ? 'H' : 'H*'])->marks($x, $cy - (PlantUmlText::lineHeight(14.0) / 2), $this->width),
             ],
-            // As PlantUML, which draws it as a polygon, its limit finder taking it as it runs.
+            // As PlantUML, which draws it as a polygon, its limit finder taking it 10 wider either side.
             'choice' => [new Mark(
                 MarkKind::Polygon,
                 [[$cx, $y], [$x + $this->width, $cy], [$cx, $y + $this->height], [$x, $cy]],
                 stroke: $line,
                 fill: $back,
                 strokeWidth: $stroke,
-                outline: Outline::Path,
+                outline: Outline::Polygon,
             )],
             'fork', 'join' => [new Mark(MarkKind::Polygon, ClassBox::corners($x, $y, $this->width, $this->height), stroke: $dark, fill: $dark, strokeWidth: 1.0)],
             default => $this->state($x, $y, $line, $back, $stroke),

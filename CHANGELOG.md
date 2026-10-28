@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML state diagram's states stand in the order they are written, a composite state drawn as an image of its own among them, where it stood first; a choice is measured as PlantUML's limit finder takes a polygon, 10 wider either side.
 - A PlantUML component, deployment or use case diagram reads `skinparam componentStyle` and `actorStyle` as they stand when its first component, or actor, is made, as PlantUML is seen to read them once (`PlantUmlDocument::paramAt`); an interface is laid out as wide as dot sizes the table svek writes for it — a cell either side half the rest of its label, in whole points down, 8 around — where long names came out narrower.
 - A PlantUML classifier's body is sized as PlantUML sizes it: a titled separator with nothing under it its title's height and a half; room for the visibility icons only in a compartment with a member that has one; each icon as PlantUML's `VisibilityModifier` draws it, in a block 10 across beside its row, a diamond's or a triangle's a polygon PlantUML's limit finder takes 10 wider either side, unless the classifier is laid out alone.
 - A PlantUML Gantt task keeps its start and end once worked out, as PlantUML's `TaskImpl` caches them until the task itself changes: a task another starts at, before the weekends are closed, keeps the days it was worked out over.
