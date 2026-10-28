@@ -153,11 +153,23 @@ final readonly class DotEngine implements LayoutEngine
             $counts[$pair] = ($counts[$pair] ?? 0) + 1;
             $places[$index] = [$pair, $counts[$pair]];
         }
+        $stacked = self::stacked($layers, $position);
         foreach ($layers->flat as $index => [$tail, $head, $layered, $labelWidth, $labelHeight]) {
             $original = $edgeIndexes[$layered];
             $routes[$original] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
             if ($labelWidth > 0 || $labelHeight > 0) {
-                $labels[$original] = $point(...self::flatLabel($layers, $position, $tail, $head, $labelHeight));
+                [$centre, $around] = $stacked[$index] ?? [self::flatLabel($layers, $position, $tail, $head, $labelHeight), null];
+                $labels[$original] = $point(...$centre);
+                if (null === $around) {
+                    continue;
+                }
+                // Round a label, from the corner nearer its tail.
+                [$first, $last] = $position->x[$head] >= $position->x[$tail] ? $around : [$around[1], $around[0]];
+                $y = $position->y[$layers->rank[$tail]];
+                $arc = DotArcs::through([$position->x[$tail], $y], [$position->x[$head], $y], $first, $last, [$first, $last], \INF);
+                $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[0]);
+                $routes[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[1]);
+                $controls[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[2]);
                 continue;
             }
             [$pair, $k] = $places[$index];
@@ -422,6 +434,48 @@ final readonly class DotEngine implements LayoutEngine
         }
 
         return [($position->x[$left] + $layers->right[$left] + $position->x[$right] - $layers->left[$right]) / 2, $position->y[$rank] - ($height / 2) - 3];
+    }
+
+    /**
+     * The labels of flat edges between two neighbours, as `dot` is seen to stack them, in the
+     * order written: the first 3 above the line, the next 3 below it, each further one 6 beyond
+     * the last on its side, every other side in turn; the first edge straight, one below the line
+     * round the bottom of its own label, one above round the top of the label before it there.
+     *
+     * @return array<int, array{array{float, float}, ?array{array{float, float}, array{float, float}}}> each label's centre, and the corners its edge goes round, by flat edge
+     */
+    private static function stacked(DotLayers $layers, DotPosition $position): array
+    {
+        $pairs = [];
+        foreach ($layers->flat as $index => [$tail, $head, , $labelWidth, $labelHeight]) {
+            if (($labelWidth <= 0 && $labelHeight <= 0) || DotVertical::bridging($layers, $tail, $head)) {
+                continue;
+            }
+            $pairs[\min($tail, $head).':'.\max($tail, $head)][] = $index;
+        }
+        $stacked = [];
+        foreach ($pairs as $members) {
+            // The last label on each side: its top, its bottom, its left and its right.
+            $sides = [null, null];
+            foreach ($members as $k => $index) {
+                [$tail, $head, , $width, $height] = $layers->flat[$index];
+                $x = self::flatLabel($layers, $position, $tail, $head, $height)[0];
+                $y = $position->y[$layers->rank[$tail]];
+                $last = $sides[$k % 2];
+                $box = 0 === ($k % 2)
+                    ? [$top = (null === $last ? $y - 3 : $last[0] - 6) - $height, $top + $height, $x - ($width / 2), $x + ($width / 2)]
+                    : [$top = null === $last ? $y + 3 : $last[1] + 6, $top + $height, $x - ($width / 2), $x + ($width / 2)];
+                $around = match (true) {
+                    1 === ($k % 2) => [[$box[2], $box[1]], [$box[3], $box[1]]],
+                    null === $last => null,
+                    default => [[$last[2], $last[0]], [$last[3], $last[0]]],
+                };
+                $stacked[$index] = [[$x, ($box[0] + $box[1]) / 2], $around];
+                $sides[$k % 2] = $box;
+            }
+        }
+
+        return $stacked;
     }
 
     /**

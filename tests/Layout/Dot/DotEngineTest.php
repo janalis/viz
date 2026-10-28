@@ -294,6 +294,24 @@ final class DotEngineTest extends TestCase
         }
     }
 
+    public function testLabelledFlatEdgesBetweenNeighboursStackTheirLabelsAsDotDoes(): void
+    {
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 55.44, 48), new LayoutNode('b', 'b', 41.76, 48)],
+            \array_map(static fn (int $index): LayoutEdge => new LayoutEdge($index, 'a', 'b', minLength: 0, labelWidth: 36, labelHeight: 17), [0, 1, 2]),
+            [],
+            Direction::TopBottom,
+            new Spacing(60, 35, 4),
+        )));
+        $y = $placement->endpoints['a']->y;
+
+        // As dot stacks them: the first 3 above the line, the next 3 below, the third 6 above the first.
+        $this->assertSame([-11.5, 11.5, -34.5], \array_map(static fn (array $at): float => \round($at[1] - $y, precision: 2), \array_values($placement->labels)));
+        // The first straight; the second round the bottom of its own label, the third round the top of the first.
+        $this->assertArrayNotHasKey(0, $placement->controls);
+        $this->assertSame([20.0, -20.0], [\round($placement->controls[1][3][1] - $y, precision: 2), \round($placement->controls[2][3][1] - $y, precision: 2)]);
+    }
+
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

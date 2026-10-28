@@ -44,9 +44,28 @@ final class DotArcs
         $first = [$x[$near] - ($sign * (($sign > 0 ? $layers->left[$near] : $layers->right[$near]) - $inside)), $level];
         $last = [$x[$far] + ($sign * (($sign > 0 ? $layers->right[$far] : $layers->left[$far]) - $inside)), $level];
         $gap = $position->nodeSeparation / 2;
-        [$rise, $leaving] = self::rise([$x[$tail], $y], $first, $sign, [$first[0] - ($sign * $gap), $y - $half]);
-        [$fall, $reaching] = self::rise([$x[$head], $y], $last, -$sign, [$last[0] + ($sign * $gap), $y - $half]);
-        $pieces = [$rise, self::run($first, $last, $sign, [$leaving, $reaching], $y - $half - $level), [$fall[3], $fall[2], $fall[1], $fall[0]]];
+
+        return self::through([$x[$tail], $y], [$x[$head], $y], $first, $last, [[$first[0] - ($sign * $gap), $y - $half], [$last[0] + ($sign * $gap), $y - $half]], $y - $half - $level);
+    }
+
+    /**
+     * A flat edge's curve from its tail's centre through two corners to its head's centre: up
+     * or down to the first, along to the second, back to the head.
+     *
+     * @param array{float, float} $tail
+     * @param array{float, float} $head
+     * @param array{float, float} $first
+     * @param array{float, float} $last
+     * @param array{array{float, float}, array{float, float}} $edges where the rank's top stands back from each corner, which the rise bends round
+     * @param float $room how far the run may rise above its corners
+     * @return array{list<array{float, float}>, list<array{float, float}>, list<array{float, float}>} the curve, drawn in straight steps, its corners, and its pieces' points
+     */
+    public static function through(array $tail, array $head, array $first, array $last, array $edges, float $room): array
+    {
+        $sign = $head[0] >= $tail[0] ? 1.0 : -1.0;
+        [$rise, $leaving] = self::rise($tail, $first, $sign, $edges[0]);
+        [$fall, $reaching] = self::rise($head, $last, -$sign, $edges[1]);
+        $pieces = [$rise, self::run($first, $last, $sign, [$leaving, $reaching], $room), [$fall[3], $fall[2], $fall[1], $fall[0]]];
         $drawn = [$rise[0]];
         foreach ($pieces as $piece) {
             for ($step = 1; $step <= self::STEPS; ++$step) {
@@ -54,7 +73,7 @@ final class DotArcs
             }
         }
 
-        return [$drawn, [[$x[$tail], $y], $first, $last, [$x[$head], $y]], [...$rise, ...\array_slice($pieces[1], offset: 1), ...\array_slice($pieces[2], offset: 1)]];
+        return [$drawn, [$tail, $first, $last, $head], [...$rise, ...\array_slice($pieces[1], offset: 1), ...\array_slice($pieces[2], offset: 1)]];
     }
 
     /**
