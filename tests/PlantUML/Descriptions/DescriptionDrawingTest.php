@@ -20,6 +20,22 @@ use PHPUnit\Framework\TestCase;
 
 final class DescriptionDrawingTest extends TestCase
 {
+    public function testACircleInALinksMiddleIsDrawnAsAClassDiagramDrawsIt(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\ncomponent A\ncomponent B\nA -0- B\n@enduml"));
+        $circles = \array_filter(
+            $drawing->marks,
+            static fn (Mark $mark): bool => (
+                MarkKind::Polygon === $mark->kind
+                && 12.0 === \round((\max(\array_column($mark->points, 0)) - \min(\array_column($mark->points, 0))) / Units::POINT, precision: 6)
+            ),
+        );
+
+        // As the jar draws it: a circle 12 across in the link's middle, the diagram as large.
+        $this->assertCount(1, $circles);
+        $this->assertSame([70.0, 173.0], [\round($drawing->width / Units::POINT, precision: 6), \round($drawing->height / Units::POINT, precision: 6)]);
+    }
+
     public function testABigCloudAndAnEmptyUseCaseTakeTheirShapes(): void
     {
         // A cloud over 100 each way pulls its sides in from its corners; it takes the room its curves' handles reach.
