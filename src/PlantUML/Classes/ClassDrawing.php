@@ -324,7 +324,15 @@ final class ClassDrawing
         foreach ($this->boxes as $id => $box) {
             $node = $placement->endpoints[$id];
             [$x, $y] = [$node->x - ($node->w / 2), $node->y - ($node->h / 2)];
-            $marks = [...$box->marks($x, $y), ...($box instanceof ClassBox && $this->classes->document->strictUml() ? $box->underlined($x, $y) : [])];
+            // A half lollipop's one link.
+            $line = $box instanceof ClassBox && $this->classes->entities[$id]->half ? \array_find_key($this->classes->links, static fn (PlantUmlLink $link): bool => \in_array(
+                    $id,
+                    [$link->from, $link->to],
+                    strict: true,
+                )) : null;
+            $marks =
+                $box instanceof ClassBox && null !== $line ? $box->half($x, $y, ClassLinks::impact($id, $this->classes->links[$line], $placement->splines[$this->edges[$line]])) : $box->marks($x, $y);
+            \array_push($marks, ...$box instanceof ClassBox && $this->classes->document->strictUml() ? $box->underlined($x, $y) : []);
             \array_key_exists($id, $this->hidden) ? \array_push($this->ghosts, ...$marks) : \array_push($this->marks, ...$marks);
         }
         $attached = \array_column(\array_map(static fn (PlantUmlNote $note): array => [$note->id, $note->entity ?? ''], $this->classes->notes), 1, 0);

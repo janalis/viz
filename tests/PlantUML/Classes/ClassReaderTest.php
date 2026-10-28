@@ -316,7 +316,6 @@ final class ClassReaderTest extends TestCase
         yield 'note on no link' => ["class A\nnote on link : alone", 'The PlantUML note has no link to stand on: note on link : alone'];
         yield 'url' => ["class A\nurl of A is [[http://x]]", 'The native PlantUML renderer does not draw: url of A is [[http://x]]'];
         yield 'a lollipop beside no class' => ["class A\nA ()-- B", 'No class B'];
-        yield 'a half lollipop' => ["class A\nA --(( H", 'The native PlantUML renderer does not draw half lollipops: A --(( H'];
         yield 'kind changed' => ["entity E\nclass E", 'PlantUML cannot declare E again as class'];
     }
 

@@ -26,6 +26,8 @@ final class ClassEntity
     public ?DescriptionElement $element = null;
     /** A `json` entity's data. */
     public ?JsonNode $json = null;
+    /** Whether a lollipop is half of one, `--((` or `))--`, open towards its line. */
+    public bool $half = false;
 
     /** @param list<string> $display its name as shown, a line each */
     public function __construct(

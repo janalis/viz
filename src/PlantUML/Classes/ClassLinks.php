@@ -7,7 +7,6 @@ namespace Janalis\Viz\PlantUML\Classes;
 use Janalis\Viz\PlantUML\Language\PlantUmlCommand;
 use Janalis\Viz\PlantUML\Links\LinkDecor;
 use Janalis\Viz\PlantUML\Links\PlantUmlLink;
-use Janalis\Viz\Source\Unsupported;
 
 /**
  * A link command read as PlantUML reads it: the marks at each end, a dotted body for a dashed
@@ -59,21 +58,31 @@ final class ClassLinks
     }
 
     /**
-     * The names a lollipop's line gives: the classifier's, and the lollipop's as written.
+     * The names a lollipop's line gives: the classifier's, and the lollipop's as written; and
+     * whether the lollipop is half of one, `--((` or `))--`.
      *
-     * @return array{string, string}
-     * @throws Unsupported for a half lollipop, `--((` or `))--`
+     * @return array{string, string, bool}
      */
     public static function lollipopEnds(PlantUmlCommand $command): array
     {
         $first = null !== $command->get('LOL_THEN_ENT', 1);
         $symbol = (string) ($first ? $command->get('LOL_THEN_ENT') : $command->get('ENT_THEN_LOL', 1));
-        if ($symbol[0] === $symbol[1]) {
-            throw new Unsupported('The native PlantUML renderer does not draw half lollipops: '.$command->line());
-        }
         [$classifier, $lollipop] = [(string) $command->get('ENT1', 1), (string) $command->get('ENT2', 1)];
 
-        return $first ? [$lollipop, $classifier] : [$classifier, $lollipop];
+        return [...($first ? [$lollipop, $classifier] : [$classifier, $lollipop]), $symbol[0] === $symbol[1]];
+    }
+
+    /**
+     * The way a half lollipop's line comes into it, as svek's `addImpact` takes it: along the
+     * line's last step to it.
+     *
+     * @param list<array{float, float}> $line
+     */
+    public static function impact(string $id, PlantUmlLink $link, array $line): float
+    {
+        [$from, $to] = $link->to === $id ? [$line[\count($line) - 2], $line[\count($line) - 1]] : [$line[1], $line[0]];
+
+        return \atan2($to[1] - $from[1], $to[0] - $from[0]);
     }
 
     /**

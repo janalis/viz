@@ -84,6 +84,28 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([66.0, 83.0], [$height("object O {\n f = 1\n}\nmap M {\n a => b\n}"), $height("object O {\n f = 1\n f = 2\n}\nclass Z")]);
     }
 
+    public function testAHalfLollipopIsHalfItsCircleOpenTowardsItsLine(): void
+    {
+        $arc = static function (string $source): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\nclass A\n{$source}\n@enduml"));
+            $arcs = \array_values(\array_filter(
+                $drawing->marks,
+                static fn (Mark $mark): bool => (
+                    MarkKind::Polyline === $mark->kind
+                    && 13 === \count($mark->points)
+                    && 10.0 === \round(\hypot($mark->points[12][0] - $mark->points[0][0], $mark->points[12][1] - $mark->points[0][1]) / Units::POINT, precision: 2)
+                ),
+            ));
+            $point = static fn (array $at): array => [\round($at[0] / Units::POINT, precision: 2), \round($at[1] / Units::POINT, precision: 2)];
+
+            return [\round($drawing->height / Units::POINT, precision: 6), $point($arcs[0]->points[0]), $point($arcs[0]->points[6]), $point($arcs[0]->points[12])];
+        };
+
+        // As the jar draws them: half a circle 10 across, its middle towards the line, measured as the whole circle.
+        $this->assertSame([155.0, [22.83, 120.0], [27.83, 115.0], [32.83, 120.0]], $arc('A --(( I'));
+        $this->assertSame([139.0, [32.83, 11.0], [27.83, 16.0], [22.83, 11.0]], $arc('I ))-- A'));
+    }
+
     public function testACircleInALinksMiddleTakesItsArcsAsPlantUmlDrawsThem(): void
     {
         $arcs = static fn (string $link): array => \array_values(\array_map(

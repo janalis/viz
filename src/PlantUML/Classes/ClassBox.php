@@ -527,6 +527,30 @@ final readonly class ClassBox
     }
 
     /**
+     * A half lollipop, as PlantUML's `EntityImageLollipopInterface` draws one: half its circle,
+     * open towards the way its line comes in, and its name below it.
+     *
+     * @param float $impact the way its line comes in, in radians
+     * @return list<Mark>
+     */
+    public function half(float $x, float $y, float $impact): array
+    {
+        [$cx, $cy] = [$x + 5, $y + 5];
+        $arc = [];
+        for ($step = 0; $step <= 12; ++$step) {
+            $at = $impact - (\M_PI / 2) + (($step / 12) * \M_PI);
+            $arc[] = [$cx - (5 * \cos($at)), $cy - (5 * \sin($at))];
+        }
+        $width = $this->name->size()[0];
+
+        return [
+            // Which its limit finder takes as its whole ellipse, 1 short of its far sides.
+            new Mark(MarkKind::Polyline, $arc, stroke: $this->style->color('LineColor', '#181818'), strokeWidth: 1.5, extent: [[$x, $y], [$x + 9, $y + 9]]),
+            ...$this->name->marks($x + 5 - ($width / 2), $y + 10, $width),
+        ];
+    }
+
+    /**
      * An object's name underlined, as PlantUML's strict UML style writes it: a line 1.5 under the
      * foot of each of its lines, as wide as it; nothing for any other classifier.
      *

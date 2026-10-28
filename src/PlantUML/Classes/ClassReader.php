@@ -255,17 +255,18 @@ final class ClassReader
 
     /**
      * `A --() name` or `name ()-- A`: a lollipop interface beside a classifier made before, as
-     * PlantUML's `CommandLinkLollipop` makes it, named as written; a half one left to PlantUML.
+     * PlantUML's `CommandLinkLollipop` makes it, named as written, whole or half.
      */
     private function lollipop(PlantUmlCommand $command): void
     {
-        [$classifier, $name] = ClassLinks::lollipopEnds($command);
+        [$classifier, $name, $half] = ClassLinks::lollipopEnds($command);
         $existing = $this->reused(self::clean($classifier));
         if (!\array_key_exists($existing, $this->entities)) {
             throw new PlantUmlRefusal('No class '.$existing);
         }
         $lollipop = $this->made($existing.'lol'.\count($this->entities), $name);
         $lollipop->type = 'lollipop';
+        $lollipop->half = $half;
         $this->links[] = ClassLinks::lollipop($command, $existing, $lollipop->id, ClassLinks::lollipopsBeside($this->links, $this->entities, $existing));
     }
 
