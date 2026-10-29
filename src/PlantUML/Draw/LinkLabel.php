@@ -121,7 +121,7 @@ final readonly class LinkLabel
         return [$width, $height, [$block[0] + $inset, $block[1] + $inset], $note];
     }
 
-    /** @return list<Mark> an outline, drawn nothing, as far either side of the text as the room taken around it */
+    /** @return list<Mark> an outline, drawn nothing, as far round the text as the room taken around it, as PlantUML's limit finder takes a margined block */
     private function room(float $x, float $y, float $room): array
     {
         if ($this->text->empty() || $room <= 0) {
@@ -131,7 +131,7 @@ final readonly class LinkLabel
 
         return [new Mark(
             MarkKind::Polygon,
-            [[$x - $room, $y], [$x + $width + $room, $y], [$x + $width + $room, $y + $height], [$x - $room, $y + $height]],
+            [[$x - $room, $y - $room], [$x + $width + $room, $y - $room], [$x + $width + $room, $y + $height + $room], [$x - $room, $y + $height + $room]],
             stroke: 'none',
             fill: 'none',
             strokeWidth: 0.0,

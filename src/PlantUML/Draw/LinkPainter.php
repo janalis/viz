@@ -87,7 +87,7 @@ final class LinkPainter
                 : [$x - ($width / 2), $y - ($height / 2)];
             \array_push($marks, ...$label->marks($left, $top, $margin));
             $labelBox = [$left, $top, $left + \floor($width), $top + \floor($height)];
-            \array_push($marks, ...self::labelArrow($link, $from, $to, $left + ($margin / 2) + 4, $y, $color));
+            \array_push($marks, ...self::labelArrow($link, $controls, $left + ($margin / 2) + 4, $y, $color));
         }
         \array_push($marks, ...$boxes);
         $direction = $placement->directions[''] ?? Direction::TopBottom;
@@ -254,14 +254,27 @@ final class LinkPainter
         return [[$box, ...$text->marks($left + 2, $top + 1, $width - 4)], $delta];
     }
 
-    /** @return list<Mark> the small triangle a label written `label >` or `< label` starts with, pointing the way the label reads: 9 long and 6 wide, as measured on PlantUML's output */
-    private static function labelArrow(PlantUmlLink $link, GraphNode $from, GraphNode $to, float $x, float $y, string $color): array
+    /**
+     * The small triangle a label written `label >` or `< label` starts with, pointing the way
+     * the label reads, as svek's `TextBlockArrow2` points it: along the line from its start to
+     * its end, or a self-link's along the curve's start, turned back for `<`; 9 long and 6 wide,
+     * as measured on PlantUML's output.
+     *
+     * @param list<array{float, float}> $controls the curve dot gives it, cut at its ends
+     * @return list<Mark>
+     */
+    private static function labelArrow(PlantUmlLink $link, array $controls, float $x, float $y, string $color): array
     {
         if (null === $link->labelArrow) {
             return [];
         }
-        [$dx, $dy] = '>' === $link->labelArrow ? [$to->x - $from->x, $to->y - $from->y] : [$from->x - $to->x, $from->y - $to->y];
-        [$dx, $dy] = \abs($dx) > \abs($dy) ? [$dx <=> 0, 0] : [0, $dy <=> 0];
+        $turn = '>' === $link->labelArrow ? 0.0 : \M_PI;
+        [$start, $end] = [$controls[0], $controls[\count($controls) - 1]];
+        $out = [$controls[1][0] - $start[0], $controls[1][1] - $start[1]];
+        $out = [0.0, 0.0] === $out ? [$controls[3][0] - $start[0], $controls[3][1] - $start[1]] : $out;
+        // As svek, a self-link's angle is its way out's measured from across, which the triangle reads from down.
+        $angle = ($link->from === $link->to ? \atan2($out[1], $out[0]) : \atan2($end[0] - $start[0], $end[1] - $start[1])) + $turn;
+        [$dx, $dy] = [\sin($angle), \cos($angle)];
 
         return [new Mark(
             MarkKind::Polygon,

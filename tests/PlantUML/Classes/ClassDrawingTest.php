@@ -610,6 +610,19 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([152.0, 70.0], $size("left to right direction\nclass A\nnote right of A : x"));
     }
 
+    public function testASelfLinksLabelKeepsItsRoomAboveAndBelowAndPointsAlongTheLoopsStart(): void
+    {
+        // As the jar bounds it: the 6 points svek leaves round a self-link's label above and below it too.
+        $drawing = self::draw("Bee -- Bee : has\nnote on link: two\\nlines");
+        $this->assertSame([167.0, 93.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+
+        // As svek points it: along the loop's start, leaving the class rightward, turned back for `<`: up.
+        $arrows = \array_values(\array_filter(self::draw('Bee -- Bee : < has')->marks, static fn (Mark $mark): bool => MarkKind::Polygon === $mark->kind && 3 === \count($mark->points)));
+        $this->assertCount(1, $arrows);
+        [$tip, $wing, $other] = $arrows[0]->points;
+        $this->assertLessThan(\min($wing[1], $other[1]) - (8 * Units::POINT), $tip[1]);
+    }
+
     public function testLinksAlongARankSetTheirEndLabelsAsDotDoesAndKeepTheirPairAcross(): void
     {
         $left = static function (Drawing $drawing, string $text): array {
