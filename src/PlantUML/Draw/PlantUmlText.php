@@ -384,7 +384,7 @@ final readonly class PlantUmlText
      *
      * @return ?array{string, float, ?string}
      */
-    private static function emoji(string $text): ?array
+    public static function emoji(string $text): ?array
     {
         $match = [];
         if (1 !== \preg_match('/^<(#\w+)?:([0-9a-z][0-9_a-z]*):(.*)>$/', $text, $match) || 1 !== \preg_match('/^'.self::EMOJI.'$/', $text)) {
@@ -601,14 +601,8 @@ final readonly class PlantUmlText
     private function emojiMarks(array $emoji, float $size, float $left, float $foot): array
     {
         $factor = self::factor($emoji[1], $size);
-        // As PlantUML forces a colour: black's written forms the text's own, one it does not know none.
-        $forced = match (true) {
-            null === $emoji[2] => null,
-            \in_array(\strtolower($emoji[2]), ['#0', '#000', '#black'], strict: true) => $this->color,
-            default => PlantUmlColor::parse($emoji[2]),
-        };
 
-        return [PlantUmlEmoji::marks((string) PlantUmlEmoji::code($emoji[0]), $left, $foot - (39 * $factor), 36 * $factor, 'none' === $forced ? null : $forced), 36 * $factor];
+        return [PlantUmlEmoji::marks((string) PlantUmlEmoji::code($emoji[0]), $left, $foot - (39 * $factor), 36 * $factor, PlantUmlEmoji::forced($emoji[2], $this->color)), 36 * $factor];
     }
 
     /** @return array{list<Mark>, float} a stretch of text's mark, standing on its baseline, and its width */

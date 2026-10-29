@@ -273,7 +273,7 @@ Timing diagrams are read natively with PlantUML's rules (`PlantUML\Timing`) and 
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| Text and its markup, headings, lists, tables, trees, code; alignments; links drawn as their label | Horizontal lines (`----`, `== title ==`, …), which PlantUML fails on here; emoji, images, QR codes, formulas, `<latex>` and diagrams within (`{{ … }}`); sprites, which a Creole block cannot define, are left out as PlantUML leaves them |
+| Text and its markup, headings, lists, tables, trees, code; alignments; links drawn as their label; emoji, as in other text | Horizontal lines (`----`, `== title ==`, …), which PlantUML fails on here; images, QR codes, formulas, `<latex>` and diagrams within (`{{ … }}`); sprites, which a Creole block cannot define, are left out as PlantUML leaves them |
 
 ### DOT
 

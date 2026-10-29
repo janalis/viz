@@ -46,6 +46,23 @@ final class PlantUmlEmoji
     }
 
     /**
+     * The colour an emoji is forced to as PlantUML forces one: black's written forms the text's
+     * own, one it does not know none.
+     *
+     * @param ?string $written as written, null for none
+     */
+    public static function forced(?string $written, string $text): ?string
+    {
+        $forced = match (true) {
+            null === $written => null,
+            \in_array(\strtolower($written), ['#0', '#000', '#black'], strict: true) => $text,
+            default => PlantUmlColor::parse($written),
+        };
+
+        return 'none' === $forced ? null : $forced;
+    }
+
+    /**
      * @param ?string $forced the colour its colours are shaded towards, as hex; null for its own
      * @return list<Mark> the emoji with its top left at a point
      */

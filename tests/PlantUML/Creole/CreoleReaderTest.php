@@ -6,6 +6,7 @@ namespace Janalis\Viz\Tests\PlantUML\Creole;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Units;
 use Janalis\Viz\Model\Graph\Graph;
 use Janalis\Viz\PlantUML\Creole\CreoleFont;
 use Janalis\Viz\PlantUML\Creole\CreoleReader;
@@ -102,6 +103,29 @@ final class CreoleReaderTest extends TestCase
         $this->assertInstanceOf(PlantUmlCreole::class, $diagram);
         $this->assertInstanceOf(Graph::class, $diagram->model());
         $this->assertSame(['title', 'Not', 'a', 'title'], \explode(' ', \implode(' ', \array_map(static fn (Mark $mark): string => $mark->text, self::marks($diagram)))));
+    }
+
+    public function testAnEmojiStandsOnTheLineAsPlantUmlSetsIt(): void
+    {
+        $diagram = PlantUmlPipeline::native()->diagram("@startcreole\nHello <:smile:> world\n<#green:heart:> <:nope:>\n**bold** <:smile:{scale=2}>\n@endcreole");
+        $this->assertInstanceOf(PlantUmlCreole::class, $diagram);
+        $marks = $diagram->sheet->marks(0.0, 0.0);
+        $face = $marks[1];
+
+        // As the jar draws them: the face 21 wide at 14 points, its foot 3 of its 36 above the line's; a colour forced; one it does not know in red.
+        $this->assertEqualsWithDelta(
+            [34.604, 0.0, 55.604, 21.0],
+            [\min(\array_column($face->points, 0)), \min(\array_column($face->points, 1)), \max(\array_column($face->points, 0)), \max(\array_column($face->points, 1))],
+            1e-3,
+        );
+        $this->assertContains('#007f00', \array_map(static fn (Mark $mark): string => $mark->fill, $marks));
+        $this->assertContains(['¿nope?', '#ff0000'], \array_map(static fn (Mark $mark): array => [$mark->text, $mark->stroke], self::marks($diagram)));
+        $this->assertEqualsWithDelta(
+            114.0,
+            Work::run(PlantUmlPipeline::native()->drawing("@startcreole\nHello <:smile:> world\n* item <:1f600:>\n<#green:heart:> alone\n**bold** <:smile:{scale=2}>\n@endcreole"))->height
+            / Units::POINT,
+            1e-9,
+        );
     }
 
     /** @return iterable<string, array{string, string}> */

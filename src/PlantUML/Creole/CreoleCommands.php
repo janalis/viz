@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\PlantUML\Creole;
 
+use Janalis\Viz\PlantUML\Draw\PlantUmlEmoji;
+use Janalis\Viz\PlantUML\Draw\PlantUmlText;
 use Janalis\Viz\PlantUML\Style\PlantUmlColor;
 use Janalis\Viz\Source\Unsupported;
 
@@ -12,8 +14,8 @@ use Janalis\Viz\Source\Unsupported;
  * by the two characters it starts with, in its order, each the first that matches taking its
  * stretch — styles and colours over the stretch they close, or to the line's end when they do
  * not; `""` monospaced; `[[…]]` links; `<space:…>`; raised and lowered text. A sprite this
- * diagram cannot hold is left out, as PlantUML leaves it; icons, emoji, images, QR codes and
- * formulas are left to PlantUML.
+ * diagram cannot hold is left out, as PlantUML leaves it; emoji drawn as PlantUML draws them;
+ * icons, images, QR codes and formulas are left to PlantUML.
  */
 final class CreoleCommands
 {
@@ -66,9 +68,9 @@ final class CreoleCommands
             ['/\G<font[\s:]+(?<f>[^>]+?)\/?>(?<v>.*)/iu',                                                                     'family'],
         ],
         '<q' => [['/\G<qrcode[\s:]+[^>{}]+(?:\{scale=[0-9.]+\})?>/iu', 'refuse']],
-        '<#' => [['/\G<#\w+&[-\w]+'.self::SCALE.'>/iu', 'refuse'], ['/\G<#\w+:[0-9a-z][0-9_a-z]*:'.self::SCALE.'>/iu', 'refuse'], ['/\G<#\w+\$[-\p{L}0-9_\/.]+'.self::SCALE.'>/iu', 'sprite']],
+        '<#' => [['/\G<#\w+&[-\w]+'.self::SCALE.'>/iu', 'refuse'], ['/\G'.PlantUmlText::EMOJI.'/u', 'emoji'], ['/\G<#\w+\$[-\p{L}0-9_\/.]+'.self::SCALE.'>/iu', 'sprite']],
         '<&' => [['/\G<&[-\w]+'.self::SCALE.'>/iu', 'refuse']],
-        '<:' => [['/\G<:[0-9a-z][0-9_a-z]*:'.self::SCALE.'>/iu', 'refuse']],
+        '<:' => [['/\G'.PlantUmlText::EMOJI.'/u', 'emoji']],
         '<m' => [['/\G<math>.+?<\/math>/iu', 'refuse']],
         '<l' => [['/\G<latex>.+?<\/latex>/iu', 'refuse']],
         '<$' => [['/\G<\$[-\p{L}0-9_\/.]+'.self::SCALE.'>/iu', 'sprite']],
@@ -126,10 +128,20 @@ final class CreoleCommands
         match ($kind) {
             'refuse' => throw new Unsupported('The native PlantUML renderer leaves '.$match[0].' to PlantUML'),
             'sprite' => null,
+            'emoji' => $stripe->atom(self::emoji($match[0], $font)),
             'space' => $stripe->atom(new CreoleSpace(\floatval($match['n']))),
             'url' => $stripe->atom(new CreoleWord(self::label($match), $font->with(['color' => '#0000ff', 'underline' => '#0000ff']))),
             default => $stripe->styled(self::font($font, $kind, $color, $match), $value),
         };
+    }
+
+    /** An emoji as `StripeSimple` adds one: one it does not know its name in red. */
+    private static function emoji(string $written, CreoleFont $font): CreoleAtom
+    {
+        [$name, $scale, $color] = PlantUmlText::emoji($written) ?? ['', 1.0, null];
+        $code = PlantUmlEmoji::code($name);
+
+        return null === $code ? new CreoleWord('¿'.$name.'?', $font->with(['color' => '#ff0000'])) : new CreoleEmoji($code, $scale, $font->size, PlantUmlEmoji::forced($color, $font->color));
     }
 
     /** @param array<int|string, string> $match */
