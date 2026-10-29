@@ -81,7 +81,7 @@ final readonly class PngBackend
                 \imagesetthickness($canvas, thickness: 1);
                 [] === $mark->subpaths
                     ? \imagefilledpolygon($canvas, \array_merge(...$points), self::color($mark->fill, $mark->fillOpacity * $mark->opacity))
-                    : self::evenOdd($canvas, [$mark->points, ...$mark->subpaths], $scale, self::color($mark->fill, $mark->fillOpacity * $mark->opacity));
+                    : self::outlines($canvas, [$mark->points, ...$mark->subpaths], $scale, self::color($mark->fill, $mark->fillOpacity * $mark->opacity), $mark->fillRule);
             }
             if (null !== $mark->gradient) {
                 \imagesetthickness($canvas, thickness: 1);
@@ -104,11 +104,12 @@ final readonly class PngBackend
     }
 
     /**
-     * Outlines filled even-odd, row by row: each row between every other crossing of their sides.
+     * Outlines filled by a rule, row by row: each row along where it holds inside them between
+     * their sides' crossings, each counted up or down by the way its side runs.
      *
      * @param list<list<array{float, float}>> $outlines
      */
-    private static function evenOdd(\GdImage $canvas, array $outlines, float $scale, int $color): void
+    private static function outlines(\GdImage $canvas, array $outlines, float $scale, int $color, FillRule $rule): void
     {
         $ys = \array_merge(...\array_map(static fn (array $outline): array => \array_column($outline, 1), $outlines));
         for ($row = (int) \floor(\min($ys) * $scale); $row <= (int) \ceil(\max($ys) * $scale); ++$row) {
@@ -120,15 +121,18 @@ final readonly class PngBackend
                     [$x1, $y1] = [$outline[$index][0] * $scale, $outline[$index][1] * $scale];
                     [$x2, $y2] = [$outline[($index + 1) % $count][0] * $scale, $outline[($index + 1) % $count][1] * $scale];
                     if ($y1 <= $y !== $y2 <= $y) {
-                        $crossings[] = $x1 + ((($y - $y1) * ($x2 - $x1)) / ($y2 - $y1));
+                        $crossings[] = [$x1 + ((($y - $y1) * ($x2 - $x1)) / ($y2 - $y1)), $y2 > $y1 ? 1 : -1];
                     }
                 }
             }
-            \sort($crossings);
-            for ($index = 0; ($index + 1) < \count($crossings); $index += 2) {
-                $from = (int) \round($crossings[$index]);
-                $to = (int) \round($crossings[$index + 1]) - 1;
-                if ($to >= $from) {
+            \usort($crossings, static fn (array $a, array $b): int => $a[0] <=> $b[0]);
+            $winding = 0;
+            foreach ($crossings as $index => [$x, $way]) {
+                $winding += FillRule::NonZero === $rule ? $way : 1;
+                $inside = FillRule::NonZero === $rule ? 0 !== $winding : 1 === ($winding % 2);
+                $from = (int) \round($x);
+                $to = (int) \round($crossings[$index + 1][0] ?? $x) - 1;
+                if ($inside && $to >= $from) {
                     \imageline($canvas, $from, $row, $to, $row, $color);
                 }
             }

@@ -16,18 +16,21 @@ use Janalis\Viz\Text\FontFace;
  * PlantUML text in points, measured as PlantUML measures its font, each character drawn in the
  * middle of its own room: lines of Creole with their markup taken out —
  * a line wholly bold or italic drawn so, a heading — one to three = before it — bigger and bold,
- * a sprite (`<$name>`) drawn in its place as PlantUML draws one — measured, and set as text
- * marks left, centred or right within a width.
+ * a sprite (`<$name>`) or an emoji (`<:name:>`) drawn in its place as PlantUML draws one —
+ * measured, and set as text marks left, centred or right within a width.
  */
 final readonly class PlantUmlText
 {
     /** The least height of a line, as PlantUML sets small text: the room below the text. */
     private const float SHORTEST = 10.0;
 
-    private const string TAGS = '/<\/?(?:b|i|u|s|w|strike|sub|sup|color(?::[^>]*)?|back(?::[^>]*)?|size(?::[^>]*)?|font(?:[: ][^>]*)?|plain|code)>|<&[\w-]+>|'.self::SPRITE.'/iu';
+    private const string TAGS = '/<\/?(?:b|i|u|s|w|strike|sub|sup|color(?::[^>]*)?|back(?::[^>]*)?|size(?::[^>]*)?|font(?:[: ][^>]*)?|plain|code)>|<&[\w-]+>|'.self::SPRITE.'|'.self::EMOJI.'/iu';
 
     /** A sprite in Creole, as PlantUML's `Splitter` finds one: its colour, name, and scale or colour. */
     private const string SPRITE = '<(#\w+)?\$([-\p{L}0-9_\/]+)([{,]?(?:(?:scale=|\*)[0-9.]+)?(?:,?color[= :](?:#[0-9a-fA-F]{1,8}|\w+))?\}?)>';
+
+    /** An emoji in Creole, as PlantUML's `Splitter` finds one: its colour, name, and scale or colour. */
+    private const string EMOJI = '<(?:#\w+)?:[0-9a-z][0-9_a-z]*:[{,]?(?:(?:scale=|\*)[0-9.]+)?(?:,?color[= :](?:#[0-9a-fA-F]{1,8}|\w+))?\}?>';
 
     /**
      * @param list<string> $lines Creole, a line each
@@ -345,7 +348,8 @@ final readonly class PlantUmlText
 
     /**
      * A line's text and sprites in turn, as PlantUML's Creole sets them side by side: a sprite
-     * scaled to the font, as its size over 13; one the document does not define, left out.
+     * scaled to the font, as its size over 13; one the document does not define, left out; an
+     * emoji PlantUML does not know, its name between `¿` and `?` in red.
      *
      * @return list<array{string, ?PlantUmlSprite, float, ?string}> each atom's text, or its sprite with its scale and forced colour
      */
@@ -358,11 +362,12 @@ final readonly class PlantUmlText
         for ($at = 0, $count = \count($parts); $at < $count; $at += 4) {
             // As PlantUML's Creole sets them, each stretch of bold, italic or monospaced markup in its own face, a tag left open to the line's end.
             foreach ((array) \preg_split(
-                '/(\[\[.+?\]\]|\*\*.+?\*\*|<b>.+?(?:<\/b>|$)|\/\/.+?\/\/|<i>.+?(?:<\/i>|$)|"".+?""|<&[\w-]+>)/iu',
+                '/(\[\[.+?\]\]|\*\*.+?\*\*|<b>.+?(?:<\/b>|$)|\/\/.+?\/\/|<i>.+?(?:<\/i>|$)|"".+?""|<&[\w-]+>|'.self::EMOJI.')/iu',
                 (string) $parts[$at],
                 flags: \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY,
             ) as $stretch) {
-                $atoms[] = [(string) $stretch, null, 0.0, null];
+                $emoji = self::emoji((string) $stretch);
+                $atoms[] = null !== $emoji && null === PlantUmlEmoji::code($emoji[0]) ? ['¿'.$emoji[0].'?', null, 0.0, '#ff0000'] : [(string) $stretch, null, 0.0, null];
             }
             $sprite = $this->sprites[(string) ($parts[$at + 2] ?? '')] ?? null;
             if (null === $sprite) {
@@ -372,6 +377,27 @@ final readonly class PlantUmlText
         }
 
         return $atoms;
+    }
+
+    /**
+     * An emoji's name, scale and colour, as written; null for a stretch that is none.
+     *
+     * @return ?array{string, float, ?string}
+     */
+    private static function emoji(string $text): ?array
+    {
+        $match = [];
+        if (1 !== \preg_match('/^<(#\w+)?:([0-9a-z][0-9_a-z]*):(.*)>$/', $text, $match) || 1 !== \preg_match('/^'.self::EMOJI.'$/', $text)) {
+            return null;
+        }
+
+        return [$match[2], self::scale($match[3]), self::tint($match[1], $match[3])];
+    }
+
+    /** How far an emoji's scale takes its 36 by 36 view at a font size, as PlantUML's `AtomEmoji` scales it: its size over 24. */
+    private static function factor(float $scale, float $size): float
+    {
+        return ($scale * $size) / 24;
     }
 
     /** A sprite's scale, as `scale=` or `*` writes it. */
@@ -395,18 +421,41 @@ final readonly class PlantUmlText
 
     /**
      * @param list<array{string, ?PlantUmlSprite, float, ?string}> $atoms
-     * @return array{float, float} a line's width, and its height: its text's, or its tallest sprite's
+     * @return array{float, float} a line's width, and its height: from its tallest atom's top to its lowest's foot
      */
     private function lineSize(array $atoms, float $size, string $line): array
     {
         $width = 0.0;
-        $height = self::lineHeight($this->tallestOf($atoms, $size), $this->family);
         foreach ($atoms as [$text, $sprite, $scale]) {
             $width += null === $sprite ? self::shown($text, $size, $this->faceOf($line, $text), $this->family) : $sprite->width * $scale;
-            $height = \max($height, null === $sprite ? 0.0 : $sprite->height * $scale);
+        }
+        $reaches = $this->reaches($atoms, $size);
+
+        return [$width, \max(\array_column($reaches, 0)) - \min(\array_column($reaches, 1))];
+    }
+
+    /**
+     * How far above a line's foot each of its atoms reaches, as PlantUML's `Sea` stands them:
+     * its text and sprites on the foot, an emoji 3 of its 36 above it; text, where it holds
+     * no other atom.
+     *
+     * @param list<array{string, ?PlantUmlSprite, float, ?string}> $atoms
+     * @return non-empty-list<array{float, float}> each one's top and foot
+     */
+    private function reaches(array $atoms, float $size): array
+    {
+        $reaches = [];
+        foreach ($atoms as [$text, $sprite, $scale]) {
+            $emoji = null === $sprite ? self::emoji($text) : null;
+            $factor = null === $emoji ? 0.0 : self::factor($emoji[1], $size);
+            $reaches[] = match (true) {
+                null !== $sprite => [$sprite->height * $scale, 0.0],
+                null !== $emoji => [39 * $factor, 3 * $factor],
+                default => [self::lineHeight($this->tallestOf($atoms, $size), $this->family), 0.0],
+            };
         }
 
-        return [$width, $height];
+        return [] === $reaches ? [[self::lineHeight($size, $this->family), 0.0]] : $reaches;
     }
 
     public function line(): float
@@ -468,8 +517,8 @@ final readonly class PlantUmlText
             $size = $this->fontSize($line);
             $atoms = $this->atoms($line);
             [$shown, $height] = $this->lineSize($atoms, $size, $line);
-            $foot = $top + $height;
-            $top = $foot;
+            $foot = $top + \max(\array_column($this->reaches($atoms, $size), 0));
+            $top += $height;
             $left = match ($align) {
                 'left' => $x,
                 'right' => $x + $width - $shown,
@@ -478,10 +527,12 @@ final readonly class PlantUmlText
             $tallest = $this->tallestOf($atoms, $size);
             foreach ($atoms as [$text, $sprite, $scale, $color]) {
                 $icon = [];
+                $emoji = self::emoji($text);
                 [$mark, $advance] = match (true) {
                     null !== $sprite => $this->picture($sprite, $scale, $color, $left, $foot),
                     1 === \preg_match('/^<&([\w-]+)>$/', $text, $icon) => [PlantUmlIcon::marks($icon[1], $left, $foot - $this->below($tallest), $size, $this->color), PlantUmlIcon::width($size)],
-                    default => $this->word($line, $text, $size, $left, $foot - $this->below($tallest)),
+                    null !== $emoji => $this->emojiMarks($emoji, $size, $left, $foot),
+                    default => $this->word($line, $text, $size, $left, $foot - $this->below($tallest), $color),
                 };
                 \array_push($marks, ...$mark);
                 $left += $advance;
@@ -521,6 +572,10 @@ final readonly class PlantUmlText
         if (1 === \preg_match('/^<&[\w-]+>$/', $text)) {
             return PlantUmlIcon::width($size);
         }
+        $emoji = self::emoji($text);
+        if (null !== $emoji) {
+            return 36 * self::factor($emoji[1], $size);
+        }
         $family = self::family($text, $family);
         if (!\str_contains(\strtolower($text), '<size')) {
             return PlantUmlMetrics::width(self::plain($text), $size, $face, $family);
@@ -539,8 +594,25 @@ final readonly class PlantUmlText
         return 1 === \preg_match('/^"".+""$/su', $text) ? 'monospaced' : $own;
     }
 
+    /**
+     * @param array{string, float, ?string} $emoji its name, scale and colour
+     * @return array{list<Mark>, float} an emoji's marks, its foot 3 of its 36 above the line's, and its width
+     */
+    private function emojiMarks(array $emoji, float $size, float $left, float $foot): array
+    {
+        $factor = self::factor($emoji[1], $size);
+        // As PlantUML forces a colour: black's written forms the text's own, one it does not know none.
+        $forced = match (true) {
+            null === $emoji[2] => null,
+            \in_array(\strtolower($emoji[2]), ['#0', '#000', '#black'], strict: true) => $this->color,
+            default => PlantUmlColor::parse($emoji[2]),
+        };
+
+        return [PlantUmlEmoji::marks((string) PlantUmlEmoji::code($emoji[0]), $left, $foot - (39 * $factor), 36 * $factor, 'none' === $forced ? null : $forced), 36 * $factor];
+    }
+
     /** @return array{list<Mark>, float} a stretch of text's mark, standing on its baseline, and its width */
-    private function word(string $line, string $text, float $size, float $left, float $baseline): array
+    private function word(string $line, string $text, float $size, float $left, float $baseline, ?string $tint = null): array
     {
         $plain = self::plain($text);
         $face = $this->faceOf($line, $text);
@@ -553,7 +625,7 @@ final readonly class PlantUmlText
         $depth = self::heading($line)[0];
         $match = [];
         // A line wholly coloured, as `<color:…>` around it writes it, takes that colour.
-        $color = 1 === \preg_match('/^\s*<color:([^>]+)>.*<\/color>\s*$/i', $line, $match) ? PlantUmlColor::parse($match[1]) ?? $this->color : $this->color;
+        $color = $tint ?? (1 === \preg_match('/^\s*<color:([^>]+)>.*<\/color>\s*$/i', $line, $match) ? PlantUmlColor::parse($match[1]) ?? $this->color : $this->color);
         // As PlantUML writes a link: blue, underlined.
         $link = \str_starts_with($text, '[[');
         $color = $link ? '#0000ff' : $color;

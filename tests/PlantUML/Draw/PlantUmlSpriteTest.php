@@ -54,7 +54,8 @@ final class PlantUmlSpriteTest extends TestCase
             0.001,
             'a scale of 2 at 14 points, standing on the line it makes as tall',
         );
-        $this->assertEqualsWithDelta(56.0 + PlantUmlText::lineHeight(14.0), $height, 0.001, 'a half-scaled sprite lower than the line');
+        // As the jar sets a line of a sprite alone: as tall as it, 13 in a note at 13 points.
+        $this->assertEqualsWithDelta(56.0 + 14.0, $height, 0.001, 'a half-scaled sprite alone on its line');
     }
 
     /** @return iterable<string, array{string, string}> */

@@ -1,0 +1,9 @@
+Twemoji, https://github.com/twitter/twemoji
+
+Copyright 2019 Twitter, Inc and other contributors.
+
+resources/plantuml/emoji holds the emoji pictures as PlantUML 1.2026.8's MIT distribution
+ships them, its own simplified forms of Twemoji's graphics, each wrapped in an <svg> of its
+36 by 36 view where it was not, with PlantUML's index of their names (emoji.txt).
+
+The graphics are licensed under CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/

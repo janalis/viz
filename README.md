@@ -109,4 +109,4 @@ Tests use `dot` when it is installed. They stand in for `plantuml` and `mmdc` wi
 
 ## Licence
 
-MIT. The bundled IBM Plex Mono fonts are under the SIL Open Font License (`resources/fonts/OFL.txt`). The ported parts of Mermaid, PlantUML (its MIT distribution), its Open Iconic icons, khroma, roughjs, d3-shape and d3-format keep their notices in `resources/licenses/`. The native Graphviz is written from published papers and dot's documented behaviour, not from Graphviz's source.
+MIT. The bundled IBM Plex Mono fonts are under the SIL Open Font License (`resources/fonts/OFL.txt`). The ported parts of Mermaid, PlantUML (its MIT distribution), its Open Iconic icons, HSLuv, khroma, roughjs, d3-shape and d3-format keep their notices in `resources/licenses/`, as do the Twemoji pictures PlantUML bundles, under CC-BY 4.0. The native Graphviz is written from published papers and dot's documented behaviour, not from Graphviz's source.

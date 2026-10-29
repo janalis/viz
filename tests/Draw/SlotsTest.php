@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Draw;
 
 use Janalis\Viz\Draw\Drawing;
+use Janalis\Viz\Draw\FillRule;
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\PdfBackend;
@@ -44,6 +45,35 @@ final class SlotsTest extends TestCase
         $at = static fn (int $x, int $y): int => \imagecolorsforindex($image, \imagecolorat($image, $x, $y))['red'];
         $this->assertSame([0, 255], [$at(x: 15, y: 15), $at(x: 50, y: 50)], 'the ring filled, its hole not');
         $this->assertSame([[8.0, 8.0], [16.0, 8.0], [16.0, 16.0], [8.0, 16.0]], Units::moved(Units::scaled($ring, 2.0), 2.0, 2.0)->subpaths[0], 'moved and scaled with it');
+    }
+
+    public function testAPolygonFilledNonZeroFillsWhatItsOutlinesWindRound(): void
+    {
+        $square = static fn (array $hole): Mark => new Mark(
+            MarkKind::Polygon,
+            [[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]],
+            stroke: 'none',
+            fill: '#000000',
+            strokeWidth: 0.0,
+            subpaths: [$hole],
+            fillRule: FillRule::NonZero,
+        );
+        $inner = [[3.0, 3.0], [7.0, 3.0], [7.0, 7.0], [3.0, 7.0]];
+        $at = static function (Mark $mark): int {
+            $image = \imagecreatefromstring(Work::run(new PngBackend()->render(new Drawing(10.0, 10.0, [$mark], '#ffffff'))));
+            self::assertNotFalse($image);
+
+            return \imagecolorsforindex($image, \imagecolorat($image, x: 50, y: 50))['red'];
+        };
+        $drawing = new Drawing(10.0, 10.0, [$square($inner)], '#ffffff');
+
+        $this->assertStringContainsString('fill-rule="nonzero"', Work::run(SvgBackend::render($drawing)));
+        $this->assertNotSame(
+            Work::run(new PdfBackend()->render(new Drawing(10.0, 10.0, [$square($inner)->with(['fillRule' => FillRule::EvenOdd])], '#ffffff'))),
+            Work::run(new PdfBackend()->render($drawing)),
+        );
+        // Wound the same way, the inner outline is filled; the other way, a hole.
+        $this->assertSame([0, 255], [$at($square($inner)), $at($square(\array_reverse($inner)))]);
     }
 
     public function testEveryFormatDrawsTheCharactersInTheirSlots(): void

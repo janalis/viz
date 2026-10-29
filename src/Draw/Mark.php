@@ -38,10 +38,12 @@ final readonly class Mark
         public Outline $outline = Outline::Box,
         /** @var ?list<float> a text mark's room for each of its characters along its line, in units, each drawn in the middle of its own; null sets them as its font does */
         public ?array $slots = null,
-        /** @var list<list<array{float, float}>> a polygon's other outlines, filled with it even-odd: its holes, and what stands in them */
+        /** @var list<list<array{float, float}>> a polygon's other outlines, filled with it by its fill rule: its holes, and what stands in them */
         public array $subpaths = [],
         /** @var list<array{float, float}> points besides its own a renderer measuring what it draws takes it to reach, as PlantUML's limit finder takes a curve's control points */
         public array $extent = [],
+        /** How a polygon with other outlines is filled where they cross or nest. */
+        public FillRule $fillRule = FillRule::EvenOdd,
     ) {}
 
     /**
