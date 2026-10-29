@@ -36,8 +36,8 @@ final class PlantUmlEmoji
             self::$codes = [];
             foreach (\explode("\n", \trim((string) \file_get_contents(self::directory().'emoji.txt'))) as $line) {
                 $names = \explode(';', $line, limit: 2);
-                foreach ($names as $name) {
-                    self::$codes[$name] = $names[0];
+                foreach ($names as $known) {
+                    self::$codes[$known] = $names[0];
                 }
             }
         }
