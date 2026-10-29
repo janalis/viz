@@ -294,6 +294,28 @@ final class DotEngineTest extends TestCase
         }
     }
 
+    public function testAFlatEdgesArcIsFittedInTwoPiecesWhereOneClearsTheCornersAsDotFitsIt(): void
+    {
+        // As dot draws a -> c over b: split at the corner farther from a curve from centre to centre, the other side one piece where it keeps above the corners.
+        foreach ([
+            ['0.84', '2.3', 7,  60.5],
+            ['0.3',  '1.0', 7,  81.5],
+            ['0.84', '1.0', 10, 60.5],
+        ] as [$middle, $head, $count, $joint]) {
+            $graph = Work::run(new DotParser()->parse(
+                'digraph { nodesep=0.486111; ranksep=0.833333; node [shape=rect,label=""]; a [width=0.711,height=0.666667]; c [width='
+                .$head
+                .',height=0.35]; b [width='
+                .$middle
+                .',height=0.35]; a -> c [minlen=0]; a -> b [minlen=0]; }',
+            ));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $controls = $placement->controls[0];
+            $this->assertCount($count, $controls, $middle.' '.$head);
+            $this->assertEqualsWithDelta($joint, $controls[3][0] - $placement->endpoints['a']->x, 1.0, $middle.' '.$head);
+        }
+    }
+
     public function testLabelledFlatEdgesBetweenNeighboursStackTheirLabelsAsDotDoes(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

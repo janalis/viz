@@ -12,7 +12,8 @@ namespace Janalis\Viz\Layout\Dot;
  * to the point down, outside the nodes between, and k node separations in n + 1 back in. Three
  * cubic pieces, each joining the next smoothly, as measured on dot's output: the rise reaching its
  * corner at half the slope of its chord's angle, starting along nothing; each control 4/9 of its
- * piece's chord from its end, along the slope there.
+ * piece's chord from its end, along the slope there. Two where dot fits the run with the rise or
+ * the fall in one piece.
  */
 final class DotArcs
 {
@@ -65,7 +66,8 @@ final class DotArcs
         $sign = $head[0] >= $tail[0] ? 1.0 : -1.0;
         [$rise, $leaving] = self::rise($tail, $first, $sign, $edges[0]);
         [$fall, $reaching] = self::rise($head, $last, -$sign, $edges[1]);
-        $pieces = [$rise, self::run($first, $last, $sign, [$leaving, $reaching], $room), [$fall[3], $fall[2], $fall[1], $fall[0]]];
+        $slopes = [$leaving, $reaching];
+        $pieces = self::merged($tail, $head, $first, $last, $sign, [$rise, $fall], $slopes) ?? [$rise, self::run($first, $last, $sign, $slopes, $room), [$fall[3], $fall[2], $fall[1], $fall[0]]];
         $drawn = [$rise[0]];
         foreach ($pieces as $piece) {
             for ($step = 1; $step <= self::STEPS; ++$step) {
@@ -73,7 +75,69 @@ final class DotArcs
             }
         }
 
-        return [$drawn, [$tail, $first, $last, $head], [...$rise, ...\array_slice($pieces[1], offset: 1), ...\array_slice($pieces[2], offset: 1)]];
+        return [$drawn, [$tail, $first, $last, $head], [$pieces[0][0], ...\array_merge(...\array_map(static fn (array $piece): array => \array_slice($piece, offset: 1), $pieces))]];
+    }
+
+    /**
+     * The curve in two pieces where `dot` is seen to fit it so, as a curve is fitted to a path:
+     * one piece from centre to centre, along nothing at either, failing, the path split at the
+     * corner farther from it at its share of the path's length; the side holding the other
+     * corner one piece, its controls 4/9 of its chord from its ends, where it keeps beyond the
+     * corners' level between them.
+     *
+     * @param array{float, float} $tail
+     * @param array{float, float} $head
+     * @param array{float, float} $first
+     * @param array{float, float} $last
+     * @param array{array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}, array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}} $ends the rise and the fall, each from its centre
+     * @param array{float, float} $slopes the slopes they meet their corners along
+     * @return ?list<array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}>
+     */
+    private static function merged(array $tail, array $head, array $first, array $last, float $sign, array $ends, array $slopes): ?array
+    {
+        $lengths = [\hypot($first[0] - $tail[0], $first[1] - $tail[1]), \abs($last[0] - $first[0]), \hypot($head[0] - $last[0], $head[1] - $last[1])];
+        $whole = \array_sum($lengths);
+        $nearer = self::missed($tail, $head, $first, $lengths[0] / $whole) > self::missed($tail, $head, $last, ($lengths[0] + $lengths[1]) / $whole);
+        $piece = $nearer
+            ? [$first, self::along($first, $sign, $slopes[0], \hypot($head[0] - $first[0], $head[1] - $first[1])), $head, $head]
+            : [$tail, $tail, self::along($last, -$sign, $slopes[1], \hypot($last[0] - $tail[0], $last[1] - $tail[1])), $last];
+        $side = $first[1] <= $tail[1] ? 1.0 : -1.0;
+        foreach (\range(0, end: 64) as $step) {
+            [$x, $y] = self::at($piece, $step / 64);
+            if ((($x - $first[0]) * ($x - $last[0])) < 0 && ($side * ($y - $first[1])) > 0.01) {
+                return null;
+            }
+        }
+
+        return $nearer ? [$ends[0], $piece] : [$piece, [$ends[1][3], $ends[1][2], $ends[1][1], $ends[1][0]]];
+    }
+
+    /**
+     * How far a corner stands from a curve run from centre to centre along nothing at either,
+     * at its share of the path's length.
+     *
+     * @param array{float, float} $tail
+     * @param array{float, float} $head
+     * @param array{float, float} $corner
+     */
+    private static function missed(array $tail, array $head, array $corner, float $share): float
+    {
+        $along = (3 * $share * $share) - (2 * ($share ** 3));
+
+        return \hypot($corner[0] - $tail[0] - (($head[0] - $tail[0]) * $along), $corner[1] - $tail[1] - (($head[1] - $tail[1]) * $along));
+    }
+
+    /**
+     * A control 4/9 of a chord from a corner, leaving it along a slope.
+     *
+     * @param array{float, float} $corner
+     * @return array{float, float}
+     */
+    private static function along(array $corner, float $sign, float $slope, float $chord): array
+    {
+        $out = ((4 / 9) * $chord) / \hypot(1.0, $slope);
+
+        return [$corner[0] + ($sign * $out), $corner[1] - ($out * $slope)];
     }
 
     /**
