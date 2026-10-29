@@ -34,6 +34,16 @@ final class StateDrawingTest extends TestCase
         ]);
     }
 
+    public function testALoopReachesAsFarAsSvekReadsItsCurve(): void
+    {
+        $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(
+            Work::run(PlantUmlPipeline::native()->drawing("@startuml\n{$source}\n@enduml")),
+        );
+
+        // As the jar sizes them: the loop's curve read to two places, out to 92 not a hair short of it, the diagram rounded down past it.
+        $this->assertSame([[107.0, 71.0], [107.0, 150.0]], [$size("state N0\nN0 --> N0"), $size("[*] --> N0\nN0 --> N0")]);
+    }
+
     public function testStatesAreMadeAsPlantUmlMakesThemDeclaredFirstThenByTheirTransitions(): void
     {
         $size = static fn (string $source): array => (static fn (Drawing $drawing): array => [$drawing->width / Units::POINT, $drawing->height / Units::POINT])(

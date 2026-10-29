@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML link's curve is read to two places, as svek reads dot's: a state's loop reaching a whole point no longer leaves its diagram a point narrower than the jar's.
 - A PlantUML node svek writes as a table, a map or one a qualifier stands beside, is sized in the whole points dot sizes a table in, not through six-place inches: two maps side by side now stand as far apart as the jar sets them.
 - A `@startcreole` block draws emoji as other PlantUML text does, each set on its line as PlantUML's `AtomEmoji` stands, one it does not know its name in red, where it was left to PlantUML.
 - A PlantUML activity action written `<<icon>>` is drawn as PlantUML's `FtileBoxEmoji` draws it: no box, the emoji its label starts with twice its size unless written with a `*` scale, the rest of its first line 5 beside it, the two centred on each other, its flow through the emoji's middle; a label starting with no emoji as written, without a box.

@@ -346,7 +346,11 @@ final class Svek
             $placement->routes,
             $placement->labels,
             $placement->splines,
-            controls: $placement->controls,
+            // As svek reads dot's curves: to two places.
+            controls: \array_map(static fn (array $points): array => \array_map(static fn (array $point): array => [
+                \round($point[0], precision: 2),
+                \round($point[1], precision: 2),
+            ], $points), $placement->controls),
         );
     }
 
