@@ -88,6 +88,8 @@ final class ClassDrawingTest extends TestCase
         // As the jar draws them: a key written again in its first row, with its last value; a floating note before the object written after it.
         $this->assertSame(['M', 'a', '3', 'b', '2'], $texts($drawing("map M {\n  a => 1\n  b => 2\n  a => 3\n}")));
         $this->assertSame([[108.0, 57.0], [125.0, 70.0]], [$size($drawing("note \"a\" as N0\nobject O")), $size($drawing("note \"a\" as N0\nclass C"))]);
+        // Two maps side by side, each a table dot sizes in whole points: 141 wide, not a hair less, its half rounded up.
+        $this->assertSame([370.0, 83.0], $size($drawing("map M0 {\n  a long key => v\n  key => a long value\n}\nmap M1 {\n  a long key => value\n}")));
     }
 
     public function testAClassBodyIsSizedAsPlantUmlSizesIt(): void

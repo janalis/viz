@@ -415,13 +415,14 @@ final class Svek
                     \array_key_exists($id, $this->points) => $this->pointHolder($owner),
                     default => $this->holder($owner),
                 };
-                [$width, $height] = \array_key_exists($id, $this->margins) ? $this->table($id) : [$width, $height];
-                // As svek writes them: in inches, to six places.
+                $tabled = \array_key_exists($id, $this->margins);
+                [$width, $height] = $tabled ? $this->table($id) : [\round($width / 72, precision: 6) * 72, \round($height / 72, precision: 6) * 72];
+                // As svek writes them: in inches, to six places; a table in the whole points dot sizes it in.
                 $ordered[] = new LayoutNode(
                     $id,
                     '',
-                    \round($width / 72, precision: 6) * 72,
-                    \round($height / 72, precision: 6) * 72,
+                    $width,
+                    $height,
                     $holder,
                     \count($ordered),
                     shape: $this->shapes[$id] ?? Shape::Box,
