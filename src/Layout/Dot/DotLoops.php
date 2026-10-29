@@ -15,7 +15,8 @@ use Janalis\Viz\Model\Direction;
  * before it, or that loop's label where wider, held a third of the way out and at its reach as far
  * aside as it bulges — first up, down laid out bottom up, left laid out left to right, right laid
  * out right to left — then back as far the other way; the i-th of n bulging i/n of a quarter of
- * the node's side along it; its label just past its reach.
+ * the way to the nearer rank beside, centre to centre, or of the node's side along it on a rank
+ * alone; its label just past its reach.
  */
 final readonly class DotLoops
 {
@@ -24,7 +25,7 @@ final readonly class DotLoops
      * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      * @return array{array<int, list<array{float, float}>>, array<int, array{float, float}>, array<int, list<array{float, float}>>} each loop's curve, its label's centre, and its curve's control points, by original edge
      */
-    public static function place(LayoutGraph $graph, DotLayers $layers, array $nodes, array $edgeIndexes): array
+    public static function place(LayoutGraph $graph, DotLayers $layers, DotPosition $position, array $nodes, array $edgeIndexes): array
     {
         $labels = [];
         foreach ($graph->edges as $edge) {
@@ -48,7 +49,7 @@ final readonly class DotLoops
             $seen[$node] = ($seen[$node] ?? 0) + 1;
             [$across, $along] = $turned ? [$placed->h, $placed->w] : [$placed->w, $placed->h];
             $reach = ($across / 2) + ($reached[$node] ?? 0.0) + $graph->spacing->nodeGap;
-            $controls[$original] = self::controls([$placed->x, $placed->y], $out, $side, $reach, (($along / 4) * $seen[$node]) / $counts[$node]);
+            $controls[$original] = self::controls([$placed->x, $placed->y], $out, $side, $reach, ((self::span($layers, $position, $layers->rank[$node], $along) / 4) * $seen[$node]) / $counts[$node]);
             $curves[$original] = self::curve($controls[$original]);
             [$labelWidth, $labelHeight] = $labels[$original] ?? [0.0, 0.0];
             $beyond = $turned ? $labelHeight : $labelWidth;
@@ -59,6 +60,18 @@ final readonly class DotLoops
         }
 
         return [$curves, $centres, $controls];
+    }
+
+    /**
+     * How far a loop may bulge, four times over, as `dot` is seen to size it: as far as the
+     * nearer rank beside its node's stands from it, centre to centre, or, on a rank alone, its
+     * node's size along the ranks.
+     */
+    private static function span(DotLayers $layers, DotPosition $position, int $rank, float $along): float
+    {
+        $beside = \array_filter([$rank - 1, $rank + 1], static fn (int $next): bool => [] !== ($layers->ranks[$next] ?? []));
+
+        return [] === $beside ? $along : \min(\array_map(static fn (int $next): float => \abs($position->y[$next] - $position->y[$rank]), $beside));
     }
 
     /**

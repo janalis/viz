@@ -332,7 +332,7 @@ final readonly class DotEngine implements LayoutEngine
             }
         }
 
-        [$loops, $loopLabels, $loopControls] = DotLoops::place($graph, $layers, $nodes, $edgeIndexes);
+        [$loops, $loopLabels, $loopControls] = DotLoops::place($graph, $layers, $position, $nodes, $edgeIndexes);
         $controls += $loopControls;
         $splines += $loops;
         $routes += $loops;

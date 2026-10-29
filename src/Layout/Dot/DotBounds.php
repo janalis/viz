@@ -136,9 +136,9 @@ final class DotBounds
         if (!\is_finite($box[0])) {
             return [0.0, 0.0, 2 * $padding, 2 * $padding];
         }
-        // As `dot` rounds its bounds: out to whole points.
-        $box = [\floor($box[0] + 1e-6), \floor($box[1] + 1e-6), \ceil($box[2] - 1e-6), \ceil($box[3] - 1e-6)];
+        // As `dot` rounds its bounds: across out to whole points; down from where they start, only its height up to a whole point.
+        $box = [\floor($box[0] + 1e-6), $box[1], \ceil($box[2] - 1e-6), $box[3]];
 
-        return [$padding - $box[0], $padding - $box[1], $box[2] - $box[0] + (2 * $padding), $box[3] - $box[1] + (2 * $padding)];
+        return [$padding - $box[0], $padding - $box[1], $box[2] - $box[0] + (2 * $padding), \ceil($box[3] - $box[1] - 1e-6) + (2 * $padding)];
     }
 }

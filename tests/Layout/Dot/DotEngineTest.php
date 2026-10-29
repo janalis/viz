@@ -316,6 +316,29 @@ final class DotEngineTest extends TestCase
         }
     }
 
+    public function testAFlatEdgesArcTurnsAtTheGridPointNearestTheSidesOfTheNodesItPasses(): void
+    {
+        // As dot sets b's corners, 39.96 either side of its centre: 39.5 out, an odd node separation setting the grid off half a point; 40 with an even one.
+        foreach (['0.486111' => 39.5, '0.25' => 40.0] as $nodesep => $corner) {
+            $graph = Work::run(new DotParser()->parse(
+                'digraph { nodesep='.$nodesep.'; node [shape=rect,label=""]; a [width=0.77,height=0.667]; c [width=0.84,height=0.35]; b [width=1.11,height=0.35]; a -> c [minlen=0]; a -> b [minlen=0]; }',
+            ));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $b = $placement->endpoints['b']->x;
+            $this->assertEqualsWithDelta([-$corner, $corner], [$placement->controls[0][3][0] - $b, $placement->controls[0][6][0] - $b], 1e-6, $nodesep);
+        }
+    }
+
+    public function testALoopBulgesAQuarterOfTheWayToTheNearerRankBeside(): void
+    {
+        // As dot draws a's loop: 12 aside alone on its rank, a quarter of its height; 27 with b a rank below, a quarter of 24 + 60 + 24.
+        foreach (['' => 12.0, 'b [width=0.77,height=0.667]; a -> b;' => 27.0] as $more => $bulge) {
+            $graph = Work::run(new DotParser()->parse('digraph { ranksep=0.833333; node [shape=rect,label=""]; a [width=0.58,height=0.667]; a -> a; '.$more.' }'));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $this->assertEqualsWithDelta($bulge, $placement->endpoints['a']->y - $placement->controls[0][2][1], 0.01, $more);
+        }
+    }
+
     public function testLabelledFlatEdgesBetweenNeighboursStackTheirLabelsAsDotDoes(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

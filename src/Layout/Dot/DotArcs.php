@@ -8,8 +8,9 @@ namespace Janalis\Viz\Layout\Dot;
  * A flat edge with nodes between its ends drawn over them, as `dot` is seen to draw one: from
  * its tail's centre up above the rank, beside the first node between; along to the last one;
  * down to its head's centre. Of n such edges between the same two nodes, the kth, in the order
- * written, runs k rank separations in n + 1 above the rank, its corners half a node separation,
- * to the point down, outside the nodes between, and k node separations in n + 1 back in. Three
+ * written, runs k rank separations in n + 1 above the rank, its corners half a node separation
+ * outside the nodes between, from the grid point nearest their sides, and k node separations in
+ * n + 1 back in. Three
  * cubic pieces, each joining the next smoothly, as measured on dot's output: the rise reaching its
  * corner at half the slope of its chord's angle, starting along nothing; each control 4/9 of its
  * piece's chord from its end, along the slope there. Two where dot fits the run with the rise or
@@ -38,15 +39,30 @@ final class DotArcs
         $y = $position->y[$rank];
         $half = \max(\array_map(static fn (int $node): float => $layers->height[$node] / 2, $layers->ranks[$rank]));
         $level = $y - $half - (($k * $position->rankSeparation) / ($n + 1));
-        $inside = (($k * $position->nodeSeparation) / ($n + 1)) - \floor($position->nodeSeparation / 2);
+        $separation = \round($position->nodeSeparation);
+        $inside = (($k * $separation) / ($n + 1)) - ($separation / 2);
         $sign = $x[$head] >= $x[$tail] ? 1.0 : -1.0;
         $near = $sign > 0 ? $between[0] : $between[\count($between) - 1];
         $far = $sign > 0 ? $between[\count($between) - 1] : $between[0];
-        $first = [$x[$near] - ($sign * (($sign > 0 ? $layers->left[$near] : $layers->right[$near]) - $inside)), $level];
-        $last = [$x[$far] + ($sign * (($sign > 0 ? $layers->right[$far] : $layers->left[$far]) - $inside)), $level];
+        $first = [$x[$near] - ($sign * (self::snapped($sign > 0 ? $layers->left[$near] : $layers->right[$near], $separation, -$sign) - $inside)), $level];
+        $last = [$x[$far] + ($sign * (self::snapped($sign > 0 ? $layers->right[$far] : $layers->left[$far], $separation, $sign) - $inside)), $level];
         $gap = $position->nodeSeparation / 2;
 
         return self::through([$x[$tail], $y], [$x[$head], $y], $first, $last, [[$first[0] - ($sign * $gap), $y - $half], [$last[0] + ($sign * $gap), $y - $half]], $y - $half - $level);
+    }
+
+    /**
+     * How far from a node's centre `dot` is seen to set a corner beside it: at the point
+     * nearest its side on a grid of whole points, set off from the node's centre by half a
+     * point where the node separation is odd, a tie going right.
+     *
+     * @param float $toward 1 for the node's right side, -1 for its left
+     */
+    private static function snapped(float $half, float $separation, float $toward): float
+    {
+        $offset = \fmod($separation, num2: 2.0) / 2;
+
+        return ($toward > 0 ? \floor($half - $offset + 0.5) : \ceil($half - $offset - 0.5)) + $offset;
     }
 
     /**
