@@ -81,11 +81,12 @@ final class UsecasePreparation
             $metadata = null === $relation->id ? [] : $this->source->elements[$relation->id]->metadata;
             foreach ($metadata as $key => $value) {
                 $this->legend[] = [
-                    'text' => $name.' '.$key.': '.match (true) {
-                        \is_string($value) => $value,
-                        true === $value => 'true',
-                        default => 'false',
-                    },
+                    'text' =>
+                        $name.' '.$key.': '.match (true) {
+                            \is_string($value) => $value,
+                            true === $value => 'true',
+                            default => 'false',
+                        },
                     'origin' => $relation->statement->line,
                 ];
             }

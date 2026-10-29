@@ -19,6 +19,7 @@ final readonly class RailroadExpression
 
     public function validate(): void
     {
+        /** @var list<array{self, int}> $pending */
         $pending = [[$this, 0]];
         while ([] !== $pending) {
             [$node, $depth] = \array_pop($pending);

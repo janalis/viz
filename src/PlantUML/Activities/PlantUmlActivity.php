@@ -35,6 +35,9 @@ final readonly class PlantUmlActivity implements PlantUmlDiagram
     #[\Override]
     public function drawing(): \Generator
     {
-        return yield from ActivityDrawing::draw($this);
+        $drawing = ActivityDrawing::draw($this);
+        yield from $drawing;
+
+        return $drawing->getReturn();
     }
 }

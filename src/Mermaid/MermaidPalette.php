@@ -256,11 +256,10 @@ final readonly class MermaidPalette
         // @mago-expect analysis:mixed-assignment -- Theme values are JavaScript values, narrowed below.
         $value = JsObject::get($this->appearance->variables, $variable);
         $match = [];
-        $text = \is_string($value) && 1 === \preg_match('/^\s*(-?(?:\d+\.?\d*|\.\d+))(?:px)?\s*$/', $value, $match);
 
         return match (true) {
             \is_int($value), \is_float($value) => \is_finite((float) $value) ? (float) $value : $default,
-            $text => self::decimal($match[1]),
+            \is_string($value) && 1 === \preg_match('/^\s*(-?(?:\d+\.?\d*|\.\d+))(?:px)?\s*$/', $value, $match) => self::decimal($match[1]),
             default => $default,
         };
     }

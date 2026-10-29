@@ -193,13 +193,14 @@ final class MermaidPainter
         $lines = FlowchartShapes::hidesLabel($canonical) || '' === $node->drawLabel ? [] : self::lines($node->drawLabel ?? $node->label, $node->font, $runs);
         [$offsetX, $offsetY] = FlowchartShapes::labelOffset($canonical, $node);
         $baseline = 'point' === $shape ? $node->y + ($node->h / 2) + \count($lines) + 1 : $node->y;
-        $baseline += ($offsetY * $node->h)
-        + match ($canonical) {
-            // Pinned triangles seat the label half a padding from their base.
-            'tri' => ($node->h / 2) - (\count($lines) * $node->fontScale) - 1.0,
-            'flip-tri' => (\count($lines) * $node->fontScale) + 1.0 - ($node->h / 2),
-            default => 0.0,
-        };
+        $baseline +=
+            ($offsetY * $node->h)
+            + match ($canonical) {
+                // Pinned triangles seat the label half a padding from their base.
+                'tri' => ($node->h / 2) - (\count($lines) * $node->fontScale) - 1.0,
+                'flip-tri' => (\count($lines) * $node->fontScale) + 1.0 - ($node->h / 2),
+                default => 0.0,
+            };
         [$angle, $x, $y] = self::rotation($shape) ?? [0.0, $node->x + ($offsetX * $node->w), $baseline];
         $texts = [];
         foreach ($lines as $index => $line) {

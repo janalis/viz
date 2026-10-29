@@ -28,7 +28,7 @@
         "symfony/yaml": "^8.2"
     },
     "require-dev": {
-        "carthage-software/mago": "1.47.*",
+        "carthage-software/mago": "1.59.*",
         "infection/infection": "^0.35.4",
         "phpunit/phpunit": "^13.2"
     },

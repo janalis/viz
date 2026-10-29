@@ -50,6 +50,9 @@ final readonly class PlantUmlDot implements PlantUmlDiagram
     #[\Override]
     public function drawing(): \Generator
     {
-        return yield from new DotPipeline()->drawing($this->source);
+        $drawing = new DotPipeline()->drawing($this->source);
+        yield from $drawing;
+
+        return $drawing->getReturn();
     }
 }

@@ -35,6 +35,9 @@ final readonly class PlantUmlChen implements PlantUmlDiagram
     #[\Override]
     public function drawing(): \Generator
     {
-        return yield from ChenDrawing::draw($this);
+        $drawing = ChenDrawing::draw($this);
+        yield from $drawing;
+
+        return $drawing->getReturn();
     }
 }

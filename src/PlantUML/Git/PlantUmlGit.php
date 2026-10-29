@@ -39,6 +39,9 @@ final readonly class PlantUmlGit implements PlantUmlDiagram
     #[\Override]
     public function drawing(): \Generator
     {
-        return yield from GitDrawing::draw($this);
+        $drawing = GitDrawing::draw($this);
+        yield from $drawing;
+
+        return $drawing->getReturn();
     }
 }

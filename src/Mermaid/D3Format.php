@@ -56,7 +56,6 @@ final readonly class D3Format
 
         $fill = '' === $fill ? ' ' : $fill;
         $align = '' === $align ? '>' : $align;
-        // @mago-expect analysis:impossible-condition -- mago reads the preg_match groups as empty; `08,d` zero-fills (D3FormatTest).
         [$fill, $align] = $zero ? ['0', '='] : [$fill, $align];
 
         return new self(

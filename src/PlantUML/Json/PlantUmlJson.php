@@ -27,6 +27,9 @@ final readonly class PlantUmlJson implements PlantUmlDiagram
     #[\Override]
     public function drawing(): \Generator
     {
-        return yield from JsonDrawing::draw($this);
+        $drawing = JsonDrawing::draw($this);
+        yield from $drawing;
+
+        return $drawing->getReturn();
     }
 }

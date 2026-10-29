@@ -146,8 +146,7 @@ final readonly class ClassBox
                     '' === $title => 8,
                     [] === $lines => 1.5 * $titleHeight,
                     default => $titleHeight + 4,
-                }
-                + (\count($lines) * $line);
+                } + (\count($lines) * $line);
         }
 
         return new self(

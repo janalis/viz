@@ -44,7 +44,7 @@ final class TransitionScopes
                 $pseudo[$transition->to] ?? false => $to,
                 default => \array_slice($from, offset: 0, length: \count(\array_intersect_assoc($from, $to))),
             };
-            $grouped[\array_last($chain) ?? ''][] = $transition;
+            $grouped[(string) \array_last($chain)][] = $transition;
         }
 
         return $grouped;

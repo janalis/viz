@@ -114,7 +114,7 @@ final class SequenceYamlKeys
         return match (true) {
             $normal => new SequenceYamlKey($slots->question ?? $start, $cursor + 1),
             $colon && $explicit && !$break && \str_contains(" \t\r\n", $yaml[$cursor + 1] ?? "\n") => new SequenceYamlKey($slots->question, $cursor + 1, objectKey: true),
-            $empty => new SequenceYamlKey($slots->question ?? $start, $end),
+            $empty => new SequenceYamlKey($slots->question, $end),
             default => null,
         };
     }

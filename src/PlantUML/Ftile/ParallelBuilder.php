@@ -97,10 +97,10 @@ final readonly class ParallelBuilder
                 [$x2, $y2] = [$outX + $dx + $ax, $outY + $dy + $ay];
                 // As PlantUML, an arrow into the diamond from another swimlane is not drawn.
                 $links[] = [Snake::through($this->factory->arrow->over($tile->outLink()->color), Snake::arrow($head), [
-                        [$x1, $y1],
-                        [$x1, $y2],
-                        [$x2, $y2],
-                    ]), $this->outs[$index], $last, static fn (): array => []];
+                    [$x1, $y1],
+                    [$x1, $y2],
+                    [$x2, $y2],
+                ]), $this->outs[$index], $last, static fn (): array => []];
             }
             $x += $geometry->width;
         }
