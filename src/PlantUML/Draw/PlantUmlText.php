@@ -30,7 +30,7 @@ final readonly class PlantUmlText
     private const string SPRITE = '<(#\w+)?\$([-\p{L}0-9_\/]+)([{,]?(?:(?:scale=|\*)[0-9.]+)?(?:,?color[= :](?:#[0-9a-fA-F]{1,8}|\w+))?\}?)>';
 
     /** An emoji in Creole, as PlantUML's `Splitter` finds one: its colour, name, and scale or colour. */
-    private const string EMOJI = '<(?:#\w+)?:[0-9a-z][0-9_a-z]*:[{,]?(?:(?:scale=|\*)[0-9.]+)?(?:,?color[= :](?:#[0-9a-fA-F]{1,8}|\w+))?\}?>';
+    public const string EMOJI = '<(?:#\w+)?:[0-9a-z][0-9_a-z]*:[{,]?(?:(?:scale=|\*)[0-9.]+)?(?:,?color[= :](?:#[0-9a-fA-F]{1,8}|\w+))?\}?>';
 
     /**
      * @param list<string> $lines Creole, a line each

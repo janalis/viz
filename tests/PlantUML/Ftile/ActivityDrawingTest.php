@@ -56,6 +56,27 @@ final class ActivityDrawingTest extends TestCase
         $this->assertSame([68.0, 80.0, 97.0], [$width('日'), $width('日本'), $width('WWWW')]);
     }
 
+    public function testAnIconActionIsItsEmojiBesideItsNameAsPlantUmlDrawsIt(): void
+    {
+        $size = static fn (string $lines): array => (static fn (Drawing $drawing): array => [
+            \round($drawing->width / Units::POINT, precision: 6),
+            \round($drawing->height / Units::POINT, precision: 6),
+        ])(self::draw($lines));
+
+        // As the jar sizes them: the emoji twice its size, its name centred beside it; one alone and a space; its flow through
+        // the emoji's middle; a name taller than its emoji; and a label that starts with none, as written, no box round it.
+        $this->assertSame([[160.0, 301.0], [80.0, 71.0], [278.0, 366.0]], [
+            $size("start\n:<:smile:> Hello world; <<icon>>\n:<:1f600:>; <<icon>>\n:<:smile:*1> small; <<icon>>\n:normal;\nstop"),
+            $size(':<:1f600:>; <<icon>>'),
+            $size(
+                "start\n:<:smile:*0.5> tiny but a much longer name; <<icon>>\n:plain text\non two lines; <<icon>>\n:<#green:heart:> love\nsecond line dropped; <<ICON>>\nif (ok?) then (yes)\n:<:1f680:{scale=3}>; <<icon>>\nelse\n:x;\nendif\nstop",
+            ),
+        ]);
+        $marks = self::draw(':<:1f600:> x; <<icon>>')->marks;
+        // The face a circle, edged in its colour.
+        $this->assertSame(['#ffcc4d', '#ffcc4d'], [$marks[0]->fill, $marks[0]->stroke]);
+    }
+
     /** @return iterable<string, array{string, list<string>}> */
     public static function diagrams(): iterable
     {

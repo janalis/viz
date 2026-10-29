@@ -69,6 +69,10 @@ final readonly class FtileFactory
     /** @param list<string> $lines */
     public function activity(array $lines, ?string $stereogroup): Ftile
     {
+        if (['icon'] === \array_map(\strtolower(...), Stereogroup::labels($stereogroup))) {
+            return new FtileBoxEmoji($lines, $this->styles->activity($stereogroup), new LinkRendering());
+        }
+
         return new FtileBox($lines, $this->styles->activity($stereogroup), Stereogroup::boxStyle($stereogroup), new LinkRendering());
     }
 

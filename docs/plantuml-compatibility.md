@@ -107,7 +107,7 @@ Activity diagrams in the new syntax are read natively — with PlantUML's own ru
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |
-| Actions over one or several lines, with `<<input>>`, `<<output>>`, `<<procedure>>`, `<<load>>`, `<<save>>`, `<<continuous>>`, `<<task>>`, `<<object>>`, `<<objectsignal>>`, `<<acceptevent>>`, `<<timeevent>>` and `<<#colour>>`; `start`, `stop`, `end`, connectors `(A)`, `kill`, `detach` | `goto` and `label`, URLs, emoji and sprite stereotypes |
+| Actions over one or several lines, with `<<input>>`, `<<output>>`, `<<procedure>>`, `<<load>>`, `<<save>>`, `<<continuous>>`, `<<task>>`, `<<object>>`, `<<objectsignal>>`, `<<acceptevent>>`, `<<timeevent>>` and `<<#colour>>`; `<<icon>>`, as PlantUML's `FtileBoxEmoji` draws it: no box, the emoji the label starts with twice its size unless scaled with `*`, the rest of its first line beside it; `start`, `stop`, `end`, connectors `(A)`, `kill`, `detach` | `goto` and `label`, URLs, sprite stereotypes |
 | `if`, `elseif`, `else`, `endif` with tests, labels and colours, laid out side by side, down one side when a branch is empty or only stops, or across for else-ifs — down under `!pragma useVerticalIf on`; `skinparam conditionStyle`, `skinparam conditionEndStyle hline`; `switch`, `case`, `endswitch` with their labels, colours and notes | |
 | `while` with its labels, `backward`, `break`, and a stop or end drawn on its way out; `repeat` with a starting action, `backward`, `break`, and its test's labels | |
 | `fork`, `fork again`, `end fork` with its label, `end merge`; `split`, `split again`, `end split` | |
