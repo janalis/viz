@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-10-30
 
 **Breaking:** the code every language shares moves out of the Mermaid and Graphviz namespaces (drawing, layout, text, colours, models, rendering). [Upgrading from 0.1](https://janalis.github.io/viz/guide/upgrading) maps each old class to its new one.
 
