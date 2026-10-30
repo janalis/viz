@@ -450,6 +450,32 @@ final class DotEngineTest extends TestCase
         $this->assertSame([94.0, 94.0], [$place(40.0)->graph->height, $place(40.0, Direction::BottomTop)->graph->height]);
     }
 
+    public function testAnEdgePointingUpTheRanksIsMetAfterItsHeadsOwnEdgesAsDotTurnsIt(): void
+    {
+        $order = static function (string $first, string $second): array {
+            $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+                [new LayoutNode('x', 'x', 43.2, 48), new LayoutNode($first, $first, 43.2, 48), new LayoutNode($second, $second, 43.2, 48)],
+                [
+                    new LayoutEdge(0, 'b', 'a', labelWidth: 36, labelHeight: 17),
+                    new LayoutEdge(1, 'a', 'b', labelWidth: 36, labelHeight: 17),
+                    new LayoutEdge(2, 'b', 'a', labelWidth: 36, labelHeight: 17),
+                    new LayoutEdge(3, 'x', 'a'),
+                ],
+                [],
+                Direction::TopBottom,
+                new Spacing(60, 35, 4),
+            )));
+            $labels = $placement->labels;
+            \asort($labels);
+
+            return \array_keys($labels);
+        };
+
+        // As dot orders them, whichever of a and b is made first: a's own edge down to b, then those it turns round, in the order written.
+        $this->assertSame([1, 0, 2], $order(first: 'a', second: 'b'));
+        $this->assertSame([1, 0, 2], $order(first: 'b', second: 'a'));
+    }
+
     public function testALabelOverNodesHoldsItsEndsApartAndStandsMidwayBetweenTheirSides(): void
     {
         $place = static fn (float $tail, float $head, float $width): Placement => Work::run(new DotEngine()->place(new LayoutGraph(
