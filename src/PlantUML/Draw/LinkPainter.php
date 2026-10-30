@@ -6,6 +6,7 @@ namespace Janalis\Viz\PlantUML\Draw;
 
 use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
+use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Draw\Route;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
@@ -257,8 +258,8 @@ final class LinkPainter
     /**
      * The small triangle a label written `label >` or `< label` starts with, pointing the way
      * the label reads, as svek's `TextBlockArrow2` points it: along the line from its start to
-     * its end, or a self-link's along the curve's start, turned back for `<`; 9 long and 6 wide,
-     * as measured on PlantUML's output.
+     * its end, or a self-link's along the curve's start, turned back for `<`; its corners 5 from
+     * its middle, a polygon as PlantUML's limit finder takes one.
      *
      * @param list<array{float, float}> $controls the curve dot gives it, cut at its ends
      * @return list<Mark>
@@ -275,13 +276,16 @@ final class LinkPainter
         // As svek, a self-link's angle is its way out's measured from across, which the triangle reads from down.
         $angle = ($link->from === $link->to ? \atan2($out[1], $out[0]) : \atan2($end[0] - $start[0], $end[1] - $start[1])) + $turn;
         [$dx, $dy] = [\sin($angle), \cos($angle)];
+        // Its corners 5 from its middle, two turned 4/5 of a half turn from its point.
+        [$back, $side] = [5 * \cos(0.8 * \M_PI), 5 * \sin(0.8 * \M_PI)];
 
         return [new Mark(
             MarkKind::Polygon,
-            [[$x + (4.52 * $dx), $y + (4.52 * $dy)], [$x - (4.52 * $dx) - (2.94 * $dy), $y - (4.52 * $dy) + (2.94 * $dx)], [$x - (4.52 * $dx) + (2.94 * $dy), $y - (4.52 * $dy) - (2.94 * $dx)]],
+            [[$x + (5 * $dx), $y + (5 * $dy)], [$x + ($back * $dx) - ($side * $dy), $y + ($back * $dy) + ($side * $dx)], [$x + ($back * $dx) + ($side * $dy), $y + ($back * $dy) - ($side * $dx)]],
             stroke: $color,
             fill: $color,
             strokeWidth: 0.5,
+            outline: Outline::Polygon,
         )];
     }
 

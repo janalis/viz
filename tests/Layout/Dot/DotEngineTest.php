@@ -359,6 +359,24 @@ final class DotEngineTest extends TestCase
         $this->assertSame([20.0, -20.0], [\round($placement->controls[1][3][1] - $y, precision: 2), \round($placement->controls[2][3][1] - $y, precision: 2)]);
     }
 
+    public function testAFlatEdgesLabelLaidOutLeftToRightStandsOffByItsHeight(): void
+    {
+        $offset = static function (float $height): float {
+            $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+                [new LayoutNode('a', 'a', 41.66, 48), new LayoutNode('b', 'b', 55.65, 48)],
+                [new LayoutEdge(0, 'a', 'b', minLength: 0, labelWidth: 36, labelHeight: $height)],
+                [],
+                Direction::LeftRight,
+                new Spacing(35, 60, 4),
+            )));
+
+            return \round($placement->labels[0][0] - $placement->endpoints['a']->x, precision: 2);
+        };
+
+        // As dot sets it, turned left to right: left of the line by 3 and half its height, not its width.
+        $this->assertSame([-11.5, -23.0], [$offset(17.0), $offset(40.0)]);
+    }
+
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

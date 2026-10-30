@@ -644,6 +644,11 @@ final class ClassDrawingTest extends TestCase
         // The tail's below the line where its label stands in the way above.
         $drawing = self::draw("class A {\n}\nA \"0..*\" - Bee : < has");
         $this->assertEqualsWithDelta([56.6, 45.3], $left($drawing, text: '0..*'), 0.25);
+        // Laid out left to right, a label's arrow is a polygon PlantUML's limit finder takes 10 wider either side; as the jar sizes it.
+        foreach (['has' => 86.0, 'haaaaaaaaaaas' => 137.0] as $label => $width) {
+            $drawing = self::draw("class A {\n}\nA - Bee : < ".$label."\nleft to right direction");
+            $this->assertSame([$width, 170.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        }
         // A link down between two classes a link across joins is across too, as PlantUML's `ClassDiagram` settles it.
         $drawing = self::draw("class Bee\nclass A\nBee \"1\" --> A\nBee -> A");
         $this->assertSame([154.0, 70.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);

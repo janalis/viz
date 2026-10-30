@@ -4,6 +4,8 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML link label's arrow, `< label` or `label >`, is drawn as svek's `TextBlockArrow2` draws it, its corners 5 from its middle, and measured as PlantUML's limit finder measures a polygon, 10 wider on either side: a diagram laid out left to right whose label leads its left side is now as wide as the jar's.
+- The native `dot` layout sets a flat edge's label, laid out left to right, off its line by 3 and half its height, as `dot` is seen to, where it took half its width.
 - A PlantUML link's curve is read to two places, as svek reads dot's: a state's loop reaching a whole point no longer leaves its diagram a point narrower than the jar's.
 - A PlantUML node svek writes as a table, a map or one a qualifier stands beside, is sized in the whole points dot sizes a table in, not through six-place inches: two maps side by side now stand as far apart as the jar sets them.
 - A `@startcreole` block draws emoji as other PlantUML text does, each set on its line as PlantUML's `AtomEmoji` stands, one it does not know its name in red, where it was left to PlantUML.

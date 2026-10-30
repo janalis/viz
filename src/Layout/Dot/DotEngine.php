@@ -438,7 +438,7 @@ final readonly class DotEngine implements LayoutEngine
 
     /**
      * The labels of flat edges between two neighbours, as `dot` is seen to stack them, in the
-     * order written: the first 3 above the line, the next 3 below it, each further one 6 beyond
+     * order written, each as far across as it is tall before any turn: the first 3 above the line, the next 3 below it, each further one 6 beyond
      * the last on its side, every other side in turn; the first edge straight, one below the line
      * round the bottom of its own label, one above round the top of the label before it there.
      *
@@ -460,6 +460,8 @@ final readonly class DotEngine implements LayoutEngine
             foreach ($members as $k => $index) {
                 [$tail, $head, , $width, $height] = $layers->flat[$index];
                 $x = self::flatLabel($layers, $position, $tail, $head, $height)[0];
+                // Laid out to be turned, as `dot` is seen to, it stands off by its height as drawn: its width here.
+                $height = $layers->mirrored ? $width : $height;
                 $y = $position->y[$layers->rank[$tail]];
                 $last = $sides[$k % 2];
                 $box = 0 === ($k % 2)
