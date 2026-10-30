@@ -20,7 +20,7 @@ final class SequenceParticipant
         /** `participant`, `actor`, `boundary`, `control`, `entity`, `database`, `collections` or `queue` */
         public string $type = 'participant',
         public readonly int $order = 0,
-        /** The box around it, by its index among the diagram's boxes, if any. */
-        public readonly ?int $box = null,
+        /** The box around it, by its index among the diagram's boxes, if any: the one it was last declared in. */
+        public ?int $box = null,
     ) {}
 }

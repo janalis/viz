@@ -120,9 +120,10 @@ final class SequenceReader
     {
         $code = \trim((string) $command->get('CODE'), characters: '"');
         if (\array_key_exists($code, $this->participants)) {
-            // Declared again, it moves to the end, as PlantUML moves it.
+            // Declared again, it moves to the end, into the box it is now declared in, as PlantUML's `putParticipantInLast` moves it.
             $participant = $this->participants[$code];
             unset($this->participants[$code]);
+            $participant->box = $this->box;
             $this->participants[$code] = $participant;
 
             return;

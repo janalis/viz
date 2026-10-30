@@ -64,6 +64,15 @@ final class SequenceReaderTest extends TestCase
         $this->assertSame(['create'], self::lives($made), 'the message to a created participant carries its creation');
     }
 
+    public function testAParticipantDeclaredAgainMovesToTheEndIntoTheBoxItIsNowDeclaredIn(): void
+    {
+        $sequence = self::read("box \"Group\" #LightBlue\nparticipant P0\nparticipant P1\nend box\ndatabase P0\nP0 -> P1 : ok");
+
+        // As PlantUML's `putParticipantInLast`: last, out of the box, its kind as first declared.
+        $this->assertSame([['P1', 0], ['P0', null]], \array_map(static fn (SequenceParticipant $participant): array => [$participant->code, $participant->box], $sequence->participants));
+        $this->assertSame('participant', $sequence->participants[1]->type);
+    }
+
     public function testHideUnlinkedLeavesOutWhomNothingInvolves(): void
     {
         $sequence = self::read("participant Lonely\nparticipant Talker\nparticipant Noted\nTalker -> Listener\nnote over Noted : here\nnote across : all\n/ note over Talker : too\nhide unlinked");
