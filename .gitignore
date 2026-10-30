@@ -2,3 +2,6 @@
 /var/
 /.phpunit.cache/
 /composer.lock
+/docs/node_modules/
+/docs/.vitepress/dist/
+/docs/.vitepress/cache/

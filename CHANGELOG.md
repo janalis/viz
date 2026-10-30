@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.2.0 — 2026-10-31
+## Unreleased
 
-**Breaking:** the code every language shares moves out of the Mermaid and Graphviz namespaces (drawing, layout, text, colours, models, rendering). The README's "Upgrading from 0.1" table maps each old class to its new one.
+**Breaking:** the code every language shares moves out of the Mermaid and Graphviz namespaces (drawing, layout, text, colours, models, rendering). [Upgrading from 0.1](https://janalis.github.io/viz/guide/upgrading) maps each old class to its new one.
 
 ### Native PlantUML
 
@@ -15,14 +15,14 @@
 ### Native Graphviz
 
 - DOT is read natively: a lexer and parser for the whole language, and a model that follows `dot`'s rules for defaults, subgraphs, strict graphs and clusters.
-- A native dot layout engine (`Layout\Dot\DotEngine`), written clean-room from Gansner et al.'s paper and `dot`'s observed output, never from Graphviz's source. It covers network-simplex ranking with clusters and rank sets; ordering with flat edges, ports, `ordering` and `group`; network-simplex coordinates; Dobkin et al.'s spline routing; loops, labels and head and tail labels set as `dot` sets them. [docs/graphviz-compatibility.md](docs/graphviz-compatibility.md) tracks how closely it follows `dot`.
+- A native dot layout engine (`Layout\Dot\DotEngine`), written clean-room from Gansner et al.'s paper and `dot`'s observed output, never from Graphviz's source. It covers network-simplex ranking with clusters and rank sets; ordering with flat edges, ports, `ordering` and `group`; network-simplex coordinates; Dobkin et al.'s spline routing; loops, labels and head and tail labels set as `dot` sets them. [The Graphviz compatibility notes](https://janalis.github.io/viz/graphviz-compatibility) track how closely it follows `dot`.
 - Every other layout is native too: neato, fdp, sfdp, twopi, circo, osage, patchwork and nop.
 - The native renderer draws HTML labels, records, images from allowed directories (`Viz`'s `imageDirectories`), gradients, the `striped`, `wedged` and `radial` styles, colour lists, `splines` including `ortho`, `concentrate`, `samehead` and `sametail`, compound edges, `ratio`, `rotate` and `pad`. Nothing needs `dot` installed.
 
 ### Models and conversion
 
 - Shared models for class, state, entity-relationship, sequence, use case and activity diagrams, alongside the graph. Mermaid reads into them and writes them, PlantUML writes them, and DOT draws them where they have a graph form.
-- Conversion goes through `Source\Reader` and `Source\Writer` contracts gathered in `Source\Languages`, and `Converter::write()` sends each family directly or through its graph ([docs/conversion.md](docs/conversion.md)).
+- Conversion goes through `Source\Reader` and `Source\Writer` contracts gathered in `Source\Languages`, and `Converter::write()` sends each family directly or through its graph ([conversion routes](https://janalis.github.io/viz/conversion)).
 
 ### Rendering
 

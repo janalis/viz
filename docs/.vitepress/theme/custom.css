@@ -1,0 +1,53 @@
+/* Palette from the logo: periwinkle #5C6AE5, royal #314EBC, navy #20246B, chart gold #FDBE53. */
+:root {
+  --vp-c-brand-1: #314ebc;
+  --vp-c-brand-2: #4a5fd3;
+  --vp-c-brand-3: #314ebc;
+  --vp-c-brand-soft: rgba(92, 106, 229, 0.14);
+
+  --vp-c-tip-1: #9a6a12;
+  --vp-c-tip-2: #b27f1f;
+  --vp-c-tip-3: #fdbe53;
+  --vp-c-tip-soft: rgba(253, 190, 83, 0.16);
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #20246b 10%, #5c6ae5);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, rgba(92, 106, 229, 0.5) 50%, rgba(253, 190, 83, 0.45) 50%);
+  --vp-home-hero-image-filter: blur(44px);
+
+  --vp-button-brand-bg: #314ebc;
+  --vp-button-brand-hover-bg: #4a5fd3;
+  --vp-button-brand-active-bg: #2a42a0;
+}
+
+.dark {
+  --vp-c-bg: #11132e;
+  --vp-c-bg-alt: #0c0e24;
+  --vp-c-bg-elv: #191c42;
+  --vp-c-bg-soft: #191c42;
+
+  --vp-c-brand-1: #9aa4f3;
+  --vp-c-brand-2: #5c6ae5;
+  --vp-c-brand-3: #314ebc;
+  --vp-c-brand-soft: rgba(92, 106, 229, 0.2);
+
+  --vp-c-tip-1: #fecb64;
+  --vp-c-tip-2: #fdbe53;
+  --vp-c-tip-3: #b27f1f;
+  --vp-c-tip-soft: rgba(253, 190, 83, 0.18);
+
+  --vp-home-hero-name-background: linear-gradient(120deg, #5c6ae5 10%, #c8cdf8);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, rgba(49, 78, 188, 0.7) 50%, rgba(253, 190, 83, 0.35) 50%);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(56px);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(68px);
+  }
+}
