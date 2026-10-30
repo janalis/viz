@@ -14,9 +14,11 @@ use Janalis\Viz\GraphViz\DotLayoutInput;
 use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\GraphViz\Model\DotSubgraph;
+use Janalis\Viz\Layout\Dot\DotEndLabels;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
+use Janalis\Viz\Model\Direction;
 
 /**
  * A laid-out DOT graph as a display list, drawn the way dot draws it: clusters, then edges
@@ -37,6 +39,8 @@ final class DotDrawing
     private array $outside = [];
     /** @var list<array{float, float, float, float}> the boxes of the labels drawn so far, which an external label keeps clear of */
     private array $taken = [];
+    /** @var array<int, array<string, array{float, float}>> where each edge's head and tail labels stand by default, centred, by edge index and attribute */
+    private array $ends = [];
 
     private function __construct(
         private readonly DotGraph $graph,
@@ -64,6 +68,7 @@ final class DotDrawing
         $edges = \in_array($splines, ['', 'none'], strict: true) || 'patchwork' === \strtolower($this->graph->attribute('layout')) ? [] : $this->graph->edges;
         $this->paths = new DotEdgePaths($this->graph, $this->placement, $this->shapes);
         $this->meets = $this->paths->meet($edges, $splines);
+        $this->ends = $this->endPlaces($edges, $splines);
         foreach ($edges as $index => $edge) {
             $this->edge($index, $edge, 'none' === $background ? '#ffffff' : $background, $splines);
         }
@@ -200,30 +205,16 @@ final class DotDrawing
         }
         $tail = $this->placement->endpoints[$edge->tail];
         $route = $this->placement->routes[$index] ?? null;
-        // An edge merged with others draws only its own parts; one wholly drawn by them, nothing.
-        $pieces = $this->paths->pieces($index, $edge, $splines);
+        $pieces = $this->pieces($index, $edge, $splines);
         if ([] === $pieces) {
             return;
         }
-        [$tailMeets, $headMeets] = $this->meets[$index] ?? [null, null];
-        if (null !== $tailMeets || null !== $headMeets) {
-            $only = $pieces[0][0];
-            $pieces[0][0] = Route::eased($only, $tailMeets ?? $only[0], $headMeets ?? $only[\count($only) - 1]);
-        }
-        $this->endLabels($edge, self::joined($pieces));
+        $this->endLabels($index, $edge, self::joined($pieces));
         $colors = DotStrokes::ends($edge->attribute('color'));
         $penWidth = self::penWidth($edge->attribute('penwidth'), $styles);
         $size = \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0)));
-        $direction = \strtolower($edge->attribute('dir', $this->graph->directed ? 'forward' : 'none'));
-        foreach ([['head', 'forward', \count($pieces) - 1, 2], ['tail', 'back', 0, 1]] as [$end, $wanted, $at, $reaches]) {
-            if (($direction !== $wanted && 'both' !== $direction) || !$pieces[$at][$reaches]) {
-                continue;
-            }
-            $arrow = DotArrow::parse($edge->attribute('arrow'.$end, 'normal'));
-            $line = 'head' === $end ? $pieces[$at][0] : \array_reverse($pieces[$at][0]);
-            [$line, $tip, $along] = Route::shorten($line, $arrow->length($size, $penWidth));
+        foreach ($this->cut($edge, $pieces, $size, $penWidth) as [$end, $arrow, $tip, $along]) {
             \array_push($this->marks, ...$arrow->marks($tip, $along, $size, $colors['head' === $end ? 1 : 0], $background, $penWidth));
-            $pieces[$at][0] = 'head' === $end ? $line : \array_reverse($line);
         }
         foreach ($pieces as [$piece]) {
             foreach (DotStrokes::lines($piece, $edge->attribute('color')) as [$line, $stroke]) {
@@ -342,35 +333,123 @@ final class DotDrawing
     }
 
     /**
+     * An edge's pieces as drawn: an edge merged with others only its own parts, one wholly drawn
+     * by them none; eased to where it meets those sharing its `sametail` or `samehead`.
+     *
+     * @return list<array{list<array{float, float}>, bool, bool}>
+     */
+    private function pieces(int $index, DotEdge $edge, string $splines): array
+    {
+        $pieces = $this->paths->pieces($index, $edge, $splines);
+        [$tailMeets, $headMeets] = $this->meets[$index] ?? [null, null];
+        if ([] !== $pieces && (null !== $tailMeets || null !== $headMeets)) {
+            $only = $pieces[0][0];
+            $pieces[0][0] = Route::eased($only, $tailMeets ?? $only[0], $headMeets ?? $only[\count($only) - 1]);
+        }
+
+        return $pieces;
+    }
+
+    /**
+     * An edge's arrowheads, its pieces cut back to make room for them: for each end that has
+     * one, which end, the arrow, its tip, and the way it points.
+     *
+     * @param list<array{list<array{float, float}>, bool, bool}> $pieces
+     * @return list<array{string, DotArrow, array{float, float}, array{float, float}}>
+     */
+    private function cut(DotEdge $edge, array &$pieces, float $size, float $penWidth): array
+    {
+        $direction = \strtolower($edge->attribute('dir', $this->graph->directed ? 'forward' : 'none'));
+        $arrows = [];
+        foreach ([['head', 'forward', \count($pieces) - 1, 2], ['tail', 'back', 0, 1]] as [$end, $wanted, $at, $reaches]) {
+            if (($direction !== $wanted && 'both' !== $direction) || !$pieces[$at][$reaches]) {
+                continue;
+            }
+            $arrow = DotArrow::parse($edge->attribute('arrow'.$end, 'normal'));
+            $line = 'head' === $end ? $pieces[$at][0] : \array_reverse($pieces[$at][0]);
+            [$line, $tip, $along] = Route::shorten($line, $arrow->length($size, $penWidth));
+            $arrows[] = [$end, $arrow, $tip, $along];
+            $pieces[$at][0] = 'head' === $end ? $line : \array_reverse($line);
+        }
+
+        return $arrows;
+    }
+
+    /**
+     * Where the edges' head and tail labels stand by default, as `DotEndLabels` sets them from
+     * where their lines end, short of any arrowhead, each clear where it can be of the nodes,
+     * the edges' labels and the end labels set before it.
+     *
+     * @param array<int, DotEdge> $edges
+     * @return array<int, array<string, array{float, float}>> each label's centre, by edge index and attribute
+     */
+    private function endPlaces(array $edges, string $splines): array
+    {
+        $obstacles = \array_values(\array_map(DotEdgePaths::box(...), $this->placement->graph->nodes));
+        [$labels, $owners] = [[], []];
+        foreach ($edges as $index => $edge) {
+            $text = DotNodes::edgeText($this->graph, $edge);
+            if (\array_key_exists($index, $this->placement->labels) && !$text->empty()) {
+                [$x, $y] = $this->placement->labels[$index];
+                [$width, $height] = $text->size();
+                $obstacles[] = [$x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2)];
+            }
+            $explicit = '' !== $edge->attribute('labelangle') || '' !== $edge->attribute('labeldistance');
+            $pieces = \array_key_exists('invis', self::styles($edge->attribute('style'))) || $explicit ? [] : $this->pieces($index, $edge, $splines);
+            if ([] === $pieces) {
+                continue;
+            }
+            // As `dot`, from where the line ends, short of its arrowheads.
+            $this->cut(
+                $edge,
+                $pieces,
+                \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0))),
+                self::penWidth($edge->attribute('penwidth'), self::styles($edge->attribute('style'))),
+            );
+            $points = self::joined($pieces);
+            foreach (['taillabel' => $points[0], 'headlabel' => $points[\count($points) - 1]] as $attribute => $end) {
+                $label = DotNodes::endText($this->graph, $edge, $attribute);
+                if ($label->empty()) {
+                    continue;
+                }
+                $labels[] = [$end, $label->size()];
+                $owners[] = [$index, $attribute];
+            }
+        }
+        $places = [];
+        foreach (DotEndLabels::placed($labels, $obstacles, $this->placement->directions[''] ?? Direction::TopBottom) as $at => [$left, $top, $right, $bottom]) {
+            [$index, $attribute] = $owners[$at];
+            $places[$index][$attribute] = [($left + $right) / 2, ($top + $bottom) / 2];
+        }
+
+        return $places;
+    }
+
+    /**
      * An edge's head and tail labels by its ends. Where `labelangle` or `labeldistance` is set,
      * as DOT documents: 10 points times the distance from the end, turned by the angle, in
-     * degrees counter-clockwise, from the edge's direction there. Otherwise as dot sets them
-     * by default: beside the end, right of the way the edge runs, clear of it by half the label.
+     * degrees counter-clockwise, from the edge's direction there. Otherwise where `endPlaces()`
+     * set them, as dot sets them by default.
      *
      * @param list<array{float, float}> $points the edge's path, tail to head, clipped at its ends
      */
-    private function endLabels(DotEdge $edge, array $points): void
+    private function endLabels(int $index, DotEdge $edge, array $points): void
     {
         $explicit = '' !== $edge->attribute('labelangle') || '' !== $edge->attribute('labeldistance');
         $angle = \deg2rad(DotNodes::number($edge->attribute('labelangle'), -25.0));
         $distance = 10 * \max(0.0, \min(100.0, DotNodes::number($edge->attribute('labeldistance'), 1.0)));
-        foreach (['headlabel' => [\array_reverse($points), -1.0], 'taillabel' => [$points, 1.0]] as $attribute => [$path, $travel]) {
+        foreach (['headlabel' => \array_reverse($points), 'taillabel' => $points] as $attribute => $path) {
             $text = DotNodes::endText($this->graph, $edge, $attribute);
             if ($text->empty()) {
                 continue;
             }
-            [$x, $y] = $path[0];
-            [$intoX, $intoY] = self::direction($path);
-            if ($explicit) {
-                $this->beside($text, $x + ($distance * (($intoX * \cos($angle)) + ($intoY * \sin($angle)))), $y + ($distance * (($intoY * \cos($angle)) - ($intoX * \sin($angle)))));
+            if (!$explicit) {
+                $this->beside($text, ...$this->ends[$index][$attribute]);
                 continue;
             }
-            [$width, $height] = $text->size();
-            // Right of the way the edge runs: from tail to head, which at the head is back out of the edge.
-            [$rightX, $rightY] = [-$intoY * $travel, $intoX * $travel];
-            $across = ((\abs($rightX) * $width) + (\abs($rightY) * $height)) / 2;
-            $along = ((\abs($intoX) * $width) + (\abs($intoY) * $height)) / 2;
-            $this->beside($text, $x + ($rightX * $across) + ($intoX * $along), $y + ($rightY * $across) + ($intoY * $along));
+            [$x, $y] = $path[0];
+            [$intoX, $intoY] = self::direction($path);
+            $this->beside($text, $x + ($distance * (($intoX * \cos($angle)) + ($intoY * \sin($angle)))), $y + ($distance * (($intoY * \cos($angle)) - ($intoX * \sin($angle)))));
         }
     }
 

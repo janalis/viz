@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Mark;
 use Janalis\Viz\Draw\MarkKind;
 use Janalis\Viz\Draw\Outline;
 use Janalis\Viz\Draw\Route;
+use Janalis\Viz\Layout\Dot\DotEndLabels;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Model\Direction;
@@ -32,6 +33,7 @@ final class LinkPainter
      * @param array<string, string> $shapes `oval` or `diamond` by node name, for a node its line stops at the outline of
      * @param array{?array{PlantUmlText, Style, float}, ?array{PlantUmlText, Style, float}} $qualifiers the qualifier at its first end and at its second, with the style its box is drawn in and how far across it is pushed from its place
      * @param array<string, array{float, float}> $tabs the tab's width and height by node name, for a package or a folder whose tab pushes a link meeting it
+     * @param ?array{?array{PlantUmlText, array{float, float, float, float}}, ?array{PlantUmlText, array{float, float, float, float}}} $ends its end labels where `endBoxes()` set them among the other links', null to set them among its own alone
      * @return list<Mark>
      */
     public static function marks(
@@ -44,6 +46,7 @@ final class LinkPainter
         array $shapes = [],
         array $qualifiers = [null, null],
         array $tabs = [],
+        ?array $ends = null,
     ): array {
         if ($link->hidden) {
             return [];
@@ -52,12 +55,9 @@ final class LinkPainter
         $points = self::line($link, $placement, $edge, $shapes);
         // As PlantUML's `Kal` pushed across, its link's start with it.
         $points[0][0] += $qualifiers[0][2] ?? 0.0;
-        // As dot sees the line, before the ends make room for their marks: where the end labels stand.
-        $whole = $points;
         $color = ClassColors::back($link->color) ?? $style->color('LineColor', '#181818');
         $stroke = $link->thickness ?? ($link->bold ? 2.0 : $style->number('LineThickness', 1.0));
         $controls = CurveClip::clipped($placement->controls[$edge] ?? MagneticPath::straight($points[0], $points[\count($points) - 1]), $from, $to, $shapes);
-        $whole = \array_key_exists($edge, $placement->controls) ? [$controls[0], $controls[\count($controls) - 1]] : $whole;
         $forces = [MagneticPath::force($tabs[$link->from] ?? null, $from, $controls[0]), MagneticPath::force($tabs[$link->to] ?? null, $to, $controls[\count($controls) - 1])];
         // Where dot's curve is known, or a tab pushes an end, the line is drawn as the curve moved; else as it runs, its qualifiers' boxes with it.
         [$points, $marks, $boxes, $extent] =
@@ -77,37 +77,16 @@ final class LinkPainter
         if ('' !== $link->middle) {
             \array_push($marks, ...self::circled($link->middle, $points, $color, 'none' === $background ? '#ffffff' : $background));
         }
-        $labelBox = null;
-        if (!$label->empty()) {
-            $margin = Svek::labelMargin($link->from, $link->to);
-            [$width, $height] = $label->size($margin);
-            [$x, $y] = $placement->labels[$edge] ?? $points[\intdiv(\count($points), num2: 2)];
-            // As PlantUML, from the corner of the box svek wrote, in whole points.
-            [$left, $top] = \array_key_exists($edge, $placement->labels)
-                ? [$x - (\floor($width) / 2), $y - (\floor($height) / 2)]
-                : [$x - ($width / 2), $y - ($height / 2)];
-            \array_push($marks, ...$label->marks($left, $top, $margin));
-            $labelBox = [$left, $top, $left + \floor($width), $top + \floor($height)];
+        $labelBox = self::labelBox($link, $placement, $edge, $label, $points);
+        if (null !== $labelBox) {
+            [$left, $top, , , $y] = $labelBox;
+            \array_push($marks, ...$label->marks($left, $top, Svek::labelMargin($link->from, $link->to)));
             // As svek's `TextBlockArrow2`: its middle 5 in from the block's left, outside the room round the text.
             \array_push($marks, ...self::labelArrow($link, $controls, $left + 5, $y, $color));
         }
         \array_push($marks, ...$boxes);
-        $direction = $placement->directions[''] ?? Direction::TopBottom;
-        $flat = $link->from !== $link->to && self::flat($from, $to, $direction);
-        \array_push($marks, ...self::endLabels(
-            $link->firstLabel,
-            $link->secondLabel,
-            $whole,
-            $style->fontSize(),
-            $placement->graph->nodes,
-            match (true) {
-                $link->from === $link->to => self::loopSides($direction),
-                $flat => self::flatSides($direction, $whole),
-                default => self::sides($direction),
-            },
-            // On a link along a rank, its label stands in the way too.
-            $flat && null !== $labelBox ? [$labelBox] : [],
-        ));
+        $ends ??= self::endBoxes($placement, [[$link, $edge, $label, $style->fontSize(), $shapes, $qualifiers]])[$edge] ?? [null, null];
+        \array_push($marks, ...self::endLabels($ends, $placement->graph->nodes));
 
         return $marks;
     }
@@ -291,29 +270,105 @@ final class LinkPainter
     }
 
     /**
-     * The labels at a link's ends, as dot sets a tail and a head label: each with a corner on
-     * the end of the line, on the sides it is given, but turned where it would overlap what
-     * stands in its way, or the head's the tail's.
+     * Every link's end labels, set where `dot` sets head and tail labels, as svek writes them: a
+     * table their size in whole points, cut down, from whose corner PlantUML sets the text; each
+     * clear, where it can be, of the nodes, the links' labels and the end labels set before it.
      *
-     * As svek then, each is moved away from any node it comes within 8 of.
+     * @param list<array{PlantUmlLink, int, LinkLabel, float, array<string, string>, array{?array{PlantUmlText, Style, float}, ?array{PlantUmlText, Style, float}}}> $links each link, its edge, its label, its end labels' font size, the outlines its ends stop at, and its qualifiers
+     * @return array<int, array{?array{PlantUmlText, array{float, float, float, float}}, ?array{PlantUmlText, array{float, float, float, float}}}> by edge, the tail's and the head's text and box
+     */
+    public static function endBoxes(Placement $placement, array $links): array
+    {
+        $obstacles = \array_values(\array_map(static fn (GraphNode $node): array => [
+            $node->x - ($node->w / 2),
+            $node->y - ($node->h / 2),
+            $node->x + ($node->w / 2),
+            $node->y + ($node->h / 2),
+        ], $placement->graph->nodes));
+        [$requests, $texts] = [[], []];
+        foreach ($links as [$link, $edge, $label, $size, $shapes, $qualifiers]) {
+            $points = self::line($link, $placement, $edge, $shapes);
+            $points[0][0] += $qualifiers[0][2] ?? 0.0;
+            $box = self::labelBox($link, $placement, $edge, $label, $points);
+            if (null !== $box) {
+                $obstacles[] = [$box[0], $box[1], $box[2], $box[3]];
+            }
+            $anchors = self::anchors($link, $placement, $edge, $shapes, $points);
+            foreach ([$link->firstLabel, $link->secondLabel] as $end => $text) {
+                if (null === $text) {
+                    continue;
+                }
+                $block = new PlantUmlText(ClassReader::split($text), $size);
+                [$width, $height] = $block->size();
+                $requests[] = [$anchors[$end], [\floor($width), \floor($height)]];
+                $texts[] = [$edge, $end, $block];
+            }
+        }
+        $boxes = DotEndLabels::placed($requests, $obstacles, $placement->directions[''] ?? Direction::TopBottom);
+        $found = [];
+        foreach ($texts as $index => [$edge, $end, $block]) {
+            $found[$edge][$end] = [$block, $boxes[$index]];
+        }
+
+        return \array_map(static fn (array $sides): array => [$sides[0] ?? null, $sides[1] ?? null], $found);
+    }
+
+    /**
+     * Where a link's line meets its ends as dot sees it, before the ends make room for their marks: its curve's ends, where it is known.
      *
-     * @param list<array{float, float}> $points from the tail to the head, two at least
+     * @param array<string, string> $shapes
+     * @param list<array{float, float}> $points
+     * @return array{array{float, float}, array{float, float}}
+     */
+    private static function anchors(PlantUmlLink $link, Placement $placement, int $edge, array $shapes, array $points): array
+    {
+        if (!\array_key_exists($edge, $placement->controls)) {
+            return [$points[0], $points[\count($points) - 1]];
+        }
+        $controls = CurveClip::clipped($placement->controls[$edge], $placement->endpoints[$link->from], $placement->endpoints[$link->to], $shapes);
+
+        return [$controls[0], $controls[\count($controls) - 1]];
+    }
+
+    /**
+     * A link's label's box, as PlantUML sets it from the corner of the box svek wrote, in whole
+     * points, and the height its arrow stands at; null for none.
+     *
+     * @param list<array{float, float}> $points
+     * @return ?array{float, float, float, float, float}
+     */
+    private static function labelBox(PlantUmlLink $link, Placement $placement, int $edge, LinkLabel $label, array $points): ?array
+    {
+        if ($label->empty()) {
+            return null;
+        }
+        [$width, $height] = $label->size(Svek::labelMargin($link->from, $link->to));
+        [$x, $y] = $placement->labels[$edge] ?? $points[\intdiv(\count($points), num2: 2)];
+        [$left, $top] = \array_key_exists($edge, $placement->labels)
+            ? [$x - (\floor($width) / 2), $y - (\floor($height) / 2)]
+            : [$x - ($width / 2), $y - ($height / 2)];
+
+        return [$left, $top, $left + \floor($width), $top + \floor($height), $y];
+    }
+
+    /**
+     * The labels at a link's ends, each from its box's corner, moved, as svek moves them, away
+     * from any node it comes within 8 of.
+     *
+     * @param array{?array{PlantUmlText, array{float, float, float, float}}, ?array{PlantUmlText, array{float, float, float, float}}} $ends
      * @param array<int, GraphNode> $nodes
-     * @param array{array{int, int}, array{int, int}, ?array{int, int}} $sides the tail's, the head's, and how they turn where they would overlap, if they do
-     * @param list<array{float, float, float, float}> $obstacles what else stands in their way
      * @return list<Mark>
      */
-    private static function endLabels(?string $tail, ?string $head, array $points, float $size, array $nodes, array $sides, array $obstacles = []): array
+    private static function endLabels(array $ends, array $nodes): array
     {
-        [$tailSides, $headSides, $flip] = $sides;
-        $tailBox = self::placed($tail, $points[0], $tailSides, $flip, $size, $obstacles);
-        $headBox = self::placed($head, $points[\count($points) - 1], $headSides, $flip, $size, null === $tailBox ? $obstacles : [...$obstacles, $tailBox[1]]);
         $marks = [];
-        foreach ([$tailBox, $headBox] as $box) {
-            if (null === $box) {
+        foreach ($ends as $end) {
+            if (null === $end) {
                 continue;
             }
-            [$label, $at] = $box;
+            [$label, [$x, $y]] = $end;
+            [$width, $height] = $label->size();
+            $at = [$x, $y, $x + $width, $y + $height];
             foreach ($nodes as $node) {
                 $at = self::awayFrom([$node->x - ($node->w / 2) - 8, $node->y - ($node->h / 2) - 8, $node->x + ($node->w / 2) + 8, $node->y + ($node->h / 2) + 8], $at);
             }
@@ -322,105 +377,6 @@ final class LinkPainter
         }
 
         return $marks;
-    }
-
-    /**
-     * Where `dot` is seen to set head and tail labels, whatever the line's slope: laid out down,
-     * the head's above its end and the tail's below its start, both on its left — the side the
-     * line turns to 25 degrees off it — the head's on the line's other side where they would
-     * meet; turned with the layout, where they stay apart.
-     *
-     * @return array{array{int, int}, array{int, int}, ?array{int, int}}
-     */
-    private static function sides(Direction $direction): array
-    {
-        return match ($direction) {
-            Direction::TopBottom => [[-1, 1], [-1, -1], [-1, 1]],
-            Direction::BottomTop => [[-1, -1], [-1, 1], [-1, 1]],
-            Direction::LeftRight => [[1, 1], [-1, 1], null],
-            Direction::RightLeft => [[-1, 1], [1, 1], null],
-        };
-    }
-
-    /** Whether a link runs along a rank: its ends level across the layout, within the rounding of their sizes. */
-    private static function flat(GraphNode $from, GraphNode $to, Direction $direction): bool
-    {
-        return \in_array($direction, [Direction::TopBottom, Direction::BottomTop], strict: true) ? \abs($from->y - $to->y) < 0.5 : \abs($from->x - $to->x) < 0.5;
-    }
-
-    /**
-     * Where `dot` is seen to set them on a link along a rank: the tail's reaching on along the
-     * line, the head's back along it, both on the side of the line the layout comes from — above
-     * it laid out down, below it bottom up, left of it left to right, right of it right to left —
-     * each turned to the other side where it would meet what stands in its way.
-     *
-     * @param list<array{float, float}> $points from the tail to the head
-     * @return array{array{int, int}, array{int, int}, array{int, int}}
-     */
-    private static function flatSides(Direction $direction, array $points): array
-    {
-        [$start, $end] = [$points[0], $points[\count($points) - 1]];
-        $across = \in_array($direction, [Direction::TopBottom, Direction::BottomTop], strict: true);
-        $along = ($across ? $end[0] - $start[0] : $end[1] - $start[1]) < 0 ? -1 : 1;
-        $side = \in_array($direction, [Direction::TopBottom, Direction::LeftRight], strict: true) ? -1 : 1;
-
-        return $across ? [[$along, $side], [-$along, $side], [1, -1]] : [[$side, $along], [$side, -$along], [-1, 1]];
-    }
-
-    /**
-     * Where `dot` is seen to set them on a link to itself, which it loops on the node's right, or
-     * above it laid out left to right: both on the loop's outer side, reaching back against the
-     * layout; the head's reaching the other way along it where they would meet.
-     *
-     * @return array{array{int, int}, array{int, int}, array{int, int}}
-     */
-    private static function loopSides(Direction $direction): array
-    {
-        return match ($direction) {
-            Direction::TopBottom => [[1, -1], [1, -1], [1, -1]],
-            Direction::BottomTop => [[1, 1], [1, 1], [1, -1]],
-            Direction::LeftRight => [[-1, -1], [-1, -1], [-1, 1]],
-            Direction::RightLeft => [[1, -1], [1, -1], [-1, 1]],
-        };
-    }
-
-    /**
-     * An end's label where it stands: on the sides it is given, or turned where it would meet
-     * what stands in its way.
-     *
-     * @param array{float, float} $end
-     * @param array{int, int} $sides
-     * @param ?array{int, int} $flip
-     * @param list<array{float, float, float, float}> $obstacles
-     * @return ?array{PlantUmlText, array{float, float, float, float}}
-     */
-    private static function placed(?string $text, array $end, array $sides, ?array $flip, float $size, array $obstacles): ?array
-    {
-        $box = self::endBox($text, $end, $sides, $size);
-        $meets = null !== $box && \array_any($obstacles, static fn (array $obstacle): bool => self::overlap($box[1], $obstacle));
-
-        return null !== $flip && $meets ? self::endBox($text, $end, [$flip[0] * $sides[0], $flip[1] * $sides[1]], $size) : $box;
-    }
-
-    /**
-     * A label with a corner on a line's end, reaching from it across and down, each by -1 or 1.
-     *
-     * @param array{float, float} $end
-     * @param array{int, int} $sides
-     * @return ?array{PlantUmlText, array{float, float, float, float}} the label and its box
-     */
-    private static function endBox(?string $text, array $end, array $sides, float $size): ?array
-    {
-        if (null === $text) {
-            return null;
-        }
-        $label = new PlantUmlText(ClassReader::split($text), $size);
-        [$width, $height] = $label->size();
-        // As svek writes it to dot: a table its size in whole points, cut down, from whose corner PlantUML sets the text.
-        $x = $sides[0] < 0 ? $end[0] - \floor($width) : $end[0];
-        $y = $sides[1] < 0 ? $end[1] - \floor($height) : $end[1];
-
-        return [$label, [$x, $y, $x + $width, $y + $height]];
     }
 
     /**

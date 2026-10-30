@@ -206,10 +206,9 @@ final class DotDrawingTest extends TestCase
 
         $this->assertSame('#0000ff', $texts['H']->stroke);
         $this->assertEqualsWithDelta(Units::fontScale(20.0), $texts['H']->fontScale, 1e-9);
-        // As dot, beside each end, right of the way the edge runs: down, so to the left.
-        $this->assertLessThan($edge->points[0][0], $texts['H']->points[0][0]);
+        // As dot, off a corner by each end: the tail's below and left of it; the head's, that corner taken by the tail's, right of the line.
         $this->assertLessThan($edge->points[0][0], $texts['T']->points[0][0]);
-        $this->assertGreaterThan($texts['T']->points[0][1], $texts['H']->points[0][1], 'the head label lower, by the head');
+        $this->assertGreaterThan($edge->points[0][0], $texts['H']->points[0][0]);
 
         $turned = self::byText(self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [headlabel="H", labelangle=90, labeldistance=3]; }'));
         $plain = self::byText(self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [headlabel="H", labelangle=0]; }'));

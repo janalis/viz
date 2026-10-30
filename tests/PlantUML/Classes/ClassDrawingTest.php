@@ -662,6 +662,27 @@ final class ClassDrawingTest extends TestCase
         $this->assertEqualsWithDelta([124.0, 236.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT], 1e-9);
     }
 
+    public function testEndLabelsStandWhereDotSetsThemClearOfEachOtherAndTheLinksLabels(): void
+    {
+        $size = static fn (string $source): array => [\round(self::draw($source)->width / Units::POINT, precision: 6), \round(self::draw($source)->height / Units::POINT, precision: 6)];
+
+        // As the jar sizes them: the labels of links along a rank stacked the widest first, each end's label off the first corner clear of the others'.
+        $this->assertSame([200.0, 77.0], $size("A \"1\" --|> Bee : uses\nBee .> \"many\" A : owns >"));
+        $this->assertSame([318.0, 179.0], $size("Customer \"1\" -left-> \"1\" LongerName : < has\nLongerName -up-> \"many\" Customer : owns >\nnote top of LongerName : two\\nlines"));
+        $this->assertSame(
+            [140.0, 269.0],
+            $size(
+                "class LongerName {\n  {static} count\n}\nclass D {\n}\nBee \"0..*\" ..> \"0..*\" LongerName : < has\nBee o-- \"1\" LongerName : < has\nBee \"0..*\" --> LongerName : uses\nLongerName -left-> Bee : < has\nleft to right direction",
+            ),
+        );
+        $this->assertSame(
+            [231.0, 236.0],
+            $size(
+                "class Bee {\n  id : int\n}\nclass D {\n  +name : String\n  -secret()\n}\nD \"many\" --|> \"0..*\" Bee : owns >\nLongerName \"many\" o-- \"1\" D : owns >\nBee \"1\" -right-> \"1\" LongerName\nLongerName \"many\" --|> \"many\" D\nhide empty members",
+            ),
+        );
+    }
+
     public function testAHeadLabelThatWouldOverlapTheTailLabelStandsOnTheOtherSide(): void
     {
         $centre = static function (Drawing $drawing, string $text, float $side = 0.0): float {

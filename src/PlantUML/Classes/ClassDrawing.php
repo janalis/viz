@@ -286,13 +286,29 @@ final class ClassDrawing
         // The notes svek draws pointing at the classifiers they stand beside, or are linked to.
         $pointers = NoteLine::pointers($placement, $this->classes->notes, $this->notes, $this->noteEdges, $this->classes->links, $this->edges, $this->boxes);
         // A note's link it points along is not drawn.
-        foreach (\array_diff($this->edges, \array_map(static fn (array $pointer): int => $pointer[2], $pointers)) as $index => $edge) {
+        $drawnEdges = \array_diff($this->edges, \array_map(static fn (array $pointer): int => $pointer[2], $pointers));
+        // A hidden link, as PlantUML draws it unseen: measured as drawn.
+        $seen = [];
+        foreach ($drawnEdges as $index => $edge) {
+            $seen[$index] = clone $this->classes->links[$index];
+            $seen[$index]->hidden = false;
+        }
+        // As dot sets end labels, each clear of the others'.
+        $ends = LinkPainter::endBoxes(
+            $placement,
+            \array_values(\array_map(fn (int $index): array => [
+                $seen[$index],
+                $drawnEdges[$index],
+                $this->label($index),
+                $this->arrowStyle()->fontSize(),
+                $this->shapes($seen[$index]),
+                $this->qualifiers($index, $seen[$index]),
+            ], \array_keys($drawnEdges))),
+        );
+        foreach ($drawnEdges as $index => $edge) {
             $link = $this->classes->links[$index];
             $drawn = $this->marks;
-            // A hidden link, as PlantUML draws it unseen: measured as drawn.
-            $seen = clone $link;
-            $seen->hidden = false;
-            $this->link($seen, $placement, $edge, $index);
+            $this->link($seen[$index], $placement, $edge, $index, $ends[$edge] ?? [null, null]);
             if ($link->hidden || \array_key_exists($link->from, $this->hidden) || \array_key_exists($link->to, $this->hidden)) {
                 \array_push($this->ghosts, ...\array_slice($this->marks, \count($drawn)));
                 $this->marks = $drawn;
@@ -409,10 +425,34 @@ final class ClassDrawing
         return \array_map(static fn (Mark $mark): Mark => Outline::Box === $mark->outline && MarkKind::Polygon === $mark->kind ? $mark->with(['outline' => Outline::Block]) : $mark, $marks);
     }
 
-    private function link(PlantUmlLink $link, Placement $placement, int $edge, int $index): void
+    /** @param array{?array{PlantUmlText, array{float, float, float, float}}, ?array{PlantUmlText, array{float, float, float, float}}} $ends its end labels, set among the others' */
+    private function link(PlantUmlLink $link, Placement $placement, int $edge, int $index, array $ends): void
     {
-        $style = $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'arrow']);
         $background = $this->classes->document->styles->style(['root', 'document'])->color('BackGroundColor', '#ffffff');
+        \array_push(
+            $this->marks,
+            ...LinkPainter::marks(
+                $link,
+                $this->ported($link, $placement, $edge),
+                $edge,
+                $this->label($index),
+                $this->arrowStyle(),
+                $background,
+                $this->shapes($link),
+                $this->qualifiers($index, $link),
+                ends: $ends,
+            ),
+        );
+    }
+
+    private function arrowStyle(): Style
+    {
+        return $this->classes->document->styles->style(['root', 'element', 'classDiagram', 'arrow']);
+    }
+
+    /** @return array{?array{PlantUmlText, Style, float}, ?array{PlantUmlText, Style, float}} the qualifier at a link's first end and at its second, each pushed across as `push()` found */
+    private function qualifiers(int $index, PlantUmlLink $link): array
+    {
         $qualifiers = [$this->qualifier($link->from, $link->fromQualifier), $this->qualifier($link->to, $link->toQualifier)];
         foreach ([0, 1] as $end) {
             if (null === $qualifiers[$end]) {
@@ -420,7 +460,8 @@ final class ClassDrawing
             }
             $qualifiers[$end][2] = $this->pushed[$index][$end] ?? 0.0;
         }
-        \array_push($this->marks, ...LinkPainter::marks($link, $this->ported($link, $placement, $edge), $edge, $this->label($index), $style, $background, $this->shapes($link), $qualifiers));
+
+        return $qualifiers;
     }
 
     /**

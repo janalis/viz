@@ -153,7 +153,7 @@ final readonly class DotEngine implements LayoutEngine
             $counts[$pair] = ($counts[$pair] ?? 0) + 1;
             $places[$index] = [$pair, $counts[$pair]];
         }
-        $stacked = self::stacked($layers, $position);
+        $stacked = self::stacked($layers, $position, $edgeIndexes);
         foreach ($layers->flat as $index => [$tail, $head, $layered, $labelWidth, $labelHeight]) {
             $original = $edgeIndexes[$layered];
             $routes[$original] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
@@ -454,14 +454,16 @@ final readonly class DotEngine implements LayoutEngine
     }
 
     /**
-     * The labels of flat edges between two neighbours, as `dot` is seen to stack them, in the
-     * order written, each as far across as it is tall before any turn: the first 3 above the line, the next 3 below it, each further one 6 beyond
+     * The labels of flat edges between two neighbours, as `dot` is seen to stack them, the widest
+     * as drawn first, then the tallest, else in the order written, each as far across as it is
+     * tall before any turn: the first 3 above the line, the next 3 below it, each further one 6 beyond
      * the last on its side, every other side in turn; the first edge straight, one below the line
      * round the bottom of its own label, one above round the top of the label before it there.
      *
+     * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      * @return array<int, array{array{float, float}, ?array{array{float, float}, array{float, float}}}> each label's centre, and the corners its edge goes round, by flat edge
      */
-    private static function stacked(DotLayers $layers, DotPosition $position): array
+    private static function stacked(DotLayers $layers, DotPosition $position, array $edgeIndexes): array
     {
         $pairs = [];
         foreach ($layers->flat as $index => [$tail, $head, , $labelWidth, $labelHeight]) {
@@ -472,6 +474,12 @@ final readonly class DotEngine implements LayoutEngine
         }
         $stacked = [];
         foreach ($pairs as $members) {
+            $drawn = static function (int $index) use ($layers, $edgeIndexes): array {
+                [, , $layered, $width, $height] = $layers->flat[$index];
+
+                return [...($layers->mirrored ? [$height, $width] : [$width, $height]), -$edgeIndexes[$layered]];
+            };
+            \usort($members, static fn (int $one, int $other): int => $drawn($other) <=> $drawn($one));
             // The last label on each side: its top, its bottom, its left and its right.
             $sides = [null, null];
             foreach ($members as $k => $index) {
