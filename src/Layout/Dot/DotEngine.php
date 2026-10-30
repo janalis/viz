@@ -158,15 +158,15 @@ final readonly class DotEngine implements LayoutEngine
             $original = $edgeIndexes[$layered];
             $routes[$original] = [$point($position->x[$tail], $position->y[$layers->rank[$tail]]), $point($position->x[$head], $position->y[$layers->rank[$head]])];
             if ($labelWidth > 0 || $labelHeight > 0) {
-                [$centre, $around] = $stacked[$index] ?? [self::flatLabel($layers, $position, $tail, $head, $labelHeight), null];
+                $y = $position->y[$layers->rank[$tail]];
+                [$centre, $around, $room] = \array_key_exists($index, $stacked) ? [...$stacked[$index], \INF] : self::bridged($layers, $position, $tail, $head, $labelWidth, $labelHeight);
                 $labels[$original] = $point(...$centre);
                 if (null === $around) {
                     continue;
                 }
                 // Round a label, from the corner nearer its tail.
                 [$first, $last] = $position->x[$head] >= $position->x[$tail] ? $around : [$around[1], $around[0]];
-                $y = $position->y[$layers->rank[$tail]];
-                $arc = DotArcs::through([$position->x[$tail], $y], [$position->x[$head], $y], $first, $last, [$first, $last], \INF);
+                $arc = DotArcs::through([$position->x[$tail], $y], [$position->x[$head], $y], $first, $last, [$first, $last], $room, labelled: \INF !== $room && !$layers->mirrored);
                 $splines[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[0]);
                 $routes[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[1]);
                 $controls[$original] = \array_map(static fn (array $at): array => $point($at[0], $at[1]), $arc[2]);
@@ -417,9 +417,25 @@ final readonly class DotEngine implements LayoutEngine
     }
 
     /**
+     * A label over the nodes between its edge's ends, and the corners its edge goes through, as
+     * `dot` is seen to route it: its sides, a sixth of the way from its top back to the rank's
+     * middle; and how far the run between them may rise: no higher than its top.
+     *
+     * @return array{array{float, float}, array{array{float, float}, array{float, float}}, float}
+     */
+    private static function bridged(DotLayers $layers, DotPosition $position, int $tail, int $head, float $width, float $height): array
+    {
+        $centre = self::flatLabel($layers, $position, $tail, $head, $height);
+        $top = $centre[1] - ($height / 2);
+        $level = $top + (($position->y[$layers->rank[$tail]] - $centre[1]) / 6);
+
+        return [$centre, [[$centre[0] - ($width / 2), $level], [$centre[0] + ($width / 2), $level]], $level - $top];
+    }
+
+    /**
      * Where a flat edge's label stands, as `dot` is seen to set it: midway between its ends'
      * facing sides, half its height and 3 more above the edge; over the nodes between its
-     * ends, midway between theirs, half a rank separation, to the point, above the rank's nodes.
+     * ends, half a rank separation, to the point, above the rank's nodes.
      *
      * @return array{float, float}
      */
@@ -427,13 +443,14 @@ final readonly class DotEngine implements LayoutEngine
     {
         [$left, $right] = $position->x[$tail] <= $position->x[$head] ? [$tail, $head] : [$head, $tail];
         $rank = $layers->rank[$tail];
+        $x = ($position->x[$left] + $layers->right[$left] + $position->x[$right] - $layers->left[$right]) / 2;
         if (DotVertical::bridging($layers, $tail, $head)) {
             $half = \max(\array_map(static fn (int $node): float => $layers->height[$node] / 2, $layers->ranks[$rank]));
 
-            return [($position->x[$left] + $position->x[$right]) / 2, $position->y[$rank] - $half - \ceil($position->rankSeparation - 1e-9) - ($height / 2)];
+            return [$x, $position->y[$rank] - $half - \ceil($position->rankSeparation - 1e-9) - ($height / 2)];
         }
 
-        return [($position->x[$left] + $layers->right[$left] + $position->x[$right] - $layers->left[$right]) / 2, $position->y[$rank] - ($height / 2) - 3];
+        return [$x, $position->y[$rank] - ($height / 2) - 3];
     }
 
     /**

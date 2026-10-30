@@ -123,9 +123,26 @@ final class DotBounds
         foreach (\array_filter($clusters, static fn (GraphCluster $cluster): bool => $cluster->x1 > $cluster->x0 && $cluster->y1 > $cluster->y0) as $cluster) {
             $take($cluster->x0 - DotPosition::MARGIN, $cluster->y0 - DotPosition::MARGIN, $cluster->x1 + DotPosition::MARGIN, $cluster->y1 + DotPosition::MARGIN);
         }
+        // A label over the nodes between a flat edge's ends reaches, away from its rank, as far from its middle, to the point
+        // nearer the rank, as the rank's nodes reach from theirs.
+        $beyond = [];
+        foreach ($layers->flat as [$tail, $head, $layered, $labelWidth, $labelHeight]) {
+            if (($labelWidth <= 0 && $labelHeight <= 0) || !DotVertical::bridging($layers, $tail, $head)) {
+                continue;
+            }
+            $tallest = \max(\array_map(static fn (int $node): float => $layers->height[$node], $layers->ranks[$layers->rank[$tail]]));
+            $beyond[$edgeIndexes[$layered]] = [$tail, \max(0.0, ($tallest / 2) - \ceil(($labelHeight / 2) - 1e-9))];
+        }
         foreach ($labels as $original => [$x, $y]) {
             [$width, $height] = $sizes[$original] ?? [0.0, 0.0];
-            $take($x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2));
+            $edges = [$x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2)];
+            if (\array_key_exists($original, $beyond)) {
+                [$tail, $reach] = $beyond[$original];
+                $axis = $turned ? 0 : 1;
+                $away = [$x, $y][$axis] < [$nodes[$tail]->x, $nodes[$tail]->y][$axis];
+                $edges[$away ? $axis : $axis + 2] += $away ? -$reach : $reach;
+            }
+            $take(...$edges);
         }
         foreach ($lines as $line) {
             foreach ($line as [$x, $y]) {

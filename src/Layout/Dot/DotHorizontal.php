@@ -63,6 +63,7 @@ final class DotHorizontal
         foreach ($this->layers->ranks as $nodes) {
             $this->separate($nodes);
         }
+        $this->bridge();
         // As the method's auxiliary graph has none, the graph has no bounds to hold its ranks: they
         // hang off one node, holding nothing, so that no rank's end, nor cluster, is held to them and
         // what is free to slide may settle midway.
@@ -121,6 +122,24 @@ final class DotHorizontal
                 $gap = ($from === $previous ? $layers->right[$previous] : 0.0) + DotPosition::MARGIN + ($to === $node ? $layers->left[$node] : 0.0);
                 $this->edges[] = [$from, $to, self::length($gap), 0];
             }
+        }
+    }
+
+    /**
+     * The room a labelled flat edge over the nodes between its ends keeps between them, as `dot`
+     * is seen to keep it: its label's width, and each end's side facing it, each half with a
+     * side rounded to the point.
+     */
+    private function bridge(): void
+    {
+        $layers = $this->layers;
+        foreach ($layers->flat as [$tail, $head, , $labelWidth, $labelHeight]) {
+            if (($labelWidth <= 0 && $labelHeight <= 0) || !DotVertical::bridging($layers, $tail, $head)) {
+                continue;
+            }
+            $order = \array_flip($layers->ranks[$layers->rank[$tail]]);
+            [$left, $right] = $order[$tail] < $order[$head] ? [$tail, $head] : [$head, $tail];
+            $this->edges[] = [$left, $right, self::length($layers->right[$left] + ($labelWidth / 2)) + self::length(($labelWidth / 2) + $layers->left[$right]), 0];
         }
     }
 

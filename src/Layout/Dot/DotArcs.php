@@ -75,15 +75,17 @@ final class DotArcs
      * @param array{float, float} $last
      * @param array{array{float, float}, array{float, float}} $edges where the rank's top stands back from each corner, which the rise bends round
      * @param float $room how far the run may rise above its corners
+     * @param bool $labelled whether it goes through its label, between the corners
      * @return array{list<array{float, float}>, list<array{float, float}>, list<array{float, float}>} the curve, drawn in straight steps, its corners, and its pieces' points
      */
-    public static function through(array $tail, array $head, array $first, array $last, array $edges, float $room): array
+    public static function through(array $tail, array $head, array $first, array $last, array $edges, float $room, bool $labelled = false): array
     {
         $sign = $head[0] >= $tail[0] ? 1.0 : -1.0;
         [$rise, $leaving] = self::rise($tail, $first, $sign, $edges[0]);
         [$fall, $reaching] = self::rise($head, $last, -$sign, $edges[1]);
         $slopes = [$leaving, $reaching];
-        $pieces = self::merged($tail, $head, $first, $last, $sign, [$rise, $fall], $slopes) ?? [$rise, self::run($first, $last, $sign, $slopes, $room), [$fall[3], $fall[2], $fall[1], $fall[0]]];
+        $back = [$fall[3], $fall[2], $fall[1], $fall[0]];
+        $pieces = self::merged($tail, $head, $first, $last, $sign, [$rise, $fall], $slopes, $labelled) ?? [$rise, self::run($first, $last, $sign, $slopes, $room), $back];
         $drawn = [$rise[0]];
         foreach ($pieces as $piece) {
             for ($step = 1; $step <= self::STEPS; ++$step) {
@@ -97,9 +99,10 @@ final class DotArcs
     /**
      * The curve in two pieces where `dot` is seen to fit it so, as a curve is fitted to a path:
      * one piece from centre to centre, along nothing at either, failing, the path split at the
-     * corner farther from it at its share of the path's length; the side holding the other
-     * corner one piece, its controls 4/9 of its chord from its ends, where it keeps beyond the
-     * corners' level between them.
+     * corner farther from it at its share of the path's length — where they stand as far, the
+     * last, or the first for an edge through its label; the side holding the other corner one
+     * piece, its controls 4/9 of its chord from its ends, where it keeps beyond the corners'
+     * level between them.
      *
      * @param array{float, float} $tail
      * @param array{float, float} $head
@@ -107,13 +110,16 @@ final class DotArcs
      * @param array{float, float} $last
      * @param array{array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}, array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}} $ends the rise and the fall, each from its centre
      * @param array{float, float} $slopes the slopes they meet their corners along
+     * @param bool $labelled whether the edge goes through its label
      * @return ?list<array{array{float, float}, array{float, float}, array{float, float}, array{float, float}}>
      */
-    private static function merged(array $tail, array $head, array $first, array $last, float $sign, array $ends, array $slopes): ?array
+    // @mago-expect lint:no-boolean-flag-parameter -- Which corner a tie splits at, as dot breaks it for each kind of edge.
+    private static function merged(array $tail, array $head, array $first, array $last, float $sign, array $ends, array $slopes, bool $labelled): ?array
     {
         $lengths = [\hypot($first[0] - $tail[0], $first[1] - $tail[1]), \abs($last[0] - $first[0]), \hypot($head[0] - $last[0], $head[1] - $last[1])];
         $whole = \array_sum($lengths);
-        $nearer = self::missed($tail, $head, $first, $lengths[0] / $whole) > self::missed($tail, $head, $last, ($lengths[0] + $lengths[1]) / $whole);
+        $missed = self::missed($tail, $head, $first, $lengths[0] / $whole) - self::missed($tail, $head, $last, ($lengths[0] + $lengths[1]) / $whole);
+        $nearer = $labelled ? $missed > -1e-9 : $missed > 0;
         $piece = $nearer
             ? [$first, self::along($first, $sign, $slopes[0], \hypot($head[0] - $first[0], $head[1] - $first[1])), $head, $head]
             : [$tail, $tail, self::along($last, -$sign, $slopes[1], \hypot($last[0] - $tail[0], $last[1] - $tail[1])), $last];

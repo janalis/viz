@@ -655,6 +655,11 @@ final class ClassDrawingTest extends TestCase
         // A link down between two classes a link across joins is across too, as PlantUML's `ClassDiagram` settles it.
         $drawing = self::draw("class Bee\nclass A\nBee \"1\" --> A\nBee -> A");
         $this->assertSame([154.0, 70.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        // A link across over a class between, its label above holding its ends apart; laid out left to right, beside them: as the jar sizes them.
+        $drawing = self::draw("class Alpha\nclass B\nclass Gamma\nAlpha -> B\nB -> Gamma\nAlpha -> Gamma : a much longer label here");
+        $this->assertSame([335.0, 116.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT]);
+        $drawing = self::draw("left to right direction\nclass A\nclass B\nclass C\nA -> B\nB -> C\nA -> C : uses");
+        $this->assertEqualsWithDelta([124.0, 236.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT], 1e-9);
     }
 
     public function testAHeadLabelThatWouldOverlapTheTailLabelStandsOnTheOtherSide(): void

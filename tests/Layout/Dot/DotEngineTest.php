@@ -417,6 +417,61 @@ final class DotEngineTest extends TestCase
         $this->assertSame([-11.5, -23.0], [$offset(17.0), $offset(40.0)]);
     }
 
+    public function testAFlatEdgeOverNodesGoesThroughItsLabelsSidesAsDotDrawsIt(): void
+    {
+        $place = static fn (float $width, Direction $direction = Direction::TopBottom): Placement => Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 43.2, 32), new LayoutNode('b', 'b', 43.2, 32), new LayoutNode('c', 'c', 43.2, 32)],
+            [
+                new LayoutEdge(0, 'a', 'b', minLength: 0),
+                new LayoutEdge(1, 'b', 'c', minLength: 0),
+                new LayoutEdge(2, 'a', 'c', minLength: 0, labelWidth: $width, labelHeight: 17),
+            ],
+            [],
+            $direction,
+            new Spacing(60, 35, 4),
+        )));
+        $relative = static fn (Placement $placement, int $index): array => [
+            \round($placement->controls[2][$index][0] - $placement->endpoints['a']->x, precision: 1),
+            \round($placement->controls[2][$index][1] - $placement->endpoints['a']->y, precision: 1),
+        ];
+
+        // As dot draws it: through its label's sides a sixth of the way from its top back to the rank, over its top between.
+        $wide = $place(60.0);
+        $this->assertCount(10, $wide->controls[2]);
+        $this->assertSame([[48.0, -53.9], [72.3, -64.8], [83.7, -64.8], [108.0, -53.9]], \array_map(static fn (int $index): array => $relative($wide, $index), [3, 4, 5, 6]));
+        // Its tail's side one piece, the rest another where they fit; laid out left to right, the other way round.
+        $narrow = $place(20.0);
+        $this->assertCount(7, $narrow->controls[2]);
+        $this->assertSame([68.0, -53.9], $relative($narrow, index: 3));
+        $turned = $place(40.0, Direction::LeftRight);
+        $this->assertCount(7, $turned->controls[2]);
+        $this->assertSame([-79.7, 75.5], $relative($turned, index: 3));
+        // The drawing reaching as far above the label's middle as the rank's nodes reach above theirs, whichever way it is laid out.
+        $this->assertSame([94.0, 94.0], [$place(40.0)->graph->height, $place(40.0, Direction::BottomTop)->graph->height]);
+    }
+
+    public function testALabelOverNodesHoldsItsEndsApartAndStandsMidwayBetweenTheirSides(): void
+    {
+        $place = static fn (float $tail, float $head, float $width): Placement => Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', $tail, 32), new LayoutNode('b', 'b', 21.6, 32), new LayoutNode('c', 'c', $head, 32)],
+            [
+                new LayoutEdge(0, 'a', 'b', minLength: 0),
+                new LayoutEdge(1, 'b', 'c', minLength: 0),
+                new LayoutEdge(2, 'a', 'c', minLength: 0, labelWidth: $width, labelHeight: 17),
+            ],
+            [],
+            Direction::TopBottom,
+            new Spacing(60, 35, 4),
+        )));
+
+        // As dot sets them: each end's side and half the label, each to the point, apart; the label midway between the sides.
+        $wide = $place(tail: 43.2, head: 43.2, width: 150.0);
+        $this->assertSame(194.0, \round($wide->endpoints['c']->x - $wide->endpoints['a']->x, precision: 2));
+        $uneven = $place(tail: 36.0, head: 57.6, width: 100.0);
+        $this->assertSame(147.0, \round($uneven->endpoints['c']->x - $uneven->endpoints['a']->x, precision: 2));
+        $this->assertEqualsWithDelta(68.0, $uneven->labels[2][0] - $uneven->endpoints['a']->x, 0.1, 'dot: 68, to its point');
+    }
+
     public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(

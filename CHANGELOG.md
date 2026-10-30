@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- The native `dot` layout draws a labelled flat edge over the nodes between its ends through its label's sides and over its top, as `dot` does, where it ran straight through those nodes; it holds the ends apart for a wide label, sets the label midway between their facing sides, and bounds the drawing round it as `dot` does. Of a symmetric arc's corners, it splits a labelled one where `dot` does.
 - The native `dot` layout, laid out left to right, keeps the nodes flat edges join in the order it keeps top-down, down the page, as `dot` does, where it turned a node's heads the other way: a PlantUML state's notes laid out left to right now stand in the jar's order.
 - The native `dot` layout sets a node over two others alone, an odd number of points between them, as `dot` is seen to: nearer the right one, what hangs from it a point left, where a node stands left of it on its rank and none left of the left one on theirs.
 - A PlantUML loop's label arrow stands 5 in from its label's left, as `TextBlockArrow2` does, outside the room svek leaves round the text, where it stood 5 further right.
