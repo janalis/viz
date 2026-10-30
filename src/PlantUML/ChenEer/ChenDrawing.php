@@ -60,7 +60,7 @@ final class ChenDrawing
             $this->boxes[$element->id] = $box;
             $svek->node($element->id, $box->width, $box->height, shape: $box->shape());
         }
-        foreach ($this->diagram->links as $index => $link) {
+        foreach (Svek::linkOrder($this->diagram->links) as $index => $link) {
             [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
             $this->edges[$index] = $svek->edge($link->from, $link->to, $link->length, $width, $height);
         }

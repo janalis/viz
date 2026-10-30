@@ -55,6 +55,8 @@ PlantUML tries its diagram factories in order — sequence, class, the legacy ac
 
 A factory whose commands take every line can still fail to carry one out — a class diagram declaring a state without `allowmixing`, a note with nothing to stand beside — and PlantUML then tries its next factory; the native families refuse the same lines, so the same factory draws the diagram.
 
+The diagrams laid out with svek — class, description, state, legacy activity and Chen — write their links into the graph in the order `CucaDiagramFileMakerSvek` orders them: each in turn, but one joining the same two elements as a link before it, either way round, just after the first run of such links, so that dot meets them as it meets svek's.
+
 ### Class diagrams
 
 Laid out as PlantUML's svek lays them out, by the native dot engine: each classifier and note a box of its drawn size, a link's dashes less one its minimum length (`->` across, `-->` down, `-up->`, `-left->` and the like turned round), a label a box of its own, packages as clusters; 35 points between nodes and 60 between ranks unless `skinparam nodesep` or `ranksep` say.

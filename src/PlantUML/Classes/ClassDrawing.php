@@ -153,7 +153,7 @@ final class ClassDrawing
         foreach (\array_unique([...$this->classes->leaves, ...\array_keys($this->classes->entities), ...\array_keys($notes)]) as $id) {
             \array_key_exists($id, $this->classes->entities) ? $this->classifier($svek, $this->classes->entities[$id], $portions, $linked, $icons, $letter) : $this->note($svek, $notes[$id]);
         }
-        foreach ($this->classes->links as $index => $link) {
+        foreach (Svek::linkOrder($this->classes->links) as $index => $link) {
             [$from, $to] = [$this->end($svek, $link->from, $held), $this->end($svek, $link->to, $held)];
             if (null === $from || null === $to) {
                 continue;

@@ -492,4 +492,14 @@ final class DescriptionDrawingTest extends TestCase
         $this->assertSame([194.0, 134.0], $size("package P {\n[A]\n}\nnote right of P : n"));
         $this->assertSame([201.0, 220.0], $size("node N {\n[A]\n}\nnote left of N : l\n[B] --> N"));
     }
+
+    public function testALinkJoiningTheSameEndsAsOneBeforeIsWrittenNextToItAsSvekOrdersThem(): void
+    {
+        $drawing = Work::run(PlantUmlPipeline::native()->drawing(
+            "@startuml\nactor \"D\" as E0\nnode \"A\" as E1\nrectangle \"Longer Name\" as E2\nE1 \"1\" -right-> \"many\" E2 : connects to\nE1 \"many\" -up-> \"many\" E0\nE1 \"many\" -up-> \"1\" E2\nleft to right direction\n@enduml",
+        ));
+
+        // As the jar draws it: the link back to E2 written after the first to it, before the one to E0, so E2's node first.
+        $this->assertEqualsWithDelta([402.0, 95.0], [$drawing->width / Units::POINT, $drawing->height / Units::POINT], 1e-6);
+    }
 }

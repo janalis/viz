@@ -18,6 +18,7 @@ use Janalis\Viz\Layout\GraphLayout;
 use Janalis\Viz\Layout\GraphNode;
 use Janalis\Viz\Model\Direction;
 use Janalis\Viz\Model\Graph\Shape;
+use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 
 /**
  * The graph PlantUML's svek hands to dot, built the way svek builds it and laid out by the
@@ -248,6 +249,38 @@ final class Svek
         }
 
         return [\floor(\max($titleWidth, $descriptionWidth)) + $shapeWidth, \floor($titleHeight + $descriptionHeight + ($descriptionHeight > 0 ? 5 : 0) + $shapeHeight) - 5];
+    }
+
+    /**
+     * Links in the order svek writes them, as `CucaDiagramFileMakerSvek` orders them: each in
+     * turn, but one joining the same two ends as a link before it, either way round, set just
+     * after the first run of such links.
+     *
+     * @template T of PlantUmlLink
+     * @param array<int, T> $links
+     * @return array<int, T> the same links, keyed as given
+     */
+    public static function linkOrder(array $links): array
+    {
+        $ends = static fn (PlantUmlLink $link): array => [\min($link->from, $link->to), \max($link->from, $link->to)];
+        /** @var list<int> $order */
+        $order = [];
+        foreach ($links as $index => $link) {
+            $at = 0;
+            while ($at < \count($order) && $ends($links[$order[$at]]) !== $ends($link)) {
+                ++$at;
+            }
+            while ($at < \count($order) && $ends($links[$order[$at]]) === $ends($link)) {
+                ++$at;
+            }
+            $order = [...\array_slice($order, offset: 0, length: $at), $index, ...\array_slice($order, offset: $at)];
+        }
+        $ordered = [];
+        foreach ($order as $index) {
+            $ordered[$index] = $links[$index];
+        }
+
+        return $ordered;
     }
 
     /** How much room svek leaves around a link's label, both sides together: 1 each side, 6 on a loop. */

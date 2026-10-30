@@ -161,7 +161,7 @@ final class DescriptionDrawing
             [$width, $height] = $box->size();
             $svek->node($note->id, $width, $height, $note->group);
         }
-        foreach ($links as $index => $link) {
+        foreach (Svek::linkOrder($links) as $index => $link) {
             [$width, $height] = $this->label($index)->size(Svek::labelMargin($link->from, $link->to));
             $this->edges[$index] = $svek->edge(
                 $this->end($svek, $link->from),
@@ -341,9 +341,16 @@ final class DescriptionDrawing
         $tabs = \array_filter(\array_map(static fn (DescriptionBox $box): ?array => $box->magnet(), $this->boxes));
         // The notes svek draws pointing at the elements they stand beside, or are linked to; the link they point along not drawn.
         $pointers = NoteLine::pointers($placement, $this->diagram->notes, $this->notes, $this->noteEdges, $this->diagram->links, $this->edges, [...$this->boxes, ...$this->tables]);
-        foreach (\array_diff($this->edges, \array_map(static fn (array $pointer): int => $pointer[2], $pointers)) as $index => $edge) {
+        $drawn = \array_diff($this->edges, \array_map(static fn (array $pointer): int => $pointer[2], $pointers));
+        // As dot sets end labels, each clear of the others'.
+        $shown = \array_filter($drawn, fn (int $index): bool => !$this->diagram->links[$index]->hidden, \ARRAY_FILTER_USE_KEY);
+        $ends = LinkPainter::endBoxes(
+            $placement,
+            \array_values(\array_map(fn (int $index): array => [$this->diagram->links[$index], $drawn[$index], $this->label($index), $style->fontSize(), [], [null, null]], \array_keys($shown))),
+        );
+        foreach ($drawn as $index => $edge) {
             $link = $this->diagram->links[$index];
-            $this->put($marks, LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, tabs: $tabs), $link->from, $link->to);
+            $this->put($marks, LinkPainter::marks($link, $placement, $edge, $this->label($index), $style, $background, tabs: $tabs, ends: $ends[$edge] ?? [null, null]), $link->from, $link->to);
         }
         // Any other note's line to what it stands beside, as dot draws its edge.
         foreach ($this->diagram->notes as $note) {

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\PlantUML\Svek;
 
 use Janalis\Viz\Model\Direction;
+use Janalis\Viz\PlantUML\Links\LinkDecor;
+use Janalis\Viz\PlantUML\Links\PlantUmlLink;
 use Janalis\Viz\PlantUML\Svek\Svek;
 use Janalis\Viz\Render\Work;
 use PHPUnit\Framework\TestCase;
@@ -54,5 +56,15 @@ final class SvekTest extends TestCase
         $this->assertSame([0.0, 0.0], Svek::label(0.0, 14.0), 'no title, no label');
         $this->assertSame([40.0, 11.0], Svek::label(40.5, 16.3));
         $this->assertSame([100.0, 31.0], Svek::label(40.5, 16.3, 40.0, 15.0, 60.0));
+    }
+
+    public function testLinksAreOrderedAsSvekWritesThem(): void
+    {
+        $link = static fn (string $from, string $to): PlantUmlLink => new PlantUmlLink($from, $to, LinkDecor::None, LinkDecor::Arrow, 2);
+        $links = [3 => $link(from: 'a', to: 'b'), 5 => $link(from: 'a', to: 'c'), 6 => $link(from: 'b', to: 'a'), 9 => $link(from: 'c', to: 'd'), 11 => $link(from: 'a', to: 'b')];
+
+        // As svek orders them: each after the first run of links joining the same two ends, either way round, else in turn.
+        $this->assertSame([3, 6, 11, 5, 9], \array_keys(Svek::linkOrder($links)));
+        $this->assertSame([], Svek::linkOrder([]));
     }
 }

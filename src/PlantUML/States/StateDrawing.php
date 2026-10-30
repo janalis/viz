@@ -137,7 +137,7 @@ final class StateDrawing
         }
         $anchored = \array_map(static fn (StateNode $node): string => $node->id, $clusters);
         $edges = [];
-        foreach ($this->states->links as $index => $link) {
+        foreach (Svek::linkOrder($this->states->links) as $index => $link) {
             if (!\array_key_exists($link->from, $placed) || !\array_key_exists($link->to, $placed)) {
                 continue;
             }
