@@ -359,6 +359,28 @@ final class DotEngineTest extends TestCase
         $this->assertSame([20.0, -20.0], [\round($placement->controls[1][3][1] - $y, precision: 2), \round($placement->controls[2][3][1] - $y, precision: 2)]);
     }
 
+    public function testANodeOverTwoAnOddGapApartLeansAsItsNeighboursHoldIt(): void
+    {
+        $offsets = static function (string $body): array {
+            $graph = Work::run(new DotParser()->parse('digraph { nodesep=0.486111; ranksep=0.833333; node [shape=rect,label=""]; '.$body.' }'));
+            $at = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)))->endpoints;
+
+            return [$at['c1']->x - $at['p']->x, $at['c2']->x - $at['p']->x];
+        };
+        $tree = 'p; c1; c2; p -> c1; p -> c2;';
+
+        // As dot sets it: nearer the left child alone, or with a node only on its right.
+        $this->assertSame([-44.0, 45.0], $offsets($tree));
+        $this->assertSame([-44.0, 45.0], $offsets($tree.' a;'));
+        // With one on its left, nearer the right, what hangs from it moved, it held: on both sides too, and down chains through a labelled loop's ranks.
+        $this->assertSame([-45.0, 44.0], $offsets('a; '.$tree));
+        $this->assertSame([-45.0, 44.0], $offsets('a; '.$tree.' b;'));
+        $this->assertSame([-45.0, 44.0], $offsets('a; '.$tree.' p -> p [label="loop"];'));
+        $this->assertSame([-45.0, 44.0], $offsets('a; '.$tree.' c1 -> d1; c2 -> d2; c1 -> d2;'));
+        // Not where the left child has a node on its left too.
+        $this->assertSame([-44.0, 45.0], $offsets('a; a -> a1; a -> a2; '.$tree));
+    }
+
     public function testAFlatEdgesLabelLaidOutLeftToRightStandsOffByItsHeight(): void
     {
         $offset = static function (float $height): float {

@@ -623,6 +623,9 @@ final class ClassDrawingTest extends TestCase
         $this->assertCount(1, $arrows);
         [$tip, $wing, $other] = $arrows[0]->points;
         $this->assertLessThan(\min($wing[1], $other[1]) - (8 * Units::POINT), $tip[1]);
+        // Its middle 5 in from the label's left, outside the 6 svek leaves round the text: as far before the text as the jar sets it.
+        $text = \array_values(\array_filter(self::draw('Bee -- Bee : < has')->marks, static fn (Mark $mark): bool => 'has' === $mark->text))[0];
+        $this->assertEqualsWithDelta(116.65 - 99.258, ($text->points[0][0] - (\array_sum($text->slots ?? []) / 2) - \min(\array_column($arrows[0]->points, 0))) / Units::POINT, 0.05);
     }
 
     public function testLinksAlongARankSetTheirEndLabelsAsDotDoesAndKeepTheirPairAcross(): void

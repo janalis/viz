@@ -67,6 +67,7 @@ final readonly class DotCentring
         }
         foreach ($layers->rank as $node => $_) {
             $values = $this->between($node, $up, $down, $values);
+            $values = $this->split($node, $up, $down, $values);
         }
         foreach ($layers->ranks as $nodes) {
             foreach ($this->blocks($nodes, $values) as $block) {
@@ -102,6 +103,58 @@ final readonly class DotCentring
         }
         $moved = $values;
         $moved[$node] = \intdiv($low + $high, num2: 2);
+
+        return $this->roomy($moved) ? $moved : $values;
+    }
+
+    /**
+     * A source node over two real nodes alone, an odd number of points between them, set as `dot`
+     * is seen to set it: nearer the right one, what hangs from it a point left, where a node
+     * stands left of it on its rank and none left of the left one on theirs; nearer the left one
+     * otherwise.
+     *
+     * @param array<int, list<array{int, int}>> $up
+     * @param array<int, list<array{int, int}>> $down
+     * @param list<int> $values
+     * @return list<int>
+     */
+    private function split(int $node, array $up, array $down, array $values): array
+    {
+        $layers = $this->layers;
+        $children = $down[$node] ?? [];
+        if (DotLayers::REAL !== $layers->kind[$node] || [] !== ($up[$node] ?? []) || 2 !== \count($children) || $children[0][1] !== $children[1][1]) {
+            return $values;
+        }
+        // Each reached down a chain of virtual nodes, if any, straight.
+        $ends = [];
+        foreach ($children as [$next]) {
+            $found = $this->chain($next, $down, $values, through: true);
+            if (null === $found || [] !== \array_filter($found[0], static fn (int $virtual): bool => $values[$virtual] !== $values[$found[1]])) {
+                return $values;
+            }
+            $ends[] = $found[1];
+        }
+        [$low, $high] = [\min($values[$ends[0]], $values[$ends[1]]), \max($values[$ends[0]], $values[$ends[1]])];
+        $left = $values[$ends[0]] === $low ? $ends[0] : $ends[1];
+        if (1 !== (($high - $low) % 2) || \intdiv($low + $high, num2: 2) !== $values[$node]) {
+            return $values;
+        }
+        $first = static fn (int $at): bool => $layers->ranks[$layers->rank[$at]][0] === $at;
+        if ($first($node) || !$first($left)) {
+            return $values;
+        }
+        // What hangs from it moves, the node held where its neighbour holds it.
+        $moved = $values;
+        $hanging = [$children[0][0], $children[1][0]];
+        for ($index = 0; $index < \count($hanging); ++$index) {
+            --$moved[$hanging[$index]];
+            foreach ($down[$hanging[$index]] ?? [] as [$next]) {
+                if (\in_array($next, $hanging, strict: true)) {
+                    continue;
+                }
+                $hanging[] = $next;
+            }
+        }
 
         return $this->roomy($moved) ? $moved : $values;
     }

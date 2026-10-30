@@ -88,7 +88,8 @@ final class LinkPainter
                 : [$x - ($width / 2), $y - ($height / 2)];
             \array_push($marks, ...$label->marks($left, $top, $margin));
             $labelBox = [$left, $top, $left + \floor($width), $top + \floor($height)];
-            \array_push($marks, ...self::labelArrow($link, $controls, $left + ($margin / 2) + 4, $y, $color));
+            // As svek's `TextBlockArrow2`: its middle 5 in from the block's left, outside the room round the text.
+            \array_push($marks, ...self::labelArrow($link, $controls, $left + 5, $y, $color));
         }
         \array_push($marks, ...$boxes);
         $direction = $placement->directions[''] ?? Direction::TopBottom;
