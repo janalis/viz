@@ -11,7 +11,7 @@ use Janalis\Viz\Model\Graph\Shape;
  * corridor of boxes — below its tail, the gap between each two ranks, the room beside each of
  * its virtual nodes up to their neighbours and the clusters it is not in, and above its head.
  * The shortest path through the corridor, found by a funnel across the openings between its
- * boxes, is fitted with cubic Bézier curves, each split at the path's corner furthest from it
+ * boxes, is fitted with cubic Bézier curves, each split at the path's corner furthest from the curve first tried
  * until every piece keeps inside the corridor.
  */
 final class DotSplines
@@ -462,7 +462,8 @@ final class DotSplines
 
     /**
      * Cubic Béziers along a path, leaving and reaching it along the tangents given, each
-     * inside the corridor: one if it fits, else two split at the corner furthest from the chord.
+     * inside the corridor: one if it fits, else two split at the corner furthest from the curve
+     * first tried.
      *
      * @param list<array{float, float}> $points
      * @param array{float, float} $leaving
@@ -483,7 +484,13 @@ final class DotSplines
                 return [$curve];
             }
         }
-        $split = self::furthest($points);
+        $reach = $chord * self::PULLS[0];
+        $split = self::furthest($points, [
+            $first,
+            [$first[0] + ($leaving[0] * $reach), $first[1] + ($leaving[1] * $reach)],
+            [$last[0] - ($reaching[0] * $reach), $last[1] - ($reaching[1] * $reach)],
+            $last,
+        ]);
         $tangent = self::unit($points[$split - 1], $points[$split + 1]);
 
         return [
@@ -493,18 +500,24 @@ final class DotSplines
     }
 
     /**
-     * The inner corner furthest from the chord between the path's ends.
+     * The inner corner furthest from a curve tried along the path, each measured against the
+     * curve where it stands its share of the path's length along, as a curve is fitted to points.
      *
      * @param list<array{float, float}> $points
+     * @param array{array{float, float}, array{float, float}, array{float, float}, array{float, float}} $curve
      */
-    private static function furthest(array $points): int
+    private static function furthest(array $points, array $curve): int
     {
-        $first = $points[0];
-        $last = $points[\count($points) - 1];
+        $lengths = [0.0];
+        for ($index = 1, $count = \count($points); $index < $count; ++$index) {
+            $lengths[] = $lengths[$index - 1] + \hypot($points[$index][0] - $points[$index - 1][0], $points[$index][1] - $points[$index - 1][1]);
+        }
+        $total = \max(1e-9, $lengths[\count($lengths) - 1]);
         $best = 1;
         $distance = -1.0;
         for ($index = 1, $count = \count($points) - 1; $index < $count; ++$index) {
-            $away = \abs(self::turn($first, $last, $points[$index]));
+            [$x, $y] = self::at($curve, $lengths[$index] / $total);
+            $away = \hypot($points[$index][0] - $x, $points[$index][1] - $y);
             if ($away > $distance) {
                 [$best, $distance] = [$index, $away];
             }

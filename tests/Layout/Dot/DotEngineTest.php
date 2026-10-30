@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Tests\Layout\Dot;
 
 use Janalis\Viz\GraphViz\DotLayoutInput;
+use Janalis\Viz\GraphViz\Drawing\DotNodes;
 use Janalis\Viz\GraphViz\Language\DotParser;
 use Janalis\Viz\Layout\Dot\DotEngine;
 use Janalis\Viz\Layout\Engine\LayoutCluster;
@@ -474,6 +475,37 @@ final class DotEngineTest extends TestCase
         // As dot orders them, whichever of a and b is made first: a's own edge down to b, then those it turns round, in the order written.
         $this->assertSame([1, 0, 2], $order(first: 'a', second: 'b'));
         $this->assertSame([1, 0, 2], $order(first: 'b', second: 'a'));
+    }
+
+    public function testACurveIsSplitWhereTheCurveTriedStraysFurthestFromItsPath(): void
+    {
+        $table = static fn (int $width, int $height): string => '<<TABLE FIXEDSIZE="TRUE" WIDTH="'.$width.'" HEIGHT="'.$height.'"><TR><TD></TD></TR></TABLE>>';
+        // As svek writes a component's two links to an actor below it, the first along a rank.
+        $graph = Work::run(new DotParser()->parse(
+            'digraph { nodesep=0.486111; ranksep=0.833333; '
+            .'a -> b [arrowhead=none, minlen=0, label='
+            .$table(width: 43, height: 17)
+            .', taillabel='
+            .$table(width: 22, height: 15)
+            .', headlabel='
+            .$table(width: 8, height: 15)
+            .']; '
+            .'a [shape=rect, label="", width=0.701199, height=0.645671]; b [shape=rect, label="", width=0.375, height=1.062337]; '
+            .'a -> b [arrowhead=none, minlen=1, label='
+            .$table(width: 43, height: 17)
+            .', headlabel='
+            .$table(width: 34, height: 15)
+            .']; }',
+        ));
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::from(
+            $graph,
+            static fn ($node): array => DotNodes::size($graph, $node),
+            static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+        )));
+        $joint = static fn (int $edge): float => \round($placement->controls[$edge][3][1] - $placement->endpoints['a']->y, precision: 1);
+
+        // As dot splits them, of two corners as far from the chord: the first edge at its label's foot, the second at its head.
+        $this->assertSame([70.2, 53.2], [$joint(0), $joint(1)]);
     }
 
     public function testALabelOverNodesHoldsItsEndsApartAndStandsMidwayBetweenTheirSides(): void
