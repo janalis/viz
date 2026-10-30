@@ -70,7 +70,7 @@ final class JsonDrawing
         $nodes = [];
         $edges = [];
         foreach ($this->tables as $index => [$table, $parent, $row]) {
-            [$width, $height] = $table->size();
+            [$width, $height] = [self::laid($table), $table->size()[1]];
             // Laid out down, then turned: across the ranks a node runs as far as its table is tall.
             $nodes[] = new LayoutNode('n'.$index, '', $height, $width, order: $index);
             if (null === $parent) {
@@ -83,7 +83,7 @@ final class JsonDrawing
         $placement = $placing->getReturn();
         $corners = [];
         foreach ($this->tables as $index => [$table]) {
-            [$width, $height] = $table->size();
+            [$width, $height] = [self::laid($table), $table->size()[1]];
             $node = $placement->endpoints['n'.$index];
             // Turned: down the ranks is across, across them down.
             $corners[] = [$node->y - ($width / 2), $node->x - ($height / 2)];
@@ -92,8 +92,14 @@ final class JsonDrawing
         $top = \min(\array_column($corners, 1));
         $corners = $this->ranked(\array_map(static fn (array $corner): array => [$corner[0] - $left, $corner[1] - $top], $corners));
         $marks = [];
+        // As PlantUML measures them, as seen on its output: an empty table's box 0.8 short of its far sides.
+        $short = [];
         foreach ($this->tables as $index => [$table]) {
-            \array_push($marks, ...$table->marks(...$corners[$index]));
+            $drawn = $table->marks(...$corners[$index]);
+            if (0.0 === $table->size()[0]) {
+                $short = [...$short, ...\array_keys(\array_fill(\count($marks), \count($drawn), value: true))];
+            }
+            \array_push($marks, ...$drawn);
         }
         foreach ($this->tables as $index => [$table, $parent, $row]) {
             if (null === $parent) {
@@ -102,9 +108,11 @@ final class JsonDrawing
             \array_push($marks, ...$this->edge($this->tables[$parent][0], $corners[$parent], $row, $table, $corners[$index]));
         }
         [$width, $height] = [0.0, 0.0];
-        foreach ($marks as $mark) {
+        $short = \array_flip($short);
+        foreach ($marks as $at => $mark) {
+            $less = \array_key_exists($at, $short) ? 0.8 : 0.0;
             foreach ($mark->points as [$x, $y]) {
-                [$width, $height] = [\max($width, $x), \max($height, $y)];
+                [$width, $height] = [\max($width, $x - $less), \max($height, $y - $less)];
             }
         }
 
@@ -122,21 +130,29 @@ final class JsonDrawing
     {
         $ranks = [];
         foreach ($corners as $index => [$x]) {
-            $width = $this->tables[$index][0]->size()[0];
+            $width = self::laid($this->tables[$index][0]);
             $ranks[(int) \round(($x + ($width / 2)) * 1000)][] = $index;
         }
         \ksort($ranks);
         $edge = null;
         foreach ($ranks as $members) {
-            $widest = \max(\array_map(fn (int $index): float => $this->tables[$index][0]->size()[0], $members));
+            $widest = \max(\array_map(fn (int $index): float => self::laid($this->tables[$index][0]), $members));
             $start = null === $edge ? \min(\array_map(static fn (int $index): float => $corners[$index][0], $members)) : \round($edge + self::RANK_SEPARATION + 1);
             foreach ($members as $index) {
-                $corners[$index][0] = $start + (($widest - $this->tables[$index][0]->size()[0]) / 2);
+                $corners[$index][0] = $start + (($widest - self::laid($this->tables[$index][0])) / 2);
             }
             $edge = $start + $widest;
         }
 
         return $corners;
+    }
+
+    /** How wide a table is laid out, as PlantUML is seen to lay it out: an empty one 16, its box drawn wider from its left. */
+    private static function laid(JsonTable $table): float
+    {
+        $width = $table->size()[0];
+
+        return 0.0 === $width ? 16.0 : $width;
     }
 
     /** Where across its node a row's port stands, from -0.5 at the first row's edge to 0.5 at the last's. */

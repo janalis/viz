@@ -188,6 +188,24 @@ final class JsonReaderTest extends TestCase
         $this->assertSame('#ffc0cb', $diagram->document->styles->style(['root', 'element', 'jsonDiagram', 'node'])->color('BackGroundColor'));
     }
 
+    public function testAnEmptyTableIsLaidOutAndMeasuredAsTheJarDoes(): void
+    {
+        $size = static function (string $data): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startjson\n{$data}\n@endjson"));
+
+            return [\round($drawing->width / Units::POINT, precision: 6), \round($drawing->height / Units::POINT, precision: 6)];
+        };
+
+        // As the jar sizes them: an empty table laid out 16 wide, its box drawn 30 wide from its left, measured 0.8 short of its far sides.
+        $this->assertSame([[130.0, 42.0], [132.0, 75.0], [132.0, 74.0], [131.0, 69.0], [191.0, 75.0]], [
+            $size('{"a": []}'),
+            $size('{"a": [], "b": [1]}'),
+            $size('{"a": [1], "b": []}'),
+            $size('{"a": [], "b": {}}'),
+            $size('{"a": [[], [1]]}'),
+        ]);
+    }
+
     public function testScaleSkinAndSkinparamBlocksBeforeTheDataAreReadAsPlantUmlReadsThem(): void
     {
         $size = static function (string $lines): array {

@@ -4,6 +4,7 @@
 
 Breaking: shared code moves out of the Mermaid and Graphviz namespaces; the README's "Upgrading from 0.1" table maps each old class to its new one.
 
+- A PlantUML JSON or YAML diagram's empty table is laid out 16 wide and centred so in its rank, its 30-point box drawn from its left, and measured 0.8 short of its far sides, as the jar is seen to set and size it: diagrams holding an empty array or object are now sized as the jar sizes them.
 - A PlantUML sequence participant declared again moves into the box it is now declared in, or out of any, as PlantUML's `putParticipantInLast` moves it, where it kept the box it was first declared in.
 - The native `dot` layout splits an edge's curve, where one piece does not fit, at the corner of its path furthest from the curve it first tried, measured where that corner stands its share of the path's length along, as `dot` is seen to split it, where it took the corner furthest from the chord; of two corners as far, it splits where `dot` does. PlantUML diagrams whose curved links bend round labels and nodes are sized nearer the jar's.
 - PlantUML links are laid out in the order svek writes them, as `CucaDiagramFileMakerSvek` orders them: one joining the same two elements as a link before it, either way round, just after the first run of such links. Class, description, state, activity and Chen diagrams with several links between the same elements are laid out as the jar lays them out; the end labels of a description diagram's links are set among each other's, as a class diagram's are.
