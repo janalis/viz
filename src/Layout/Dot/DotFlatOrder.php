@@ -14,6 +14,9 @@ final class DotFlatOrder
     /** @var array<int, array<int, true>> by node, the nodes on its rank a flat edge keeps after it */
     private array $after = [];
 
+    /** Whether the order comes out mirrored, a layout turned across. */
+    private bool $turned;
+
     /**
      * As dot, each flat edge that constrains ranks keeps its tail before its head, but for those
      * closing a cycle, which a depth-first search from each node in turn finds; a layout turned
@@ -25,6 +28,7 @@ final class DotFlatOrder
      */
     public function __construct(DotLayers $layers, bool $turned, array $loose, array $kept = [])
     {
+        $this->turned = $turned;
         $out = [];
         foreach ($kept as [$first, $second]) {
             $out[$first][] = $second;
@@ -89,16 +93,31 @@ final class DotFlatOrder
     /**
      * Items in an order every flat edge among them agrees with, as dot is seen to reorder them:
      * each as early as it can stand, and after it at once those its flat edges lead to, as soon
-     * as nothing else must come before them, depth first, the last of them first.
+     * as nothing else must come before them, depth first, the last of them first. Turned across,
+     * as `dot` is seen to, in the order it would keep laid out top-down, to come out mirrored.
      *
      * @param list<list<int>> $items
      * @return list<list<int>>
      */
     public function leftToRight(array $items): array
     {
+        if (!$this->turned) {
+            return $this->ordered($items, $this->keeps(...));
+        }
+
+        return \array_reverse($this->ordered(\array_reverse($items), fn (array $first, array $second): bool => $this->keeps($second, $first)));
+    }
+
+    /**
+     * @param list<list<int>> $items
+     * @param \Closure(list<int>, list<int>): bool $keeps whether one item is kept before the next
+     * @return list<list<int>>
+     */
+    private function ordered(array $items, \Closure $keeps): array
+    {
         $ordered = [];
         while ([] !== $items) {
-            $free = \array_filter(\array_keys($items), fn (int $candidate): bool => !$this->blocked($items, $candidate));
+            $free = \array_filter(\array_keys($items), static fn (int $candidate): bool => !self::blocked($items, $candidate, $keeps));
             // Pushed only once nothing must come before it, an item is never pushed twice.
             $stack = [[] === $free ? \array_key_first($items) : $free[\array_key_first($free)]];
             while ([] !== $stack) {
@@ -106,7 +125,7 @@ final class DotFlatOrder
                 $item = $items[$current];
                 $ordered[] = $item;
                 unset($items[$current]);
-                $next = \array_keys(\array_filter($items, fn (array $other, int $at): bool => $this->keeps($item, $other) && !$this->blocked($items, $at), \ARRAY_FILTER_USE_BOTH));
+                $next = \array_keys(\array_filter($items, static fn (array $other, int $at): bool => $keeps($item, $other) && !self::blocked($items, $at, $keeps), \ARRAY_FILTER_USE_BOTH));
                 // As dot is seen to, the last a node's flat edges lead to first.
                 \array_push($stack, ...$next);
             }
@@ -119,11 +138,12 @@ final class DotFlatOrder
      * Whether an item must wait for another still to be placed.
      *
      * @param array<int, list<int>> $items
+     * @param \Closure(list<int>, list<int>): bool $keeps
      */
-    private function blocked(array $items, int $index): bool
+    private static function blocked(array $items, int $index, \Closure $keeps): bool
     {
         foreach ($items as $before => $other) {
-            if ($before !== $index && $this->keeps($other, $items[$index])) {
+            if ($before !== $index && $keeps($other, $items[$index])) {
                 return true;
             }
         }

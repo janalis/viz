@@ -359,6 +359,24 @@ final class DotEngineTest extends TestCase
         $this->assertSame([20.0, -20.0], [\round($placement->controls[1][3][1] - $y, precision: 2), \round($placement->controls[2][3][1] - $y, precision: 2)]);
     }
 
+    public function testFlatEdgesLaidOutLeftToRightKeepTheOrderTheyKeepTopDown(): void
+    {
+        $order = static function (string $body): string {
+            $graph = Work::run(new DotParser()->parse('digraph { rankdir=LR; node [shape=rect,label=""]; '.$body.' }'));
+            $at = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)))->endpoints;
+            \uasort($at, static fn ($one, $other): int => $one->y <=> $other->y);
+
+            return \implode('', \array_keys($at));
+        };
+
+        // As dot sets them, down the page as top-down across it: a node's heads the last first, a chain in turn.
+        $this->assertSame('acb', $order('a -> b [minlen=0]; a -> c [minlen=0];'));
+        $this->assertSame('adcb', $order('a -> b [minlen=0]; a -> c [minlen=0]; a -> d [minlen=0];'));
+        $this->assertSame('acb', $order('a -> b [minlen=0]; c -> b [minlen=0];'));
+        $this->assertSame('bca', $order('b -> a [minlen=0]; c -> a [minlen=0];'));
+        $this->assertSame('abc', $order('a -> b [minlen=0]; b -> c [minlen=0];'));
+    }
+
     public function testANodeOverTwoAnOddGapApartLeansAsItsNeighboursHoldIt(): void
     {
         $offsets = static function (string $body): array {
