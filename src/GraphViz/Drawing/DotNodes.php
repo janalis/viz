@@ -108,6 +108,8 @@ final class DotNodes
         $margins = \array_map(\trim(...), \explode(',', $node->attribute('margin')));
         $marginX = self::number($margins[0], 8 / DotLayoutInput::POINTS) * DotLayoutInput::POINTS;
         $marginY = self::number($margins[1] ?? $margins[0], 4 / DotLayoutInput::POINTS) * DotLayoutInput::POINTS;
+        // A plain node is its label alone: dot is seen to ignore any margin written for it.
+        [$marginX, $marginY] = 'plain' === \strtolower($shape) ? [0.0, 0.0] : [$marginX, $marginY];
         [$across, $growth] = \in_array($shape, DotShape::BARE, strict: true) ? [1.0, 1.0] : [DotShape::across($shape), DotShape::growth($shape)];
         // An image needs its own size and a point either side, as dot measures it, its label laid over it.
         $image = $graph->images[$node->attribute('image')] ?? null;

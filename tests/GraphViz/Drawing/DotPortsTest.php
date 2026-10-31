@@ -27,7 +27,7 @@ final class DotPortsTest extends TestCase
         );
         $this->assertNull($at('c'), 'the centre is no port of its own');
         $this->assertNull($at('nowhere'));
-        $this->assertSame([null, null], DotPorts::anchor($graph, $graph->nodes['a'], null, '', self::BOX));
+        $this->assertSame([null, null, ''], DotPorts::anchor($graph, $graph->nodes['a'], null, '', self::BOX));
     }
 
     public function testFieldsAndCellsAnchorAtTheirCentreOrSides(): void
@@ -36,8 +36,9 @@ final class DotPortsTest extends TestCase
         $record = DotNodes::record($graph, $graph->nodes['r']);
         $field = static fn (string $port): array => DotPorts::anchor($graph, $graph->nodes['r'], $record, $port, self::BOX);
 
-        $this->assertSame([[175.0, 70.0], [150.0, 50.0, 200.0, 90.0]], $field('y'), 'the right field\'s centre, and its box');
+        $this->assertSame([[175.0, 70.0], [150.0, 50.0, 200.0, 90.0], ''], $field('y'), 'the right field\'s centre, and its box');
         $this->assertSame([150.0, 90.0], $field('x:se')[0], 'and a compass point on the field');
+        $this->assertSame('se', $field('x:SE')[2], 'which the edge leaves by');
         $this->assertSame([125.0, 70.0], $field('x:sideways')[0], 'or its centre for any other');
         $this->assertSame([200.0, 70.0], $field('e')[0], 'a compass point names no field: the node\'s side');
 
@@ -46,6 +47,7 @@ final class DotPortsTest extends TestCase
         $this->assertEqualsWithDelta(150.0, ($box[0] + $box[2]) / 2, 1e-9, 'the cell in the middle of the node');
         $this->assertEqualsWithDelta(70.0, ($box[1] + $box[3]) / 2, 1e-9);
         $this->assertSame([150.0, $box[1]], $cell, 'its top side');
+        $this->assertSame('', DotPorts::anchor($graph, $graph->nodes['h'], null, 'p:c', self::BOX)[2], 'the centre leaves by no side');
     }
 
     private static function graph(string $source): DotGraph

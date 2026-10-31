@@ -227,6 +227,10 @@ final class DotLayoutInput
     {
         $written = \array_values(\array_filter([$node->attribute('width'), $node->attribute('height')], static fn (string $size): bool => \is_numeric(\trim($size))));
         $sizes = \array_map(static fn (string $size): float => self::inches($size, 0.5), $written);
+        // A plain node is its label alone: dot is seen to ignore any width and height written for it.
+        if ('plain' === \strtolower($node->attribute('shape'))) {
+            return [0.0, 0.0];
+        }
         if ('point' === $node->attribute('shape')) {
             $side = [] === $sizes ? 0.05 * self::POINTS : \min($sizes);
 

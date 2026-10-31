@@ -33,7 +33,7 @@ final class DotNodesTest extends TestCase
     public function testSizesWrapTheLabelInItsMarginAndShape(): void
     {
         $graph = self::graph(
-            'digraph { box [shape=box]; ellipse; circle [shape=circle]; regular [shape=box, regular=true]; bare [shape=plaintext]; margin [shape=box, margin="0.5"]; odd [shape=box, margin="x,y"]; }',
+            'digraph { box [shape=box]; ellipse; circle [shape=circle]; regular [shape=box, regular=true]; bare [shape=plaintext]; margin [shape=box, margin="0.5"]; odd [shape=box, margin="x,y"]; plain [shape=plain, margin="0.5", width=2, height=1]; }',
         );
         $cell = Units::cell(14.0);
         $line = Units::line(14.0);
@@ -47,6 +47,8 @@ final class DotNodesTest extends TestCase
         $this->assertEqualsWithDelta([(4 * $cell) + 16, $line + 8], DotNodes::size($graph, $graph->nodes['bare']), 1e-9);
         $this->assertEqualsWithDelta([(6 * $cell) + 72, $line + 72], DotNodes::size($graph, $graph->nodes['margin']), 1e-9);
         $this->assertEqualsWithDelta([(3 * $cell) + 16, $line + 8], DotNodes::size($graph, $graph->nodes['odd']), 1e-9);
+        $this->assertEqualsWithDelta([5 * $cell, $line], DotNodes::size($graph, $graph->nodes['plain']), 1e-9, 'a plain node is its label alone, whatever margin is written');
+        $this->assertSame([0.0, 0.0], DotLayoutInput::least($graph->nodes['plain']), 'and whatever width and height');
     }
 
     public function testANodeWithNoLabelToShowTakesNoRoomForItsMargin(): void

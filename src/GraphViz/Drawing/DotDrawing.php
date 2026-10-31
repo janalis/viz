@@ -229,6 +229,7 @@ final class DotDrawing
             }
         }
         $points = self::joined($pieces);
+        $this->holdPath($points, $penWidth);
         $external = DotNodes::externalText($this->graph, $edge);
         if (!$external->empty()) {
             // As dot, an edge's external label stands by its middle, above and left where it is clear.
@@ -503,6 +504,23 @@ final class DotDrawing
     private static function overlap(array $a, array $b): bool
     {
         return $a[0] < $b[2] && $b[0] < $a[2] && $a[1] < $b[3] && $b[1] < $a[3];
+    }
+
+    /**
+     * An edge drawn outside what was laid out, as one leaving a port round its node: the drawing
+     * grows to hold it, with dot's 4 points of pad beyond its stroke.
+     *
+     * @param list<array{float, float}> $points
+     */
+    private function holdPath(array $points, float $penWidth): void
+    {
+        $xs = \array_column($points, 0);
+        $ys = \array_column($points, 1);
+        [$left, $top, $right, $bottom] = [\min($xs), \min($ys), \max($xs), \max($ys)];
+        if ($left < 0 || $top < 0 || $right > $this->placement->graph->width || $bottom > $this->placement->graph->height) {
+            $margin = 4.0 + ($penWidth / 2);
+            $this->outside[] = [$left - $margin, $top - $margin, $right + $margin, $bottom + $margin];
+        }
     }
 
     /** A label centred on a point outside what was laid out: the drawing grows to hold it. */

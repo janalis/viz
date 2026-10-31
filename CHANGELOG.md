@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Graphviz: an edge whose port names a compass point (`a:p:w -> b:q:w`, a table cell's side) leaves and reaches its node by that side, round the node where it must, as `dot` routes it. A loop between two such ports is drawn out of that side, and the drawing grows to hold edges that run round a node.
+- Graphviz: a `shape=plain` node is its label alone, without the margin or the least width and height other shapes keep, as `dot` sizes it.
+
 ## 0.2.0 — 2026-10-30
 
 **Breaking:** the code every language shares moves out of the Mermaid and Graphviz namespaces (drawing, layout, text, colours, models, rendering). [Upgrading from 0.1](https://janalis.github.io/viz/guide/upgrading) maps each old class to its new one.

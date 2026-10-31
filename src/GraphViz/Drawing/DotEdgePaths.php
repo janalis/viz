@@ -8,6 +8,7 @@ use Janalis\Viz\Draw\Route;
 use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\Layout\Curve\CurvePath;
+use Janalis\Viz\Layout\Curve\Polyline;
 use Janalis\Viz\Layout\Dot\DotLayers;
 use Janalis\Viz\Layout\Engine\Placement;
 use Janalis\Viz\Layout\GraphNode;
@@ -19,6 +20,20 @@ use Janalis\Viz\Layout\GraphNode;
  */
 final class DotEdgePaths
 {
+    /** How far out of its node an end whose port names a compass point leaves, and runs round it where it must. */
+    private const float OUT = 10.0;
+    /** The way out of a node from each compass point. */
+    private const array OUTWARD = [
+        'n' => [0.0, -1.0],
+        'ne' => [\M_SQRT1_2, -\M_SQRT1_2],
+        'e' => [1.0, 0.0],
+        'se' => [\M_SQRT1_2, \M_SQRT1_2],
+        's' => [0.0, 1.0],
+        'sw' => [-\M_SQRT1_2, \M_SQRT1_2],
+        'w' => [-1.0, 0.0],
+        'nw' => [-\M_SQRT1_2, -\M_SQRT1_2],
+    ];
+
     /** @var array<string, ?DotRecord> each record node's fields, read once */
     private array $records = [];
     /** Square paths, routed together the first time one is asked for. */
@@ -50,10 +65,12 @@ final class DotEdgePaths
         $route = $this->placement->routes[$index] ?? null;
         $spline = $this->placement->splines[$index] ?? null;
         $polyline = $this->placement->polylines[$index] ?? $route;
-        // A loop is drawn on its node's right; an edge between ranks has its spline, bent to any port.
+        // A loop is drawn on its node's right, or out of the side its ports name; an edge between ranks has its spline, bent to any port.
         $loop = $edge->tail === $edge->head;
+        [$leaving, $reaching] = [$this->outward($edge->tail, $edge->attribute('tailport')), $this->outward($edge->head, $edge->attribute('headport'))];
         $points = match (true) {
             ($loop || null === $route) && 'ortho' === $splines => self::squareLoop($tail),
+            $loop && null !== $leaving && null !== $reaching => self::sideLoop($leaving, $reaching),
             $loop || null === $route => self::loop($tail, ...$this->loopReach($index)),
             'ortho' === $splines => $this->ortho()->path($index),
             \in_array($splines, ['line', 'false'], strict: true) => $this->ported([$route[0], $route[\count($route) - 1]], $edge),
@@ -61,8 +78,175 @@ final class DotEdgePaths
             null !== $spline => $this->bent($spline, $edge),
             default => Route::smooth($this->ported($route, $edge)),
         };
+        if (!$loop && 'ortho' !== $splines) {
+            $points = match (true) {
+                null !== $leaving && null !== $reaching => self::between($tail, $leaving, $head, $reaching),
+                null !== $leaving => self::leaving($points, $tail, $leaving),
+                null !== $reaching => \array_reverse(self::leaving(\array_reverse($points), $head, $reaching)),
+                default => $points,
+            };
+        }
 
         return $this->clip($points, $edge, $tail, $head);
+    }
+
+    /**
+     * The compass point an end's port names, and the way out of its node from it, as `dot`
+     * routes such an end; null for a port naming none, or the centre.
+     *
+     * @return ?array{array{float, float}, array{float, float}}
+     */
+    private function outward(string $name, string $port): ?array
+    {
+        $record = $this->record($name);
+        [$point, , $compass] = DotPorts::anchor($this->graph, $this->graph->nodes[$name], $record, $port, self::box($this->placement->endpoints[$name]));
+        $way = self::OUTWARD[$compass] ?? null;
+
+        return null === $point || null === $way ? null : [$point, $way];
+    }
+
+    /**
+     * A path made to leave its start's compass point the way out of the node there, as `dot`
+     * is seen to route one: out a little, then round the node's corners, the shorter way, until
+     * where the path leaves the node is in sight, and on along it.
+     *
+     * @param list<array{float, float}> $points from the compass point on
+     * @param array{array{float, float}, array{float, float}} $out the point and the way out from it
+     * @return list<array{float, float}>
+     */
+    private static function leaving(array $points, GraphNode $node, array $out): array
+    {
+        $box = self::box($node);
+        $index = 1;
+        $count = \count($points);
+        while ($index < ($count - 1) && self::inBox($points[$index], $box)) {
+            ++$index;
+        }
+        $exit = $points[$index];
+        [$start, $via] = self::rounding($box, $out, $exit);
+
+        return [...Route::smooth([$out[0], $start, ...$via, $exit]), ...\array_slice($points, $index + 1)];
+    }
+
+    /**
+     * A path between two compass points, each end out of its node the way out from it and
+     * round it until the other's way out is in sight.
+     *
+     * @param array{array{float, float}, array{float, float}} $leaving
+     * @param array{array{float, float}, array{float, float}} $reaching
+     * @return list<array{float, float}>
+     */
+    private static function between(GraphNode $tail, array $leaving, GraphNode $head, array $reaching): array
+    {
+        $headBox = self::box($head);
+        [$end] = self::rounding($headBox, $reaching, $leaving[0]);
+        [$start, $out] = self::rounding(self::box($tail), $leaving, $end);
+        [, $in] = self::rounding($headBox, $reaching, $out[\count($out) - 1] ?? $start);
+
+        return Route::smooth([$leaving[0], $start, ...$out, ...\array_reverse($in), $end, $reaching[0]]);
+    }
+
+    /**
+     * Where an end leaves its node's box, a little out from the side its way out points to, and
+     * the corners round the box from there, the shorter way, until a target is in sight.
+     *
+     * @param array{float, float, float, float} $box
+     * @param array{array{float, float}, array{float, float}} $out the point and the way out from it
+     * @param array{float, float} $target
+     * @return array{array{float, float}, list<array{float, float}>}
+     */
+    private static function rounding(array $box, array $out, array $target): array
+    {
+        [[$x, $y], $way] = $out;
+        [$left, $top, $right, $bottom] = $box;
+        $start = [self::beyond($way[0], $left, $right, $x), self::beyond($way[1], $top, $bottom, $y)];
+        // The corners a little out from the box, clockwise from the top right, and the side the end leaves by.
+        $corners = [[$right + self::OUT, $top - self::OUT], [$right + self::OUT, $bottom + self::OUT], [$left - self::OUT, $bottom + self::OUT], [$left - self::OUT, $top - self::OUT]];
+        $from = match (true) {
+            \abs($way[0]) > \abs($way[1]) => $way[0] > 0 ? 1 : 3,
+            default => $way[1] > 0 ? 2 : 0,
+        };
+        $ways = [];
+        foreach ([0, 3] as $turned) {
+            $via = [];
+            $at = $start;
+            for ($turn = 0; $turn < 4 && self::crosses($at, $target, $box); ++$turn) {
+                $at = $corners[($from + (0 === $turned ? $turn : $turned - $turn)) % 4];
+                $via[] = $at;
+            }
+            $ways[] = $via;
+        }
+
+        return [$start, Polyline::length([$start, ...$ways[0], $target]) <= Polyline::length([$start, ...$ways[1], $target]) ? $ways[0] : $ways[1]];
+    }
+
+    /** Along one axis, a little out from the box's side the way out points to, or where the end is. */
+    private static function beyond(float $way, float $low, float $high, float $at): float
+    {
+        return match (true) {
+            $way < 0 => $low - self::OUT,
+            $way > 0 => $high + self::OUT,
+            default => $at,
+        };
+    }
+
+    /**
+     * Whether a point stands inside a box.
+     *
+     * @param array{float, float} $point
+     * @param array{float, float, float, float} $box
+     */
+    private static function inBox(array $point, array $box): bool
+    {
+        return $point[0] > $box[0] && $point[0] < $box[2] && $point[1] > $box[1] && $point[1] < $box[3];
+    }
+
+    /**
+     * Whether a segment runs through a box's inside, clipped against each side in turn.
+     *
+     * @param array{float, float} $from
+     * @param array{float, float} $to
+     * @param array{float, float, float, float} $box
+     */
+    private static function crosses(array $from, array $to, array $box): bool
+    {
+        [$dx, $dy] = [$to[0] - $from[0], $to[1] - $from[1]];
+        [$enter, $leave] = [0.0, 1.0];
+        foreach ([[-$dx, $from[0] - $box[0]], [$dx, $box[2] - $from[0]], [-$dy, $from[1] - $box[1]], [$dy, $box[3] - $from[1]]] as [$p, $q]) {
+            if (0.0 === $p) {
+                if ($q <= 0) {
+                    return false;
+                }
+                continue;
+            }
+            $t = $q / $p;
+            [$enter, $leave] = $p < 0 ? [\max($enter, $t), $leave] : [$enter, \min($leave, $t)];
+        }
+
+        return $enter < $leave;
+    }
+
+    /**
+     * A loop between two compass points on a node, as `dot` is seen to draw one: out of the
+     * first the way out from it, round, and back into the second.
+     *
+     * @param array{array{float, float}, array{float, float}} $tail
+     * @param array{array{float, float}, array{float, float}} $head
+     * @return list<array{float, float}>
+     */
+    private static function sideLoop(array $tail, array $head): array
+    {
+        [[$from, $out], [$to, $in]] = [$tail, $head];
+        $reach = 2 * self::OUT;
+        // Across the way out, the loop bulging either side of its ends.
+        [$acrossX, $acrossY] = [-$out[1] * self::OUT, $out[0] * self::OUT];
+
+        return Route::smooth([
+            $from,
+            [$from[0] + ($out[0] * $reach) - $acrossX, $from[1] + ($out[1] * $reach) - $acrossY],
+            [$to[0] + ($in[0] * $reach) + $acrossX, $to[1] + ($in[1] * $reach) + $acrossY],
+            $to,
+        ]);
     }
 
     private function ortho(): DotOrtho

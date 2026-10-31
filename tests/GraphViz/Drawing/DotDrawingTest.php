@@ -198,6 +198,32 @@ final class DotDrawingTest extends TestCase
         $this->assertLessThan(\abs($edge->points[0][0] - $at('y')), \abs($edge->points[0][0] - $at('x')), 'the edge leaves the cell its port names');
     }
 
+    public function testCompassPortsLeaveByTheirSideRoundTheirNodeAndTheDrawingGrowsToHoldThem(): void
+    {
+        $table = static fn (array $ports): string => '<<TABLE>'.\implode('', \array_map(static fn (string $port): string => "<TR><TD PORT=\"{$port}\">{$port}</TD></TR>", $ports)).'</TABLE>>';
+        $drawing = self::draw('digraph { rankdir=LR; node [shape=plain]; a [label='.$table(['p', 'q']).']; b [label='.$table(['r']).']; a:p:w -> b:r:w; a:q:w -> b; a -> b:r:w; a:p:w -> a:q:w; }');
+
+        $lines = self::kinds($drawing, MarkKind::Polyline);
+        $texts = self::byText($drawing);
+        $xs = \array_merge(...\array_map(static fn (Mark $mark): array => \array_column($mark->points, 0), $drawing->marks));
+        $ys = \array_merge(...\array_map(static fn (Mark $mark): array => \array_column($mark->points, 1), $drawing->marks));
+        $this->assertGreaterThanOrEqual(0.0, \min($xs), 'the drawing grows to hold the edges round their nodes');
+        $this->assertGreaterThanOrEqual(0.0, \min($ys));
+        $this->assertLessThanOrEqual($drawing->width, \max($xs));
+        $this->assertLessThanOrEqual($drawing->height, \max($ys));
+        foreach ([0, 1, 3] as $index) {
+            $this->assertLessThan($texts['p']->points[0][0] - 3, \min(\array_column($lines[$index]->points, 0)), "edge {$index} leaves a's west side");
+        }
+        foreach ([0, 2] as $index) {
+            $points = $lines[$index]->points;
+            $this->assertLessThan($texts['r']->points[0][0], $points[\count($points) - 1][0], "edge {$index} reaches b's west side");
+        }
+
+        $below = self::draw('digraph { node [shape=plain]; a [label='.$table(['p']).']; b [label='.$table(['r']).']; a:p:s -> b:r:n; b:r:s -> a:p:n; }');
+        [$down, $up] = self::kinds($below, MarkKind::Polyline);
+        $this->assertGreaterThan(\max(\array_column($down->points, 1)), \max(\array_column($up->points, 1)), 'the edge back up runs round b below and a above');
+    }
+
     public function testEndLabelsStandByTheirEnds(): void
     {
         $drawing = self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [headlabel="H", taillabel="T", labelfontcolor=blue, labelfontsize=20]; }');
