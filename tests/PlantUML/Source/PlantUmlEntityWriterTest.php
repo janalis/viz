@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Tests\PlantUML\Source;
 
+use Janalis\Viz\Model\Entity\Attribute;
 use Janalis\Viz\Model\Entity\Entity;
 use Janalis\Viz\Model\Entity\EntityDiagram;
 use Janalis\Viz\Model\Entity\Group;
+use Janalis\Viz\Model\Entity\Key;
 use Janalis\Viz\PlantUML\Source\PlantUmlEntityWriter;
 use Janalis\Viz\Tests\Support\EntitySample;
 use PHPUnit\Framework\TestCase;
@@ -46,5 +48,20 @@ final class PlantUmlEntityWriterTest extends TestCase
         $diagram = new EntityDiagram([new Entity('e0'), new Entity('a b')], groups: [new Group('g', entities: ['ghost'])]);
 
         $this->assertSame("@startuml\npackage \"g\" {\n  entity ghost\n}\nentity e0\nentity \"a b\" as e1\n@enduml\n", PlantUmlEntityWriter::write($diagram));
+    }
+
+    public function testAnAttributeWrittenWithAParenthesisIsMarkedAField(): void
+    {
+        $diagram = new EntityDiagram([new Entity('t', attributes: [
+            new Attribute('string(2)', 'code', [Key::Primary]),
+            new Attribute('int', 'n', comment: 'max(n)'),
+            new Attribute('int', 'm'),
+        ])]);
+
+        $this->assertSame(
+            "@startuml\nentity t {\n  {field} * code : string(2) <<PK>>\n  {field} n : int // max(n)\n  m : int\n}\n@enduml\n",
+            PlantUmlEntityWriter::write($diagram),
+            'as PlantUML would otherwise take it for a method',
+        );
     }
 }

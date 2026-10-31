@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Mermaid: an ER relationship is labelled with its role alone, as Mermaid draws it, not with its cardinalities too.
+- PlantUML: an entity attribute written with a parenthesis, as a `string(2)` type, is marked `{field}`, so PlantUML keeps it among the fields rather than taking it for a method.
+
 ## 0.2.1 — 2026-10-31
 
 ### Fixed

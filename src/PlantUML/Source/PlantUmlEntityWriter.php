@@ -97,7 +97,10 @@ final class PlantUmlEntityWriter
         $mandatory = \in_array(Key::Primary, $attribute->keys, strict: true) ? '* ' : '';
         $keys = \implode('', \array_map(static fn (Key $key): string => ' <<'.$key->value.'>>', $attribute->keys));
 
-        return $mandatory.self::text($attribute->name.' : '.$attribute->type).$keys.('' === $attribute->comment ? '' : ' // '.self::text($attribute->comment));
+        $line = self::text($attribute->name.' : '.$attribute->type).$keys.('' === $attribute->comment ? '' : ' // '.self::text($attribute->comment));
+
+        // PlantUML takes a member written with a parenthesis, as `string(2)`, for a method, unless marked a field.
+        return (\str_contains($line, '(') ? '{field} ' : '').$mandatory.$line;
     }
 
     /** @param array<string, string> $ids */

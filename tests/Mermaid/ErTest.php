@@ -94,7 +94,8 @@ final class ErTest extends TestCase
         $edge = $diagram->graph->edges[0];
         $this->assertSame('A', $edge['from']);
         $this->assertSame('B', $edge['to']);
-        $this->assertSame($expected.' : '.$expected.' · owns', $edge['label']);
+        $this->assertSame('owns', $edge['label'], 'as Mermaid, the role alone: the cardinalities are drawn as markers');
+        $this->assertSame(['left' => $expected, 'right' => $expected], $diagram->cardinalities[0]);
         $this->assertSame('--', $edge['arrow']);
     }
 
@@ -123,7 +124,7 @@ final class ErTest extends TestCase
         $edge = $scene->graph->edges[0];
         $this->assertSame($dashed, $edge->dashed);
         $this->assertNull($edge->arrowTip);
-        $this->assertSame('1 : 0..* · owns & uses', $edge->label);
+        $this->assertSame('owns & uses', $edge->label);
     }
 
     /** @return iterable<array{string, bool}> */
@@ -167,7 +168,7 @@ final class ErTest extends TestCase
         $diagram = self::parse('erDiagram'."\n".'"Customer account" ||--o{ "Purchase order" : "places: { %% literal"'."\n".'"Customer account" { string name "A &amp; B %% literal" int age }');
         $this->assertCount(2, $diagram->graph->nodes);
         $this->assertSame('Customer account', $diagram->graph->edges[0]['from']);
-        $this->assertSame('1 : 0..* · places: { %% literal', $diagram->graph->edges[0]['label']);
+        $this->assertSame('places: { %% literal', $diagram->graph->edges[0]['label']);
         $this->assertSame('string name — A & B %% literal', $diagram->attributes['Customer account'][0]['text']);
         $this->assertSame('int age', $diagram->attributes['Customer account'][1]['text']);
     }
