@@ -66,6 +66,14 @@ final class SequenceYamlTest extends TestCase
         $this->assertSame('after', $diagram->events[0]['label']);
     }
 
+    public function testADocumentThatIsABlockScalarAloneReadsAsNoMapOnEverySymfonyYaml(): void
+    {
+        $statement = new MermaidStatement('', offset: 17, line: 1, column: 2);
+        foreach (["|-\n  Value", "|2-\n  Value", ">-2 # folded\n  Value", "|\n\n  Value"] as $document) {
+            $this->assertSame(['A', null, null], SequenceConfiguration::parse("A@{\n{$document}\n}", $statement), $document);
+        }
+    }
+
     public function testReferencesAreScopedToOneParticipantDeclaration(): void
     {
         $this->expectException(MermaidSyntaxError::class);

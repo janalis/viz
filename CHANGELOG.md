@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Install with stable Symfony: `symfony/yaml` ^8.1 is required, not the unreleased 8.2. A Mermaid participant configuration that is a block scalar alone reads the same on both.
 - Graphviz: an edge whose port names a compass point (`a:p:w -> b:q:w`, a table cell's side) leaves and reaches its node by that side, round the node where it must, as `dot` routes it. A loop between two such ports is drawn out of that side, and the drawing grows to hold edges that run round a node.
 - Graphviz: a `shape=plain` node is its label alone, without the margin or the least width and height other shapes keep, as `dot` sizes it.
 

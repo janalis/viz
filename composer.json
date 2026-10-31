@@ -25,7 +25,7 @@
         "symfony/process": "^8.0",
         "symfony/string": "^8.0",
         "symfony/polyfill-intl-grapheme": "^1.33",
-        "symfony/yaml": "^8.2"
+        "symfony/yaml": "^8.1"
     },
     "require-dev": {
         "carthage-software/mago": "1.59.*",

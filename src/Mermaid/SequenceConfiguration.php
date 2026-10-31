@@ -100,10 +100,7 @@ final class SequenceConfiguration
             // Scalar references retain their values. Collection references are
             // projected without traversal; the original definitions stay validated.
             // @mago-expect analysis:mixed-assignment -- The parsed document is narrowed to an object below.
-            $object = new Parser(maxAliasesForCollections: 0)->parse(
-                MermaidYamlScalars::preserveDates($yaml),
-                flags: Yaml::PARSE_OBJECT_FOR_MAP | Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE,
-            );
+            $object = self::document(MermaidYamlScalars::preserveDates($yaml));
             if ($object instanceof \stdClass && null !== $marker) {
                 foreach (['alias', 'type'] as $key) {
                     // @mago-expect analysis:mixed-assignment -- Only string fields need restoration.
@@ -118,5 +115,29 @@ final class SequenceConfiguration
         } catch (ParseException) {
             throw $statement->error('Invalid sequence participant YAML configuration');
         }
+    }
+
+    /**
+     * Parses a document, refusing an alias that would expand a collection. A document that is a
+     * block scalar alone is read as a key's value, its lines moved in under the key, as every
+     * symfony/yaml 8 reads it: only 8.2 reads one at the root.
+     */
+    private static function document(string $yaml): mixed
+    {
+        $parser = new Parser(maxAliasesForCollections: 0);
+        $flags = Yaml::PARSE_OBJECT_FOR_MAP | Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE;
+        $header = [];
+        if (1 !== \preg_match('/\A([|>])(?:([1-9])([-+]?)|([-+]?)([1-9]?))([ \t]+#[^\n]*)?\n/', $yaml, $header)) {
+            return $parser->parse($yaml, flags: $flags);
+        }
+        // Groups left unmatched at the end are not set. An indentation indicator counts from the key now, two in from where the document began.
+        $header = \array_pad($header, length: 7, value: '');
+        $indent = $header[2].$header[5];
+        $indicator = $header[1].('' === $indent ? '' : (string) ((int) $indent + 2)).$header[3].$header[4].$header[6];
+        $body = (string) \preg_replace('/^(?=[^\n])/m', replacement: '  ', subject: \substr($yaml, \strlen($header[0])));
+        // @mago-expect analysis:mixed-assignment -- The wrapping map holds the scalar alone.
+        $wrapped = $parser->parse('value: '.$indicator."\n".$body, flags: $flags);
+
+        return $wrapped instanceof \stdClass ? $wrapped->value : null;
     }
 }
