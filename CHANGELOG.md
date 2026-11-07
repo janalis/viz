@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Tests
+
+- The whole pinned Mermaid corpus is rendered here: every upstream end-to-end diagram and every flowchart example exports natively, and every pinned flowchart shape name and alias draws its registered outline and keeps the paint it was given. Porta ran these on each of its own checks and now keeps a sample.
+
 ## 0.2.2 — 2026-10-31
 
 ### Fixed

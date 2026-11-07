@@ -255,4 +255,43 @@ final class FlowchartModernShapesTest extends TestCase
         $this->assertSame([[[12.0, 14.0], [28.0, 14.0]], [[12.0, 26.0], [28.0, 26.0]]], \array_column($marks, 'points'));
         $this->assertSame(['#ff0000', '#ff0000'], \array_column($marks, 'stroke'));
     }
+
+    /** @return iterable<string, array{string, string}> every pinned shape name and alias, with its canonical name */
+    public static function pinnedNames(): iterable
+    {
+        $rows = \json_decode((string) \file_get_contents(__DIR__.'/../fixtures/mermaid/flowchart-shapes.json'), associative: true, flags: \JSON_THROW_ON_ERROR);
+        foreach ($rows as $row) {
+            foreach (\array_unique([$row['name'], ...$row['aliases']]) as $alias) {
+                yield $alias => [$row['name'], $alias];
+            }
+        }
+    }
+
+    /** Every pinned name and alias draws its registered outline and keeps the paint it was given. Moved here from Porta. */
+    #[DataProvider('pinnedNames')]
+    public function testEveryPinnedNameUsesItsRegisteredOutlineAndPreservesAuthoredPaint(string $name, string $alias): void
+    {
+        $this->assertTrue(FlowchartShapes::known($alias));
+        $this->assertSame(MermaidOutline::canonical($name), MermaidOutline::canonical($alias));
+        $prefix = 'flowchart LR; A@{shape:';
+        $suffix = ',label:"Sample"} --> B[End]; style A fill:#fff,stroke:#123456,stroke-width:3';
+        $source = $prefix.$alias.$suffix;
+        $scene = self::scene($source);
+        $node = $scene->graph->nodes[0];
+        // The outline the parser and layout actually gave the node: every
+        // check below asks MermaidOutline about names, and would stay green
+        // over a parser that drew every node as a rectangle.
+        $this->assertSame(MermaidOutline::canonical($name), MermaidOutline::canonical($scene->shapes[$node->id] ?? ''));
+        $this->assertSame('Sample', $node->label);
+        $this->assertSame(0, $scene->origin($node->id));
+        $this->assertSame('#ffffff', $node->fillColor);
+        $this->assertSame('#123456', $node->color);
+        $this->assertEqualsWithDelta(0.3, $node->strokeWidth, delta: 1.0e-12);
+        $this->assertEquals(MermaidOutline::marks($node, $name), MermaidOutline::marks($node, $alias));
+        self::$canonicalSvg[$name] ??= NativeFixtureExport::render($prefix.$name.$suffix, Format::Svg);
+        $this->assertSame(self::$canonicalSvg[$name], NativeFixtureExport::render($source, Format::Svg));
+    }
+
+    /** @var array<string, string> each canonical name's SVG, rendered once for all its aliases */
+    private static array $canonicalSvg = [];
 }

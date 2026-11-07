@@ -36,13 +36,16 @@ final class PlantUmlMetrics
     {
         $families = self::advances();
         $faces = $families[$family] ?? $families['sans'];
-        $advances =
-            $faces[match ($face) {
-                FontFace::Bold => 'bold',
-                FontFace::Italic => 'italic',
-                FontFace::BoldItalic => 'bolditalic',
-                default => 'plain',
-            }] ?? $faces['plain'];
+        // The key first, then the lookup: a match closing inside an index
+        // expression was counted as a line of its own by some pcov builds,
+        // and never as covered.
+        $key = match ($face) {
+            FontFace::Bold => 'bold',
+            FontFace::Italic => 'italic',
+            FontFace::BoldItalic => 'bolditalic',
+            default => 'plain',
+        };
+        $advances = $faces[$key] ?? $faces['plain'];
 
         // A wide character not measured, as an ideograph, takes its whole size, as Java sets it.
         return \array_map(static fn (string $char): float => ($advances[$char] ?? (2 === DisplayWidth::of($char) ? 1.0 : $advances['n'] ?? 0.55)) * $size, \mb_str_split($text));
