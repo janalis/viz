@@ -16,6 +16,7 @@ use Janalis\Viz\Mermaid\MermaidStatement;
 use Janalis\Viz\Mermaid\MermaidSyntaxError;
 use Janalis\Viz\Mermaid\RankedGraphLayout;
 use Janalis\Viz\Render\Format;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class FlowchartCorpusTest extends TestCase
@@ -233,5 +234,27 @@ final class FlowchartCorpusTest extends TestCase
         $statement = new MermaidStatement('', offset: 0, line: 0, column: 0);
         $this->assertSame('#ffefd5', MermaidColor::parse('fill', ' PapayaWhip ', $statement, family: 'flowchart'));
         $this->assertSame('#00ffff', MermaidColor::parse('color', 'aqua', $statement, family: 'flowchart'));
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function fixtures(): iterable
+    {
+        $found = \glob(__DIR__.'/../fixtures/mermaid/flowchart/*.mmd');
+        foreach (false === $found ? [] : $found as $path) {
+            yield \basename($path) => [$path];
+        }
+    }
+
+    /**
+     * Every pinned flowchart example's body — front matter and init directives
+     * taken off — exports natively. Moved here from Porta, which keeps a sample.
+     */
+    #[DataProvider('fixtures')]
+    public function testPinnedBodiesRenderToSvg(string $path): void
+    {
+        $source = (string) \file_get_contents($path);
+        $source = \preg_replace('/\A---\R.*?\R---\R/s', replacement: '', subject: $source) ?? '';
+        $source = \preg_replace('/%%\{.*?\}%%/s', replacement: '', subject: $source) ?? '';
+        $this->assertStringContainsString('<svg', NativeFixtureExport::render($source, Format::Svg));
     }
 }
