@@ -276,21 +276,22 @@ final class FlowchartModernShapesTest extends TestCase
         $prefix = 'flowchart LR; A@{shape:';
         $suffix = ',label:"Sample"} --> B[End]; style A fill:#fff,stroke:#123456,stroke-width:3';
         $source = $prefix.$alias.$suffix;
-        $parser = new FlowchartParser();
-        foreach (new MermaidLexer($source)->statements() as $statement) {
-            $parser->accept($statement);
-        }
-        $work = new FlowchartLayout()->layout($parser->finish());
-        \iterator_to_array($work);
-        $scene = $work->getReturn();
+        $scene = self::scene($source);
         $node = $scene->graph->nodes[0];
+        // The outline the parser and layout actually gave the node: every
+        // check below asks MermaidOutline about names, and would stay green
+        // over a parser that drew every node as a rectangle.
+        $this->assertSame(MermaidOutline::canonical($name), MermaidOutline::canonical($scene->shapes[$node->id] ?? ''));
         $this->assertSame('Sample', $node->label);
         $this->assertSame(0, $scene->origin($node->id));
         $this->assertSame('#ffffff', $node->fillColor);
         $this->assertSame('#123456', $node->color);
         $this->assertEqualsWithDelta(0.3, $node->strokeWidth, delta: 1.0e-12);
         $this->assertEquals(MermaidOutline::marks($node, $name), MermaidOutline::marks($node, $alias));
-        $this->assertSame(NativeFixtureExport::render($prefix.$name.$suffix, Format::Svg), NativeFixtureExport::render($source, Format::Svg));
-        $this->assertFalse(MermaidOutline::contains($node, $alias, $node->x + $node->w, $node->y));
+        self::$canonicalSvg[$name] ??= NativeFixtureExport::render($prefix.$name.$suffix, Format::Svg);
+        $this->assertSame(self::$canonicalSvg[$name], NativeFixtureExport::render($source, Format::Svg));
     }
+
+    /** @var array<string, string> each canonical name's SVG, rendered once for all its aliases */
+    private static array $canonicalSvg = [];
 }

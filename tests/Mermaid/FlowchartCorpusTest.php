@@ -246,15 +246,13 @@ final class FlowchartCorpusTest extends TestCase
     }
 
     /**
-     * Every pinned flowchart example's body — front matter and init directives
-     * taken off — exports natively. Moved here from Porta, which keeps a sample.
+     * Every pinned flowchart example exports natively, verbatim — front matter
+     * and init directives included, which are this library's to read. Moved
+     * here from Porta, which keeps a sample.
      */
     #[DataProvider('fixtures')]
-    public function testPinnedBodiesRenderToSvg(string $path): void
+    public function testPinnedExamplesRenderToSvg(string $path): void
     {
-        $source = (string) \file_get_contents($path);
-        $source = \preg_replace('/\A---\R.*?\R---\R/s', replacement: '', subject: $source) ?? '';
-        $source = \preg_replace('/%%\{.*?\}%%/s', replacement: '', subject: $source) ?? '';
-        $this->assertStringContainsString('<svg', NativeFixtureExport::render($source, Format::Svg));
+        $this->assertStringStartsWith('<svg', NativeFixtureExport::render((string) \file_get_contents($path), Format::Svg));
     }
 }

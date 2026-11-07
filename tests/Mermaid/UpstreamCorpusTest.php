@@ -9,8 +9,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Every pinned upstream end-to-end diagram, verbatim, renders natively: the picture exports
- * and the terminal rows draw, configuration and all. Family tests check what they show.
+ * Every pinned upstream end-to-end diagram, verbatim, renders natively: the picture exports,
+ * configuration and all. Family tests check what they show; drawing terminal rows is Porta's,
+ * which checks a diagram of each family.
  */
 final class UpstreamCorpusTest extends TestCase
 {
