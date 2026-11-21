@@ -139,8 +139,9 @@ final class DotEndLabels
     }
 
     /**
-     * How much two boxes overlap; nothing where they only touch, within a point either way, as
-     * a label from a line's end on a node's outline only touches the node.
+     * How much two boxes overlap; nothing unless they overlap by more than half a point both
+     * across and down, as measured on dot's output, for nodes and labels alike: so a label from
+     * a line's end on a node's outline only touches the node.
      *
      * @param array{float, float, float, float} $box
      * @param array{float, float, float, float} $other
@@ -149,6 +150,6 @@ final class DotEndLabels
     {
         [$across, $down] = [\min($box[2], $other[2]) - \max($box[0], $other[0]), \min($box[3], $other[3]) - \max($box[1], $other[1])];
 
-        return $across < 1 || $down < 1 ? 0.0 : $across * $down;
+        return $across <= 0.5 || $down <= 0.5 ? 0.0 : $across * $down;
     }
 }

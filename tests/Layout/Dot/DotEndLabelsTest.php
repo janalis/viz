@@ -31,8 +31,9 @@ final class DotEndLabelsTest extends TestCase
                 Direction::TopBottom,
             ),
         );
-        // A node it only touches, within a point, does not count.
+        // A node it overlaps by half a point does not count; by more, as dot 16.1.0 is seen to count it, it does.
         $this->assertSame([[30.0, 40.0, 50.0, 50.0]], DotEndLabels::placed($label, [[0.0, 49.5, 100.0, 100.0]], Direction::TopBottom));
+        $this->assertSame([[50.0, 40.0, 70.0, 50.0]], DotEndLabels::placed($label, [[0.0, 49.45, 40.0, 100.0]], Direction::TopBottom));
     }
 
     public function testAnEndInsideACornerTakesItWithNothingElseToOverlap(): void
