@@ -8,11 +8,14 @@ use Janalis\Viz\Model\Direction;
 
 /**
  * Edges' head and tail labels set where `dot` is seen to set them by default: each with a corner
- * on its end of the line, off the corner that overlaps least of the nodes, the edges' labels and
- * the end labels set before it, the first of those tied in an order kept as laid out top-down
- * and turned with the layout: above and left, below and left, above and right, below and right.
- * They are set left to right as laid out top-down, each at its end's x to the point, the
- * higher first where they stand level.
+ * on its end of the line, off the first corner that is clear, in an order kept as laid out
+ * top-down and turned with the layout: above and left, below and left, above and right, below
+ * and right. A corner is clear where it overlaps none of the nodes, the edges' labels and the
+ * end labels set before it, and holds no other label's end. Where no corner is clear, the label
+ * is tried below its end as laid out top-down, centred a quarter of its width right of it, then
+ * on it, then a quarter left; where none of those is clear either, it takes the place that
+ * overlaps least, the first of those tied. They are set left to right as laid out top-down,
+ * each at its end's x to the point, the higher first where they stand level.
  */
 final class DotEndLabels
 {
@@ -28,10 +31,15 @@ final class DotEndLabels
         $boxes = [];
         foreach ($order as $index) {
             [[$x, $y], [$width, $height]] = $labels[$index];
+            $ends = \array_column(\array_diff_key($labels, [$index => true]), 0);
             $best = null;
-            foreach (self::corners($direction) as [$across, $down]) {
-                $box = [\min($x, $x + ($across * $width)), \min($y, $y + ($down * $height)), \max($x, $x + ($across * $width)), \max($y, $y + ($down * $height))];
+            foreach (self::places($direction) as [$across, $down]) {
+                $box = [$x + ((($across - 1) * $width) / 2), $y + ((($down - 1) * $height) / 2), $x + ((($across + 1) * $width) / 2), $y + ((($down + 1) * $height) / 2)];
                 $cost = \array_sum(\array_map(static fn (array $other): float => self::overlap($box, $other), [...$obstacles, ...$boxes]));
+                if (0.0 === $cost && !self::holds($box, $ends)) {
+                    $best = [$cost, $box];
+                    break;
+                }
                 $best = null === $best || $cost < ($best[0] - 1e-9) ? [$cost, $box] : $best;
             }
             $boxes[$index] = $best[1] ?? [$x, $y, $x, $y];
@@ -60,18 +68,37 @@ final class DotEndLabels
     }
 
     /**
-     * The corners a label is tried off, in turn, as which way across and down it reaches from its end.
+     * The places a label is tried at, in turn, as how far across and down its centre stands
+     * from its end, in halves of its width and height: the four corners, then below the end as
+     * laid out top-down, a quarter of its width right, on it and a quarter left; all turned with
+     * the layout as `dot` turns it.
      *
-     * @return list<array{int, int}>
+     * @return list<array{float, float}>
      */
-    private static function corners(Direction $direction): array
+    private static function places(Direction $direction): array
     {
-        return match ($direction) {
-            Direction::TopBottom => [[-1, -1], [-1, 1], [1, -1], [1, 1]],
-            Direction::BottomTop => [[-1, 1], [-1, -1], [1, 1], [1, -1]],
-            Direction::LeftRight => [[-1, 1], [1, 1], [-1, -1], [1, -1]],
-            Direction::RightLeft => [[1, 1], [1, -1], [-1, 1], [-1, -1]],
-        };
+        $places = [];
+        foreach ([[-1.0, -1.0], [-1.0, 1.0], [1.0, -1.0], [1.0, 1.0], [0.5, 1.0], [0.0, 1.0], [-0.5, 1.0]] as [$across, $down]) {
+            $places[] = match ($direction) {
+                Direction::TopBottom => [$across, $down],
+                Direction::BottomTop => [$across, -$down],
+                Direction::LeftRight => [$down, -$across],
+                Direction::RightLeft => [-$down, -$across],
+            };
+        }
+
+        return $places;
+    }
+
+    /**
+     * Whether a box holds any of the given ends strictly inside it, not on its outline.
+     *
+     * @param array{float, float, float, float} $box
+     * @param array<array{float, float}> $ends
+     */
+    private static function holds(array $box, array $ends): bool
+    {
+        return \array_any($ends, static fn (array $end): bool => $end[0] > $box[0] && $end[0] < $box[2] && $end[1] > $box[1] && $end[1] < $box[3]);
     }
 
     /**
