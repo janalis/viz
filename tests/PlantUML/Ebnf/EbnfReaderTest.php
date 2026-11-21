@@ -241,6 +241,9 @@ final class EbnfReaderTest extends TestCase
         $this->assertSame(['a', 'x', ' note '], $texts('a = (* note *) "x";'));
         $this->assertSame(['a', 'x', ' up ', ' down '], $texts('a = (* up *) [ "x" ] (* down *);'));
         $this->assertSame([' above ', 'rule', 'a'], $texts('(* above *) rule = "a";'));
+        // PlantUML logs "Ignoring above/below comment" and draws neither on a tile without its place.
+        $this->assertSame(['a', 'x'], $texts('a = (* c *) { "x" }-;'), 'above a repetition');
+        $this->assertSame(['a', 'x', 'y'], $texts('a = ("x", "y") (* c *);'), 'below a concatenation');
         $this->assertSame(['a'], $texts('a = "";'), 'an empty string is a blank box');
     }
 

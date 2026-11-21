@@ -17,11 +17,19 @@ foreach ($xml->xpath('//file') ?: [] as $file) {
             $missed[(string) $file['name']][] = (int) $line['num'];
         }
     }
+    // An empty method's body counts as a statement in the totals but has no line of its own.
+    if ((int) $file->metrics['coveredstatements'] < (int) $file->metrics['statements'] && !isset($missed[(string) $file['name']])) {
+        foreach ($file->line as $line) {
+            if ('method' === (string) $line['type'] && '0' === (string) $line['count']) {
+                $missed[(string) $file['name']][] = (int) $line['num'];
+            }
+        }
+    }
 }
 $metrics = $xml->project->metrics;
 $statements = (int) $metrics['statements'];
 $covered = (int) $metrics['coveredstatements'];
-if ([] !== $missed || 0 === $statements) {
+if ([] !== $missed || 0 === $statements || $covered !== $statements) {
     foreach ($missed as $name => $lines) {
         \fwrite(\STDERR, \sprintf("%s: %s\n", $name, \implode(', ', $lines)));
     }
