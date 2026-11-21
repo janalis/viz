@@ -380,7 +380,8 @@ final class DotDrawing
      * Where the edges' head and tail labels stand by default, as `DotEndLabels` sets them from
      * where their lines end, at any arrowhead's tip, each clear where it can be of the nodes,
      * the edges' labels and the end labels set before it: in the order `dot` sets them, node by
-     * node in the order the nodes were made, each node's edges out in the order written.
+     * node in the order the nodes were made, each node's edges out by the node they reach, in
+     * the order the nodes were made, then in the order written.
      *
      * @param array<int, DotEdge> $edges
      * @return array<int, array<string, array{float, float}>> each label's centre, by edge index and attribute
@@ -410,7 +411,7 @@ final class DotDrawing
                     continue;
                 }
                 $labels[] = [$end, $label->size()];
-                $owners[] = [$index, $attribute, [$made[$edge->tail] ?? \count($made), $index]];
+                $owners[] = [$index, $attribute, [$made[$edge->tail] ?? \count($made), $made[$edge->head] ?? \count($made), $index]];
             }
         }
         // In the order dot sets them; the sort is stable, so each edge's tail label stays before its head label.

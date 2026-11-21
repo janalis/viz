@@ -244,6 +244,20 @@ final class DotDrawingTest extends TestCase
         $this->assertEqualsWithDelta(10 * Units::POINT, $from($turned, axis: 1) - $from($plain, axis: 1), 1e-6);
     }
 
+    public function testEndLabelsAreSetByTheNodeTheirEdgeReaches(): void
+    {
+        // dot 16.1.0 sets BBBB at (35.425, 63.297), left of its end at (54.101, 71.697), and
+        // CCCC, its corner there taken, at (90.575, 63.297), right of its end at (71.899, 71.697):
+        // a's edges out are set by the node they reach, b made before c, not as written.
+        $drawing = self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a; b; c; a -> c [taillabel="CCCC"]; a -> b [taillabel="BBBB"]; }');
+        $texts = self::byText($drawing);
+        $centre = static fn (Mark $mark): float => $mark->points[0][0] / Units::POINT;
+        $a = $centre($texts['a']);
+
+        $this->assertEqualsWithDelta(35.425 - 63.0, $centre($texts['BBBB']) - $a, 1.5);
+        $this->assertEqualsWithDelta(90.575 - 63.0, $centre($texts['CCCC']) - $a, 1.5);
+    }
+
     public function testEndLabelsStandOffTheArrowheadsTip(): void
     {
         // dot 16.1.1 sets this head label at (22.125, 44.354) with its arrowhead or without: off the tip, where the line without one ends.

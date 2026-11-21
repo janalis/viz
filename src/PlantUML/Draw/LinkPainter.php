@@ -273,8 +273,9 @@ final class LinkPainter
      * Every link's end labels, set where `dot` sets head and tail labels, as svek writes them: a
      * table their size in whole points, cut down, from whose corner PlantUML sets the text; each
      * clear, where it can be, of the nodes, the links' labels and the end labels set before it.
-     * Dot sets them node by node, in the order it made the nodes, each node's edges out in the
-     * order svek wrote them, those laid side by side first: a link's first end is its edge's tail.
+     * Dot sets them node by node, in the order it made the nodes, each node's edges out by the
+     * node they reach, in the order it made those, then in the order svek wrote them, those laid
+     * side by side first: a link's first end is its edge's tail.
      *
      * @param list<array{PlantUmlLink, int, LinkLabel, float, array<string, string>, array{?array{PlantUmlText, Style, float}, ?array{PlantUmlText, Style, float}}}> $links each link, its edge, its label, its end labels' font size, the outlines its ends stop at, and its qualifiers
      * @return array<int, array{?array{PlantUmlText, array{float, float, float, float}}, ?array{PlantUmlText, array{float, float, float, float}}}> by edge, the tail's and the head's text and box
@@ -306,7 +307,12 @@ final class LinkPainter
                 $block = new PlantUmlText(ClassReader::split($text), $size);
                 [$width, $height] = $block->size();
                 $requests[] = [$anchors[$end], [\floor($width), \floor($height)]];
-                $texts[] = [$edge, $end, $block, [$made[$link->from] ?? $made[Svek::ANCHOR.$link->from] ?? \PHP_INT_MAX, (int) ($link->length > 1), $edge]];
+                $texts[] = [
+                    $edge,
+                    $end,
+                    $block,
+                    [$made[$link->from] ?? $made[Svek::ANCHOR.$link->from] ?? \PHP_INT_MAX, $made[$link->to] ?? $made[Svek::ANCHOR.$link->to] ?? \PHP_INT_MAX, (int) ($link->length > 1), $edge],
+                ];
             }
         }
         \uasort($texts, static fn (array $one, array $other): int => $one[3] <=> $other[3]);

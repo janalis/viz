@@ -16,12 +16,13 @@ use Janalis\Viz\Model\Direction;
  * on it, then a quarter left; where none of those is clear either, it takes the place that
  * overlaps least, the first of those tied. They are set in the order `dot` sets them, which the
  * caller gives: node by node in the order the nodes were made, and at each node its edges out
- * in the order they were written, each edge's tail label before its head label.
+ * by the node they reach, in the order the nodes were made, then in the order they were
+ * written, each edge's tail label before its head label.
  */
 final class DotEndLabels
 {
     /**
-     * @param list<array{array{float, float}, array{float, float}}> $labels each label's end of the line and its size, in the order `dot` sets them: by the node its edge leaves, in the order the nodes were made, then by edge in the order written, the tail's before the head's
+     * @param list<array{array{float, float}, array{float, float}}> $labels each label's end of the line and its size, in the order `dot` sets them: by the node its edge leaves, then by the node it reaches, both in the order the nodes were made, then by edge in the order written, the tail's before the head's
      * @param list<array{float, float, float, float}> $obstacles the nodes' and the edges' labels' boxes
      * @return list<array{float, float, float, float}> each label's box, in the order given
      */
