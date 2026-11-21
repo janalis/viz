@@ -100,6 +100,10 @@ final class DotEndLabels
             ];
         }
         $length = \hypot($next[0] - $x, $next[1] - $y);
+        if ($length < 1e-9) {
+            // A curve whose control points all stand at its end leaves no way: down, as a path that does not move.
+            return [[$x, $y], [0.0, 1.0]];
+        }
 
         return [[$x, $y], [($next[0] - $x) / $length, ($next[1] - $y) / $length]];
     }
