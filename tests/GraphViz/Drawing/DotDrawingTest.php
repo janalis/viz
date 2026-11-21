@@ -264,6 +264,21 @@ final class DotDrawingTest extends TestCase
         $this->assertLessThan($far['a']->points[0][0], $far['YYYY']->points[0][0]);
     }
 
+    public function testEndLabelsSetByAngleOffAnEndWithoutArrowheadFollowTheLine(): void
+    {
+        // dot 16.1.0: a at (27, 90), T at (27, 41.697), 48.3 points straight down the line from a,
+        // up being y; laid out left to right, a at (27, 18), H at (59.616, 18), along the line.
+        $tail = self::byText(self::draw('digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [dir=both, arrowtail=none, taillabel="T", labelangle=0, labeldistance=3]; }'));
+        $head = self::byText(self::draw('digraph { rankdir=LR; node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [arrowhead=none, headlabel="H", labelangle=0, labeldistance=3]; }'));
+        $from = static fn (array $texts, string $text): array => [
+            ($texts[$text]->points[0][0] - $texts['a']->points[0][0]) / Units::POINT,
+            ($texts[$text]->points[0][1] - $texts['a']->points[0][1]) / Units::POINT,
+        ];
+
+        $this->assertEqualsWithDelta([0.0, 90.0 - 41.697], $from($tail, text: 'T'), 0.5);
+        $this->assertEqualsWithDelta([59.616 - 27.0, 0.0], $from($head, text: 'H'), 0.5);
+    }
+
     public function testEndLabelsAreSetByTheNodeTheirEdgeReaches(): void
     {
         // dot 16.1.0 sets BBBB at (35.425, 63.297), left of its end at (54.101, 71.697), and

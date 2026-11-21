@@ -82,7 +82,8 @@ final class DotEndLabels
     /**
      * Where a path starts and the way it leaves, as a unit vector: toward its curve a tenth of
      * the way along the curve's first piece, where its control points start there, as measured
-     * on dot's output, else toward its next point; down where it does not move.
+     * on dot's output, else toward its next point, as where the curve stays at its end; down
+     * where the path does not move.
      *
      * @param list<array{float, float}> $path
      * @param list<array{float, float}> $controls the path's curve, from the same end, where known
@@ -94,16 +95,14 @@ final class DotEndLabels
         $next = \array_find($path, static fn (array $point): bool => \hypot($point[0] - $x, $point[1] - $y) > 0.01) ?? [$x, $y + 1];
         if (\count($controls) >= 4 && \hypot($controls[0][0] - $x, $controls[0][1] - $y) < 0.5) {
             [$a, $b, $c, $d] = $controls;
-            $next = [
+            $along = [
                 (0.729 * $a[0]) + (0.243 * $b[0]) + (0.027 * $c[0]) + (0.001 * $d[0]),
                 (0.729 * $a[1]) + (0.243 * $b[1]) + (0.027 * $c[1]) + (0.001 * $d[1]),
             ];
+            // A curve whose control points all stand at its end leaves no way: the path's own stands.
+            $next = \hypot($along[0] - $x, $along[1] - $y) < 1e-9 ? $next : $along;
         }
         $length = \hypot($next[0] - $x, $next[1] - $y);
-        if ($length < 1e-9) {
-            // A curve whose control points all stand at its end leaves no way: down, as a path that does not move.
-            return [[$x, $y], [0.0, 1.0]];
-        }
 
         return [[$x, $y], [($next[0] - $x) / $length, ($next[1] - $y) / $length]];
     }

@@ -7,7 +7,7 @@ namespace Janalis\Viz\Layout\Dot;
 /**
  * The order flat edges keep among the nodes of a rank, as dot keeps it while ordering: an
  * edge that constrains ranks keeps its tail before its head; one that does not, or that
- * joins nodes of different clusters, keeps none.
+ * joins nodes of different clusters, a cluster and one inside it included, keeps none.
  * A node's `ordering` keeps the nodes next along its edges in order the same way.
  */
 final class DotFlatOrder

@@ -32,7 +32,7 @@ final class DotLayers
     public array $height = [];
     /** @var list<int> each node's innermost cluster, -1 at the top level */
     public array $cluster = [];
-    /** @var list<array{int, int, int, int, float, float}> tail, head, weight, the paper's Ω factor for straightening it (8 between two virtual nodes, 2 with one, else 1), and where across the tail and the head it ends (see {@see \Janalis\Viz\Layout\Engine\LayoutEdge::$tailPort}): every edge between neighbouring ranks, tail above */
+    /** @var list<array{int, int, int, int, float, float}> tail, head, weight, the paper's Ω factor for straightening it (8 between two virtual nodes, 2 with one, else 1; `DotHorizontal` reads only whether it is 8, `dot`'s output fitting 1 for the rest), and where across the tail and the head it ends (see {@see \Janalis\Viz\Layout\Engine\LayoutEdge::$tailPort}): every edge between neighbouring ranks, tail above */
     public array $edges = [];
     /** @var list<list<int>> the nodes of each rank, in order */
     public array $ranks = [];

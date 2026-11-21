@@ -211,8 +211,7 @@ final class DotDrawing
         }
         $this->endLabels($index, $edge);
         $colors = DotStrokes::ends($edge->attribute('color'));
-        $penWidth = self::penWidth($edge->attribute('penwidth'), $styles);
-        $size = \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0)));
+        [$size, $penWidth] = self::arrowing($edge);
         foreach ($this->cut($edge, $pieces, $size, $penWidth) as [$end, $arrow, $tip, $along]) {
             \array_push($this->marks, ...$arrow->marks($tip, $along, $size, $colors['head' === $end ? 1 : 0], $background, $penWidth));
         }
@@ -404,12 +403,13 @@ final class DotDrawing
             }
             // As `dot`, from where the line ends: at its arrowhead's tip, not short of it.
             $points = self::joined($pieces);
-            $polar = '' !== $edge->attribute('labelangle') || '' !== $edge->attribute('labeldistance') ? $this->polar($index, $edge, $pieces) : [];
+            $polar = null;
             foreach (['taillabel' => $points[0], 'headlabel' => $points[\count($points) - 1]] as $attribute => $end) {
                 $label = DotNodes::endText($this->graph, $edge, $attribute);
                 if ($label->empty()) {
                     continue;
                 }
+                $polar ??= '' !== $edge->attribute('labelangle') || '' !== $edge->attribute('labeldistance') ? $this->polar($index, $edge, $pieces, $splines) : [];
                 $labels[] = [$end, $label->size(), $polar[$attribute] ?? null];
                 $owners[] = [$index, $attribute, [$made[$edge->tail] ?? \count($made), $made[$edge->head] ?? \count($made), $index]];
             }
@@ -441,20 +441,37 @@ final class DotDrawing
     }
 
     /**
+     * The size an edge's arrowheads are drawn at, `arrowsize` kept between 0.1 and 10, and the
+     * pen they are drawn with.
+     *
+     * @return array{float, float}
+     */
+    private static function arrowing(DotEdge $edge): array
+    {
+        return [\max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0))), self::penWidth($edge->attribute('penwidth'), self::styles($edge->attribute('style')))];
+    }
+
+    /**
      * Where an edge with `labelangle` or `labeldistance` set centres its head and tail labels, as
      * `DotEndLabels::polar()` sets them off each end's way: from an arrowhead's tip back to its
-     * base, else toward its curve.
+     * base, else toward its curve where it is drawn curved, else along its line.
      *
      * @param list<array{list<array{float, float}>, bool, bool}> $pieces
+     * @param string $splines how edges are drawn, as `edge()` takes it
      * @return array<string, array{float, float}> each end label's centre, by attribute
      */
-    private function polar(int $index, DotEdge $edge, array $pieces): array
+    private function polar(int $index, DotEdge $edge, array $pieces, string $splines): array
     {
         $points = self::joined($pieces);
-        $controls = $this->placement->controls[$index] ?? [];
+        // The engine's curve only where the edge is drawn along it, not as straight lines.
+        $controls = \in_array($splines, ['line', 'false', 'polyline', 'ortho'], strict: true) ? [] : $this->placement->controls[$index] ?? [];
         $ways = ['taillabel' => DotEndLabels::way($points, $controls), 'headlabel' => DotEndLabels::way(\array_reverse($points), \array_reverse($controls))];
-        $size = \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0)));
-        foreach ($this->cut($edge, $pieces, $size, self::penWidth($edge->attribute('penwidth'), self::styles($edge->attribute('style')))) as [$end, , $tip, $along]) {
+        [$size, $penWidth] = self::arrowing($edge);
+        foreach ($this->cut($edge, $pieces, $size, $penWidth) as [$end, $arrow, $tip, $along]) {
+            // An arrowhead of no length, as `none`, gives no way back: the line's own way stands.
+            if ($arrow->length($size, $penWidth) <= 0) {
+                continue;
+            }
             $ways[$end.'label'] = [$tip, [-$along[0], -$along[1]]];
         }
 

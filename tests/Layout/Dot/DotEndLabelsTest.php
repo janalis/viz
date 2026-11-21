@@ -202,8 +202,9 @@ final class DotEndLabelsTest extends TestCase
         // A curve starting elsewhere is not this path's; a path that does not move leads down.
         $this->assertSame([[0.0, 0.0], [1.0, 0.0]], DotEndLabels::way($path, [[5.0, 5.0], [0.0, 10.0], [10.0, 10.0], [10.0, 0.0]]));
         $this->assertSame([[0.0, 0.0], [0.0, 1.0]], DotEndLabels::way([[0.0, 0.0]], []));
-        // A curve whose control points all stand at its end leaves no way either.
-        $this->assertSame([[0.0, 0.0], [0.0, 1.0]], DotEndLabels::way($path, \array_fill(0, count: 4, value: [0.0, 0.0])));
+        // A curve whose control points all stand at its end leaves no way: the path's own stands.
+        $this->assertSame([[0.0, 0.0], [1.0, 0.0]], DotEndLabels::way($path, \array_fill(0, count: 4, value: [0.0, 0.0])));
+        $this->assertSame([[0.0, 0.0], [0.0, 1.0]], DotEndLabels::way([[0.0, 0.0]], \array_fill(0, count: 4, value: [0.0, 0.0])));
     }
 
     /**

@@ -10,8 +10,9 @@ final class DotMeeting
     /**
      * The edges in the order the ordering meets them, as dot meets them: node by node in the
      * order the nodes were made, each node's out-edges in turn, all the edges between two nodes
-     * together, met with the first of them, and an edge pointing up the ranks met from its head,
-     * as `dot` turns it round, after that node's own edges to the same node. `dot` is seen to set
+     * together, at the turn of the first made of their tails: an edge pointing up the ranks is
+     * met at its own tail's turn where no edge runs back, and after its head's own edges to that
+     * node where one does. `dot` is seen to set
      * a node's children in its own cluster first, then the rest, each left to right in the order
      * they were made, whatever order its edges are written in.
      *
@@ -31,13 +32,14 @@ final class DotMeeting
             $pair = \min($tail, $head).'-'.\max($tail, $head);
             $turn[$pair] = \min($turn[$pair] ?? $tail, $tail);
         }
-        $key = static function (int $index) use ($edges, $outside, $ranks, $turn): array {
+        // Each edge's key worked out once, not at every comparison.
+        $keys = [];
+        foreach (\array_keys($edges) as $index) {
             [$tail, $head] = [$edges[$index][0], $edges[$index][1]];
             $first = $turn[\min($tail, $head).'-'.\max($tail, $head)];
-
-            return [$first, $outside($edges[$index]), $first === $tail ? $head : $tail, (int) ($ranks[$tail] > $ranks[$head]), $index];
-        };
-        \uksort($edges, static fn (int $a, int $b): int => $key($a) <=> $key($b));
+            $keys[$index] = [$first, $outside($edges[$index]), $first === $tail ? $head : $tail, (int) ($ranks[$tail] > $ranks[$head]), $index];
+        }
+        \uksort($edges, static fn (int $a, int $b): int => $keys[$a] <=> $keys[$b]);
 
         return $edges;
     }
