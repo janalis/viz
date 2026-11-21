@@ -8,6 +8,9 @@
 - Graphviz and PlantUML: a head or tail label avoids a corner holding another end label's end, and right to left tries below and left before above and right.
 - Graphviz and PlantUML: head and tail labels are set in `dot`'s order, node by node and edge by edge, so each avoids the labels `dot` set before it.
 - Graphviz: a head or tail label stands off its arrowhead's tip, as `dot` sets it, not off the arrowhead's base.
+- Graphviz and PlantUML: where several orders cross as few edges, the native `dot` layout counts each crossing as one, as `dot` does, so it picks `dot`'s order more often.
+- Graphviz and PlantUML: the edges between two nodes are met together, with the first of them, even where one is turned up the ranks to break a cycle, so a node's children start in `dot`'s order.
+- Graphviz and PlantUML: a flat edge between nodes of different clusters keeps no left-to-right order, and the clusters inside a cluster start in the order they were made, as `dot` orders them.
 
 ## 0.2.4 — 2026-11-21
 

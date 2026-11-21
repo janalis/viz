@@ -691,6 +691,28 @@ final class DotEngineTest extends TestCase
         $this->assertLessThan($loose->endpoints['a']->x, $loose->endpoints['b']->x, 'unconstrained, the nodes keep their order');
     }
 
+    public function testACrossingCountsOneWhateverItsEdgesAsDotChoosesBetweenOrdersThatTie(): void
+    {
+        // As dot 16.1.0 sets it: n0 and n1 side by side over n2, n3 below; weighing crossings by
+        // the edges' virtual ends would put n1 first.
+        $this->assertSame([['n0', 'n1'], ['n2'], ['n3']], self::rows('n0; n1; n2; n3; n1 -> n2; n0 -> n3; n0 -> n2 [label="label"]; n2 -> n3;'));
+    }
+
+    public function testTheEdgesBetweenTwoNodesAreMetTogetherWithTheFirstAsDotMeetsThem(): void
+    {
+        // As dot 16.1.0 sets them: n0, whose edge up to n1 is met at n0's turn, before n1's, first under n1; then n1's other children, in the order made.
+        $this->assertSame([['n1'], ['n0', 'n3', 'n2']], self::rows('n3; n2; n0; n1; n1 -> n3; n1 -> n2; n1 -> n0; n0 -> n1;'));
+        $this->assertSame([['n1'], ['n2', 'n0', 'n3']], self::rows('n3; n2; n0; n1; n1 -> n3; n1 -> n0; n0 -> n1; n1 -> n2; n2 -> n1;'));
+    }
+
+    public function testAFlatEdgeBetweenClustersKeepsNoOrderAndClustersStartInTheOrderMade(): void
+    {
+        // As dot 16.1.0 sets them.
+        $this->assertSame([['b', 'a']], self::rows('b; a; subgraph cluster_x { b; } a -> b [minlen=0];'));
+        $this->assertSame([['a', 'b']], self::rows('b; a; subgraph cluster_x { a; b; } a -> b [minlen=0];'));
+        $this->assertSame([['p'], ['a', 'b']], self::rows('b; a; p; subgraph cluster_x { subgraph cluster_y { a; } subgraph cluster_z { b; } } p -> b; p -> a;'));
+    }
+
     public function testALongEdgePullsItsRealEndsNoHarderThanAPlainOne(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(
@@ -848,5 +870,27 @@ final class DotEngineTest extends TestCase
     private static function centres(Placement $placement): array
     {
         return \array_values(\array_map(static fn ($node): array => [(float) $node->x, (float) $node->y], $placement->graph->nodes));
+    }
+
+    /**
+     * The nodes of a dot graph's body, rank by rank from the top, each left to right.
+     *
+     * @return list<list<string>>
+     */
+    private static function rows(string $body): array
+    {
+        $graph = Work::run(new DotParser()->parse('digraph { node [shape=rect,width=0.6,height=0.4,label=""]; '.$body.' }'));
+        $rows = [];
+        $input = DotLayoutInput::from($graph, static fn ($node): array => DotNodes::size($graph, $node), static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size());
+        foreach (Work::run(new DotEngine()->place($input))->endpoints as $id => $node) {
+            $rows[(string) $node->y][$id] = $node->x;
+        }
+        \ksort($rows, \SORT_NUMERIC);
+
+        return \array_values(\array_map(static function (array $row): array {
+            \asort($row);
+
+            return \array_map(\strval(...), \array_keys($row));
+        }, $rows));
     }
 }

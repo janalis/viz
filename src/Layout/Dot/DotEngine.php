@@ -86,7 +86,7 @@ final readonly class DotEngine implements LayoutEngine
                 $labelSizes[$edge->index] = [$labelWidth, $labelHeight];
             }
         }
-        $edges = self::met($edges, $owner, $ranks);
+        $edges = DotMeeting::order($edges, $owner, $ranks);
         $span = 0;
         foreach ($edges as [$tail, $head]) {
             $span += \max(0, \abs($ranks[$tail] - $ranks[$head]) - 1);
@@ -503,33 +503,6 @@ final readonly class DotEngine implements LayoutEngine
         }
 
         return $stacked;
-    }
-
-    /**
-     * The edges in the order the ordering meets them, as dot meets them: node by node, each node's
-     * out-edges in turn — an edge pointing up the ranks met from its head, after that node's own,
-     * as `dot` turns it round. `dot` is seen to set a node's children in its own cluster first,
-     * then the rest, each left to right in the order they were made, whatever order its edges are
-     * written in.
-     *
-     * @template T of array{int, int, int, float, float, float, float, int}
-     * @param array<int, T> $edges by original index
-     * @param list<int> $owner each node's cluster, -1 at the top
-     * @param list<int> $ranks each node's rank
-     * @return array<int, T>
-     */
-    private static function met(array $edges, array $owner, array $ranks): array
-    {
-        $outside = static fn (array $edge): int => (int) (-1 === $owner[$edge[0]] || $owner[$edge[0]] !== $owner[$edge[1]]);
-        $key = static function (int $index) use ($edges, $outside, $ranks): array {
-            [$tail, $head] = [$edges[$index][0], $edges[$index][1]];
-            $up = (int) ($ranks[$tail] > $ranks[$head]);
-
-            return [$up ? $head : $tail, $up, $outside($edges[$index]), $up ? $tail : $head, $index];
-        };
-        \uksort($edges, static fn (int $a, int $b): int => $key($a) <=> $key($b));
-
-        return $edges;
     }
 
     /**

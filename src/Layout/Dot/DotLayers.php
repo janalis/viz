@@ -32,7 +32,7 @@ final class DotLayers
     public array $height = [];
     /** @var list<int> each node's innermost cluster, -1 at the top level */
     public array $cluster = [];
-    /** @var list<array{int, int, int, int, float, float}> tail, head, weight, crossing penalty, and where across the tail and the head it ends (see {@see \Janalis\Viz\Layout\Engine\LayoutEdge::$tailPort}): every edge between neighbouring ranks, tail above */
+    /** @var list<array{int, int, int, int, float, float}> tail, head, weight, the paper's Ω factor for straightening it (8 between two virtual nodes, 2 with one, else 1), and where across the tail and the head it ends (see {@see \Janalis\Viz\Layout\Engine\LayoutEdge::$tailPort}): every edge between neighbouring ranks, tail above */
     public array $edges = [];
     /** @var list<list<int>> the nodes of each rank, in order */
     public array $ranks = [];
@@ -220,7 +220,7 @@ final class DotLayers
         }
         $this->stretches[$key] = \count($this->edges);
         $virtual = (int) (self::REAL !== $this->kind[$tail]) + (int) (self::REAL !== $this->kind[$head]);
-        // Crossing two virtual stretches costs more than crossing at a node: long edges stay straight.
+        // As Gansner et al.'s Ω: a stretch between virtual nodes pulls straightest, so long edges run straight.
         $this->edges[] = [
             $tail,
             $head,

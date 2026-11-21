@@ -16,8 +16,8 @@ namespace Janalis\Viz\Layout\Dot;
  *
  * Clusters stay contiguous: a scope, the top level or a cluster, orders its own nodes and one
  * block per child cluster and rank, then each child orders its block from inside, the nodes
- * around it fixed. A crossing costs the product of its two edges' penalties, so long virtual
- * stretches resist crossing more.
+ * around it fixed. Every crossing counts one, as `dot` is seen to count them where several
+ * orders are equally good.
  */
 final class DotOrdering
 {
@@ -269,9 +269,7 @@ final class DotOrdering
                 foreach ($item as $node) {
                     $itemOf[$node] = [$rank, $index];
                 }
-                // As dot is seen to start them: the top level from its nodes in the order a depth-first search meets them; a cluster from the clusters it holds, then its own nodes, each in the order it holds them.
-                $own = $scope >= 0 && -1 === $this->layers->childOf($item[0], $scope) ? 1 : 0;
-                $seeds[] = [$own, \min(\array_map(fn (int $node): int => $scope >= 0 ? $node : $this->visit[$node], $item)), $rank, $index];
+                $seeds[] = [...$this->seed($scope, $item), $rank, $index];
             }
         }
         \usort($seeds, static fn (array $a, array $b): int => $a <=> $b);
@@ -309,6 +307,24 @@ final class DotOrdering
         foreach (\array_keys($itemsByRank) as $rank) {
             $this->write($scope, $rank, $this->flat->leftToRight($reversed ? \array_reverse($orders[$rank]) : $orders[$rank]));
         }
+    }
+
+    /**
+     * Where an item comes among the initial order's starts, as dot is seen to start them: the
+     * top level from its nodes in the order a depth-first search meets them; a cluster from the
+     * clusters it holds, in the order they were made, then its own nodes, in the order it holds them.
+     *
+     * @param list<int> $item
+     * @return array{int, int}
+     */
+    private function seed(int $scope, array $item): array
+    {
+        if ($scope < 0) {
+            return [0, \min(\array_map(fn (int $node): int => $this->visit[$node], $item))];
+        }
+        $child = $this->layers->childOf($item[0], $scope);
+
+        return -1 === $child ? [1, $item[0]] : [0, $child];
     }
 
     /**

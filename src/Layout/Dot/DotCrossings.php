@@ -6,9 +6,10 @@ namespace Janalis\Viz\Layout\Dot;
 
 /**
  * The arithmetic of crossing minimisation over a ranked graph and a current order: crossings
- * between neighbouring ranks, each costing the product of its two edges' penalties; the cost
- * of two neighbours in one order or the other; and the weighted median of a node's
- * neighbours on the rank above or below, as Gansner et al. define it.
+ * between neighbouring ranks, each counting one, whatever the edges, as `dot`'s choices
+ * between equally good orders are seen to count them; the crossings of two neighbours in one
+ * order or the other; and the weighted median of a node's neighbours on the rank above or
+ * below, as Gansner et al. define it.
  */
 final readonly class DotCrossings
 {
@@ -16,7 +17,7 @@ final readonly class DotCrossings
     public array $up;
     /** @var list<list<int>> layered edges below each node */
     public array $down;
-    /** @var array{array<int, list<array{int, float, int}>>, array<int, list<array{int, float, int}>>} each node's edges above, then below: the far node, where across it the edge ends, and its penalty */
+    /** @var array{array<int, list<array{int, float}>>, array<int, list<array{int, float}>>} each node's edges above, then below: the far node, and where across it the edge ends */
     private array $ends;
 
     public function __construct(
@@ -33,9 +34,9 @@ final readonly class DotCrossings
         $this->down = $down;
         $above = [];
         $below = [];
-        foreach ($layers->edges as $index => [$tail, $head, , $penalty, $tailPort, $headPort]) {
-            $above[$head][] = [$tail, $tailPort, $penalty];
-            $below[$tail][] = [$head, $headPort, $penalty];
+        foreach ($layers->edges as [$tail, $head, , , $tailPort, $headPort]) {
+            $above[$head][] = [$tail, $tailPort];
+            $below[$tail][] = [$head, $headPort];
         }
         $ends = [$above, $below];
         $this->ends = $ends;
@@ -54,7 +55,7 @@ final readonly class DotCrossings
     }
 
     /**
-     * Every crossing between neighbouring ranks, with a Fenwick tree of penalties by head
+     * Every crossing between neighbouring ranks, with a Fenwick tree of edges by head
      * position. As dot, an edge ends where its port puts it across its node, so two edges
      * from one node cross when their ports stand the other way round from their far ends.
      *
@@ -63,8 +64,8 @@ final readonly class DotCrossings
     public function total(array $position): int
     {
         $byRank = [];
-        foreach ($this->layers->edges as [$tail, $head, , $penalty, $tailPort, $headPort]) {
-            $byRank[$this->layers->rank[$tail]][] = [$position[$tail] + $tailPort, $position[$head] + $headPort, $penalty];
+        foreach ($this->layers->edges as [$tail, $head, , , $tailPort, $headPort]) {
+            $byRank[$this->layers->rank[$tail]][] = [$position[$tail] + $tailPort, $position[$head] + $headPort];
         }
         $total = 0;
         foreach ($byRank as $edges) {
@@ -75,17 +76,17 @@ final readonly class DotCrossings
             $size = \count($heads);
             $tree = \array_fill(0, $size + 1, value: 0);
             $inserted = 0;
-            foreach ($edges as [, $head, $penalty]) {
+            foreach ($edges as [, $head]) {
                 $slot = $slots[(string) $head];
                 $before = 0;
                 for ($index = $slot + 1; $index > 0; $index -= $index & -$index) {
                     $before += $tree[$index];
                 }
-                $total += $penalty * ($inserted - $before);
+                $total += $inserted - $before;
                 for ($index = $slot + 1; $index <= $size; $index += $index & -$index) {
-                    $tree[$index] += $penalty;
+                    ++$tree[$index];
                 }
-                $inserted += $penalty;
+                ++$inserted;
             }
         }
 
@@ -108,19 +109,19 @@ final readonly class DotCrossings
         for ($side = 0; $side < 2; ++$side) {
             $leftEnds = [];
             foreach ($left as $node) {
-                foreach ($this->ends[$side][$node] ?? [] as [$far, $port, $penalty]) {
-                    $leftEnds[] = [$position[$far] + $port, $penalty];
+                foreach ($this->ends[$side][$node] ?? [] as [$far, $port]) {
+                    $leftEnds[] = $position[$far] + $port;
                 }
             }
             if ([] === $leftEnds) {
                 continue;
             }
             foreach ($right as $node) {
-                foreach ($this->ends[$side][$node] ?? [] as [$far, $port, $penalty]) {
+                foreach ($this->ends[$side][$node] ?? [] as [$far, $port]) {
                     $end = $position[$far] + $port;
-                    foreach ($leftEnds as [$leftEnd, $leftPenalty]) {
-                        $leftFirst += $leftEnd > $end ? $leftPenalty * $penalty : 0;
-                        $rightFirst += $leftEnd < $end ? $leftPenalty * $penalty : 0;
+                    foreach ($leftEnds as $leftEnd) {
+                        $leftFirst += (int) ($leftEnd > $end);
+                        $rightFirst += (int) ($leftEnd < $end);
                     }
                 }
             }

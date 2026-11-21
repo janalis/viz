@@ -6,7 +6,8 @@ namespace Janalis\Viz\Layout\Dot;
 
 /**
  * The order flat edges keep among the nodes of a rank, as dot keeps it while ordering: an
- * edge that constrains ranks keeps its tail before its head; one that does not keeps none.
+ * edge that constrains ranks keeps its tail before its head; one that does not, or that
+ * joins nodes of different clusters, keeps none.
  * A node's `ordering` keeps the nodes next along its edges in order the same way.
  */
 final class DotFlatOrder
@@ -34,7 +35,8 @@ final class DotFlatOrder
             $out[$first][] = $second;
         }
         foreach ($layers->flat as [$tail, $head, $edge]) {
-            if (\in_array($edge, $loose, strict: true)) {
+            // As `dot` is seen to, one between nodes of different clusters keeps none either.
+            if (\in_array($edge, $loose, strict: true) || $layers->cluster[$tail] !== $layers->cluster[$head]) {
                 continue;
             }
             $out[$tail][] = $head;
