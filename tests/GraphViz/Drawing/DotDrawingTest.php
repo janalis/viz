@@ -244,6 +244,17 @@ final class DotDrawingTest extends TestCase
         $this->assertEqualsWithDelta(10 * Units::POINT, $from($turned, axis: 1) - $from($plain, axis: 1), 1e-6);
     }
 
+    public function testEndLabelsStandOffTheArrowheadsTip(): void
+    {
+        // dot 16.1.1 sets this head label at (22.125, 44.354) with its arrowhead or without: off the tip, where the line without one ends.
+        $source = 'digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [headlabel="H", arrowhead=%s]; }';
+        $arrow = self::byText(self::draw(\sprintf($source, 'normal')));
+        $none = self::byText(self::draw(\sprintf($source, 'none')));
+
+        $this->assertEqualsWithDelta($none['H']->points[0], $arrow['H']->points[0], 1e-6);
+        $this->assertEqualsWithDelta($none['b']->points[0], $arrow['b']->points[0], 1e-6);
+    }
+
     public function testExternalLabelsStandOffACornerClearOfOthersAndTheDrawingGrows(): void
     {
         $plain = self::draw('digraph { a -> b; }');

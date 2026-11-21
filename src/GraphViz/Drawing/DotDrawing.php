@@ -378,7 +378,7 @@ final class DotDrawing
 
     /**
      * Where the edges' head and tail labels stand by default, as `DotEndLabels` sets them from
-     * where their lines end, short of any arrowhead, each clear where it can be of the nodes,
+     * where their lines end, at any arrowhead's tip, each clear where it can be of the nodes,
      * the edges' labels and the end labels set before it: in the order `dot` sets them, node by
      * node in the order the nodes were made, each node's edges out in the order written.
      *
@@ -402,13 +402,7 @@ final class DotDrawing
             if ([] === $pieces) {
                 continue;
             }
-            // As `dot`, from where the line ends, short of its arrowheads.
-            $this->cut(
-                $edge,
-                $pieces,
-                \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0))),
-                self::penWidth($edge->attribute('penwidth'), self::styles($edge->attribute('style'))),
-            );
+            // As `dot`, from where the line ends: at its arrowhead's tip, not short of it.
             $points = self::joined($pieces);
             foreach (['taillabel' => $points[0], 'headlabel' => $points[\count($points) - 1]] as $attribute => $end) {
                 $label = DotNodes::endText($this->graph, $edge, $attribute);
