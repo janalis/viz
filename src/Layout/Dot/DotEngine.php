@@ -375,8 +375,9 @@ final readonly class DotEngine implements LayoutEngine
     }
 
     /**
-     * Where a layered edge's label stands, as laid out before it is turned: right of its line
-     * where it crosses its label node's rank, as `dot` is seen to set it, or of the label node;
+     * Where a layered edge's label stands, as laid out before it is turned: just right of its
+     * line, where the line reaches furthest right across its label node's rank, the rank's half
+     * height above and below the label's middle, as `dot` is seen to set it, or of the label node;
      * or, on an edge to the next rank, which has no rank between for one, hung by its top right
      * corner from its spline's middle, as `dot` is seen to hang it.
      *
@@ -388,8 +389,12 @@ final readonly class DotEngine implements LayoutEngine
     {
         $node = $layers->labels[$layered] ?? null;
         if (null !== $node) {
-            $y = $position->y[$layers->rank[$node]];
-            $x = self::crossing($spline, $y) ?? $position->x[$node];
+            $rank = $layers->rank[$node];
+            $y = $position->y[$rank];
+            $half = \max(\array_map(static fn (int $on): float => $layers->height[$on] / 2, $layers->ranks[$rank]));
+            // A line that never reaches the rank leaves the label at the label node.
+            $across = \array_pad(DotSplines::across($spline, $y - $half, $y + $half), length: 1, value: $position->x[$node]);
+            $x = $layers->mirrored ? \min($across) : \max($across);
 
             return [$layers->mirrored ? $x - ($layers->left[$node] / 2) : $x + ($layers->right[$node] / 2), $y];
         }
@@ -400,24 +405,6 @@ final readonly class DotEngine implements LayoutEngine
         [$x, $y] = $router->middle($path);
 
         return [$x - ($size[0] / 2), $y + ($size[1] / 2)];
-    }
-
-    /**
-     * Where a drawn line first crosses a height, if it does.
-     *
-     * @param list<array{float, float}> $line
-     */
-    private static function crossing(array $line, float $y): ?float
-    {
-        $x = null;
-        for ($index = 1, $count = \count($line); null === $x && $index < $count; ++$index) {
-            [[$ax, $ay], [$bx, $by]] = [$line[$index - 1], $line[$index]];
-            if ((($ay - $y) * ($by - $y)) <= 0 && $ay !== $by) {
-                $x = $ax + ((($bx - $ax) * ($y - $ay)) / ($by - $ay));
-            }
-        }
-
-        return $x;
     }
 
     /**

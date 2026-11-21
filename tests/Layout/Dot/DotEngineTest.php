@@ -530,7 +530,7 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta(68.0, $uneven->labels[2][0] - $uneven->endpoints['a']->x, 0.1, 'dot: 68, to its point');
     }
 
-    public function testALabelStandsRightOfItsEdgeWhereTheLineCrossesItsRank(): void
+    public function testALabelStandsRightOfItsEdgeWhereTheLineReachesFurthestAcrossItsRank(): void
     {
         $placement = Work::run(new DotEngine()->place(new LayoutGraph(
             [new LayoutNode('a', 'a', 14, 50), new LayoutNode('b', 'b', 14, 50), new LayoutNode('c', 'c', 14, 50)],
@@ -539,23 +539,44 @@ final class DotEngineTest extends TestCase
             Direction::TopBottom,
             new Spacing(35, 60, 4),
         )));
-        $crossing = static function (array $line, float $y): float {
+        // The rightmost x the line reaches between two heights, its steps cut to them.
+        $reach = static function (array $line, float $low, float $high): float {
+            $reach = -\INF;
             for ($index = 1; $index < \count($line); ++$index) {
                 [[$ax, $ay], [$bx, $by]] = [$line[$index - 1], $line[$index]];
-                if ((($ay - $y) * ($by - $y)) <= 0 && $ay !== $by) {
-                    return $ax + ((($bx - $ax) * ($y - $ay)) / ($by - $ay));
+                [$from, $to] = [\max(\min($ay, $by), $low), \min(\max($ay, $by), $high)];
+                foreach ($from <= $to && $ay !== $by ? [$from, $to] : [] as $at) {
+                    $reach = \max($reach, $ax + ((($bx - $ax) * ($at - $ay)) / ($by - $ay)));
                 }
             }
 
-            return \NAN;
+            return $reach;
         };
 
-        // As `dot` is seen to set them: each label's left side on its line, which cuts the corner its chain turns.
+        // As `dot` is seen to set them: each label's left side where its line reaches furthest
+        // right across the label's rank, 8.5 points, half the labels' height, above and below.
         foreach ([0 => 50.0, 1 => 20.0] as $edge => $width) {
             [$x, $y] = $placement->labels[$edge];
-            $this->assertEqualsWithDelta($crossing($placement->splines[$edge], $y), $x - ($width / 2), 1e-6);
+            $this->assertEqualsWithDelta($reach($placement->splines[$edge], $y - 8.5, $y + 8.5), $x - ($width / 2), 1e-6);
         }
         $this->assertLessThan($placement->endpoints['c']->x, $placement->labels[1][0] - 10.0, 'left of the chain\'s turn below its head');
+    }
+
+    public function testALabelStandsClearOfItsEdgeWhereTheLineReachesFurthestAcrossItsRank(): void
+    {
+        // a -> b with a 43 by 20 label, then a -> b, nodes 36 points square, nodesep 18, ranksep 36.
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 36, 36), new LayoutNode('b', 'b', 36, 36)],
+            [new LayoutEdge(0, 'a', 'b', labelWidth: 43, labelHeight: 20), new LayoutEdge(1, 'a', 'b')],
+            [],
+            Direction::TopBottom,
+            new Spacing(36, 18, 4),
+        )));
+
+        // As `dot` sets it: lp 23.707 with a at 30.207, its left side where the line, bowing away
+        // from it, meets the top and bottom of the label's rank, not 2.8 points further left where
+        // the line crosses the label's middle.
+        $this->assertEqualsWithDelta(-6.5, $placement->labels[0][0] - $placement->endpoints['a']->x, 0.5);
     }
 
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void

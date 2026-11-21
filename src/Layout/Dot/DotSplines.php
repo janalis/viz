@@ -52,6 +52,34 @@ final class DotSplines
     }
 
     /**
+     * Where a drawn line runs between two heights: the x of each of its points between them,
+     * and where it enters or leaves them.
+     *
+     * @param list<array{float, float}> $line
+     * @return list<float>
+     */
+    public static function across(array $line, float $low, float $high): array
+    {
+        $xs = [];
+        foreach ($line as $index => [$x, $y]) {
+            // The first point is its own step before it, which enters nothing.
+            [$ax, $ay] = $line[\max(0, $index - 1)];
+            foreach ([$low, $high] as $edge) {
+                if ((($ay - $edge) * ($y - $edge)) >= 0) {
+                    continue;
+                }
+                $xs[] = $ax + ((($x - $ax) * ($edge - $ay)) / ($y - $ay));
+            }
+            if ($y < $low || $y > $high) {
+                continue;
+            }
+            $xs[] = $x;
+        }
+
+        return $xs;
+    }
+
+    /**
      * The spline along a path through the ranks, from its first node's centre to its last's,
      * and the shortest path it is fitted to, corner to corner; each moved across by an offset,
      * for one of several edges sharing the path, the full offset along its middle and no

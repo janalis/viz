@@ -10,6 +10,7 @@
 - Graphviz: `newrank=true` ranks the whole graph at once, across clusters, and spreads nodes over the ranks of the whole graph, as `dot` does.
 - Graphviz: a cluster whose nodes skip a rank still spans it, keeping that rank's other nodes outside its box, as `dot` does.
 - Graphviz: a cluster holding no node is not drawn, as `dot` draws none, and a cluster's own `rank` ties nothing.
+- Graphviz and PlantUML: an edge label between ranks stands just clear of its edge where the edge reaches furthest towards it across the label's rank, as `dot` draws it, not where the edge crosses the label's middle.
 
 ## 0.2.5 — 2026-11-21
 
