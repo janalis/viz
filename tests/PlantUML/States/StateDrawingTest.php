@@ -105,7 +105,7 @@ final class StateDrawingTest extends TestCase
             $size("json J {\n \"a\": 1\n}\nstate A"),
             $size("state S {\n  state A\n  json J {\n   \"k\": [1, 2]\n  }\n}"),
         ]);
-        $this->expectExceptionMessage('JSON already exists: J');
+        $this->expectExceptionMessageIsOrContains('JSON already exists: J');
         $size("state A\njson J {\n}\njson J {\n}");
     }
 

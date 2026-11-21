@@ -74,7 +74,7 @@ final class FlowReaderTest extends TestCase
     public function testItRefusesWhatPlantUmlFailsOn(string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         Work::run(PlantUmlPipeline::native()->drawing("@startflow\n".$lines."\n@endflow"));
     }

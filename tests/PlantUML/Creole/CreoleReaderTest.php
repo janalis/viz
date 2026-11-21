@@ -142,7 +142,7 @@ final class CreoleReaderTest extends TestCase
     public function testItLeavesToPlantUmlWhatItDoesNotDraw(string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         Work::run(PlantUmlPipeline::native()->drawing("@startcreole\n".$lines."\n@endcreole"));
     }

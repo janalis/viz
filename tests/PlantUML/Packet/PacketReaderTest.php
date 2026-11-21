@@ -117,7 +117,7 @@ final class PacketReaderTest extends TestCase
     public function testItLeavesToPlantUmlWhatItDoesNotDraw(string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         Work::run(PlantUmlPipeline::native()->drawing("@startpacketdiag\n".$lines."\n@endpacketdiag"));
     }

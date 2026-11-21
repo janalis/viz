@@ -79,7 +79,7 @@ final class BoardReaderTest extends TestCase
     public function testACommandBoardsDoNotReadIsRefused(): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage('The native PlantUML renderer does not draw: set namespaceSeparator ::');
+        $this->expectExceptionMessageIsOrContains('The native PlantUML renderer does not draw: set namespaceSeparator ::');
 
         self::read("A\nset namespaceSeparator ::");
     }
@@ -87,7 +87,7 @@ final class BoardReaderTest extends TestCase
     public function testAReleaseBeforeAnyActivityIsRefused(): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage('A release before any activity');
+        $this->expectExceptionMessageIsOrContains('A release before any activity');
 
         self::read('+A');
     }

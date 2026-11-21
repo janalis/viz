@@ -73,7 +73,7 @@ final class DotLexerTest extends TestCase
     public function testMalformedSourceIsLocated(string $source, string $message): void
     {
         $this->expectExceptionObject(new DotSyntaxError($message, 0, 0, 0));
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         self::tokens($source);
     }

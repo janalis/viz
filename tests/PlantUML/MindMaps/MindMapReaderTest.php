@@ -115,7 +115,7 @@ final class MindMapReaderTest extends TestCase
     public function testItRefusesWhatPlantUmlFails(string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         PlantUmlPipeline::native()->diagram("@startmindmap\n".$lines."\n@endmindmap");
     }

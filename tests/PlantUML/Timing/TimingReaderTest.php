@@ -152,7 +152,7 @@ final class TimingReaderTest extends TestCase
     public function testItRefusesWhatItDoesNotDraw(string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
     }

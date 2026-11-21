@@ -97,7 +97,7 @@ final class DotGraphReaderTest extends TestCase
     public function testInvalidJsonIsRefused(): void
     {
         $this->expectException(GraphParseException::class);
-        $this->expectExceptionMessage('dot produced invalid JSON');
+        $this->expectExceptionMessageIsOrContains('dot produced invalid JSON');
 
         DotGraphReader::read('{');
     }

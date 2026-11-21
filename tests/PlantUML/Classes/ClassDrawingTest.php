@@ -182,7 +182,7 @@ final class ClassDrawingTest extends TestCase
         ]);
         // A table smaller than dot's least node, 54 across, centred in it, beside a class.
         $this->assertSame([[143.0, 70.0], [143.0, 70.0]], [$size("json J {\n \"a\": 1\n}\nclass A"), $size("map M {\n a => 1\n}\nclass A")]);
-        $this->expectExceptionMessage('JSON already exists: J');
+        $this->expectExceptionMessageIsOrContains('JSON already exists: J');
         $size("class X\njson J {\n}\njson J {\n}");
     }
 

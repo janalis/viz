@@ -236,7 +236,7 @@ final class HtmlParserTest extends TestCase
     public function testWhatItCannotDrawIsLeftToDot(string $html, string $reason): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage('The native DOT renderer does not draw '.$reason);
+        $this->expectExceptionMessageIsOrContains('The native DOT renderer does not draw '.$reason);
 
         self::parse($html);
     }
@@ -263,7 +263,7 @@ final class HtmlParserTest extends TestCase
                 \SORT_REGULAR,
             )),
         );
-        $this->expectExceptionMessage('this HTML label');
+        $this->expectExceptionMessageIsOrContains('this HTML label');
         HtmlParser::parse('<TABLE><TR><TD><IMG SRC="x.png"/> and text</TD></TR></TABLE>', new HtmlFont(14.0, '#000000'), $images);
     }
 

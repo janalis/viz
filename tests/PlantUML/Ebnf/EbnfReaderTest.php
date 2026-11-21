@@ -214,7 +214,7 @@ final class EbnfReaderTest extends TestCase
     public function testItRefusesWhatPlantUmlFailsOn(string $line, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         PlantUmlPipeline::native()->diagram("@startregex\n".$line."\n@endregex");
     }
@@ -260,7 +260,7 @@ final class EbnfReaderTest extends TestCase
     public function testItLeavesToPlantUmlTheCommandsItDoesNotDraw(): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage('does not draw: hide empty description');
+        $this->expectExceptionMessageIsOrContains('does not draw: hide empty description');
 
         self::ebnf("a = \"x\";\nhide empty description");
     }

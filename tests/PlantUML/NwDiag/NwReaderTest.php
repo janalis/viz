@@ -129,7 +129,7 @@ final class NwReaderTest extends TestCase
     public function testADiagramWiderThanAHundredColumnsIsRefusedAsPlantUmlRefusesIt(): void
     {
         $this->expectException(PlantUmlRefusal::class);
-        $this->expectExceptionMessage('The network diagram is too wide');
+        $this->expectExceptionMessageIsOrContains('The network diagram is too wide');
 
         Work::run(self::read("network n {\n".\implode("\n", \array_map(static fn (int $index): string => 's'.$index.';', \range(start: 0, end: 101)))."\n}")->drawing());
     }
@@ -186,7 +186,7 @@ final class NwReaderTest extends TestCase
     public function testItRefusesWhatPlantUmlFailsOn(string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         Work::run(PlantUmlPipeline::native()->drawing("@startnwdiag\n".$lines."\n@endnwdiag"));
     }

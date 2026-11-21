@@ -97,7 +97,7 @@ final class VizTest extends TestCase
     {
         $this->assertStringContainsString('<svg', new Viz(engine: Engine::Native)->render("@startuml\nclass A\n@enduml", SourceFormat::PlantUml, Format::Svg)->bytes);
         $this->expectException(RenderFailure::class);
-        $this->expectExceptionMessage('does not draw: url of A');
+        $this->expectExceptionMessageIsOrContains('does not draw: url of A');
 
         new Viz(engine: Engine::Native)->render("@startuml\nparticipant A\nurl of A is [[http://x]]\n@enduml", SourceFormat::PlantUml, Format::Svg);
     }

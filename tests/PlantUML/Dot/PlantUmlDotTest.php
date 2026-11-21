@@ -62,7 +62,7 @@ final class PlantUmlDotTest extends TestCase
     public function testItRefusesWhatPlantUmlFailsOn(string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         PlantUmlPipeline::native()->diagram("@startdot\n".$lines."\n@enddot");
     }

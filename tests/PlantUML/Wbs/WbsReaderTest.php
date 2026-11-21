@@ -106,7 +106,7 @@ final class WbsReaderTest extends TestCase
     public function testItRefusesWhatPlantUmlFails(string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         PlantUmlPipeline::native()->diagram("@startwbs\n".$lines."\n@endwbs");
     }

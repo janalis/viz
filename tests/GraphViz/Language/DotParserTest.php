@@ -118,7 +118,7 @@ final class DotParserTest extends TestCase
     public function testMalformedDotIsLocated(string $source, string $message): void
     {
         $this->expectException(DotSyntaxError::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         self::parse($source);
     }

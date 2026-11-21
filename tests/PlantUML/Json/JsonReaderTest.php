@@ -76,7 +76,7 @@ final class JsonReaderTest extends TestCase
     public function testJsonFailsWherePlantUmlsParserFails(string $json, string $message): void
     {
         $this->expectException(PlantUmlRefusal::class);
-        $this->expectExceptionMessage(\str_replace('Error', replace: "Expected '/'", subject: $message));
+        $this->expectExceptionMessageIsOrContains(\str_replace('Error', replace: "Expected '/'", subject: $message));
 
         JsonParser::parse($json);
     }
@@ -274,7 +274,7 @@ final class JsonReaderTest extends TestCase
     public function testItLeavesToPlantUmlWhatItDoesNotRead(string $kind, string $lines, string $message): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         self::read($kind, $lines);
     }

@@ -115,7 +115,7 @@ final class SequenceModelTest extends TestCase
     public function testANoteAcrossNobodyIsNoSequenceDiagram(): void
     {
         // As PlantUML, which fails on it.
-        $this->expectExceptionMessage('A sequence diagram with no participant');
+        $this->expectExceptionMessageIsOrContains('A sequence diagram with no participant');
 
         new PlantUmlReader()->read("@startuml\nnote across : nobody\n@enduml");
     }

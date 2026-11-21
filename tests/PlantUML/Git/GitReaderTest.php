@@ -103,7 +103,7 @@ final class GitReaderTest extends TestCase
     public function testAGraphLeadingNowhereIsRefused(): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage('PlantUML does not read this git log');
+        $this->expectExceptionMessageIsOrContains('PlantUML does not read this git log');
 
         Work::run(PlantUmlPipeline::native()->drawing("@startgit\n* a\n|\\\n| * b\n@endgit"));
     }

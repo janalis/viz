@@ -44,7 +44,7 @@ final class HclParserTest extends TestCase
     {
         // `2` and `name` meet with nothing between them, one word, and the `=` after it fails, as in PlantUML.
         $this->expectException(PlantUmlRefusal::class);
-        $this->expectExceptionMessage('Unexpected =');
+        $this->expectExceptionMessageIsOrContains('Unexpected =');
 
         HclParser::parse(['b {', 'count = 2', 'name = "x"', '}']);
     }
@@ -72,7 +72,7 @@ final class HclParserTest extends TestCase
     public function testDataPlantUmlCannotReadIsRefused(array $lines, string $message): void
     {
         $this->expectException(PlantUmlRefusal::class);
-        $this->expectExceptionMessage($message);
+        $this->expectExceptionMessageIsOrContains($message);
 
         HclParser::parse($lines);
     }
@@ -80,7 +80,7 @@ final class HclParserTest extends TestCase
     public function testTheDiagramSaysSo(): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage('PlantUML does not read this HCL data');
+        $this->expectExceptionMessageIsOrContains('PlantUML does not read this HCL data');
 
         Work::run(PlantUmlPipeline::native()->drawing("@starthcl\n= {\n@endhcl"));
     }

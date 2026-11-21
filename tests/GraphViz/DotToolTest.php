@@ -59,7 +59,7 @@ final class DotToolTest extends TestCase
         $this->tool = new FakeTool('echo not-json');
 
         $this->expectException(RenderFailure::class);
-        $this->expectExceptionMessage('dot produced invalid JSON');
+        $this->expectExceptionMessageIsOrContains('dot produced invalid JSON');
 
         new DotTool(new Tool('dot', $this->tool->path()))->layout('g');
     }

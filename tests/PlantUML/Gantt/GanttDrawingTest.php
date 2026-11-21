@@ -155,7 +155,7 @@ final class GanttDrawingTest extends TestCase
     public function testANoteBeforeAnyTaskIsRefusedAsPlantUmlRefusesIt(): void
     {
         $this->expectException(Unsupported::class);
-        $this->expectExceptionMessage('No task defined');
+        $this->expectExceptionMessageIsOrContains('No task defined');
         self::draw("Project starts 2021-01-04\nnote bottom\noops\nend note\n[A] requires 2 days");
     }
 
