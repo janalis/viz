@@ -53,9 +53,6 @@ final class DescriptionDrawing
     /** @var list<Mark> what the hidden elements would draw, with their links and notes: measured, as PlantUML's limit finder takes them, not drawn */
     private array $ghosts = [];
 
-    /** The prefix of the point svek puts in a container a link starts or ends at. */
-    private const string ANCHOR = '*anchor*';
-
     private function __construct(
         private readonly PlantUmlDescriptions $diagram,
     ) {}
@@ -203,11 +200,11 @@ final class DescriptionDrawing
             return $id;
         }
         if (!\array_key_exists($id, $this->anchors)) {
-            $svek->point(self::ANCHOR.$id, $id);
+            $svek->point(Svek::ANCHOR.$id, $id);
             $this->anchors[$id] = true;
         }
 
-        return self::ANCHOR.$id;
+        return Svek::ANCHOR.$id;
     }
 
     /** A group's title: its stereotypes in their style, as PlantUML draws them above its name. */
@@ -327,7 +324,7 @@ final class DescriptionDrawing
         }
         // As PlantUML's limit finder is seen to take the point a link to a container ends at: 14 either side of it.
         foreach (\array_keys($this->anchors) as $id) {
-            $anchor = $placement->endpoints[self::ANCHOR.$id];
+            $anchor = $placement->endpoints[Svek::ANCHOR.$id];
             $marks[] = new Mark(MarkKind::Polygon, [[$anchor->x - 14.0, $anchor->y], [$anchor->x + 14.0, $anchor->y]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
         }
         // A link to a container is cut where it meets the container's outline.

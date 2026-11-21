@@ -34,9 +34,6 @@ use Janalis\Viz\Source\Unsupported;
  */
 final class ClassDrawing
 {
-    /** The prefix of the point svek puts in a package a link starts or ends at. */
-    private const string ANCHOR_PREFIX = '*anchor*';
-
     /** @var array<string, ClassBox|DescriptionBox> */
     private array $boxes = [];
     /** @var array<string, NoteBox> */
@@ -216,11 +213,11 @@ final class ClassDrawing
             return null;
         }
         if (!\array_key_exists($id, $this->anchors)) {
-            $svek->point(self::ANCHOR_PREFIX.$id, $id);
+            $svek->point(Svek::ANCHOR.$id, $id);
             $this->anchors[$id] = true;
         }
 
-        return self::ANCHOR_PREFIX.$id;
+        return Svek::ANCHOR.$id;
     }
 
     /** A link's middle label: its text, and any note on the link below it. */
@@ -249,7 +246,7 @@ final class ClassDrawing
     {
         // As PlantUML's limit finder is seen to take the point a link to a package ends at: 14 either side of it.
         foreach (\array_keys($this->anchors) as $id) {
-            $anchor = $placement->endpoints[self::ANCHOR_PREFIX.$id];
+            $anchor = $placement->endpoints[Svek::ANCHOR.$id];
             $this->ghosts[] = new Mark(MarkKind::Polygon, [[$anchor->x - 14.0, $anchor->y], [$anchor->x + 14.0, $anchor->y]], stroke: 'none', fill: 'none', strokeWidth: 0.0, outline: Outline::Path);
         }
         // A link to a package is cut where it meets the package's frame.

@@ -14,22 +14,21 @@ use Janalis\Viz\Model\Direction;
  * end labels set before it, and holds no other label's end. Where no corner is clear, the label
  * is tried below its end as laid out top-down, centred a quarter of its width right of it, then
  * on it, then a quarter left; where none of those is clear either, it takes the place that
- * overlaps least, the first of those tied. They are set left to right as laid out top-down,
- * each at its end's x to the point, the higher first where they stand level.
+ * overlaps least, the first of those tied. They are set in the order `dot` sets them, which the
+ * caller gives: node by node in the order the nodes were made, and at each node its edges out
+ * in the order they were written, each edge's tail label before its head label.
  */
 final class DotEndLabels
 {
     /**
-     * @param list<array{array{float, float}, array{float, float}}> $labels each label's end of the line and its size, in the order the edges were written, the tail's before the head's
+     * @param list<array{array{float, float}, array{float, float}}> $labels each label's end of the line and its size, in the order `dot` sets them: by the node its edge leaves, in the order the nodes were made, then by edge in the order written, the tail's before the head's
      * @param list<array{float, float, float, float}> $obstacles the nodes' and the edges' labels' boxes
      * @return list<array{float, float, float, float}> each label's box, in the order given
      */
     public static function placed(array $labels, array $obstacles, Direction $direction): array
     {
-        $order = \array_keys($labels);
-        \usort($order, static fn (int $one, int $other): int => self::rank($labels[$one][0], $direction) <=> self::rank($labels[$other][0], $direction));
         $boxes = [];
-        foreach ($order as $index) {
+        foreach (\array_keys($labels) as $index) {
             [[$x, $y], [$width, $height]] = $labels[$index];
             $ends = \array_column(\array_diff_key($labels, [$index => true]), 0);
             $best = null;
@@ -42,29 +41,10 @@ final class DotEndLabels
                 }
                 $best = null === $best || $cost < ($best[0] - 1e-9) ? [$cost, $box] : $best;
             }
-            $boxes[$index] = $best[1] ?? [$x, $y, $x, $y];
+            $boxes[] = $best[1] ?? [$x, $y, $x, $y];
         }
-        \ksort($boxes);
 
-        return \array_values($boxes);
-    }
-
-    /**
-     * Where a label comes in the order they are set: across, to the point, then down, as laid out top-down.
-     *
-     * @param array{float, float} $end
-     * @return array{float, float}
-     */
-    private static function rank(array $end, Direction $direction): array
-    {
-        [$x, $y] = $end;
-
-        return match ($direction) {
-            Direction::TopBottom => [\round($x), $y],
-            Direction::BottomTop => [\round($x), -$y],
-            Direction::LeftRight => [\round($y), $x],
-            Direction::RightLeft => [\round($y), -$x],
-        };
+        return $boxes;
     }
 
     /**

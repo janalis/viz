@@ -44,33 +44,26 @@ final class DotEndLabelsTest extends TestCase
         $this->assertSame([[50.0, 50.0, 70.0, 60.0]], DotEndLabels::placed($label, [], Direction::RightLeft));
     }
 
-    public function testLabelsAreSetLeftToRightTheHigherFirstAsLaidOutTopDown(): void
+    public function testLabelsAreSetInTheOrderGiven(): void
     {
-        // Two ends level to the point: the higher's label set first takes its first corner, the other's the next.
-        $labels = [[[50.4, 55.0], [20.0, 10.0]], [[50.0, 50.0], [20.0, 10.0]]];
-        $this->assertSame(
-            [
-                [30.4, 55.0, 50.4, 65.0],
-                [30.0, 40.0, 50.0, 50.0],
-            ],
-            DotEndLabels::placed($labels, [[50.0, 0.0, 100.0, 100.0]], Direction::TopBottom),
+        // dot 16.1.1, top-down, y up: n0 105.998x41.998 at (52.999, 116) made first, over n1
+        // 68.998x58.997 at (52.999, 29.498); `n1 -> n0` written first, then `n0 -> n1`. Dot sets
+        // n0's edge out first: its 10x10 tail label below and left of (47.121, 94.541), at
+        // (42.121, 89.541); then n1's, whose 29x12 head label, under n0 at (58.877, 94.541), finds
+        // that label below and left of it and goes below and right, at (73.377, 88.541).
+        $nodes = [[0.0, -137.0, 106.0, -95.0], [18.5, -59.0, 87.5, 0.0]];
+        $outOfN0 = [[[47.121, -94.541], [10.0, 10.0]], [[46.559, -59.385], [12.0, 15.0]]];
+        $outOfN1 = [[[59.44, -59.385], [10.0, 10.0]], [[58.877, -94.541], [29.0, 12.0]]];
+        $this->assertEqualsWithDelta(
+            [[42.121, -89.541], [40.559, -66.885], [54.44, -64.385], [73.377, -88.541]],
+            self::centres(DotEndLabels::placed([...$outOfN0, ...$outOfN1], $nodes, Direction::TopBottom)),
+            0.01,
         );
-        // Turned left to right: the higher first, then left to right; right to left, then right to left.
-        $turned = [[[55.0, 50.0], [10.0, 10.0]], [[50.0, 50.0], [10.0, 10.0]]];
-        $this->assertSame(
-            [
-                [55.0, 50.0, 65.0, 60.0],
-                [40.0, 50.0, 50.0, 60.0],
-            ],
-            DotEndLabels::placed($turned, [], Direction::LeftRight),
-        );
-        $back = [[[70.0, 50.0], [10.0, 10.0]], [[65.0, 50.0], [10.0, 10.0]]];
-        $this->assertSame(
-            [
-                [70.0, 50.0, 80.0, 60.0],
-                [55.0, 50.0, 65.0, 60.0],
-            ],
-            DotEndLabels::placed($back, [], Direction::RightLeft),
+        // Given in the order the edges were written, the head label would take below and left.
+        $this->assertEqualsWithDelta(
+            [44.377, -88.541],
+            self::centres(DotEndLabels::placed([...$outOfN1, ...$outOfN0], $nodes, Direction::TopBottom))[1],
+            0.01,
         );
     }
 

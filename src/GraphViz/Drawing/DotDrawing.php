@@ -379,7 +379,8 @@ final class DotDrawing
     /**
      * Where the edges' head and tail labels stand by default, as `DotEndLabels` sets them from
      * where their lines end, short of any arrowhead, each clear where it can be of the nodes,
-     * the edges' labels and the end labels set before it.
+     * the edges' labels and the end labels set before it: in the order `dot` sets them, node by
+     * node in the order the nodes were made, each node's edges out in the order written.
      *
      * @param array<int, DotEdge> $edges
      * @return array<int, array<string, array{float, float}>> each label's centre, by edge index and attribute
@@ -388,6 +389,7 @@ final class DotDrawing
     {
         $obstacles = \array_values(\array_map(DotEdgePaths::box(...), $this->placement->graph->nodes));
         [$labels, $owners] = [[], []];
+        $made = \array_flip(\array_keys($this->graph->nodes));
         foreach ($edges as $index => $edge) {
             $text = DotNodes::edgeText($this->graph, $edge);
             if (\array_key_exists($index, $this->placement->labels) && !$text->empty()) {
@@ -414,9 +416,13 @@ final class DotDrawing
                     continue;
                 }
                 $labels[] = [$end, $label->size()];
-                $owners[] = [$index, $attribute];
+                $owners[] = [$index, $attribute, [$made[$edge->tail] ?? \count($made), $index]];
             }
         }
+        // In the order dot sets them; each edge's tail label is already before its head label.
+        $order = \array_keys($owners);
+        \usort($order, static fn (int $one, int $other): int => [$owners[$one][2], $one] <=> [$owners[$other][2], $other]);
+        [$labels, $owners] = [\array_map(static fn (int $at): array => $labels[$at], $order), \array_map(static fn (int $at): array => $owners[$at], $order)];
         $places = [];
         foreach (DotEndLabels::placed($labels, $obstacles, $this->placement->directions[''] ?? Direction::TopBottom) as $at => [$left, $top, $right, $bottom]) {
             [$index, $attribute] = $owners[$at];

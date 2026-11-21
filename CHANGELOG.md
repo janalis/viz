@@ -4,7 +4,9 @@
 
 ### Fixed
 
-- Graphviz and PlantUML: a head or tail label with no clear corner is tried below its end, as laid out top-down, before it overlaps anything, a corner holding another label's end is not clear, and right to left a label tries below and left before above and right, as `dot` sets them.
+- Graphviz and PlantUML: a head or tail label with no clear corner is tried below its end before it overlaps anything, as `dot` sets it.
+- Graphviz and PlantUML: a head or tail label avoids a corner holding another end label's end, and right to left tries below and left before above and right.
+- Graphviz and PlantUML: head and tail labels are set in `dot`'s order, node by node and edge by edge, so each avoids the labels `dot` set before it.
 
 ## 0.2.4 — 2026-11-21
 

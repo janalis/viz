@@ -273,6 +273,8 @@ final class LinkPainter
      * Every link's end labels, set where `dot` sets head and tail labels, as svek writes them: a
      * table their size in whole points, cut down, from whose corner PlantUML sets the text; each
      * clear, where it can be, of the nodes, the links' labels and the end labels set before it.
+     * Dot sets them node by node, in the order it made the nodes, each node's edges out in the
+     * order svek wrote them, those laid side by side first: a link's first end is its edge's tail.
      *
      * @param list<array{PlantUmlLink, int, LinkLabel, float, array<string, string>, array{?array{PlantUmlText, Style, float}, ?array{PlantUmlText, Style, float}}}> $links each link, its edge, its label, its end labels' font size, the outlines its ends stop at, and its qualifiers
      * @return array<int, array{?array{PlantUmlText, array{float, float, float, float}}, ?array{PlantUmlText, array{float, float, float, float}}}> by edge, the tail's and the head's text and box
@@ -301,16 +303,39 @@ final class LinkPainter
                 $block = new PlantUmlText(ClassReader::split($text), $size);
                 [$width, $height] = $block->size();
                 $requests[] = [$anchors[$end], [\floor($width), \floor($height)]];
-                $texts[] = [$edge, $end, $block];
+                $texts[] = [$edge, $end, $block, [self::made($placement, $link->from), (int) ($link->length > 1), $edge, $end]];
             }
         }
-        $boxes = DotEndLabels::placed($requests, $obstacles, $placement->directions[''] ?? Direction::TopBottom);
+        \uasort($texts, static fn (array $one, array $other): int => $one[3] <=> $other[3]);
+        $boxes = \array_combine(
+            \array_keys($texts),
+            DotEndLabels::placed(
+                \array_values(\array_map(static fn (int $at): array => $requests[$at], \array_keys($texts))),
+                $obstacles,
+                $placement->directions[''] ?? Direction::TopBottom,
+            ),
+        );
         $found = [];
         foreach ($texts as $index => [$edge, $end, $block]) {
             $found[$edge][$end] = [$block, $boxes[$index]];
         }
 
         return \array_map(static fn (array $sides): array => [$sides[0] ?? null, $sides[1] ?? null], $found);
+    }
+
+    /**
+     * When dot made the node a link starts at, as svek wrote it: the node itself, or the point
+     * svek puts in the group it names.
+     */
+    private static function made(Placement $placement, string $id): int
+    {
+        // A node, not a frame standing in for a group, which no node is laid out as.
+        $node = \array_find(
+            [$placement->endpoints[$id] ?? null, $placement->endpoints[Svek::ANCHOR.$id] ?? null],
+            static fn (?GraphNode $node): bool => null !== $node && $node->name === ($placement->graph->nodes[$node->id] ?? null)?->name,
+        );
+
+        return $node->id ?? \PHP_INT_MAX;
     }
 
     /**

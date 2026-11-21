@@ -29,6 +29,9 @@ use Janalis\Viz\PlantUML\Links\PlantUmlLink;
  */
 final class Svek
 {
+    /** The prefix of the point a drawing puts in a group a link starts or ends at, as `point()` writes it. */
+    public const string ANCHOR = '*anchor*';
+
     /** The prefixes of the clusters svek wraps each cluster in, and holds its content in. */
     private const string OUTER = "\0p0:";
     private const string INNER = "\0p1:";
