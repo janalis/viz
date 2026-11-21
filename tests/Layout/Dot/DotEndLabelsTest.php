@@ -159,6 +159,50 @@ final class DotEndLabelsTest extends TestCase
         );
     }
 
+    public function testALabelGivenItsCentreStandsThereAndLaterOnesKeepClearOfIt(): void
+    {
+        // The first is set where given, over the node; the second, whose first corner it takes, goes below and left.
+        $boxes = DotEndLabels::placed(
+            [[[50.0, 50.0], [20.0, 10.0], [45.0, 45.0]], [[50.0, 50.0], [20.0, 10.0]]],
+            [[40.0, 40.0, 60.0, 50.0]],
+            Direction::TopBottom,
+        );
+
+        $this->assertSame(
+            [
+                [35.0, 40.0, 55.0, 50.0],
+                [30.0, 50.0, 50.0, 60.0],
+            ],
+            $boxes,
+        );
+    }
+
+    public function testPolarLabelsTurnFromTheirWayCounterClockwiseAsLaidOutTopDown(): void
+    {
+        // Leaving down the page, as measured on dot 16.1.0's output: turned 90 degrees, to the right; laid out bottom up, to the left.
+        $ways = ['tail' => [[10.0, 20.0], [0.0, 1.0]]];
+
+        $this->assertEqualsWithDelta(['tail' => [30.0, 20.0]], DotEndLabels::polar($ways, 90.0, 2.0, Direction::TopBottom), 1e-9);
+        $this->assertEqualsWithDelta(['tail' => [-10.0, 20.0]], DotEndLabels::polar($ways, 90.0, 2.0, Direction::BottomTop), 1e-9);
+        // The distance is held between 0 and 100.
+        $this->assertEqualsWithDelta(['tail' => [10.0, 20.0]], DotEndLabels::polar($ways, 0.0, -3.0, Direction::RightLeft), 1e-9);
+    }
+
+    public function testAWayLeadsTowardTheCurveATenthOfTheWayAlongOrTheNextPoint(): void
+    {
+        $path = [[0.0, 0.0], [0.0, 0.0], [10.0, 0.0]];
+
+        $this->assertSame([[0.0, 0.0], [1.0, 0.0]], DotEndLabels::way($path, []));
+        // B(0.1) of (0,0) (0,10) (10,10) (10,0): (0.28, 2.7).
+        [$from, [$x, $y]] = DotEndLabels::way($path, [[0.0, 0.0], [0.0, 10.0], [10.0, 10.0], [10.0, 0.0]]);
+        $this->assertSame([0.0, 0.0], $from);
+        $length = \hypot(0.28, y: 2.7);
+        $this->assertEqualsWithDelta([0.28 / $length, 2.7 / $length], [$x, $y], 1e-9);
+        // A curve starting elsewhere is not this path's; a path that does not move leads down.
+        $this->assertSame([[0.0, 0.0], [1.0, 0.0]], DotEndLabels::way($path, [[5.0, 5.0], [0.0, 10.0], [10.0, 10.0], [10.0, 0.0]]));
+        $this->assertSame([[0.0, 0.0], [0.0, 1.0]], DotEndLabels::way([[0.0, 0.0]], []));
+    }
+
     /**
      * @param list<array{float, float, float, float}> $boxes
      * @return list<array{float, float}>

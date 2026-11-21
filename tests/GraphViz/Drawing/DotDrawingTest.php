@@ -244,6 +244,26 @@ final class DotDrawingTest extends TestCase
         $this->assertEqualsWithDelta(10 * Units::POINT, $from($turned, axis: 1) - $from($plain, axis: 1), 1e-6);
     }
 
+    public function testEndLabelsSetByAngleTurnWithTheLayoutAndStandInTheWayOfLaterOnes(): void
+    {
+        // dot 16.1.0, bottom up, b at (27, 18) from the top: H at (9.680, 46.104), T at (44.321,
+        // 61.697), turned 60 degrees clockwise from the edge's way there, 20 points out.
+        $up = self::byText(self::draw('digraph { rankdir=BT; node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [headlabel="H", taillabel="T", labelangle=60, labeldistance=2]; }'));
+        $from = static fn (string $text): array => [($up[$text]->points[0][0] - $up['b']->points[0][0]) / Units::POINT, ($up[$text]->points[0][1] - $up['b']->points[0][1]) / Units::POINT];
+        $this->assertEqualsWithDelta([9.680 - 27.0, 46.104 - 18.0], $from('H'), 0.2);
+        // Within the 0.3 points by which this line's tail ends nearer a than dot's does.
+        $this->assertEqualsWithDelta([44.321 - 27.0, 61.697 - 18.0], $from('T'), 0.35);
+
+        // dot 16.1.0 sets XXXX, 10 points out, where YYYY's first corner would overlap it, so YYYY
+        // goes right of its end at (90.203, 36.104), a at 63: to (92.120, 44.703); 40 points out,
+        // XXXX leaves that corner clear.
+        $source = 'digraph { node [shape=box, fixedsize=true, width=0.75, height=0.5]; a -> b [taillabel="XXXX", labelangle=-90, labeldistance=%d]; a -> c [taillabel="YYYY"]; }';
+        $near = self::byText(self::draw(\sprintf($source, 1)));
+        $far = self::byText(self::draw(\sprintf($source, 4)));
+        $this->assertGreaterThan($near['a']->points[0][0], $near['YYYY']->points[0][0]);
+        $this->assertLessThan($far['a']->points[0][0], $far['YYYY']->points[0][0]);
+    }
+
     public function testEndLabelsAreSetByTheNodeTheirEdgeReaches(): void
     {
         // dot 16.1.0 sets BBBB at (35.425, 63.297), left of its end at (54.101, 71.697), and

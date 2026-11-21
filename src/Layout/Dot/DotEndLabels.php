@@ -17,12 +17,14 @@ use Janalis\Viz\Model\Direction;
  * overlaps least, the first of those tied. They are set in the order `dot` sets them, which the
  * caller gives: node by node in the order the nodes were made, and at each node its edges out
  * by the node they reach, in the order the nodes were made, then in the order they were
- * written, each edge's tail label before its head label.
+ * written, each edge's tail label before its head label. A label whose centre is given, as one
+ * set by `labelangle` or `labeldistance`, stands there whatever it overlaps, and those set after
+ * it keep clear of it.
  */
 final class DotEndLabels
 {
     /**
-     * @param list<array{array{float, float}, array{float, float}}> $labels each label's end of the line and its size, in the order `dot` sets them: by the node its edge leaves, then by the node it reaches, both in the order the nodes were made, then by edge in the order written, the tail's before the head's
+     * @param list<array{0: array{float, float}, 1: array{float, float}, 2?: ?array{float, float}}> $labels each label's end of the line, its size, and the centre it is set at whatever it overlaps, where fixed; in the order `dot` sets them: by the node its edge leaves, then by the node it reaches, both in the order the nodes were made, then by edge in the order written, the tail's before the head's
      * @param list<array{float, float, float, float}> $obstacles the nodes' and the edges' labels' boxes
      * @return list<array{float, float, float, float}> each label's box, in the order given
      */
@@ -31,7 +33,13 @@ final class DotEndLabels
         $boxes = [];
         $ends = \array_map(static fn (array $label): array => $label[0], $labels);
         $places = self::places($direction);
-        foreach ($labels as $index => [[$x, $y], [$width, $height]]) {
+        foreach ($labels as $index => $label) {
+            [[$x, $y], [$width, $height]] = $label;
+            $fixed = $label[2] ?? null;
+            if (null !== $fixed) {
+                $boxes[] = [$fixed[0] - ($width / 2), $fixed[1] - ($height / 2), $fixed[0] + ($width / 2), $fixed[1] + ($height / 2)];
+                continue;
+            }
             $others = [...$obstacles, ...$boxes];
             $best = null;
             foreach ($places as [$across, $down]) {
@@ -48,6 +56,52 @@ final class DotEndLabels
         }
 
         return $boxes;
+    }
+
+    /**
+     * Labels centred off their ends as `labelangle` and `labeldistance` set them, as DOT
+     * documents and as measured on dot's output: 10 points times the distance (0 to 100) from
+     * the end, turned by the angle, in degrees counter-clockwise as laid out top-down, so
+     * clockwise laid out bottom up or right to left, from the way the line leaves the end.
+     *
+     * @template T of array-key
+     * @param array<T, array{array{float, float}, array{float, float}}> $ways each end and the unit way its line leaves it
+     * @return array<T, array{float, float}> each label's centre
+     */
+    public static function polar(array $ways, float $degrees, float $distance, Direction $direction): array
+    {
+        $angle = (\in_array($direction, [Direction::BottomTop, Direction::RightLeft], strict: true) ? -1 : 1) * \deg2rad($degrees);
+        $reach = 10 * \max(0.0, \min(100.0, $distance));
+
+        return \array_map(static fn (array $way): array => [
+            $way[0][0] + ($reach * (($way[1][0] * \cos($angle)) + ($way[1][1] * \sin($angle)))),
+            $way[0][1] + ($reach * (($way[1][1] * \cos($angle)) - ($way[1][0] * \sin($angle)))),
+        ], $ways);
+    }
+
+    /**
+     * Where a path starts and the way it leaves, as a unit vector: toward its curve a tenth of
+     * the way along the curve's first piece, where its control points start there, as measured
+     * on dot's output, else toward its next point; down where it does not move.
+     *
+     * @param list<array{float, float}> $path
+     * @param list<array{float, float}> $controls the path's curve, from the same end, where known
+     * @return array{array{float, float}, array{float, float}}
+     */
+    public static function way(array $path, array $controls): array
+    {
+        [$x, $y] = $path[0];
+        $next = \array_find($path, static fn (array $point): bool => \hypot($point[0] - $x, $point[1] - $y) > 0.01) ?? [$x, $y + 1];
+        if (\count($controls) >= 4 && \hypot($controls[0][0] - $x, $controls[0][1] - $y) < 0.5) {
+            [$a, $b, $c, $d] = $controls;
+            $next = [
+                (0.729 * $a[0]) + (0.243 * $b[0]) + (0.027 * $c[0]) + (0.001 * $d[0]),
+                (0.729 * $a[1]) + (0.243 * $b[1]) + (0.027 * $c[1]) + (0.001 * $d[1]),
+            ];
+        }
+        $length = \hypot($next[0] - $x, $next[1] - $y);
+
+        return [[$x, $y], [($next[0] - $x) / $length, ($next[1] - $y) / $length]];
     }
 
     /**

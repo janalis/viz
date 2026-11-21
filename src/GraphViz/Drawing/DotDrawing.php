@@ -209,7 +209,7 @@ final class DotDrawing
         if ([] === $pieces) {
             return;
         }
-        $this->endLabels($index, $edge, self::joined($pieces));
+        $this->endLabels($index, $edge);
         $colors = DotStrokes::ends($edge->attribute('color'));
         $penWidth = self::penWidth($edge->attribute('penwidth'), $styles);
         $size = \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0)));
@@ -398,19 +398,19 @@ final class DotDrawing
                 [$width, $height] = $text->size();
                 $obstacles[] = [$x - ($width / 2), $y - ($height / 2), $x + ($width / 2), $y + ($height / 2)];
             }
-            $explicit = '' !== $edge->attribute('labelangle') || '' !== $edge->attribute('labeldistance');
-            $pieces = \array_key_exists('invis', self::styles($edge->attribute('style'))) || $explicit ? [] : $this->pieces($index, $edge, $splines);
+            $pieces = \array_key_exists('invis', self::styles($edge->attribute('style'))) ? [] : $this->pieces($index, $edge, $splines);
             if ([] === $pieces) {
                 continue;
             }
             // As `dot`, from where the line ends: at its arrowhead's tip, not short of it.
             $points = self::joined($pieces);
+            $polar = '' !== $edge->attribute('labelangle') || '' !== $edge->attribute('labeldistance') ? $this->polar($index, $edge, $pieces) : [];
             foreach (['taillabel' => $points[0], 'headlabel' => $points[\count($points) - 1]] as $attribute => $end) {
                 $label = DotNodes::endText($this->graph, $edge, $attribute);
                 if ($label->empty()) {
                     continue;
                 }
-                $labels[] = [$end, $label->size()];
+                $labels[] = [$end, $label->size(), $polar[$attribute] ?? null];
                 $owners[] = [$index, $attribute, [$made[$edge->tail] ?? \count($made), $made[$edge->head] ?? \count($made), $index]];
             }
         }
@@ -428,46 +428,42 @@ final class DotDrawing
     }
 
     /**
-     * An edge's head and tail labels by its ends. Where `labelangle` or `labeldistance` is set,
-     * as DOT documents: 10 points times the distance from the end, turned by the angle, in
-     * degrees counter-clockwise, from the edge's direction there. Otherwise where `endPlaces()`
-     * set them, as dot sets them by default.
-     *
-     * @param list<array{float, float}> $points the edge's path, tail to head, clipped at its ends
+     * An edge's head and tail labels, where `endPlaces()` set them.
      */
-    private function endLabels(int $index, DotEdge $edge, array $points): void
+    private function endLabels(int $index, DotEdge $edge): void
     {
-        $explicit = '' !== $edge->attribute('labelangle') || '' !== $edge->attribute('labeldistance');
-        $angle = \deg2rad(DotNodes::number($edge->attribute('labelangle'), -25.0));
-        $distance = 10 * \max(0.0, \min(100.0, DotNodes::number($edge->attribute('labeldistance'), 1.0)));
-        foreach (['headlabel' => \array_reverse($points), 'taillabel' => $points] as $attribute => $path) {
+        foreach (['headlabel', 'taillabel'] as $attribute) {
             $text = DotNodes::endText($this->graph, $edge, $attribute);
-            if ($text->empty()) {
-                continue;
-            }
-            if (!$explicit) {
+            if (!$text->empty()) {
                 $this->beside($text, ...$this->ends[$index][$attribute]);
-                continue;
             }
-            [$x, $y] = $path[0];
-            [$intoX, $intoY] = self::direction($path);
-            $this->beside($text, $x + ($distance * (($intoX * \cos($angle)) + ($intoY * \sin($angle)))), $y + ($distance * (($intoY * \cos($angle)) - ($intoX * \sin($angle)))));
         }
     }
 
     /**
-     * The direction a path runs from its first point, as a unit vector; down where it does not move.
+     * Where an edge with `labelangle` or `labeldistance` set centres its head and tail labels, as
+     * `DotEndLabels::polar()` sets them off each end's way: from an arrowhead's tip back to its
+     * base, else toward its curve.
      *
-     * @param list<array{float, float}> $path
-     * @return array{float, float}
+     * @param list<array{list<array{float, float}>, bool, bool}> $pieces
+     * @return array<string, array{float, float}> each end label's centre, by attribute
      */
-    private static function direction(array $path): array
+    private function polar(int $index, DotEdge $edge, array $pieces): array
     {
-        [$x, $y] = $path[0];
-        [$nextX, $nextY] = \array_find($path, static fn (array $point): bool => \hypot($point[0] - $x, $point[1] - $y) > 0.01) ?? [$x, $y + 1];
-        $length = \hypot($nextX - $x, $nextY - $y);
+        $points = self::joined($pieces);
+        $controls = $this->placement->controls[$index] ?? [];
+        $ways = ['taillabel' => DotEndLabels::way($points, $controls), 'headlabel' => DotEndLabels::way(\array_reverse($points), \array_reverse($controls))];
+        $size = \max(0.1, \min(10.0, DotNodes::number($edge->attribute('arrowsize'), 1.0)));
+        foreach ($this->cut($edge, $pieces, $size, self::penWidth($edge->attribute('penwidth'), self::styles($edge->attribute('style')))) as [$end, , $tip, $along]) {
+            $ways[$end.'label'] = [$tip, [-$along[0], -$along[1]]];
+        }
 
-        return [($nextX - $x) / $length, ($nextY - $y) / $length];
+        return DotEndLabels::polar(
+            $ways,
+            DotNodes::number($edge->attribute('labelangle'), -25.0),
+            DotNodes::number($edge->attribute('labeldistance'), 1.0),
+            $this->placement->directions[''] ?? Direction::TopBottom,
+        );
     }
 
     /**
