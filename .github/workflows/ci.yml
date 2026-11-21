@@ -36,15 +36,21 @@ jobs:
       matrix:
         include:
           - name: intl
+            php: '8.5'
             extensions: intl
           - name: polyfill (no intl)
+            php: '8.5'
             extensions: ':intl'
+          # The newest PHP: phpunit fails on deprecations, so this catches the next one.
+          - name: PHP 8.6
+            php: '8.6'
+            extensions: intl
     name: tests (${{ matrix.name }})
     steps:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
+          php-version: ${{ matrix.php }}
           coverage: none
           # php.ini-production compiles assert() out; the invariants are meant to run.
           ini-values: zend.assertions=1
