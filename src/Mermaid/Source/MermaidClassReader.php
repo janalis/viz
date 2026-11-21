@@ -37,7 +37,7 @@ final class MermaidClassReader
         'object' => ClassifierKind::Object,
     ];
 
-    private const string NAMESPACE = 'namespace:';
+    private const string NAMESPACE_PREFIX = 'namespace:';
 
     /**
      * @throws MermaidSyntaxError when the source is not a valid class diagram
@@ -150,7 +150,7 @@ final class MermaidClassReader
             if ($group['parent'] !== $parent) {
                 continue;
             }
-            $path = \substr($id, \strlen(self::NAMESPACE));
+            $path = \substr($id, \strlen(self::NAMESPACE_PREFIX));
             $name = \substr($path, (int) \strrpos('.'.$path, needle: '.'));
             $packages[] = new Package($path, $group['label'] === $name ? '' : $group['label'], $owners[$id] ?? [], self::packages($diagram, $owners, $id));
         }

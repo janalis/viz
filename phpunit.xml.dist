@@ -4,6 +4,10 @@
          bootstrap="vendor/autoload.php" cacheDirectory=".phpunit.cache"
          failOnWarning="true" failOnRisky="true" failOnDeprecation="true" failOnPhpunitDeprecation="true"
          executionOrder="random">
+    <php>
+        <!-- No limit, as CI runs: the suite peaks above the stock 128M, and past 512M under pcov. -->
+        <ini name="memory_limit" value="-1"/>
+    </php>
     <testsuites>
         <testsuite name="viz">
             <directory>tests</directory>

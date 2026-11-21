@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `symfony/yaml` ^8.1.11 is required, for its advisory on exponential and quadratic parse times (GHSA-hwfg-qwvh-2wfx): Mermaid front matter, initialisation and participant configurations are read with it.
+- PHP 8.6: reading a Mermaid class diagram no longer triggers the deprecation of a class constant called `namespace`.
+
+### Tests
+
+- The suite runs with a stock `php.ini`: it lifts the memory limit, as CI does, where PHPUnit died saving its run history past 128M.
+
 ## 0.2.3 — 2026-11-07
 
 ### Tests
