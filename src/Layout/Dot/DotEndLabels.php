@@ -28,14 +28,16 @@ final class DotEndLabels
     public static function placed(array $labels, array $obstacles, Direction $direction): array
     {
         $boxes = [];
-        foreach (\array_keys($labels) as $index) {
-            [[$x, $y], [$width, $height]] = $labels[$index];
-            $ends = \array_column(\array_diff_key($labels, [$index => true]), 0);
+        $ends = \array_map(static fn (array $label): array => $label[0], $labels);
+        $places = self::places($direction);
+        foreach ($labels as $index => [[$x, $y], [$width, $height]]) {
+            $others = [...$obstacles, ...$boxes];
             $best = null;
-            foreach (self::places($direction) as [$across, $down]) {
+            foreach ($places as [$across, $down]) {
                 $box = [$x + ((($across - 1) * $width) / 2), $y + ((($down - 1) * $height) / 2), $x + ((($across + 1) * $width) / 2), $y + ((($down + 1) * $height) / 2)];
-                $cost = \array_sum(\array_map(static fn (array $other): float => self::overlap($box, $other), [...$obstacles, ...$boxes]));
-                if (0.0 === $cost && !self::holds($box, $ends)) {
+                $cost = \array_sum(\array_map(static fn (array $other): float => self::overlap($box, $other), $others));
+                // Nothing to overlap sums to an int 0, so clear is no overlap at all, not 0.0.
+                if ($cost <= 0.0 && !self::holds($box, $ends, $index)) {
                     $best = [$cost, $box];
                     break;
                 }
@@ -71,14 +73,14 @@ final class DotEndLabels
     }
 
     /**
-     * Whether a box holds any of the given ends strictly inside it, not on its outline.
+     * Whether a box holds any other label's end strictly inside it, not on its outline.
      *
      * @param array{float, float, float, float} $box
-     * @param array<array{float, float}> $ends
+     * @param list<array{float, float}> $ends every label's end, its own at $own
      */
-    private static function holds(array $box, array $ends): bool
+    private static function holds(array $box, array $ends, int $own): bool
     {
-        return \array_any($ends, static fn (array $end): bool => $end[0] > $box[0] && $end[0] < $box[2] && $end[1] > $box[1] && $end[1] < $box[3]);
+        return \array_any($ends, static fn (array $end, int $at): bool => $at !== $own && $end[0] > $box[0] && $end[0] < $box[2] && $end[1] > $box[1] && $end[1] < $box[3]);
     }
 
     /**

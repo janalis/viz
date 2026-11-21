@@ -35,6 +35,14 @@ final class DotEndLabelsTest extends TestCase
         $this->assertSame([[30.0, 40.0, 50.0, 50.0]], DotEndLabels::placed($label, [[0.0, 49.5, 100.0, 100.0]], Direction::TopBottom));
     }
 
+    public function testAnEndInsideACornerTakesItWithNothingElseToOverlap(): void
+    {
+        // The second label's end inside the first's corner above and left, and no obstacle at all.
+        $labels = [[[50.0, 50.0], [20.0, 10.0]], [[45.0, 45.0], [4.0, 4.0]]];
+
+        $this->assertSame([30.0, 50.0, 50.0, 60.0], DotEndLabels::placed($labels, [], Direction::TopBottom)[0]);
+    }
+
     public function testTheCornersTurnWithTheLayout(): void
     {
         $label = [[[50.0, 50.0], [20.0, 10.0]]];

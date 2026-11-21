@@ -413,9 +413,9 @@ final class DotDrawing
                 $owners[] = [$index, $attribute, [$made[$edge->tail] ?? \count($made), $index]];
             }
         }
-        // In the order dot sets them; each edge's tail label is already before its head label.
+        // In the order dot sets them; the sort is stable, so each edge's tail label stays before its head label.
         $order = \array_keys($owners);
-        \usort($order, static fn (int $one, int $other): int => [$owners[$one][2], $one] <=> [$owners[$other][2], $other]);
+        \usort($order, static fn (int $one, int $other): int => $owners[$one][2] <=> $owners[$other][2]);
         [$labels, $owners] = [\array_map(static fn (int $at): array => $labels[$at], $order), \array_map(static fn (int $at): array => $owners[$at], $order)];
         $places = [];
         foreach (DotEndLabels::placed($labels, $obstacles, $this->placement->directions[''] ?? Direction::TopBottom) as $at => [$left, $top, $right, $bottom]) {

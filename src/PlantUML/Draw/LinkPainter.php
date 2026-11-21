@@ -288,6 +288,9 @@ final class LinkPainter
             $node->y + ($node->h / 2),
         ], $placement->graph->nodes));
         [$requests, $texts] = [[], []];
+        // When dot made the node each link starts at, as svek wrote it: the node itself, or the point
+        // svek puts in the group it names; looked up by name among the nodes laid out, which no group's frame is.
+        $made = \array_column(\array_map(static fn (GraphNode $node): array => [$node->name, $node->id], $placement->graph->nodes), 1, 0);
         foreach ($links as [$link, $edge, $label, $size, $shapes, $qualifiers]) {
             $points = self::line($link, $placement, $edge, $shapes);
             $points[0][0] += $qualifiers[0][2] ?? 0.0;
@@ -303,7 +306,7 @@ final class LinkPainter
                 $block = new PlantUmlText(ClassReader::split($text), $size);
                 [$width, $height] = $block->size();
                 $requests[] = [$anchors[$end], [\floor($width), \floor($height)]];
-                $texts[] = [$edge, $end, $block, [self::made($placement, $link->from), (int) ($link->length > 1), $edge, $end]];
+                $texts[] = [$edge, $end, $block, [$made[$link->from] ?? $made[Svek::ANCHOR.$link->from] ?? \PHP_INT_MAX, (int) ($link->length > 1), $edge]];
             }
         }
         \uasort($texts, static fn (array $one, array $other): int => $one[3] <=> $other[3]);
@@ -321,21 +324,6 @@ final class LinkPainter
         }
 
         return \array_map(static fn (array $sides): array => [$sides[0] ?? null, $sides[1] ?? null], $found);
-    }
-
-    /**
-     * When dot made the node a link starts at, as svek wrote it: the node itself, or the point
-     * svek puts in the group it names.
-     */
-    private static function made(Placement $placement, string $id): int
-    {
-        // A node, not a frame standing in for a group, which no node is laid out as.
-        $node = \array_find(
-            [$placement->endpoints[$id] ?? null, $placement->endpoints[Svek::ANCHOR.$id] ?? null],
-            static fn (?GraphNode $node): bool => null !== $node && $node->name === ($placement->graph->nodes[$node->id] ?? null)?->name,
-        );
-
-        return $node->id ?? \PHP_INT_MAX;
     }
 
     /**
