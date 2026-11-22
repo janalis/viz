@@ -643,6 +643,23 @@ final class DotEngineTest extends TestCase
         $this->assertSame($controls[0], $controls[1]);
     }
 
+    public function testTheEdgeBesideALabelKeepsAPointClearOfWhereTheLabelWouldStandAtItsNode(): void
+    {
+        // a -> b with a label 100 wide, then with one 30 wide, nodesep 72: as `dot` draws them, the
+        // first label's node 88 left of a, the label 13 back from it; the second edge bowed round
+        // to 13 right of a, a point past where the first label would stand at its node, its label
+        // lp 29.2 from a.
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 7.2, 21.6), new LayoutNode('b', 'b', 7.2, 21.6)],
+            [new LayoutEdge(0, 'a', 'b', labelWidth: 100, labelHeight: 17), new LayoutEdge(1, 'a', 'b', labelWidth: 30, labelHeight: 17)],
+            [],
+            Direction::TopBottom,
+            new Spacing(36, 72, 4),
+        )));
+
+        $this->assertEqualsWithDelta([-51.0, 29.2], [$placement->labels[0][0] - $placement->endpoints['a']->x, $placement->labels[1][0] - $placement->endpoints['a']->x], 0.5);
+    }
+
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void
     {
         // PlantUML's web --> app : REST, app --> data : SQL, web ..> data : cache, as svek writes it.

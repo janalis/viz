@@ -369,8 +369,9 @@ final class DotSplines
      * them: a node separation, or 5 on the ranks a graph with edge labels puts between its nodes'
      * ranks, where `dot` is seen to let a label follow its line so far; and no further than the clusters they lie in and it does not. A label node keeps the edge
      * on the far side from its label: along the label's near side where the node is pressed against
-     * its neighbour, as `dot` is seen to draw it, else a point past its centre; and its neighbours keep
-     * their room from where its label stands.
+     * its neighbour, as `dot` is seen to draw it, else a point past its centre; and its neighbour on its label's side
+     * keeps a point clear of where its label would stand at the node, not half the room, as `dot` is
+     * seen to bound it.
      *
      * @return array{float, float} left and right
      */
@@ -385,11 +386,11 @@ final class DotSplines
         $half = [] !== $layers->labels && 1 === ($layers->rank[$node] % 2) ? 2.5 : $this->nodeSeparation / 2;
         $previous = $rank[$place - 1] ?? null;
         if (null !== $previous) {
-            $left = \max($this->position->side($previous) + $layers->right[$previous] + $half, $this->apart($previous, $node, side: 1));
+            $left = \max($this->position->x[$previous] + $layers->right[$previous] + $this->clear($previous, $node, $half), $this->apart($previous, $node, side: 1));
         }
         $next = $rank[$place + 1] ?? null;
         if (null !== $next) {
-            $right = \min($this->position->side($next) - $layers->left[$next] - $half, $this->apart($next, $node, side: 0));
+            $right = \min($this->position->x[$next] - $layers->left[$next] - $this->clear($next, $node, $half), $this->apart($next, $node, side: 0));
         }
         $at = $this->position->x[$node];
         if (DotLayers::LABEL === $layers->kind[$node]) {
@@ -399,6 +400,18 @@ final class DotSplines
         }
 
         return [\min($left, $at), \max($right, $at)];
+    }
+
+    /**
+     * How far a neighbour keeps clear of a node's side: a point past a label node's label on its
+     * label's side, as `dot` is seen to keep it; half the room otherwise.
+     */
+    private function clear(int $neighbour, int $node, float $half): float
+    {
+        // Its label faces the node from the left, or from the right mirrored.
+        $facing = $this->place[$neighbour] > $this->place[$node] === $this->layers->mirrored;
+
+        return DotLayers::LABEL === $this->layers->kind[$neighbour] && $facing ? 1.0 : $half;
     }
 
     /**

@@ -13,6 +13,7 @@
 - Graphviz and PlantUML: an edge label between ranks stands just clear of its edge where the edge reaches furthest towards it across the label's rank, as `dot` draws it, not where the edge crosses the label's middle.
 - Graphviz and PlantUML: an edge label whose label node stands against its neighbour on its label's side is drawn, with its edge, back from that neighbour by a quarter of the node separation less 5 points, as `dot` draws it, not at the node.
 - Graphviz and PlantUML: an edge's spline leaves and reaches its nodes' centres along no tangent, passes each split along the bisector of its path with its control 4/9 of its chord out, may leave its ends sideways and bow past the outermost nodes, and splits at the last of corners as far, as `dot` fits it, so it no longer splits on both sides of a label it runs along.
+- Graphviz and PlantUML: an edge beside an edge label keeps a point clear of where the label would stand at its label node, as `dot` bounds it, not half the room between them, nor the label as drawn.
 
 ## 0.2.5 — 2026-11-21
 
