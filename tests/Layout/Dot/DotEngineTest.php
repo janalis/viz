@@ -252,7 +252,7 @@ final class DotEngineTest extends TestCase
     {
         // As dot sets b -> n laid side by side with a -> b, b -> c, a -> c: n just right of b, a's long edge past it.
         $graph = Work::run(new DotParser()->parse('digraph { node [shape=rect,width=0.6,height=0.4,label=""]; b -> n [minlen=0]; a -> b; b -> c; a -> c; }'));
-        $at = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)))->endpoints;
+        $at = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)))->endpoints;
 
         $this->assertEqualsWithDelta([61.0, 55.0, 55.0], [$at['n']->x - $at['b']->x, $at['a']->x - $at['b']->x, $at['c']->x - $at['b']->x], 0.5);
     }
@@ -261,7 +261,7 @@ final class DotEngineTest extends TestCase
     {
         // As dot sets a -> b, a -> c, b -> d side by side: c next to a, then b and d.
         $graph = Work::run(new DotParser()->parse('digraph { node [shape=rect,width=0.6,height=0.4,label=""]; {rank=same; a -> b; a -> c; b -> d;} }'));
-        $at = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)))->endpoints;
+        $at = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)))->endpoints;
 
         $this->assertEqualsWithDelta([61.0, 122.0, 183.0], [$at['c']->x - $at['a']->x, $at['b']->x - $at['a']->x, $at['d']->x - $at['a']->x], 0.5);
     }
@@ -271,7 +271,7 @@ final class DotEngineTest extends TestCase
         // As dot sets a -> c, a -> b side by side, b ordered first: a -> c goes over b, half a rank separation above, the graph as tall as dot makes it.
         foreach (['0.5' => 51.8, '0.833333' => 64.8, '1.5' => 90.2] as $ranksep => $height) {
             $graph = Work::run(new DotParser()->parse('digraph { ranksep='.$ranksep.'; node [shape=rect,width=0.6,height=0.4,label=""]; {rank=same; a -> c; a -> b;} }'));
-            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)));
             $this->assertEqualsWithDelta($height + 8, $placement->graph->height, 1.0, $ranksep);
             $top = \min(\array_column($placement->splines[0], 1));
             $this->assertLessThan($placement->endpoints['b']->y - 14.4, $top, 'over b');
@@ -288,7 +288,7 @@ final class DotEngineTest extends TestCase
                 .$width
                 .',height=0.35]; a -> c [minlen=0]; a -> b [minlen=0]; }',
             ));
-            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)));
             [$first, $control, , $last] = \array_slice($placement->controls[0], offset: 3, length: 4);
             $slope = ($first[1] - $control[1]) / ($control[0] - $first[0]);
             $this->assertEqualsWithDelta($share, (($control[0] - $first[0]) * \hypot(1.0, $slope)) / ($last[0] - $first[0]), 1e-9, (string) $width);
@@ -310,7 +310,7 @@ final class DotEngineTest extends TestCase
                 .$middle
                 .',height=0.35]; a -> c [minlen=0]; a -> b [minlen=0]; }',
             ));
-            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)));
             $controls = $placement->controls[0];
             $this->assertCount($count, $controls, $middle.' '.$head);
             $this->assertEqualsWithDelta($joint, $controls[3][0] - $placement->endpoints['a']->x, 1.0, $middle.' '.$head);
@@ -326,7 +326,7 @@ final class DotEngineTest extends TestCase
                 .$nodesep
                 .'; node [shape=rect,label=""]; a [width=0.77,height=0.667]; c [width=0.84,height=0.35]; b [width=1.11,height=0.35]; a -> c [minlen=0]; a -> b [minlen=0]; }',
             ));
-            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)));
             $b = $placement->endpoints['b']->x;
             $this->assertEqualsWithDelta([-$corner, $corner], [$placement->controls[0][3][0] - $b, $placement->controls[0][6][0] - $b], 1e-6, $nodesep);
         }
@@ -337,7 +337,7 @@ final class DotEngineTest extends TestCase
         // As dot draws a's loop: 12 aside alone on its rank, a quarter of its height; 27 with b a rank below, a quarter of 24 + 60 + 24.
         foreach (['' => 12.0, 'b [width=0.77,height=0.667]; a -> b;' => 27.0] as $more => $bulge) {
             $graph = Work::run(new DotParser()->parse('digraph { ranksep=0.833333; node [shape=rect,label=""]; a [width=0.58,height=0.667]; a -> a; '.$more.' }'));
-            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)));
             $this->assertEqualsWithDelta($bulge, $placement->endpoints['a']->y - $placement->controls[0][2][1], 0.01, $more);
         }
     }
@@ -364,7 +364,7 @@ final class DotEngineTest extends TestCase
     {
         $order = static function (string $body): string {
             $graph = Work::run(new DotParser()->parse('digraph { rankdir=LR; node [shape=rect,label=""]; '.$body.' }'));
-            $at = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)))->endpoints;
+            $at = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)))->endpoints;
             \uasort($at, static fn ($one, $other): int => $one->y <=> $other->y);
 
             return \implode('', \array_keys($at));
@@ -382,7 +382,7 @@ final class DotEngineTest extends TestCase
     {
         $offsets = static function (string $body): array {
             $graph = Work::run(new DotParser()->parse('digraph { nodesep=0.486111; ranksep=0.833333; node [shape=rect,label=""]; '.$body.' }'));
-            $at = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)))->endpoints;
+            $at = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)))->endpoints;
 
             return [$at['c1']->x - $at['p']->x, $at['c2']->x - $at['p']->x];
         };
@@ -497,7 +497,7 @@ final class DotEngineTest extends TestCase
             .$table(width: 34, height: 15)
             .']; }',
         ));
-        $placement = Work::run(new DotEngine()->place(DotLayoutInput::from(
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot(
             $graph,
             static fn ($node): array => DotNodes::size($graph, $node),
             static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
@@ -950,7 +950,7 @@ final class DotEngineTest extends TestCase
     public function testTheDrawingIsBoundedByWhatItDraws(): void
     {
         $graph = Work::run(new DotParser()->parse('digraph { node [shape=box, label=""]; a -> b; a -> c; b -> d; c -> d; a -> d }'));
-        $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)));
 
         // As `dot` bounds it: the long edge round c bulges past it, not as far as the room kept for its chain, out to whole points.
         $this->assertSame([147.0, 188.0], [$placement->graph->width, $placement->graph->height]);
@@ -1000,7 +1000,7 @@ final class DotEngineTest extends TestCase
         $placed = static function (string $source): Placement {
             $graph = Work::run(new DotParser()->parse($source));
 
-            return Work::run(new DotEngine()->place(DotLayoutInput::from($graph, static fn ($node): array => DotNodes::size($graph, $node))));
+            return Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph, static fn ($node): array => DotNodes::size($graph, $node))));
         };
         $boxes = static fn (Placement $placement): array => \array_map(static fn ($box): array => [$box->name, $box->x0, $box->x1], $placement->graph->clusters);
 
@@ -1036,6 +1036,11 @@ final class DotEngineTest extends TestCase
         $this->assertSame([['a', 'x'], ['c', 'f', 'y'], ['b', 'd'], ['e']], $ranks($body));
         // A node with no edges keeps to the top.
         $this->assertSame([['a', 'z'], ['b', 'c', 'd'], ['e']], $ranks('newrank=true; a->b; a->c; a->d; b->e; z'));
+        $this->assertSame([['a', 'z'], ['b', 'c'], ['d']], $ranks('newrank=true; {rank=min; a} a->b; a->c; b->d; c->d; z'), 'a min set\'s bounds are no edges of z\'s');
+        // A cluster holding no node, as written or emptied by a set written before it, leaves the spread on; one a later set empties does not.
+        $this->assertSame([['a', 'x'], ['c', 'f', 'y'], ['b', 'd'], ['e']], $ranks($body.' subgraph cluster_e { subgraph cluster_f { } }'));
+        $this->assertSame([['a', 'g', 'x'], ['c', 'f', 'y'], ['b', 'd'], ['e']], $ranks($body.' {rank=same; g} subgraph cluster_e { g }'));
+        $this->assertSame([['a', 'g', 'x'], ['b', 'c', 'f', 'y'], ['d'], ['e']], $ranks($body.' subgraph cluster_e { g } {rank=same; g}'));
     }
 
     private static function place(array $nodes, array $edges, array $clusters = [], array $owners = [], Direction $direction = Direction::TopBottom): Placement
@@ -1064,7 +1069,7 @@ final class DotEngineTest extends TestCase
     {
         $graph = Work::run(new DotParser()->parse('digraph { node [shape=rect,width=0.6,height=0.4,label=""]; '.$body.' }'));
         $rows = [];
-        $input = DotLayoutInput::from($graph, static fn ($node): array => DotNodes::size($graph, $node), static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size());
+        $input = DotLayoutInput::forDot($graph, static fn ($node): array => DotNodes::size($graph, $node), static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size());
         foreach (Work::run(new DotEngine()->place($input))->endpoints as $id => $node) {
             $rows[(string) $node->y][$id] = $node->x;
         }

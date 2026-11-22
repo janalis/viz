@@ -15,6 +15,7 @@
 - Graphviz and PlantUML: an edge's spline leaves and reaches its nodes' centres along no tangent, passes each split along the bisector of its path with its control 4/9 of its chord out, may leave its ends sideways and bow past the outermost nodes, and splits at the last of corners as far, as `dot` fits it, so it no longer splits on both sides of a label it runs along.
 - Graphviz and PlantUML: an edge beside an edge label keeps a point clear of where the label would stand at its label node, as `dot` bounds it, not half the room between them, nor the label as drawn.
 - Graphviz and PlantUML: an edge routed after an edge label keeps a quarter of the node separation clear of the label where it was drawn, where that is nearer than its label node, as `dot` routes it, so the last of four or more labelled edges between two nodes no longer stands far out.
+- Graphviz: a cluster holding no node no longer keeps the native `dot` layout from spreading nodes over ranks, and under `newrank` a node with no edges stays on the top rank beside a `min` or `max` set, as `dot` ranks them.
 
 ## 0.2.5 — 2026-11-21
 

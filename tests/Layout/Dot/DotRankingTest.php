@@ -98,7 +98,7 @@ final class DotRankingTest extends TestCase
                 $owner ?? \array_fill(0, \max(0, $nodes), -1),
                 $parents,
                 $sets,
-                [] === $parents ? \Janalis\Viz\Layout\Dot\NetworkSimplex::BALANCE_RANKS : 0,
+                [] === $parents ? \Janalis\Viz\Layout\Dot\RankSpread::Components : \Janalis\Viz\Layout\Dot\RankSpread::None,
             )->ranks(),
         );
     }

@@ -133,7 +133,7 @@ final readonly class DotPipeline implements Pipeline
             }
         }
         $engine = self::engine($graph);
-        $input = DotLayoutInput::from(
+        $input = ($engine instanceof DotEngine ? DotLayoutInput::forDot(...) : DotLayoutInput::from(...))(
             $graph,
             static fn (DotNode $node): array => DotNodes::size($graph, $node),
             static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size(),
@@ -144,7 +144,6 @@ final readonly class DotPipeline implements Pipeline
                 $width / 2,
                 $height / 2,
             ])[0],
-            $engine,
         );
         if ('sfdp' === \strtolower($graph->attribute('layout'))) {
             // sfdp lays out as fdp but heeds no clusters, and draws none.

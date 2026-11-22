@@ -50,6 +50,8 @@ final class DotLayers
     public array $parents = [];
     /** @var array<string, array<int, int>> merged chains' trunks, each its virtual node by rank, by the node they leave or reach and the way they run */
     private array $trunks = [];
+    /** @var array<int, true> the clusters holding a real node, at any depth */
+    private array $holding = [];
     /** @var array<string, int> each stretch between neighbouring ranks, by its ends */
     private array $stretches = [];
 
@@ -112,33 +114,52 @@ final class DotLayers
      */
     private function fill(): void
     {
-        $edges = \count($this->edges);
         $held = [];
         foreach ($this->cluster as $node => $cluster) {
             for (; -1 !== $cluster; $cluster = $this->parents[$cluster]) {
                 $held[$cluster][$this->rank[$node]] = true;
+                if (self::REAL === $this->kind[$node]) {
+                    $this->holding[$cluster] = true;
+                }
             }
         }
+        $fillers = [];
         for ($cluster = \count($this->parents) - 1; $cluster >= 0; --$cluster) {
             $ranks = $held[$cluster] ?? [];
             if ([] === $ranks) {
                 continue;
             }
-            for ($rank = \min(\array_keys($ranks)); $rank < \max(\array_keys($ranks)); ++$rank) {
+            $last = \max(\array_keys($ranks));
+            for ($rank = \min(\array_keys($ranks)) + 1; $rank < $last; ++$rank) {
                 if (\array_key_exists($rank, $ranks)) {
                     continue;
                 }
                 $filler = $this->add($rank, self::FILLER, 0.0, 0.0, 0.0, $cluster);
-                $above = \array_values(\array_filter($this->ranks[$rank - 1], fn (int $node): bool => $this->inside($node, $cluster)));
-                $this->link($above[0], $filler, 0, 0.0, 0.0);
+                // A stretch of no weight from the cluster's first node on the rank above, which pulls nothing.
+                $fillers[] = [$this->first($rank - 1, $cluster), $filler, 0, 1, 0.0, 0.0];
                 for ($up = $cluster; -1 !== $up; $up = $this->parents[$up]) {
                     $held[$up][$rank] = true;
                 }
             }
         }
         // Met before the graph's own edges, the fillers keep their cluster ahead of what the
-        // edges reach on their rank, as `dot` is seen to order them.
-        $this->edges = [...\array_slice($this->edges, $edges), ...\array_slice($this->edges, offset: 0, length: $edges)];
+        // edges reach on their rank, as `dot` is seen to order them; the stretches made so far
+        // move along with them.
+        $this->edges = [...$fillers, ...$this->edges];
+        foreach ($this->stretches as $key => $edge) {
+            $this->stretches[$key] = $edge + \count($fillers);
+        }
+    }
+
+    /** The first node of a rank inside a cluster, which holds one there. */
+    private function first(int $rank, int $cluster): int
+    {
+        $index = 0;
+        while (!$this->inside($this->ranks[$rank][$index], $cluster)) {
+            ++$index;
+        }
+
+        return $this->ranks[$rank][$index];
     }
 
     /**
@@ -310,13 +331,7 @@ final class DotLayers
     /** Whether a cluster holds a real node, at any depth. */
     public function holds(int $cluster): bool
     {
-        foreach ($this->kind as $node => $kind) {
-            if (self::REAL === $kind && $this->inside($node, $cluster)) {
-                return true;
-            }
-        }
-
-        return false;
+        return \array_key_exists($cluster, $this->holding);
     }
 
     /** Whether a node sits inside a cluster, at any depth. */

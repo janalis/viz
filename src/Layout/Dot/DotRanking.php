@@ -20,9 +20,6 @@ use Janalis\Viz\Render\Work;
  */
 final class DotRanking
 {
-    /** Spread nodes over ranks across the whole graph at once, not component by component, as dot does under `newrank`. */
-    public const int BALANCE_GRAPH = 3;
-
     /** How much more a soft edge resists pointing backward than stretching. */
     private const int BACK = 10;
 
@@ -47,7 +44,7 @@ final class DotRanking
      * @param list<int> $owner the innermost cluster of each node, -1 for none
      * @param list<int> $parents each cluster's parent cluster, -1 for none; a parent comes before its children
      * @param list<array{RankKind, list<int>}> $sets
-     * @param NetworkSimplex::BALANCE_*|self::BALANCE_GRAPH $balance how a graph without clusters spreads its nodes
+     * @param RankSpread $spread how the top level of a graph without clusters spreads its nodes
      */
     public function __construct(
         private readonly int $nodes,
@@ -55,7 +52,7 @@ final class DotRanking
         array $owner,
         array $parents,
         array $sets = [],
-        private readonly int $balance = NetworkSimplex::BALANCE_RANKS,
+        private readonly RankSpread $spread = RankSpread::Components,
     ) {
         $this->edges = $edges;
         foreach ($owner as $node => $cluster) {
@@ -85,10 +82,12 @@ final class DotRanking
     {
         $nodes = \count($graph->nodes);
         if ($graph->newRank) {
-            return new self($nodes, $edges, \array_fill(0, $nodes, -1), [], $sets, self::BALANCE_GRAPH);
+            return new self($nodes, $edges, \array_fill(0, $nodes, -1), [], $sets, RankSpread::Graph);
         }
+        // A cluster holding no node, as written or emptied by a later rank set, leaves the spread on, as dot is seen to.
+        $clustered = $graph->emptied || [] !== \array_filter($owner, static fn (int $cluster): bool => -1 !== $cluster);
 
-        return new self($nodes, $edges, $owner, $parents, $sets, [] === $graph->clusters ? NetworkSimplex::BALANCE_RANKS : NetworkSimplex::BALANCE_NONE);
+        return new self($nodes, $edges, $owner, $parents, $sets, $clustered ? RankSpread::None : RankSpread::Components);
     }
 
     /**
@@ -169,7 +168,7 @@ final class DotRanking
         [$units, $unitOf, $offset] = $this->units($cluster, $inner);
         [$hard, $soft] = $this->constraints($units, $unitOf, $offset);
         $hard = $this->bounds($units, DotAcyclic::orient(\count($units), $this->extremes($units, $hard)));
-        $balanced = [] === $this->children[$cluster] && -1 === $cluster ? $this->balance : NetworkSimplex::BALANCE_NONE;
+        $balanced = -1 === $cluster ? $this->spread : RankSpread::None;
         $ranks = \in_array(RankUnit::Both, $units, strict: true) ? \array_fill(0, \count($units), value: 0) : $this->solve(\count($units), $hard, $soft, $balanced);
         yield null;
         $result = [];
@@ -216,6 +215,10 @@ final class DotRanking
             $offset[$node] = 0;
         }
         foreach ($inner as $ranks) {
+            // A cluster holding no node stands for nothing, as dot is seen to ignore it.
+            if ([] === $ranks) {
+                continue;
+            }
             $leader = \count($units);
             $units[] = RankUnit::Cluster;
             foreach ($ranks as $node => $rank) {
@@ -353,10 +356,10 @@ final class DotRanking
      *
      * @param list<array{int, int, int, int}> $hard
      * @param list<array{int, int, int, int}> $soft from, to, wanted span, weight
-     * @param NetworkSimplex::BALANCE_*|self::BALANCE_GRAPH $balance
+     * @param RankSpread $balance
      * @return list<int>
      */
-    private function solve(int $units, array $hard, array $soft, int $balance): array
+    private function solve(int $units, array $hard, array $soft, RankSpread $balance): array
     {
         $edges = $hard;
         $count = $units;
@@ -376,14 +379,14 @@ final class DotRanking
                 }
                 $localEdges[] = [$local[$tail], $local[$head], $minlen, $weight];
             }
-            $solved = Work::run(new NetworkSimplex(\count($nodes), $localEdges)->solve(self::BALANCE_GRAPH === $balance ? NetworkSimplex::BALANCE_NONE : $balance));
+            $solved = Work::run(new NetworkSimplex(\count($nodes), $localEdges)->solve(RankSpread::Components === $balance ? NetworkSimplex::BALANCE_RANKS : NetworkSimplex::BALANCE_NONE));
             $own = \array_map(static fn (int $node): int => $solved[$local[$node]], \array_filter($nodes, static fn (int $node): bool => $node < $units));
             $least = [] === $own ? 0 : \min($own);
             foreach ($nodes as $position => $node) {
                 $ranks[$node] = $solved[$position] - $least;
             }
         }
-        if (self::BALANCE_GRAPH === $balance) {
+        if (RankSpread::Graph === $balance) {
             $ranks = RankBalance::spread($ranks, $edges);
         }
 

@@ -137,9 +137,11 @@ final class DotLayoutInputTest extends TestCase
         $this->assertFalse($input->newRank);
         // fdp, osage and the other layouts keep every node in its cluster, as dot -Kfdp does.
         $source = Work::run(new DotParser()->parse('graph { {rank=same; a; b} subgraph cluster_x {a; c} a--c }'));
-        $kept = DotLayoutInput::from($source, engine: new \Janalis\Viz\Layout\Osage\OsageEngine());
-        $this->assertSame('cluster_x', $kept->nodes[0]->cluster);
-        $this->assertNull(DotLayoutInput::from($source)->nodes[0]->cluster);
+        $this->assertSame('cluster_x', DotLayoutInput::from($source)->nodes[0]->cluster);
+        $this->assertNull(DotLayoutInput::forDot($source)->nodes[0]->cluster);
+        // A set written after the cluster it empties, unlike one written before, leaves dot 16.1.0 ranking cluster by cluster.
+        $this->assertTrue(self::input('digraph { subgraph cluster_e { g } {rank=same; g} }')->emptied);
+        $this->assertFalse(self::input('digraph { {rank=same; g} subgraph cluster_e { g } }')->emptied);
         // A cluster's own rank ties nothing, as dot 16.1.0 draws a above b.
         $this->assertSame([], self::input('digraph { subgraph cluster_a { rank=same; a; b } a->b }')->rankSets);
         // A set written in cluster_y leaves p in cluster_x, which is not inside it, as dot 16.1.0 draws it.
@@ -213,6 +215,6 @@ final class DotLayoutInputTest extends TestCase
 
     private static function input(string $source): LayoutGraph
     {
-        return DotLayoutInput::from(Work::run(new DotParser()->parse($source)));
+        return DotLayoutInput::forDot(Work::run(new DotParser()->parse($source)));
     }
 }

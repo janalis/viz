@@ -8,7 +8,7 @@ namespace Janalis\Viz\Layout\Dot;
 final class RankBalance
 {
     /**
-     * Moves each node with edges and as much weight in as out to the feasible rank holding the
+     * Moves each node with weighted edges and as much weight in as out to the feasible rank holding the
      * fewest nodes, node by node, as the paper balances ranks.
      *
      * @param list<int> $values each node's rank
@@ -19,9 +19,14 @@ final class RankBalance
     {
         $in = \array_fill(0, \count($values), []);
         $out = \array_fill(0, \count($values), []);
+        $weighted = [];
         foreach ($edges as $edge) {
             $out[$edge[0]][] = $edge;
             $in[$edge[1]][] = $edge;
+            if ($edge[3] > 0) {
+                $weighted[$edge[0]] = true;
+                $weighted[$edge[1]] = true;
+            }
         }
         $counts = [];
         foreach ($values as $value) {
@@ -41,8 +46,8 @@ final class RankBalance
                 $weightOut += $weight;
                 $high = \min($high, $values[$head] - $minlen);
             }
-            // A node with no edges keeps its rank, as `dot` is seen to keep it.
-            if ($weightIn !== $weightOut || [] === [...$in[$node], ...$out[$node]]) {
+            // A node with no edges keeps its rank, as `dot` is seen to keep it; edges of no weight, as a rank set's bounds, do not count.
+            if ($weightIn !== $weightOut || !\array_key_exists($node, $weighted)) {
                 continue;
             }
             $best = $values[$node];

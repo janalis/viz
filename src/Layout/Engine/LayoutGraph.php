@@ -37,5 +37,7 @@ final readonly class LayoutGraph
         public bool $concentrate = false,
         /** Whether ranks are set across clusters at once, as dot's `newrank`, rather than cluster by cluster. */
         public bool $newRank = false,
+        /** Whether a rank set took a node out of a cluster written before it, which dot is seen to rank cluster by cluster all the same. */
+        public bool $emptied = false,
     ) {}
 }

@@ -10,10 +10,8 @@ use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\GraphViz\Model\DotNode;
 use Janalis\Viz\GraphViz\Model\DotSubgraph;
-use Janalis\Viz\Layout\Dot\DotEngine;
 use Janalis\Viz\Layout\Engine\LayoutCluster;
 use Janalis\Viz\Layout\Engine\LayoutEdge;
-use Janalis\Viz\Layout\Engine\LayoutEngine;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\LayoutNode;
 use Janalis\Viz\Layout\Engine\LayoutRankSet;
@@ -45,16 +43,35 @@ final class DotLayoutInput
      * @param ?\Closure(DotEdge): array{float, float} $labels an edge label's size, in points
      * @param ?\Closure(DotSubgraph): array{float, float} $titles a cluster label's size, in points
      * @param ?\Closure(DotNode, string, float, float): ?array{float, float} $ports where a port puts an edge's end on a node of a width and height, from its centre, in points; null where it names nothing
-     * @param LayoutEngine $engine the layout the input is for: dot's rank sets take their nodes out of clusters
      */
-    public static function from(
-        DotGraph $graph,
-        ?\Closure $measure = null,
-        ?\Closure $labels = null,
-        ?\Closure $titles = null,
-        ?\Closure $ports = null,
-        LayoutEngine $engine = new DotEngine(),
-    ): LayoutGraph {
+    public static function from(DotGraph $graph, ?\Closure $measure = null, ?\Closure $labels = null, ?\Closure $titles = null, ?\Closure $ports = null): LayoutGraph
+    {
+        return self::build($graph, $measure, $labels, $titles, $ports, null);
+    }
+
+    /**
+     * The input for the dot layout: as {@see from()}, but a node in a rank set leaves any cluster
+     * inside the one the set is written in, as `dot` is seen to rank and draw it there.
+     *
+     * @param ?\Closure(DotNode): array{float, float} $measure
+     * @param ?\Closure(DotEdge): array{float, float} $labels
+     * @param ?\Closure(DotSubgraph): array{float, float} $titles
+     * @param ?\Closure(DotNode, string, float, float): ?array{float, float} $ports
+     */
+    public static function forDot(DotGraph $graph, ?\Closure $measure = null, ?\Closure $labels = null, ?\Closure $titles = null, ?\Closure $ports = null): LayoutGraph
+    {
+        return self::build($graph, $measure, $labels, $titles, $ports, self::lifted(...));
+    }
+
+    /**
+     * @param ?\Closure(DotNode): array{float, float} $measure
+     * @param ?\Closure(DotEdge): array{float, float} $labels
+     * @param ?\Closure(DotSubgraph): array{float, float} $titles
+     * @param ?\Closure(DotNode, string, float, float): ?array{float, float} $ports
+     * @param ?\Closure(list<LayoutCluster>, array<string, string>, list<array{?string, list<string>, int}>): array{array<string, string>, bool} $lift how rank sets move nodes between clusters, null for not at all
+     */
+    private static function build(DotGraph $graph, ?\Closure $measure, ?\Closure $labels, ?\Closure $titles, ?\Closure $ports, ?\Closure $lift): LayoutGraph
+    {
         $sizes = [];
         $nodes = [];
         $clusterOf = [];
@@ -64,7 +81,10 @@ final class DotLayoutInput
         self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf, $titles, $written);
         // With `newrank`, dot is seen to rank across clusters and leave every node in its own.
         $newRank = \in_array(\strtolower($graph->attribute('newrank')), ['true', 'yes', '1'], strict: true);
-        $clusterOf = $newRank || !$engine instanceof DotEngine ? $clusterOf : self::lifted($clusters, $clusterOf, $written);
+        $emptied = false;
+        if (!$newRank && null !== $lift) {
+            [$clusterOf, $emptied] = $lift($clusters, $clusterOf, $written);
+        }
         $order = 0;
         foreach ($graph->nodes as $node) {
             // The node's own name: its key in the list is a number where the name is one.
@@ -139,6 +159,7 @@ final class DotLayoutInput
             aspect: self::aspect($graph),
             concentrate: \in_array(\strtolower($graph->attribute('concentrate')), ['true', 'yes', '1'], strict: true),
             newRank: $newRank,
+            emptied: $emptied,
         );
     }
 
@@ -193,14 +214,14 @@ final class DotLayoutInput
      * @param list<LayoutCluster> $clusters
      * @param array<string, string> $clusterOf
      * @param ?\Closure(DotSubgraph): array{float, float} $titles
-     * @param list<array{?string, list<string>}> $ranked each rank set met: the cluster it is written in, null at the top, and its nodes
+     * @param list<array{?string, list<string>, int}> $ranked each rank set met: the cluster it is written in, null at the top, its nodes, and how many clusters were made before it
      */
     private static function clusters(DotGraph $graph, array $subgraphs, ?string $parent, ?array $allowed, array &$claimed, array &$clusters, array &$clusterOf, ?\Closure $titles, array &$ranked): void
     {
         foreach ($subgraphs as $subgraph) {
             if (!$subgraph->cluster()) {
                 if (null !== RankKind::tryFrom(\strtolower($subgraph->attribute('rank')))) {
-                    $ranked[] = [$parent, $graph->ordered($subgraph->nodes)];
+                    $ranked[] = [$parent, $graph->ordered($subgraph->nodes), \count($clusters)];
                 }
                 self::clusters($graph, $subgraph->subgraphs, $parent, $allowed, $claimed, $clusters, $clusterOf, $titles, $ranked);
                 continue;
@@ -229,28 +250,33 @@ final class DotLayoutInput
 
     /**
      * Each node's cluster once rank sets have taken theirs: a node in a rank set leaves any
-     * cluster inside the one the set is written in, as `dot` is seen to rank and draw it there.
+     * cluster inside the one the set is written in, as `dot` is seen to rank and draw it there;
+     * and whether any left a cluster written before its set.
      *
      * @param list<LayoutCluster> $clusters
      * @param array<string, string> $clusterOf
-     * @param list<array{?string, list<string>}> $ranked
-     * @return array<string, string>
+     * @param list<array{?string, list<string>, int}> $ranked
+     * @return array{array<string, string>, bool}
      */
     private static function lifted(array $clusters, array $clusterOf, array $ranked): array
     {
         $parents = [];
-        foreach ($clusters as $cluster) {
+        $made = [];
+        foreach ($clusters as $index => $cluster) {
             $parents[$cluster->id] = $cluster->parent;
+            $made[$cluster->id] = $index;
         }
-        foreach ($ranked as [$scope, $nodes]) {
+        $emptied = false;
+        foreach ($ranked as [$scope, $nodes, $before]) {
             foreach ($nodes as $node) {
                 $inside = $clusterOf[$node] ?? null;
                 while (null !== $inside && $inside !== $scope) {
                     $inside = $parents[$inside];
                 }
-                if ($inside !== $scope) {
+                if ($inside !== $scope || $scope === ($clusterOf[$node] ?? null)) {
                     continue;
                 }
+                $emptied = $emptied || $made[$clusterOf[$node]] < $before;
                 if (null === $scope) {
                     unset($clusterOf[$node]);
                     continue;
@@ -259,7 +285,7 @@ final class DotLayoutInput
             }
         }
 
-        return $clusterOf;
+        return [$clusterOf, $emptied];
     }
 
     /** Whether an edge's ends share a `group`, which holds it straight. */

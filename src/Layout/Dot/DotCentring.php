@@ -30,6 +30,7 @@ final readonly class DotCentring
     public function centred(array $values): array
     {
         $layers = $this->layers;
+        // With clusters left alone, no cluster's filler ({@see DotLayers::FILLER}) is ever met here.
         if ([] !== $layers->parents || [] !== $layers->flat) {
             return $values;
         }
