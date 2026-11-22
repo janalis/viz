@@ -39,6 +39,8 @@ final class DotSplines
     private array $half = [];
     /** @var array<int, int> each node's place in its rank */
     private array $place = [];
+    /** @var array<int, float> where each label node's label was drawn, its near side across, once its edge is routed */
+    public array $drawn = [];
 
     public function __construct(
         private readonly DotLayers $layers,
@@ -386,7 +388,7 @@ final class DotSplines
         $half = [] !== $layers->labels && 1 === ($layers->rank[$node] % 2) ? 2.5 : $this->nodeSeparation / 2;
         $previous = $rank[$place - 1] ?? null;
         if (null !== $previous) {
-            $left = \max($this->position->x[$previous] + $layers->right[$previous] + $this->clear($previous, $node, $half), $this->apart($previous, $node, side: 1));
+            $left = \max($this->leftOf($previous, $node, $half), $this->apart($previous, $node, side: 1));
         }
         $next = $rank[$place + 1] ?? null;
         if (null !== $next) {
@@ -406,6 +408,20 @@ final class DotSplines
      * How far a neighbour keeps clear of a node's side: a point past a label node's label on its
      * label's side, as `dot` is seen to keep it; half the room otherwise.
      */
+    /** Where the room beside a node ends on its left, at its neighbour there. */
+    private function leftOf(int $previous, int $node, float $half): float
+    {
+        $bound = $this->position->x[$previous] + $this->layers->right[$previous] + $this->clear($previous, $node, $half);
+        // Where its edge was routed already, no further than a quarter of the node separation, rounded
+        // down, past its label as drawn, as `dot` is seen to route edges one after another; laid out
+        // to be turned, as the node alone, not measured.
+        if (!$this->layers->mirrored && \array_key_exists($previous, $this->drawn)) {
+            $bound = \min($bound, $this->drawn[$previous] + $this->layers->right[$previous] + \floor(\round($this->nodeSeparation) / 4));
+        }
+
+        return $bound;
+    }
+
     private function clear(int $neighbour, int $node, float $half): float
     {
         // Its label faces the node from the left, or from the right mirrored.

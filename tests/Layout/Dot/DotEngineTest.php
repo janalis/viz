@@ -660,6 +660,26 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([-51.0, 29.2], [$placement->labels[0][0] - $placement->endpoints['a']->x, $placement->labels[1][0] - $placement->endpoints['a']->x], 0.5);
     }
 
+    public function testAnEdgeRoutedAfterALabelKeepsAQuarterSeparationClearOfTheLabelAsDrawn(): void
+    {
+        $label = '<<TABLE FIXEDSIZE="TRUE" WIDTH="43" HEIGHT="17"><TR><TD></TD></TR></TABLE>>';
+        $graph = Work::run(new DotParser()->parse(
+            'digraph { nodesep=0.486111; node [shape=box, fixedsize=true, width=0.5, height=0.5, label=""]; '.\str_repeat('a -> b [label='.$label.']; ', times: 4).'}',
+        ));
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::from(
+            $graph,
+            static fn ($node): array => DotNodes::size($graph, $node),
+            static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+        )));
+        $a = $placement->endpoints['a']->x;
+
+        // As `dot` sets four labels 43 wide between the same two nodes: the third drawn 3 right of a,
+        // where its line keeps clear of the second's label node, 39 left of its own; the fourth's line
+        // keeps 8 points, a quarter separation rounded down, clear of the third label as drawn, not
+        // of where it would stand at its node.
+        $this->assertEqualsWithDelta([-105.5, -22.5, 24.7, 77.9], \array_map(static fn (array $at): float => $at[0] - $a, $placement->labels), 0.2);
+    }
+
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void
     {
         // PlantUML's web --> app : REST, app --> data : SQL, web ..> data : cache, as svek writes it.

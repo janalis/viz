@@ -395,6 +395,8 @@ final readonly class DotEngine implements LayoutEngine
             // A line that never reaches the rank leaves the label along its label node's side.
             $across = \array_pad(DotSplines::across($spline, $y - $half, $y + $half), length: 1, value: $position->side($node));
             $x = $layers->mirrored ? \min($across) : \max($across);
+            // The edges routed after it keep clear of the label as drawn.
+            $router->drawn[$node] = $x;
 
             return [$layers->mirrored ? $x - ($layers->left[$node] / 2) : $x + ($layers->right[$node] / 2), $y];
         }
