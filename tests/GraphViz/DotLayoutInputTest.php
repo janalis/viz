@@ -135,6 +135,9 @@ final class DotLayoutInputTest extends TestCase
 
         $this->assertSame(['x' => 'cluster_a', 'z' => 'cluster_b', 'y' => 'cluster_a', 'w' => null], $owners);
         $this->assertFalse($input->newRank);
+        // A set written in cluster_y leaves p in cluster_x, which is not inside it, as dot 16.1.0 draws it.
+        $sibling = self::input('digraph { subgraph cluster_x { p } subgraph cluster_y { q; { rank=same; p; q } } }');
+        $this->assertSame(['cluster_x', 'cluster_y'], [$sibling->nodes[0]->cluster, $sibling->nodes[1]->cluster]);
         // With newrank, dot 16.1.0 draws every node in its own cluster.
         $ranked = self::input('digraph { newrank=true; subgraph cluster_c { w } { rank=same; w } }');
         $this->assertSame([true, 'cluster_c'], [$ranked->newRank, $ranked->nodes[0]->cluster]);
