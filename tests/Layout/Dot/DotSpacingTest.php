@@ -80,7 +80,7 @@ final class DotSpacingTest extends TestCase
         // drawn in towards it as far as the label lets the cluster narrow, unless the edge pulls harder.
         foreach ([0 => [33.0, 34.0], 1 => [41.0, 26.0], 100 => [43.0, 26.0]] as $weight => $expected) {
             $graph = Work::run(new DotParser()->parse('digraph { '.self::NODES.' subgraph cluster_x { a -> b [weight='.$weight.', label='.self::label(16).'] } }'));
-            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())));
             [$cluster, $a] = [$placement->graph->clusters[0], $placement->graph->nodes[0]];
 
             $this->assertEqualsWithDelta($expected, [$a->x - $cluster->x0, $cluster->x1 - $a->x], 0.01, (string) $weight);
@@ -98,7 +98,7 @@ final class DotSpacingTest extends TestCase
     {
         foreach ([59 => 50.4, 100 => 71.9] as $width => $expected) {
             $graph = Work::run(new DotParser()->parse('digraph { '.self::NODES.' a -> b [label='.self::label($width).']; b -> a [label='.self::label(32).'] }'));
-            $labels = Work::run(new DotEngine()->place(DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())))->labels;
+            $labels = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())))->labels;
 
             // As dot sets them: each label node keeping its room, the second label following its line back beside the first.
             $this->assertEqualsWithDelta($expected, $labels[1][0] - $labels[0][0], 2.5, (string) $width);
@@ -110,7 +110,7 @@ final class DotSpacingTest extends TestCase
         // As dot sets them: the label's side 8 inside the cluster, the other half a separation and the label's width, a separation at most.
         foreach ([16 => [41.0, 26.0], 40 => [43.0, 48.0]] as $width => $expected) {
             $graph = Work::run(new DotParser()->parse('digraph { '.self::NODES.' subgraph cluster_x { a -> b [label='.self::label($width).'] } }'));
-            $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())));
             [$cluster, $a] = [$placement->graph->clusters[0], $placement->graph->nodes[0]];
 
             $this->assertEqualsWithDelta($expected, [$a->x - $cluster->x0, $cluster->x1 - $a->x], 0.01, (string) $width);
@@ -183,7 +183,7 @@ final class DotSpacingTest extends TestCase
     private static function across(string $source, array $expected, string $axis): array
     {
         $graph = Work::run(new DotParser()->parse($source));
-        $input = DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size());
+        $input = DotLayoutInput::forDot($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size());
         $at = [];
         foreach (Work::run(new DotEngine()->place($input))->graph->nodes as $node) {
             if (!\array_key_exists($node->name, $expected)) {

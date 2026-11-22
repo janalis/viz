@@ -181,6 +181,6 @@ final class DotSplinesTest extends TestCase
     {
         $graph = Work::run(new DotParser()->parse($source));
 
-        return Work::run(new DotEngine()->place(DotLayoutInput::from($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())));
+        return Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph, labels: static fn (DotEdge $edge): array => DotNodes::edgeText($graph, $edge)->size())));
     }
 }

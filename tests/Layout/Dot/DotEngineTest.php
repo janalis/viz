@@ -666,7 +666,7 @@ final class DotEngineTest extends TestCase
         $graph = Work::run(new DotParser()->parse(
             'digraph { nodesep=0.486111; node [shape=box, fixedsize=true, width=0.5, height=0.5, label=""]; '.\str_repeat('a -> b [label='.$label.']; ', times: 4).'}',
         ));
-        $placement = Work::run(new DotEngine()->place(DotLayoutInput::from(
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot(
             $graph,
             static fn ($node): array => DotNodes::size($graph, $node),
             static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),

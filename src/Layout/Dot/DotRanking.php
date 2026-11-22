@@ -44,7 +44,7 @@ final class DotRanking
      * @param list<int> $owner the innermost cluster of each node, -1 for none
      * @param list<int> $parents each cluster's parent cluster, -1 for none; a parent comes before its children
      * @param list<array{RankKind, list<int>}> $sets
-     * @param RankSpread $spread how the top level of a graph without clusters spreads its nodes
+     * @param RankSpread $spread how the top level spreads its nodes over ranks: none unless asked, as `of()` asks for a graph without clusters
      */
     public function __construct(
         private readonly int $nodes,
@@ -52,7 +52,7 @@ final class DotRanking
         array $owner,
         array $parents,
         array $sets = [],
-        private readonly RankSpread $spread = RankSpread::Components,
+        private readonly RankSpread $spread = RankSpread::None,
     ) {
         $this->edges = $edges;
         foreach ($owner as $node => $cluster) {
@@ -84,7 +84,7 @@ final class DotRanking
         if ($graph->newRank) {
             return new self($nodes, $edges, \array_fill(0, $nodes, -1), [], $sets, RankSpread::Graph);
         }
-        // A cluster holding no node, as written or emptied by a later rank set, leaves the spread on, as dot is seen to.
+        // A cluster written with no node leaves the spread on; one a rank set written after it emptied turns it off, as dot is seen to.
         $clustered = $graph->emptied || [] !== \array_filter($owner, static fn (int $cluster): bool => -1 !== $cluster);
 
         return new self($nodes, $edges, $owner, $parents, $sets, $clustered ? RankSpread::None : RankSpread::Components);

@@ -73,7 +73,7 @@ final class DotParityTest extends TestCase
     private static function native(string $source): array
     {
         $graph = Work::run(new DotParser()->parse($source));
-        $placement = Work::run(new DotEngine()->place(DotLayoutInput::from($graph)));
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot($graph)));
         $centres = [];
         foreach ($placement->graph->nodes as $node) {
             $centres[$node->name] = [$node->x, $node->y];

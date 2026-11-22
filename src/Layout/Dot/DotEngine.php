@@ -318,6 +318,9 @@ final readonly class DotEngine implements LayoutEngine
 
         $pieces = [];
         if ($graph->concentrate) {
+            // Merged runs are routed once every label is drawn: none may keep clear of a label
+            // drawn after its own edge's first route, so they keep their label nodes' room alone.
+            $router->drawn = [];
             foreach (self::pieces($layers, $edgeIndexes) as $original => $runs) {
                 $pieces[$original] = \array_map(static function (array $run) use ($router, $point): array {
                     [$spline, $corners] = $router->route($run[0]);

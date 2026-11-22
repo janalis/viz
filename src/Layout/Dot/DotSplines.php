@@ -404,10 +404,6 @@ final class DotSplines
         return [\min($left, $at), \max($right, $at)];
     }
 
-    /**
-     * How far a neighbour keeps clear of a node's side: a point past a label node's label on its
-     * label's side, as `dot` is seen to keep it; half the room otherwise.
-     */
     /** Where the room beside a node ends on its left, at its neighbour there. */
     private function leftOf(int $previous, int $node, float $half): float
     {
@@ -422,6 +418,10 @@ final class DotSplines
         return $bound;
     }
 
+    /**
+     * How far a neighbour keeps clear of a node's side: a point past a label node's label on its
+     * label's side, as `dot` is seen to keep it; half the room otherwise.
+     */
     private function clear(int $neighbour, int $node, float $half): float
     {
         // Its label faces the node from the left, or from the right mirrored.
@@ -551,7 +551,8 @@ final class DotSplines
         if (\count($points) < 3 && [0.0, 0.0] === $leaving && [0.0, 0.0] === $reaching) {
             return [[$first, self::towards($first, $last, 1 / 3), self::towards($first, $last, 2 / 3), $last]];
         }
-        foreach (self::PULLS as $pull) {
+        // Without a tangent at either end every pull draws the same curve: one try is enough.
+        foreach ([0.0, 0.0] === $leaving && [0.0, 0.0] === $reaching ? [self::PULLS[0]] : self::PULLS as $pull) {
             $reach = $chord * $pull;
             $curve = [$first, [$first[0] + ($leaving[0] * $reach), $first[1] + ($leaving[1] * $reach)], [$last[0] - ($reaching[0] * $reach), $last[1] - ($reaching[1] * $reach)], $last];
             // A straight stretch of the shortest path lies inside, but for rounding.
