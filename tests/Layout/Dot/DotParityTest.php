@@ -21,8 +21,8 @@ use PHPUnit\Framework\TestCase;
 final class DotParityTest extends TestCase
 {
     private const array FLOORS = [
-        'plain' => ['rank' => 0.95, 'order' => 0.35],
-        'clustered' => ['rank' => 0.80, 'order' => 0.20],
+        'plain' => ['rank' => 0.95, 'order' => 0.70],
+        'clustered' => ['rank' => 0.82, 'order' => 0.45],
     ];
 
     public function testRanksAndOrdersFollowDot(): void
