@@ -855,6 +855,22 @@ final class DotEngineTest extends TestCase
         $this->assertSame([198.0, 180.0], $size(Work::run(new DotEngine()->place($graph(Direction::TopBottom, aspect: 0.0)))), 'no aspect at nought');
     }
 
+    public function testARankSetTakesItsNodesOutOfClustersAndNewrankRanksAcrossThemAsDotDoes(): void
+    {
+        $ranks = static fn (string $body): array => \array_map(static function (array $row): array {
+            \sort($row);
+
+            return $row;
+        }, self::rows($body));
+
+        // Each as dot 16.1.0 ranks it. c leaves cluster_x for the set's level, beside b.
+        $this->assertSame([['r'], ['a', 's'], ['b', 'c']], $ranks('r->s; s->b; r->a; a->c; {rank=same; b; c} subgraph cluster_x {a; c}'));
+        // A cycle through a cluster breaks around the cluster, unless newrank ranks the graph at once.
+        $this->assertSame([['n2'], ['n0'], ['n1']], $ranks('n0->n1; n1->n2; n2->n0; subgraph cluster_a {n2}'));
+        $this->assertSame([['n0'], ['n1'], ['n2']], $ranks('newrank=true; n0->n1; n1->n2; n2->n0; subgraph cluster_a {n2}'));
+        $this->assertSame([['r'], ['a', 's'], ['b', 'c']], $ranks('newrank=true; r->s; s->b; r->a; a->c; subgraph cluster_x {a; c} {rank=same; b; c}'));
+    }
+
     private static function place(array $nodes, array $edges, array $clusters = [], array $owners = [], Direction $direction = Direction::TopBottom): Placement
     {
         return Work::run(new DotEngine()->place(new LayoutGraph(

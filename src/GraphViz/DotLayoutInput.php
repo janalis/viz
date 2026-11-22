@@ -51,7 +51,11 @@ final class DotLayoutInput
         $clusterOf = [];
         $clusters = [];
         $claimed = [];
-        self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf, $titles);
+        $ranked = [];
+        self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf, $titles, $ranked);
+        // With `newrank`, dot is seen to rank across clusters and leave every node in its own.
+        $newRank = \in_array(\strtolower($graph->attribute('newrank')), ['true', 'yes', '1'], strict: true);
+        $clusterOf = $newRank ? $clusterOf : self::lifted($clusters, $clusterOf, $ranked);
         $order = 0;
         foreach ($graph->nodes as $node) {
             // The node's own name: its key in the list is a number where the name is one.
@@ -124,6 +128,7 @@ final class DotLayoutInput
             rankSets: $sets,
             aspect: self::aspect($graph),
             concentrate: \in_array(\strtolower($graph->attribute('concentrate')), ['true', 'yes', '1'], strict: true),
+            newRank: $newRank,
         );
     }
 
@@ -178,12 +183,16 @@ final class DotLayoutInput
      * @param list<LayoutCluster> $clusters
      * @param array<string, string> $clusterOf
      * @param ?\Closure(DotSubgraph): array{float, float} $titles
+     * @param list<array{?string, list<string>}> $ranked each rank set met: the cluster it is written in, null at the top, and its nodes
      */
-    private static function clusters(DotGraph $graph, array $subgraphs, ?string $parent, ?array $allowed, array &$claimed, array &$clusters, array &$clusterOf, ?\Closure $titles): void
+    private static function clusters(DotGraph $graph, array $subgraphs, ?string $parent, ?array $allowed, array &$claimed, array &$clusters, array &$clusterOf, ?\Closure $titles, array &$ranked): void
     {
         foreach ($subgraphs as $subgraph) {
             if (!$subgraph->cluster()) {
-                self::clusters($graph, $subgraph->subgraphs, $parent, $allowed, $claimed, $clusters, $clusterOf, $titles);
+                if (null !== RankKind::tryFrom(\strtolower($subgraph->attribute('rank')))) {
+                    $ranked[] = [$parent, $graph->ordered($subgraph->nodes)];
+                }
+                self::clusters($graph, $subgraph->subgraphs, $parent, $allowed, $claimed, $clusters, $clusterOf, $titles, $ranked);
                 continue;
             }
             // dot warns of a cluster name used twice and draws both: each gets an id of its own.
@@ -204,8 +213,43 @@ final class DotLayoutInput
             [$titleWidth, $titleHeight] = null === $titles || '' === $subgraph->attribute('label') ? [0.0, 0.0] : $titles($subgraph);
             $clusters[] = new LayoutCluster($id, $subgraph->attribute('label'), $parent, minWidth: $titleWidth, labelHeight: $titleHeight, order: \count($clusters));
             $inner = [];
-            self::clusters($graph, $subgraph->subgraphs, $id, $members, $inner, $clusters, $clusterOf, $titles);
+            self::clusters($graph, $subgraph->subgraphs, $id, $members, $inner, $clusters, $clusterOf, $titles, $ranked);
         }
+    }
+
+    /**
+     * Each node's cluster once rank sets have taken theirs: a node in a rank set leaves any
+     * cluster inside the one the set is written in, as `dot` is seen to rank and draw it there.
+     *
+     * @param list<LayoutCluster> $clusters
+     * @param array<string, string> $clusterOf
+     * @param list<array{?string, list<string>}> $ranked
+     * @return array<string, string>
+     */
+    private static function lifted(array $clusters, array $clusterOf, array $ranked): array
+    {
+        $parents = [];
+        foreach ($clusters as $cluster) {
+            $parents[$cluster->id] = $cluster->parent;
+        }
+        foreach ($ranked as [$scope, $nodes]) {
+            foreach ($nodes as $node) {
+                $inside = $clusterOf[$node] ?? null;
+                while (null !== $inside && $inside !== $scope) {
+                    $inside = $parents[$inside];
+                }
+                if ($inside !== $scope) {
+                    continue;
+                }
+                if (null === $scope) {
+                    unset($clusterOf[$node]);
+                    continue;
+                }
+                $clusterOf[$node] = $scope;
+            }
+        }
+
+        return $clusterOf;
     }
 
     /** Whether an edge's ends share a `group`, which holds it straight. */

@@ -118,9 +118,26 @@ final class DotLayoutInputTest extends TestCase
         foreach ($input->nodes as $node) {
             $owners[$node->id] = $node->cluster;
         }
-        $this->assertSame(['a' => 'cluster_a', 'b' => 'cluster_b', 'c' => 'cluster_a#1', 'd' => 'cluster_c'], $owners);
+        // As dot 16.1.0 draws it, a and d leave their clusters for the rank set's level, the top.
+        $this->assertSame(['a' => null, 'b' => 'cluster_b', 'c' => 'cluster_a#1', 'd' => null], $owners);
         $this->assertCount(1, $input->rankSets);
         $this->assertSame([RankKind::Same, ['a', 'd']], [$input->rankSets[0]->kind, $input->rankSets[0]->nodes]);
+    }
+
+    public function testANodeInARankSetLeavesTheClustersInsideTheOneTheSetIsWrittenIn(): void
+    {
+        // Measured on dot 16.1.0: x leaves cluster_b for cluster_a, where the set is written; y stays.
+        $input = self::input('digraph { subgraph cluster_a { subgraph cluster_b { x; z } y; { rank=same; x; y } } { rank=same; w } w; subgraph cluster_c { w } }');
+        $owners = [];
+        foreach ($input->nodes as $node) {
+            $owners[$node->id] = $node->cluster;
+        }
+
+        $this->assertSame(['x' => 'cluster_a', 'z' => 'cluster_b', 'y' => 'cluster_a', 'w' => null], $owners);
+        $this->assertFalse($input->newRank);
+        // With newrank, dot 16.1.0 draws every node in its own cluster.
+        $ranked = self::input('digraph { newrank=true; subgraph cluster_c { w } { rank=same; w } }');
+        $this->assertSame([true, 'cluster_c'], [$ranked->newRank, $ranked->nodes[0]->cluster]);
     }
 
     public function testOrderingComesFromTheNodeOrTheGraph(): void

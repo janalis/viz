@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Graphviz: rank sets that share a node land on one rank, every `min` set on the same top rank and every `max` set on the same bottom one, as `dot` ranks them; mixing `source` and `min` sets on one node no longer fails.
+- Graphviz and PlantUML: a cycle is broken through a node's edges in the order their heads were made, so the native `dot` layout turns the same edge up the ranks as `dot`.
+- Graphviz: a node in a rank set written outside its cluster is taken out of the cluster and ranked with the set, as `dot` does.
+- Graphviz: `newrank=true` ranks the whole graph at once, across clusters, as `dot` does.
+
 ## 0.2.5 — 2026-11-21
 
 ### Fixed

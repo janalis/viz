@@ -69,7 +69,10 @@ final readonly class DotEngine implements LayoutEngine
             }
             $sets[] = [$set->kind, $members];
         }
-        $ranking = new DotRanking(\count($graph->nodes), $constraints, $owner, $parents, $sets, [] === $graph->clusters ? NetworkSimplex::BALANCE_RANKS : NetworkSimplex::BALANCE_NONE);
+        // With `newrank`, the whole graph is ranked at once, as if it had no clusters.
+        $ranking = $graph->newRank
+            ? new DotRanking(\count($graph->nodes), $constraints, \array_fill(0, \count($graph->nodes), -1), [], $sets)
+            : new DotRanking(\count($graph->nodes), $constraints, $owner, $parents, $sets, [] === $graph->clusters ? NetworkSimplex::BALANCE_RANKS : NetworkSimplex::BALANCE_NONE);
         $work = $ranking->ranks();
         yield from $work;
         $ranks = $work->getReturn();
