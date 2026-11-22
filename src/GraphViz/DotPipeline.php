@@ -132,6 +132,7 @@ final readonly class DotPipeline implements Pipeline
                 $node->attributes['shape'] ??= 'box';
             }
         }
+        $engine = self::engine($graph);
         $input = DotLayoutInput::from(
             $graph,
             static fn (DotNode $node): array => DotNodes::size($graph, $node),
@@ -143,6 +144,7 @@ final readonly class DotPipeline implements Pipeline
                 $width / 2,
                 $height / 2,
             ])[0],
+            $engine,
         );
         if ('sfdp' === \strtolower($graph->attribute('layout'))) {
             // sfdp lays out as fdp but heeds no clusters, and draws none.
@@ -152,7 +154,7 @@ final readonly class DotPipeline implements Pipeline
                 spacing: $input->spacing,
             );
         }
-        $place = self::engine($graph)->place($input);
+        $place = $engine->place($input);
         yield from $place;
 
         return DotDrawing::draw($graph, $input, $place->getReturn());

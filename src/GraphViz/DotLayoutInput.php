@@ -10,8 +10,10 @@ use Janalis\Viz\GraphViz\Model\DotEdge;
 use Janalis\Viz\GraphViz\Model\DotGraph;
 use Janalis\Viz\GraphViz\Model\DotNode;
 use Janalis\Viz\GraphViz\Model\DotSubgraph;
+use Janalis\Viz\Layout\Dot\DotEngine;
 use Janalis\Viz\Layout\Engine\LayoutCluster;
 use Janalis\Viz\Layout\Engine\LayoutEdge;
+use Janalis\Viz\Layout\Engine\LayoutEngine;
 use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\LayoutNode;
 use Janalis\Viz\Layout\Engine\LayoutRankSet;
@@ -43,19 +45,26 @@ final class DotLayoutInput
      * @param ?\Closure(DotEdge): array{float, float} $labels an edge label's size, in points
      * @param ?\Closure(DotSubgraph): array{float, float} $titles a cluster label's size, in points
      * @param ?\Closure(DotNode, string, float, float): ?array{float, float} $ports where a port puts an edge's end on a node of a width and height, from its centre, in points; null where it names nothing
+     * @param LayoutEngine $engine the layout the input is for: dot's rank sets take their nodes out of clusters
      */
-    public static function from(DotGraph $graph, ?\Closure $measure = null, ?\Closure $labels = null, ?\Closure $titles = null, ?\Closure $ports = null): LayoutGraph
-    {
+    public static function from(
+        DotGraph $graph,
+        ?\Closure $measure = null,
+        ?\Closure $labels = null,
+        ?\Closure $titles = null,
+        ?\Closure $ports = null,
+        LayoutEngine $engine = new DotEngine(),
+    ): LayoutGraph {
         $sizes = [];
         $nodes = [];
         $clusterOf = [];
         $clusters = [];
         $claimed = [];
-        $ranked = [];
-        self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf, $titles, $ranked);
+        $written = [];
+        self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf, $titles, $written);
         // With `newrank`, dot is seen to rank across clusters and leave every node in its own.
         $newRank = \in_array(\strtolower($graph->attribute('newrank')), ['true', 'yes', '1'], strict: true);
-        $clusterOf = $newRank ? $clusterOf : self::lifted($clusters, $clusterOf, $ranked);
+        $clusterOf = $newRank || !$engine instanceof DotEngine ? $clusterOf : self::lifted($clusters, $clusterOf, $written);
         $order = 0;
         foreach ($graph->nodes as $node) {
             // The node's own name: its key in the list is a number where the name is one.
@@ -109,7 +118,8 @@ final class DotLayoutInput
         $sets = [];
         foreach ($graph->allSubgraphs() as $subgraph) {
             $kind = RankKind::tryFrom(\strtolower($subgraph->attribute('rank')));
-            if (null === $kind || [] === $subgraph->nodes) {
+            // As `dot` is seen to, a cluster's own `rank` ties nothing.
+            if (null === $kind || [] === $subgraph->nodes || $subgraph->cluster()) {
                 continue;
             }
             $sets[] = new LayoutRankSet($kind, $graph->ordered($subgraph->nodes));

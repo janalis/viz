@@ -135,6 +135,13 @@ final class DotLayoutInputTest extends TestCase
 
         $this->assertSame(['x' => 'cluster_a', 'z' => 'cluster_b', 'y' => 'cluster_a', 'w' => null], $owners);
         $this->assertFalse($input->newRank);
+        // fdp, osage and the other layouts keep every node in its cluster, as dot -Kfdp does.
+        $source = Work::run(new DotParser()->parse('graph { {rank=same; a; b} subgraph cluster_x {a; c} a--c }'));
+        $kept = DotLayoutInput::from($source, engine: new \Janalis\Viz\Layout\Osage\OsageEngine());
+        $this->assertSame('cluster_x', $kept->nodes[0]->cluster);
+        $this->assertNull(DotLayoutInput::from($source)->nodes[0]->cluster);
+        // A cluster's own rank ties nothing, as dot 16.1.0 draws a above b.
+        $this->assertSame([], self::input('digraph { subgraph cluster_a { rank=same; a; b } a->b }')->rankSets);
         // A set written in cluster_y leaves p in cluster_x, which is not inside it, as dot 16.1.0 draws it.
         $sibling = self::input('digraph { subgraph cluster_x { p } subgraph cluster_y { q; { rank=same; p; q } } }');
         $this->assertSame(['cluster_x', 'cluster_y'], [$sibling->nodes[0]->cluster, $sibling->nodes[1]->cluster]);
