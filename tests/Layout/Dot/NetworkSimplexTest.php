@@ -45,6 +45,13 @@ final class NetworkSimplexTest extends TestCase
         $this->assertSame([], Work::run(new NetworkSimplex(0, [])->solve()));
     }
 
+    public function testRankBalanceMovesOnlyNodesWithEdgesAndEqualPulls(): void
+    {
+        $this->assertSame([], \Janalis\Viz\Layout\Dot\RankBalance::spread([], []));
+        // a → b → c and a → c, with d alone: b may sit on rank 1 only; d keeps rank 0 though rank 2 is emptier.
+        $this->assertSame([0, 1, 2, 0], \Janalis\Viz\Layout\Dot\RankBalance::spread([0, 1, 2, 0], [[0, 1, 1, 1], [1, 2, 1, 1], [0, 2, 1, 1]]));
+    }
+
     public function testSwapsYieldAndALimitStopsThem(): void
     {
         // Rows of spaced nodes, pairs of them pulled together through slack nodes: many swaps.

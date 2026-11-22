@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Janalis\Viz\Layout\Dot;
 
+use Janalis\Viz\Layout\Engine\LayoutGraph;
 use Janalis\Viz\Layout\Engine\RankKind;
 use Janalis\Viz\Render\Work;
 
@@ -19,15 +20,18 @@ use Janalis\Viz\Render\Work;
  */
 final class DotRanking
 {
+    /** Spread nodes over ranks across the whole graph at once, not component by component, as dot does under `newrank`. */
+    public const int BALANCE_GRAPH = 3;
+
     /** How much more a soft edge resists pointing backward than stretching. */
     private const int BACK = 10;
 
     /** @var list<array{int, int, int, int}> tail, head, minlen, weight */
     private readonly array $edges;
-    /** @var list<int> the innermost cluster of each node, -1 at the top level */
-    private readonly array $owner;
     /** @var array<int, list<int>> each cluster's children, the top level under -1 */
     private array $children = [];
+    /** @var array<int, list<int>> the nodes directly inside each cluster, the top level under -1 */
+    private array $members = [];
     /** @var array<int, int> each node in a rank set: the node standing for its merged sets */
     private array $group = [];
     /** @var array<int, RankKind> each merged group's kind: that of the last set merged in */
@@ -43,7 +47,7 @@ final class DotRanking
      * @param list<int> $owner the innermost cluster of each node, -1 for none
      * @param list<int> $parents each cluster's parent cluster, -1 for none; a parent comes before its children
      * @param list<array{RankKind, list<int>}> $sets
-     * @param NetworkSimplex::BALANCE_* $balance how a graph without clusters spreads its nodes
+     * @param NetworkSimplex::BALANCE_*|self::BALANCE_GRAPH $balance how a graph without clusters spreads its nodes
      */
     public function __construct(
         private readonly int $nodes,
@@ -54,7 +58,9 @@ final class DotRanking
         private readonly int $balance = NetworkSimplex::BALANCE_RANKS,
     ) {
         $this->edges = $edges;
-        $this->owner = $owner;
+        foreach ($owner as $node => $cluster) {
+            $this->members[$cluster][] = $node;
+        }
         $this->children[-1] = [];
         foreach ($parents as $index => $parent) {
             $this->children[$parent][] = $index;
@@ -63,6 +69,26 @@ final class DotRanking
         foreach ($sets as [$kind, $members]) {
             $this->merge($kind, $members);
         }
+    }
+
+    /**
+     * A graph's ranking as dot ranks it: cluster by cluster, spreading its nodes over ranks only
+     * where it has no clusters; or, with `newrank`, all at once as if it had none, spread over
+     * the whole graph.
+     *
+     * @param list<array{int, int, int, int}> $edges
+     * @param list<int> $owner
+     * @param list<int> $parents
+     * @param list<array{RankKind, list<int>}> $sets
+     */
+    public static function of(LayoutGraph $graph, array $edges, array $owner, array $parents, array $sets): self
+    {
+        $nodes = \count($graph->nodes);
+        if ($graph->newRank) {
+            return new self($nodes, $edges, \array_fill(0, $nodes, -1), [], $sets, self::BALANCE_GRAPH);
+        }
+
+        return new self($nodes, $edges, $owner, $parents, $sets, [] === $graph->clusters ? NetworkSimplex::BALANCE_RANKS : NetworkSimplex::BALANCE_NONE);
     }
 
     /**
@@ -144,7 +170,7 @@ final class DotRanking
         [$hard, $soft] = $this->constraints($units, $unitOf, $offset);
         $hard = $this->bounds($units, DotAcyclic::orient(\count($units), $this->extremes($units, $hard)));
         $balanced = [] === $this->children[$cluster] && -1 === $cluster ? $this->balance : NetworkSimplex::BALANCE_NONE;
-        $ranks = \in_array('both', $units, strict: true) ? \array_fill(0, \count($units), value: 0) : $this->solve(\count($units), $hard, $soft, $balanced);
+        $ranks = \in_array(RankUnit::Both, $units, strict: true) ? \array_fill(0, \count($units), value: 0) : $this->solve(\count($units), $hard, $soft, $balanced);
         yield null;
         $result = [];
         foreach ($unitOf as $node => $unit) {
@@ -163,27 +189,25 @@ final class DotRanking
      * offset by its rank within the cluster.
      *
      * @param array<int, array<int, int>> $inner each child cluster's relative ranks
-     * @return array{list<string>, array<int, int>, array<int, int>} each unit's kind, and each node's unit and offset
+     * @return array{list<RankUnit>, array<int, int>, array<int, int>} each unit's kind, and each node's unit and offset
      */
     private function units(int $cluster, array $inner): array
     {
+        $members = $this->members[$cluster] ?? [];
         $roots = [];
-        for ($node = 0; $node < $this->nodes; ++$node) {
-            if ($this->owner[$node] !== $cluster || !\array_key_exists($node, $this->group)) {
+        foreach ($members as $node) {
+            if (!\array_key_exists($node, $this->group)) {
                 continue;
             }
             $roots[$node] = $this->find($node);
         }
-        $bands = $this->bands($roots);
+        [$top, $bottom] = $this->bands($roots);
         $units = [];
         $unitOf = [];
         $offset = [];
         $setUnit = [];
-        for ($node = 0; $node < $this->nodes; ++$node) {
-            if ($this->owner[$node] !== $cluster) {
-                continue;
-            }
-            [$key, $kind] = $this->unit($node, $roots[$node] ?? null, $bands);
+        foreach ($members as $node) {
+            [$key, $kind] = $this->unit($node, $roots[$node] ?? null, $top, $bottom);
             if (!\array_key_exists($key, $setUnit)) {
                 $setUnit[$key] = \count($units);
                 $units[] = $kind;
@@ -193,7 +217,7 @@ final class DotRanking
         }
         foreach ($inner as $ranks) {
             $leader = \count($units);
-            $units[] = 'cluster';
+            $units[] = RankUnit::Cluster;
             foreach ($ranks as $node => $rank) {
                 $unitOf[$node] = $leader;
                 $offset[$node] = $rank;
@@ -209,7 +233,7 @@ final class DotRanking
      * at the bottom; a group held at both ends ties the whole scope to one rank.
      *
      * @param array<int, int> $roots each node of the scope in a rank set, and its group
-     * @return array{?string, ?string} the kind of the top unit and of the bottom unit, null for none
+     * @return array{?RankUnit, ?RankUnit} the top unit's kind and the bottom unit's, null for none
      */
     private function bands(array $roots): array
     {
@@ -220,13 +244,13 @@ final class DotRanking
             $high = \array_key_exists($root, $this->top);
             $low = \array_key_exists($root, $this->bottom);
             if ($high && $low) {
-                return ['both', 'both'];
+                return [RankUnit::Both, RankUnit::Both];
             }
             if ($high) {
-                $top = 'source' === $top || RankKind::Source === $kind ? 'source' : 'min';
+                $top = RankUnit::Source === $top || RankKind::Source === $kind ? RankUnit::Source : RankUnit::Min;
             }
             if ($low) {
-                $bottom = 'sink' === $bottom || RankKind::Sink === $kind ? 'sink' : 'max';
+                $bottom = RankUnit::Sink === $bottom || RankKind::Sink === $kind ? RankUnit::Sink : RankUnit::Max;
             }
         }
 
@@ -234,34 +258,27 @@ final class DotRanking
     }
 
     /**
-     * The unit a node of the scope stands for, and its kind.
+     * The unit a node of the scope stands for, by a key the scope's nodes share when they share
+     * the unit, and its kind: every node held at one end shares that end's unit.
      *
-     * @param array{?string, ?string} $bands
-     * @return array{string, string}
+     * @return array{string, RankUnit}
      */
-    private function unit(int $node, ?int $root, array $bands): array
+    private function unit(int $node, ?int $root, ?RankUnit $top, ?RankUnit $bottom): array
     {
-        if (null === $root) {
-            return ['n'.$node, 'node'];
-        }
-        if ('both' === $bands[0]) {
-            return ['both', 'both'];
-        }
-        if (\array_key_exists($root, $this->top)) {
-            return ['top', (string) $bands[0]];
-        }
-        if (\array_key_exists($root, $this->bottom)) {
-            return ['bottom', (string) $bands[1]];
-        }
-
-        return ['g'.$root, 'same'];
+        return match (true) {
+            null === $root => ['node '.$node, RankUnit::Node],
+            RankUnit::Both === $top => ['both', RankUnit::Both],
+            \array_key_exists($root, $this->top) => ['top', $top ?? RankUnit::Min],
+            \array_key_exists($root, $this->bottom) => ['bottom', $bottom ?? RankUnit::Max],
+            default => ['set '.$root, RankUnit::Same],
+        };
     }
 
     /**
      * The scope's edges between units: hard between plain units, soft where a cluster is at
      * either end, as the span its nodes' offsets ask for.
      *
-     * @param list<string> $units
+     * @param list<RankUnit> $units
      * @param array<int, int> $unitOf
      * @param array<int, int> $offset
      * @return array{list<array{int, int, int, int}>, list<array{int, int, int, int}>}
@@ -276,7 +293,7 @@ final class DotRanking
             if (null === $from || null === $to || $from === $to) {
                 continue;
             }
-            if ('cluster' === $units[$from] || 'cluster' === $units[$to]) {
+            if (RankUnit::Cluster === $units[$from] || RankUnit::Cluster === $units[$to]) {
                 $soft[] = [$from, $to, $minlen + $offset[$tail] - $offset[$head], $weight];
                 continue;
             }
@@ -289,17 +306,17 @@ final class DotRanking
     /**
      * Points every edge into a min or source set, and out of a max or sink set, the way the set requires.
      *
-     * @param list<string> $units
+     * @param list<RankUnit> $units
      * @param list<array{int, int, int, int}> $edges
      * @return list<array{int, int, int, int}>
      */
     private function extremes(array $units, array $edges): array
     {
         foreach ($edges as $index => [$tail, $head, $minlen, $weight]) {
-            $wrong = \in_array($units[$head], ['min', 'source'], strict: true) || \in_array($units[$tail], ['max', 'sink'], strict: true);
-            if ($wrong) {
-                $edges[$index] = [$head, $tail, $minlen, $weight];
+            if (!$units[$head]->top() && !$units[$tail]->bottom()) {
+                continue;
             }
+            $edges[$index] = [$head, $tail, $minlen, $weight];
         }
 
         return $edges;
@@ -309,23 +326,21 @@ final class DotRanking
      * Holds min and source sets at the top of the scope and max and sink sets at the bottom, a
      * source or sink alone on its rank.
      *
-     * @param list<string> $units
+     * @param list<RankUnit> $units
      * @param list<array{int, int, int, int}> $edges
      * @return list<array{int, int, int, int}>
      */
     private function bounds(array $units, array $edges): array
     {
         foreach ($units as $set => $kind) {
-            if (!\in_array($kind, ['min', 'source', 'max', 'sink'], strict: true)) {
+            if (!$kind->top() && !$kind->bottom()) {
                 continue;
             }
-            $gap = \in_array($kind, ['source', 'sink'], strict: true) ? 1 : 0;
-            $top = \in_array($kind, ['min', 'source'], strict: true);
             foreach (\array_keys($units) as $other) {
                 if ($other === $set) {
                     continue;
                 }
-                $edges[] = $top ? [$set, $other, $gap, 0] : [$other, $set, $gap, 0];
+                $edges[] = $kind->top() ? [$set, $other, $kind->gap(), 0] : [$other, $set, $kind->gap(), 0];
             }
         }
 
@@ -338,7 +353,7 @@ final class DotRanking
      *
      * @param list<array{int, int, int, int}> $hard
      * @param list<array{int, int, int, int}> $soft from, to, wanted span, weight
-     * @param NetworkSimplex::BALANCE_* $balance
+     * @param NetworkSimplex::BALANCE_*|self::BALANCE_GRAPH $balance
      * @return list<int>
      */
     private function solve(int $units, array $hard, array $soft, int $balance): array
@@ -361,12 +376,15 @@ final class DotRanking
                 }
                 $localEdges[] = [$local[$tail], $local[$head], $minlen, $weight];
             }
-            $solved = Work::run(new NetworkSimplex(\count($nodes), $localEdges)->solve($balance));
+            $solved = Work::run(new NetworkSimplex(\count($nodes), $localEdges)->solve(self::BALANCE_GRAPH === $balance ? NetworkSimplex::BALANCE_NONE : $balance));
             $own = \array_map(static fn (int $node): int => $solved[$local[$node]], \array_filter($nodes, static fn (int $node): bool => $node < $units));
             $least = [] === $own ? 0 : \min($own);
             foreach ($nodes as $position => $node) {
                 $ranks[$node] = $solved[$position] - $least;
             }
+        }
+        if (self::BALANCE_GRAPH === $balance) {
+            $ranks = RankBalance::spread($ranks, $edges);
         }
 
         return \array_slice($ranks, offset: 0, length: $units);

@@ -17,12 +17,14 @@ final class DotLayers
     public const int REAL = 0;
     public const int VIRTUAL = 1;
     public const int LABEL = 2;
+    /** A node of no size holding a cluster's place on a rank where it holds nothing else. */
+    public const int FILLER = 3;
     /** The room a loop keeps on its node's right, besides its label's, as `dot` is seen to keep it whatever its node separation. */
     public const float LOOP = 18.0;
 
     /** @var list<int> each node's rank */
     public array $rank = [];
-    /** @var list<int> REAL, VIRTUAL or LABEL */
+    /** @var list<int> REAL, VIRTUAL, LABEL or FILLER */
     public array $kind = [];
     /** @var list<float> width left of each node's centre */
     public array $left = [];
@@ -100,6 +102,43 @@ final class DotLayers
             };
             $this->paths[$index] = $ranks[$tail] < $ranks[$head] ? $path : \array_reverse($path);
         }
+        $this->fill();
+    }
+
+    /**
+     * Gives each cluster a filler on every rank between its first and last that holds
+     * nothing of it, deepest clusters first, so the cluster spans those ranks too: `dot` is
+     * seen to keep such a rank's other nodes outside the cluster's box.
+     */
+    private function fill(): void
+    {
+        $edges = \count($this->edges);
+        $held = [];
+        foreach ($this->cluster as $node => $cluster) {
+            for (; -1 !== $cluster; $cluster = $this->parents[$cluster]) {
+                $held[$cluster][$this->rank[$node]] = true;
+            }
+        }
+        for ($cluster = \count($this->parents) - 1; $cluster >= 0; --$cluster) {
+            $ranks = $held[$cluster] ?? [];
+            if ([] === $ranks) {
+                continue;
+            }
+            for ($rank = \min(\array_keys($ranks)); $rank < \max(\array_keys($ranks)); ++$rank) {
+                if (\array_key_exists($rank, $ranks)) {
+                    continue;
+                }
+                $filler = $this->add($rank, self::FILLER, 0.0, 0.0, 0.0, $cluster);
+                $above = \array_values(\array_filter($this->ranks[$rank - 1], fn (int $node): bool => $this->inside($node, $cluster)));
+                $this->link($above[0], $filler, 0, 0.0, 0.0);
+                for ($up = $cluster; -1 !== $up; $up = $this->parents[$up]) {
+                    $held[$up][$rank] = true;
+                }
+            }
+        }
+        // Met before the graph's own edges, the fillers keep their cluster ahead of what the
+        // edges reach on their rank, as `dot` is seen to order them.
+        $this->edges = [...\array_slice($this->edges, $edges), ...\array_slice($this->edges, offset: 0, length: $edges)];
     }
 
     /**
@@ -266,6 +305,18 @@ final class DotLayers
         }
 
         return -1;
+    }
+
+    /** Whether a cluster holds a real node, at any depth. */
+    public function holds(int $cluster): bool
+    {
+        foreach ($this->kind as $node => $kind) {
+            if (self::REAL === $kind && $this->inside($node, $cluster)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Whether a node sits inside a cluster, at any depth. */

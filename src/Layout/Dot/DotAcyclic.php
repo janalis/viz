@@ -18,14 +18,7 @@ final class DotAcyclic
      */
     public static function orient(int $nodes, array $edges): array
     {
-        $out = \array_fill(0, \max(0, $nodes), []);
-        foreach ($edges as $index => [$tail]) {
-            $out[$tail][] = $index;
-        }
-        foreach ($out as $tail => $indices) {
-            \usort($indices, static fn (int $a, int $b): int => $edges[$a][1] <=> $edges[$b][1]);
-            $out[$tail] = $indices;
-        }
+        $out = self::outward($nodes, $edges);
         $state = \array_fill(0, \max(0, $nodes), value: 0);
         foreach (self::visitOrder($nodes, $edges) as $root) {
             if (0 !== $state[$root]) {
@@ -69,15 +62,11 @@ final class DotAcyclic
      */
     public static function visitOrder(int $nodes, array $edges): array
     {
-        $out = \array_fill(0, \max(0, $nodes), []);
+        $out = [];
         $in = \array_fill(0, \max(0, $nodes), []);
-        foreach ($edges as [$tail, $head]) {
-            $out[$tail][] = $head;
-        }
-        foreach ($out as $tail => $heads) {
-            \sort($heads);
-            $out[$tail] = $heads;
-            foreach ($heads as $head) {
+        foreach (self::outward($nodes, $edges) as $tail => $indices) {
+            $out[$tail] = \array_map(static fn (int $index): int => $edges[$index][1], $indices);
+            foreach ($out[$tail] as $head) {
                 $in[$head][] = $tail;
             }
         }
@@ -99,5 +88,25 @@ final class DotAcyclic
         }
 
         return $order;
+    }
+
+    /**
+     * Each node's edges out, by index, in the order their heads come, as measured on dot's output.
+     *
+     * @param list<array{int, int, int, int}> $edges
+     * @return list<list<int>>
+     */
+    private static function outward(int $nodes, array $edges): array
+    {
+        $out = \array_fill(0, \max(0, $nodes), []);
+        foreach ($edges as $index => [$tail]) {
+            $out[$tail][] = $index;
+        }
+        foreach ($out as $tail => $indices) {
+            \usort($indices, static fn (int $a, int $b): int => $edges[$a][1] <=> $edges[$b][1]);
+            $out[$tail] = $indices;
+        }
+
+        return $out;
     }
 }

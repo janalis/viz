@@ -871,6 +871,49 @@ final class DotEngineTest extends TestCase
         $this->assertSame([['r'], ['a', 's'], ['b', 'c']], $ranks('newrank=true; r->s; s->b; r->a; a->c; subgraph cluster_x {a; c} {rank=same; b; c}'));
     }
 
+    public function testUnderNewrankAClusterSpansTheRanksItSkipsAndOnlyClustersHoldingNodesAreDrawn(): void
+    {
+        $placed = static function (string $source): Placement {
+            $graph = Work::run(new DotParser()->parse($source));
+
+            return Work::run(new DotEngine()->place(DotLayoutInput::from($graph, static fn ($node): array => DotNodes::size($graph, $node))));
+        };
+        $boxes = static fn (Placement $placement): array => \array_map(static fn ($box): array => [$box->name, $box->x0, $box->x1], $placement->graph->clusters);
+
+        // dot 16.1.0 draws cluster_x from 8 to 78 over all three ranks, a and c at 43 and b at 113, outside it: here 4 points on.
+        $gap = $placed('digraph { newrank=true; a->b->c; subgraph cluster_x {a; c} }');
+        $this->assertSame([['cluster_x', 12.0, 82.0]], $boxes($gap));
+        $this->assertSame([47.0, 117.0, 47.0], [$gap->endpoints['a']->x, $gap->endpoints['b']->x, $gap->endpoints['c']->x]);
+        // Nested, a filler filling its parent's rank as well: dot draws cluster_o from 8 to 94, cluster_i from 16 to 86, b at 129.
+        $nested = $placed('digraph { newrank=true; a->b->c->d; subgraph cluster_o { subgraph cluster_i {a; d} } }');
+        $this->assertSame(
+            [
+                ['cluster_o', 12.0, 98.0],
+                ['cluster_i', 20.0, 90.0],
+            ],
+            $boxes($nested),
+        );
+        $this->assertSame(133.0, $nested->endpoints['b']->x);
+        // dot warns of "removing empty cluster" and draws none, whether emptied by a rank set or empty as written.
+        $this->assertSame([], $boxes($placed('digraph { a; subgraph cluster_x { b } {rank=same; b} subgraph cluster_e { } }')));
+    }
+
+    public function testNewrankSpreadsNodesOverTheRanksOfTheWholeGraphAsDotDoes(): void
+    {
+        $ranks = static fn (string $body): array => \array_map(static function (array $row): array {
+            \sort($row);
+
+            return $row;
+        }, self::rows($body));
+
+        // Each as dot 16.1.0 ranks it: y counts on its rank, so b and f move down; without newrank only b does.
+        $body = 'a->b; a->c; c->d; b->e; d->e; x->y; f; a->f; f->e;';
+        $this->assertSame([['a', 'x'], ['c', 'y'], ['b', 'd', 'f'], ['e']], $ranks('newrank=true; '.$body));
+        $this->assertSame([['a', 'x'], ['c', 'f', 'y'], ['b', 'd'], ['e']], $ranks($body));
+        // A node with no edges keeps to the top.
+        $this->assertSame([['a', 'z'], ['b', 'c', 'd'], ['e']], $ranks('newrank=true; a->b; a->c; a->d; b->e; z'));
+    }
+
     private static function place(array $nodes, array $edges, array $clusters = [], array $owners = [], Direction $direction = Direction::TopBottom): Placement
     {
         return Work::run(new DotEngine()->place(new LayoutGraph(

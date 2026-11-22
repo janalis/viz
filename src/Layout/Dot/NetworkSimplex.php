@@ -512,38 +512,11 @@ final class NetworkSimplex
     /** Moves each node with as much weight in as out to the feasible rank holding the fewest nodes. */
     private function balanceRanks(): void
     {
-        $counts = [];
-        foreach ($this->value as $value) {
-            $counts[$value] = ($counts[$value] ?? 0) + 1;
+        $edges = [];
+        foreach ($this->tails as $edge => $tail) {
+            $edges[] = [$tail, $this->heads[$edge], $this->minlens[$edge], $this->weights[$edge]];
         }
-        $highest = \max(\array_keys($counts));
-        for ($node = 0; $node < $this->nodes; ++$node) {
-            $weightIn = 0;
-            $weightOut = 0;
-            $low = 0;
-            $high = $highest;
-            foreach ($this->in[$node] as $edge) {
-                $weightIn += $this->weights[$edge];
-                $low = \max($low, $this->value[$this->tails[$edge]] + $this->minlens[$edge]);
-            }
-            foreach ($this->out[$node] as $edge) {
-                $weightOut += $this->weights[$edge];
-                $high = \min($high, $this->value[$this->heads[$edge]] - $this->minlens[$edge]);
-            }
-            if ($weightIn !== $weightOut) {
-                continue;
-            }
-            $best = $this->value[$node];
-            for ($rank = $low; $rank <= $high; ++$rank) {
-                $best = ($counts[$rank] ?? 0) < ($counts[$best] ?? 0) ? $rank : $best;
-            }
-            if ($best === $this->value[$node]) {
-                continue;
-            }
-            --$counts[$this->value[$node]];
-            $counts[$best] = ($counts[$best] ?? 0) + 1;
-            $this->value[$node] = $best;
-        }
+        $this->value = RankBalance::spread($this->value, $edges);
     }
 
     /**

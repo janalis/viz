@@ -69,10 +69,7 @@ final readonly class DotEngine implements LayoutEngine
             }
             $sets[] = [$set->kind, $members];
         }
-        // With `newrank`, the whole graph is ranked at once, as if it had no clusters.
-        $ranking = $graph->newRank
-            ? new DotRanking(\count($graph->nodes), $constraints, \array_fill(0, \count($graph->nodes), -1), [], $sets)
-            : new DotRanking(\count($graph->nodes), $constraints, $owner, $parents, $sets, [] === $graph->clusters ? NetworkSimplex::BALANCE_RANKS : NetworkSimplex::BALANCE_NONE);
+        $ranking = DotRanking::of($graph, $constraints, $owner, $parents, $sets);
         $work = $ranking->ranks();
         yield from $work;
         $ranks = $work->getReturn();
@@ -364,6 +361,10 @@ final readonly class DotEngine implements LayoutEngine
         }
         $clusters = [];
         foreach ($graph->clusters as $index => $cluster) {
+            // As `dot`, which warns of "removing empty cluster", a cluster holding no node is not drawn.
+            if (!$layers->holds($index)) {
+                continue;
+            }
             [$left, $top, $right, $bottom] = $position->boxes[$index];
             [$x0, $y0] = $point($left, $top);
             [$x1, $y1] = $point($right, $bottom);
