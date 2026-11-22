@@ -504,11 +504,8 @@ final class DotEngineTest extends TestCase
         )));
         $joint = static fn (int $edge): float => \round($placement->controls[$edge][3][1] - $placement->endpoints['a']->y, precision: 1);
 
-        // As dot splits them, of two corners as far from the chord: the first edge at its label's foot, 70.2,
-        // the second at its head. The first edge now runs along its label's side, between two corners, as
-        // `dot` draws it; its curve to the foot does not fit beside the label's top corner, so it is split
-        // there first, at 53.2, where `dot` fits one curve: a gap in the fitting.
-        $this->assertSame([53.2, 53.2], [$joint(0), $joint(1)]);
+        // As dot splits them, of two corners as far from the chord: the first edge at its label's foot, the second at its head.
+        $this->assertSame([70.2, 53.2], [$joint(0), $joint(1)]);
     }
 
     public function testALabelOverNodesHoldsItsEndsApartAndStandsMidwayBetweenTheirSides(): void
@@ -626,6 +623,26 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta(5.0, $placement->labels[1][1] - $placement->endpoints['c']->y, 0.01);
     }
 
+    public function testACurveLeavesItsEndsAlongNoTangentAndPassesASplitAlongTheBisectorOfItsPath(): void
+    {
+        // a -> b twice, labels 36 and 30 wide, nodesep 35: as `dot` draws the first, round its label
+        // between the label's top and foot, -41 from a, its piece between them bowing to -44.5, its
+        // controls 4/9 of its chord out along the bisectors of the path's way in and way out.
+        $placement = Work::run(new DotEngine()->place(new LayoutGraph(
+            [new LayoutNode('a', 'a', 7.2, 21.6), new LayoutNode('b', 'b', 7.2, 21.6)],
+            [new LayoutEdge(0, 'a', 'b', labelWidth: 36, labelHeight: 17), new LayoutEdge(1, 'a', 'b', labelWidth: 30, labelHeight: 17)],
+            [],
+            Direction::TopBottom,
+            new Spacing(36, 35, 4),
+        )));
+        $a = $placement->endpoints['a'];
+        $controls = \array_map(static fn (array $at): array => [\round($at[0] - $a->x, precision: 1), \round($at[1] - $a->y, precision: 1)], $placement->controls[0]);
+
+        $this->assertSame([[-41.0, 28.8], [-44.5, 35.5], [-44.5, 39.1], [-41.0, 45.8]], \array_slice($controls, offset: 3, length: 4));
+        // Its first piece leaves a's centre along no tangent.
+        $this->assertSame($controls[0], $controls[1]);
+    }
+
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void
     {
         // PlantUML's web --> app : REST, app --> data : SQL, web ..> data : cache, as svek writes it.
@@ -649,9 +666,11 @@ final class DotEngineTest extends TestCase
         }
         [[$ax, $ay], [$bx, $by]] = [$line[$at], $line[$at + 1]];
 
-        // As `dot` sets it: Web's 52 right of App, as they stand, REST's line half way between them on its label's rank.
+        // As `dot` sets it: Web's 52 right of App, as they stand, REST's line half way between them on its
+        // label's rank, straight. Ours bends 2.6 left of it there, round its label node, which stands midway
+        // between them where `dot`'s, its line straight, stands 3 points right at least: a gap.
         $this->assertEqualsWithDelta(52.0, $web->x - $app->x, 1e-9);
-        $this->assertEqualsWithDelta(($web->x + $app->x) / 2, $ax + ((($bx - $ax) * ($y - $ay)) / ($by - $ay)), 2.0);
+        $this->assertEqualsWithDelta((($web->x + $app->x) / 2) - 2.6, $ax + ((($bx - $ax) * ($y - $ay)) / ($by - $ay)), 0.1);
     }
 
     public function testAClusterKeepsItsMarginAndTheGraphKeepsOneAroundIt(): void

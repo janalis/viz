@@ -18,8 +18,14 @@ final class DotSplines
 {
     /** How many straight steps each curve is drawn in. */
     private const int STEPS = 12;
-    /** How far along its tangent each end's control point may stand, as parts of the curve's chord, tried in turn: last, none, a straight line. */
-    private const array PULLS = [0.4, 0.25, 0.12, 0.05, 0.0];
+    /** How many points along a curve are checked inside its corridor: enough that one cutting a corner by a point is caught. */
+    private const int CHECKS = 192;
+    /**
+     * How far along its tangent a control point at a split stands, as parts of the curve's chord,
+     * tried in turn, the last a straight line: four ninths, then half as far, as measured on `dot`'s
+     * curves, whose pieces between two splits stand their controls 4/9 of their chord out.
+     */
+    private const array PULLS = [4 / 9, 2 / 9, 1 / 9, 0.0];
     /** How far apart edges sharing a path run, as parts of the node separation: measured on dot. */
     public const float SPREAD = 0.74;
     /** How far past the narrower end's side an edge of a spread may start. */
@@ -172,7 +178,8 @@ final class DotSplines
         $boxes = $this->corridor($path);
         $points = self::funnel($this->centre($path[0]), $this->centre($path[\count($path) - 1]), self::openings($boxes));
 
-        return [$this->fit($points, self::unit($points[0], $points[1]), self::unit($points[\count($points) - 2], $points[\count($points) - 1]), $boxes), $points];
+        // Its ends leave and reach the nodes' centres along no tangent of their own, as `dot`'s curves are seen to.
+        return [$this->fit($points, [0.0, 0.0], [0.0, 0.0], $boxes), $points];
     }
 
     /**
@@ -237,12 +244,14 @@ final class DotSplines
         $tail = $path[0];
         $open = $this->open($layers->cluster[$tail]) + $this->open($layers->cluster[$path[\count($path) - 1]]);
         $rank = $layers->rank[$tail];
-        $boxes = [[$x[$tail] - $layers->left[$tail], $y[$rank], $x[$tail] + $layers->right[$tail], $y[$rank] + $this->half[$rank]]];
+        // Each end may be left sideways, through the room beside its node on its rank, as `dot`'s curves are seen to leave.
+        [$left, $right] = $this->beside($tail);
+        $boxes = [[$left, $y[$rank], $right, $y[$rank] + $this->half[$rank]]];
         $last = \count($path) - 1;
         for ($index = 1; $index <= $last; ++$index) {
             $node = $path[$index];
             $rank = $layers->rank[$node];
-            [$left, $right] = $index === $last ? [$x[$node] - $layers->left[$node], $x[$node] + $layers->right[$node]] : $this->beside($node);
+            [$left, $right] = $this->beside($node);
             $box = [$left, $y[$rank] - $this->half[$rank], $right, $index === $last ? $y[$rank] : $y[$rank] + $this->half[$rank]];
             \array_push($boxes, ...$this->gap($boxes[\count($boxes) - 1], $box, $open));
             $boxes[] = $box;
@@ -370,8 +379,9 @@ final class DotSplines
         $layers = $this->layers;
         $rank = $layers->ranks[$layers->rank[$node]];
         $place = $this->place[$node];
-        $left = 0.0;
-        $right = $this->position->width;
+        // Past the outermost nodes, a curve may bow as far out as the drawing is wide, as `dot`'s are seen to bow past them.
+        $left = -$this->position->width;
+        $right = 2 * $this->position->width;
         $half = [] !== $layers->labels && 1 === ($layers->rank[$node] % 2) ? 2.5 : $this->nodeSeparation / 2;
         $previous = $rank[$place - 1] ?? null;
         if (null !== $previous) {
@@ -508,6 +518,10 @@ final class DotSplines
         $first = $points[0];
         $last = $points[\count($points) - 1];
         $chord = \hypot($last[0] - $first[0], $last[1] - $first[1]);
+        // A straight stretch between two free ends is drawn with its controls a third of the way along.
+        if (\count($points) < 3 && [0.0, 0.0] === $leaving && [0.0, 0.0] === $reaching) {
+            return [[$first, self::towards($first, $last, 1 / 3), self::towards($first, $last, 2 / 3), $last]];
+        }
         foreach (self::PULLS as $pull) {
             $reach = $chord * $pull;
             $curve = [$first, [$first[0] + ($leaving[0] * $reach), $first[1] + ($leaving[1] * $reach)], [$last[0] - ($reaching[0] * $reach), $last[1] - ($reaching[1] * $reach)], $last];
@@ -523,7 +537,9 @@ final class DotSplines
             [$last[0] - ($reaching[0] * $reach), $last[1] - ($reaching[1] * $reach)],
             $last,
         ]);
-        $tangent = self::unit($points[$split - 1], $points[$split + 1]);
+        // Through the split along the bisector of the path's way in and way out, as `dot`'s curves pass their joints.
+        [$in, $out] = [self::unit($points[$split - 1], $points[$split]), self::unit($points[$split], $points[$split + 1])];
+        $tangent = self::unit([0.0, 0.0], [$in[0] + $out[0], $in[1] + $out[1]]);
 
         return [
             ...$this->fit(\array_slice($points, offset: 0, length: $split + 1), $leaving, $tangent, $boxes),
@@ -533,7 +549,8 @@ final class DotSplines
 
     /**
      * The inner corner furthest from a curve tried along the path, each measured against the
-     * curve where it stands its share of the path's length along, as a curve is fitted to points.
+     * curve where it stands its share of the path's length along, as a curve is fitted to points;
+     * the last of those as far.
      *
      * @param list<array{float, float}> $points
      * @param array{array{float, float}, array{float, float}, array{float, float}, array{float, float}} $curve
@@ -550,7 +567,8 @@ final class DotSplines
         for ($index = 1, $count = \count($points) - 1; $index < $count; ++$index) {
             [$x, $y] = self::at($curve, $lengths[$index] / $total);
             $away = \hypot($points[$index][0] - $x, $points[$index][1] - $y);
-            if ($away > $distance) {
+            // Of corners as far, the last, as `dot` is seen to split.
+            if ($away >= ($distance - 1e-6)) {
                 [$best, $distance] = [$index, $away];
             }
         }
@@ -564,8 +582,8 @@ final class DotSplines
      */
     private static function inside(array $curve, array $boxes): bool
     {
-        for ($step = 1; $step < (2 * self::STEPS); ++$step) {
-            [$x, $y] = self::at($curve, $step / (2 * self::STEPS));
+        for ($step = 1; $step < self::CHECKS; ++$step) {
+            [$x, $y] = self::at($curve, $step / self::CHECKS);
             $within = false;
             foreach ($boxes as [$left, $top, $right, $bottom]) {
                 if ($x < ($left - self::SLACK) || $x > ($right + self::SLACK) || $y < ($top - self::SLACK) || $y > ($bottom + self::SLACK)) {
@@ -595,6 +613,16 @@ final class DotSplines
             (($u ** 3) * $a[0]) + (3 * $u * $u * $t * $b[0]) + (3 * $u * $t * $t * $c[0]) + (($t ** 3) * $d[0]),
             (($u ** 3) * $a[1]) + (3 * $u * $u * $t * $b[1]) + (3 * $u * $t * $t * $c[1]) + (($t ** 3) * $d[1]),
         ];
+    }
+
+    /**
+     * @param array{float, float} $from
+     * @param array{float, float} $to
+     * @return array{float, float}
+     */
+    private static function towards(array $from, array $to, float $share): array
+    {
+        return [$from[0] + (($to[0] - $from[0]) * $share), $from[1] + (($to[1] - $from[1]) * $share)];
     }
 
     /**
