@@ -11,6 +11,7 @@
 - Graphviz: a cluster whose nodes skip a rank still spans it, keeping that rank's other nodes outside its box, as `dot` does.
 - Graphviz: a cluster holding no node is not drawn, as `dot` draws none, and a cluster's own `rank` ties nothing.
 - Graphviz and PlantUML: an edge label between ranks stands just clear of its edge where the edge reaches furthest towards it across the label's rank, as `dot` draws it, not where the edge crosses the label's middle.
+- Graphviz and PlantUML: an edge label whose label node stands against its neighbour on its label's side is drawn, with its edge, back from that neighbour by a quarter of the node separation less 5 points, as `dot` draws it, not at the node.
 
 ## 0.2.5 — 2026-11-21
 

@@ -15,6 +15,8 @@ final class DotPosition
 
     /** @var list<float> each node's x */
     public array $x = [];
+    /** @var array<int, float> how far across from each label node pressed against its neighbour its edge and label's near side stand */
+    public array $sides = [];
     /** @var list<float> each rank's y */
     public array $y = [];
     /** @var list<array{float, float, float, float}> each cluster's box: left, top, right, bottom */
@@ -46,6 +48,7 @@ final class DotPosition
         $work = $horizontal->place();
         yield from $work;
         $this->x = $horizontal->x;
+        $this->sides = $horizontal->sides;
         $this->y = $vertical->y;
         $this->width = $horizontal->width;
         $this->height = $vertical->height;
@@ -53,6 +56,12 @@ final class DotPosition
             [$top, $bottom] = $vertical->boxes[$cluster] ?? [0.0, 0.0];
             $this->boxes[] = [$left, $top, $right, $bottom];
         }
+    }
+
+    /** Where a label node's edge passes across its rank, its label's near side along it. */
+    public function side(int $node): float
+    {
+        return $this->x[$node] + ($this->sides[$node] ?? 0.0);
     }
 
     /**

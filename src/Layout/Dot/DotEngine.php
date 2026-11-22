@@ -392,8 +392,8 @@ final readonly class DotEngine implements LayoutEngine
             $rank = $layers->rank[$node];
             $y = $position->y[$rank];
             $half = \max(\array_map(static fn (int $on): float => $layers->height[$on] / 2, $layers->ranks[$rank]));
-            // A line that never reaches the rank leaves the label at the label node.
-            $across = \array_pad(DotSplines::across($spline, $y - $half, $y + $half), length: 1, value: $position->x[$node]);
+            // A line that never reaches the rank leaves the label along its label node's side.
+            $across = \array_pad(DotSplines::across($spline, $y - $half, $y + $half), length: 1, value: $position->side($node));
             $x = $layers->mirrored ? \min($across) : \max($across);
 
             return [$layers->mirrored ? $x - ($layers->left[$node] / 2) : $x + ($layers->right[$node] / 2), $y];

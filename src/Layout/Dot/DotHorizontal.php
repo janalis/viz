@@ -27,6 +27,8 @@ final class DotHorizontal
 
     /** @var list<float> each node's x */
     public array $x = [];
+    /** @var array<int, float> how far across from each label node pressed against its neighbour its edge and label's near side stand */
+    public array $sides = [];
     /** @var list<array{float, float}> each cluster's left and right */
     public array $boxes = [];
     public float $width = 0.0;
@@ -77,6 +79,7 @@ final class DotHorizontal
         $solved = new NetworkSimplex($this->count, $this->edges, movers: $movers)->solve(NetworkSimplex::BALANCE_SIDES);
         yield from $solved;
         $values = new DotCentring($this->layers, $this->room(...))->centred($solved->getReturn());
+        $this->sides = $this->sides($values);
         // The graph's bounds hold what it draws, its clusters a margin inside, nothing pulling them in: they lie at its extremes.
         $lefts = [];
         $rights = [];
@@ -103,6 +106,40 @@ final class DotHorizontal
     private function room(int $previous, int $node): int
     {
         return self::length($this->apart($previous, $node));
+    }
+
+    /**
+     * How far across from each label node its edge passes, its label's near side along it, as
+     * `dot` is seen to draw them: with its neighbour on its label's side at their least room, a
+     * quarter of the node separation, to the point, less 5 points, rounded down, back from that
+     * neighbour, its label's far side still 10 points past the node; otherwise at the node, where
+     * none is listed. The node itself stands where network simplex sets it, as its neighbours and
+     * its edge's ends show.
+     *
+     * @param list<int> $values
+     * @return array<int, float>
+     */
+    private function sides(array $values): array
+    {
+        $layers = $this->layers;
+        $sides = [];
+        foreach ($layers->ranks as $nodes) {
+            foreach ($nodes as $index => $node) {
+                $next = $nodes[$layers->mirrored ? $index - 1 : $index + 1] ?? null;
+                if (DotLayers::LABEL !== $layers->kind[$node] || null === $next) {
+                    continue;
+                }
+                [$left, $right] = $layers->mirrored ? [$next, $node] : [$node, $next];
+                if (($values[$right] - $values[$left]) !== $this->room($left, $right)) {
+                    continue;
+                }
+                $width = $layers->mirrored ? $layers->left[$node] : $layers->right[$node];
+                $back = \min(\floor((\round($this->nodeSeparation) - 20) / 4), $width - 10);
+                $sides[$node] = $layers->mirrored ? $back : -$back;
+            }
+        }
+
+        return $sides;
     }
 
     /** @param list<int> $nodes one rank, in order */

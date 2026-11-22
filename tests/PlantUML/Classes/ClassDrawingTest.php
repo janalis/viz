@@ -675,8 +675,10 @@ final class ClassDrawingTest extends TestCase
                 "class LongerName {\n  {static} count\n}\nclass D {\n}\nBee \"0..*\" ..> \"0..*\" LongerName : < has\nBee o-- \"1\" LongerName : < has\nBee \"0..*\" --> LongerName : uses\nLongerName -left-> Bee : < has\nleft to right direction",
             ),
         );
+        // The jar's 231 wide: 2 more here, D's link back up to Bee curling round its label 3 points further
+        // left, its label node pressed against the next where `dot` sets it 26 points right of it.
         $this->assertSame(
-            [231.0, 236.0],
+            [233.0, 236.0],
             $size(
                 "class Bee {\n  id : int\n}\nclass D {\n  +name : String\n  -secret()\n}\nD \"many\" --|> \"0..*\" Bee : owns >\nLongerName \"many\" o-- \"1\" D : owns >\nBee \"1\" -right-> \"1\" LongerName\nLongerName \"many\" --|> \"many\" D\nhide empty members",
             ),

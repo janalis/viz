@@ -504,8 +504,11 @@ final class DotEngineTest extends TestCase
         )));
         $joint = static fn (int $edge): float => \round($placement->controls[$edge][3][1] - $placement->endpoints['a']->y, precision: 1);
 
-        // As dot splits them, of two corners as far from the chord: the first edge at its label's foot, the second at its head.
-        $this->assertSame([70.2, 53.2], [$joint(0), $joint(1)]);
+        // As dot splits them, of two corners as far from the chord: the first edge at its label's foot, 70.2,
+        // the second at its head. The first edge now runs along its label's side, between two corners, as
+        // `dot` draws it; its curve to the foot does not fit beside the label's top corner, so it is split
+        // there first, at 53.2, where `dot` fits one curve: a gap in the fitting.
+        $this->assertSame([53.2, 53.2], [$joint(0), $joint(1)]);
     }
 
     public function testALabelOverNodesHoldsItsEndsApartAndStandsMidwayBetweenTheirSides(): void
@@ -577,6 +580,50 @@ final class DotEngineTest extends TestCase
         // from it, meets the top and bottom of the label's rank, not 2.8 points further left where
         // the line crosses the label's middle.
         $this->assertEqualsWithDelta(-6.5, $placement->labels[0][0] - $placement->endpoints['a']->x, 0.5);
+    }
+
+    public function testALabelNodePressedAgainstItsNeighbourDrawsItsEdgeAndLabelBackFromIt(): void
+    {
+        $small = static fn (string $id): LayoutNode => new LayoutNode($id, $id, 7.2, 21.6);
+        $place = static fn (array $nodes, array $edges, float $separation, Direction $direction = Direction::TopBottom): Placement => Work::run(new DotEngine()->place(new LayoutGraph(
+            $nodes,
+            $edges,
+            [],
+            $direction,
+            new Spacing(36, $separation, 4),
+        )));
+
+        // a -> b twice, labels 36 and 30 wide: as `dot` sets the first, its node a separation's
+        // quarter less 5 points, rounded down, left of where network simplex holds it: lp -23 from a
+        // at nodesep 35 (its node 38 left, its edge round it 41 left), -78 at nodesep 108 (86, 108).
+        foreach ([35 => -23.0, 108 => -78.0] as $separation => $expected) {
+            $placement = $place(
+                [$small(id: 'a'), $small(id: 'b')],
+                [new LayoutEdge(0, 'a', 'b', labelWidth: 36, labelHeight: 17), new LayoutEdge(1, 'a', 'b', labelWidth: 30, labelHeight: 17)],
+                $separation,
+            );
+            $this->assertEqualsWithDelta($expected, $placement->labels[0][0] - $placement->endpoints['a']->x, 0.01, (string) $separation);
+        }
+        // A label 4 wide keeps its far side 10 points past its node: as `dot` sets it, lp -50 from a, b
+        // hanging 58 left of a under its node.
+        $placement = $place(
+            [new LayoutNode('a', 'a', 72, 21.6), $small(id: 'b'), $small(id: 'c')],
+            [new LayoutEdge(0, 'a', 'b', labelWidth: 4, labelHeight: 17), new LayoutEdge(1, 'a', 'c', labelWidth: 30, labelHeight: 17)],
+            separation: 108,
+        );
+        $this->assertEqualsWithDelta([-58.0, -50.0], [$placement->endpoints['b']->x - $placement->endpoints['a']->x, $placement->labels[0][0] - $placement->endpoints['a']->x], 0.01);
+        // Alone on its rank, it stands at its node: as `dot` sets it, lp 18 from a, its edge straight.
+        $placement = $place([$small(id: 'a'), $small(id: 'b')], [new LayoutEdge(0, 'a', 'b', labelWidth: 36, labelHeight: 17)], separation: 35);
+        $this->assertEqualsWithDelta(18.0, $placement->labels[0][0] - $placement->endpoints['a']->x, 0.01);
+        // Laid out left to right, its label on its left, it draws them back the other way: as `dot`
+        // sets a -> c's label 30 high, its middle 5 below c, not 16 above.
+        $placement = $place(
+            [new LayoutNode('a', 'a', 21.6, 72), new LayoutNode('b', 'b', 21.6, 7.2), new LayoutNode('c', 'c', 21.6, 7.2)],
+            [new LayoutEdge(0, 'a', 'b', labelWidth: 30, labelHeight: 60), new LayoutEdge(1, 'a', 'c', labelWidth: 30, labelHeight: 30)],
+            separation: 108,
+            direction: Direction::LeftRight,
+        );
+        $this->assertEqualsWithDelta(5.0, $placement->labels[1][1] - $placement->endpoints['c']->y, 0.01);
     }
 
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void

@@ -359,7 +359,9 @@ final class DotSplines
      * How far across the room beside a virtual node reaches: half the room neighbours keep from
      * them: a node separation, or 5 on the ranks a graph with edge labels puts between its nodes'
      * ranks, where `dot` is seen to let a label follow its line so far; and no further than the clusters they lie in and it does not. A label node keeps the edge
-     * on the far side from its label.
+     * on the far side from its label: along the label's near side where the node is pressed against
+     * its neighbour, as `dot` is seen to draw it, else a point past its centre; and its neighbours keep
+     * their room from where its label stands.
      *
      * @return array{float, float} left and right
      */
@@ -373,18 +375,20 @@ final class DotSplines
         $half = [] !== $layers->labels && 1 === ($layers->rank[$node] % 2) ? 2.5 : $this->nodeSeparation / 2;
         $previous = $rank[$place - 1] ?? null;
         if (null !== $previous) {
-            $left = \max($this->position->x[$previous] + $layers->right[$previous] + $half, $this->apart($previous, $node, side: 1));
+            $left = \max($this->position->side($previous) + $layers->right[$previous] + $half, $this->apart($previous, $node, side: 1));
         }
         $next = $rank[$place + 1] ?? null;
         if (null !== $next) {
-            $right = \min($this->position->x[$next] - $layers->left[$next] - $half, $this->apart($next, $node, side: 0));
+            $right = \min($this->position->side($next) - $layers->left[$next] - $half, $this->apart($next, $node, side: 0));
         }
+        $at = $this->position->x[$node];
         if (DotLayers::LABEL === $layers->kind[$node]) {
             // Its label stands on its right, or its left mirrored: the edge keeps to the other side.
-            [$left, $right] = $layers->mirrored ? [$this->position->x[$node] - $layers->right[$node], $right] : [$left, $this->position->x[$node] + $layers->left[$node]];
+            $at = \array_key_exists($node, $this->position->sides) ? $this->position->side($node) : $at + ($layers->mirrored ? -$layers->right[$node] : $layers->left[$node]);
+            [$left, $right] = $layers->mirrored ? [$at, $right] : [$left, $at];
         }
 
-        return [\min($left, $this->position->x[$node]), \max($right, $this->position->x[$node])];
+        return [\min($left, $at), \max($right, $at)];
     }
 
     /**
