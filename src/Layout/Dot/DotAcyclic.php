@@ -6,8 +6,9 @@ namespace Janalis\Viz\Layout\Dot;
 
 /**
  * Breaks the cycles of a set of constraints the way dot's ranking does: a depth-first search
- * from each node, in the order a search following edges out then in first meets them,
- * reverses every edge it finds pointing back to a node still on its path.
+ * from each node, in the order a search following edges out then in first meets them, takes
+ * a node's edges out in the order their heads come, as measured on dot's output, and reverses
+ * every edge it finds pointing back to a node still on its path.
  */
 final class DotAcyclic
 {
@@ -20,6 +21,10 @@ final class DotAcyclic
         $out = \array_fill(0, \max(0, $nodes), []);
         foreach ($edges as $index => [$tail]) {
             $out[$tail][] = $index;
+        }
+        foreach ($out as $tail => $indices) {
+            \usort($indices, static fn (int $a, int $b): int => $edges[$a][1] <=> $edges[$b][1]);
+            $out[$tail] = $indices;
         }
         $state = \array_fill(0, \max(0, $nodes), value: 0);
         foreach (self::visitOrder($nodes, $edges) as $root) {
@@ -56,7 +61,8 @@ final class DotAcyclic
 
     /**
      * The nodes in the order a depth-first search meets them, from each node in turn,
-     * following edges out then in; a head lists its edges in by the order of their tails.
+     * following edges out then in; a tail lists its edges out by the order of their heads, and
+     * a head its edges in by the order of their tails.
      *
      * @param list<array{int, int, int, int}> $edges
      * @return list<int>
@@ -69,6 +75,8 @@ final class DotAcyclic
             $out[$tail][] = $head;
         }
         foreach ($out as $tail => $heads) {
+            \sort($heads);
+            $out[$tail] = $heads;
             foreach ($heads as $head) {
                 $in[$head][] = $tail;
             }

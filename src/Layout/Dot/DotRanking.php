@@ -11,9 +11,10 @@ use Janalis\Viz\Render\Work;
  * Ranks the nodes of a graph with clusters, as dot does by default. Each cluster is ranked on
  * its own, deepest first, then stands in its parent as one leader node offset by its nodes'
  * ranks; an edge into or out of a cluster becomes a soft constraint through a slack node,
- * which its weight pulls toward the edge's length without ever forbidding a cycle. Nodes in a
- * same-rank set merge into one; a min or source set is held at the top of its scope and a max
- * or sink set at the bottom. Within a scope the hard constraints are made acyclic by
+ * which its weight pulls toward the edge's length without ever forbidding a cycle. Rank sets
+ * sharing a node merge, and the nodes of a merged set into one; every set held at the top of its
+ * scope shares one rank there, as every set held at the bottom does. Within a scope the hard
+ * constraints are made acyclic by
  * {@see DotAcyclic}, then each connected component is ranked by network simplex from zero.
  */
 final class DotRanking
@@ -27,8 +28,14 @@ final class DotRanking
     private readonly array $owner;
     /** @var array<int, list<int>> each cluster's children, the top level under -1 */
     private array $children = [];
-    /** @var array<int, array{RankKind, int}> each node's rank set kind and the set's index */
-    private array $sets = [];
+    /** @var array<int, int> each node in a rank set: the node standing for its merged sets */
+    private array $group = [];
+    /** @var array<int, RankKind> each merged group's kind: that of the last set merged in */
+    private array $kind = [];
+    /** @var array<int, true> the groups any min or source set reached */
+    private array $top = [];
+    /** @var array<int, true> the groups any max or sink set reached */
+    private array $bottom = [];
 
     /**
      * @param non-negative-int $nodes
@@ -53,11 +60,57 @@ final class DotRanking
             $this->children[$parent][] = $index;
             $this->children[$index] ??= [];
         }
-        foreach ($sets as $index => [$kind, $members]) {
-            foreach ($members as $node) {
-                $this->sets[$node] ??= [$kind, $index];
+        foreach ($sets as [$kind, $members]) {
+            $this->merge($kind, $members);
+        }
+    }
+
+    /**
+     * Merges a rank set into the groups it shares a node with, as dot does on its output: sets
+     * that overlap land on one rank, the merged group takes the kind of the last set, and a
+     * group any min or source set reached keeps to the top, one any max or sink set reached to
+     * the bottom.
+     *
+     * @param list<int> $members
+     */
+    private function merge(RankKind $kind, array $members): void
+    {
+        if ([] === $members) {
+            return;
+        }
+        $root = $this->find($members[0]);
+        foreach ($members as $node) {
+            $other = $this->find($node);
+            if ($other === $root) {
+                continue;
+            }
+            $this->group[$other] = $root;
+            if (\array_key_exists($other, $this->top)) {
+                $this->top[$root] = true;
+            }
+            if (\array_key_exists($other, $this->bottom)) {
+                $this->bottom[$root] = true;
             }
         }
+        $this->kind[$root] = $kind;
+        if (RankKind::Min === $kind || RankKind::Source === $kind) {
+            $this->top[$root] = true;
+        }
+        if (RankKind::Max === $kind || RankKind::Sink === $kind) {
+            $this->bottom[$root] = true;
+        }
+    }
+
+    /** The node standing for a node's merged rank sets, the node itself before any set. */
+    private function find(int $node): int
+    {
+        $this->group[$node] ??= $node;
+        while ($this->group[$node] !== $node) {
+            $this->group[$node] = $this->group[$this->group[$node]];
+            $node = $this->group[$node];
+        }
+
+        return $node;
     }
 
     /** @return \Generator<int, null, mixed, list<int>> each node's rank, from zero */
@@ -91,7 +144,7 @@ final class DotRanking
         [$hard, $soft] = $this->constraints($units, $unitOf, $offset);
         $hard = $this->bounds($units, DotAcyclic::orient(\count($units), $this->extremes($units, $hard)));
         $balanced = [] === $this->children[$cluster] && -1 === $cluster ? $this->balance : NetworkSimplex::BALANCE_NONE;
-        $ranks = $this->solve(\count($units), $hard, $soft, $balanced);
+        $ranks = \in_array('both', $units, strict: true) ? \array_fill(0, \count($units), value: 0) : $this->solve(\count($units), $hard, $soft, $balanced);
         yield null;
         $result = [];
         foreach ($unitOf as $node => $unit) {
@@ -114,6 +167,14 @@ final class DotRanking
      */
     private function units(int $cluster, array $inner): array
     {
+        $roots = [];
+        for ($node = 0; $node < $this->nodes; ++$node) {
+            if ($this->owner[$node] !== $cluster || !\array_key_exists($node, $this->group)) {
+                continue;
+            }
+            $roots[$node] = $this->find($node);
+        }
+        $bands = $this->bands($roots);
         $units = [];
         $unitOf = [];
         $offset = [];
@@ -122,11 +183,10 @@ final class DotRanking
             if ($this->owner[$node] !== $cluster) {
                 continue;
             }
-            $set = $this->sets[$node] ?? null;
-            $key = null === $set ? 'n'.$node : 's'.$set[1];
+            [$key, $kind] = $this->unit($node, $roots[$node] ?? null, $bands);
             if (!\array_key_exists($key, $setUnit)) {
                 $setUnit[$key] = \count($units);
-                $units[] = null === $set ? 'node' : $set[0]->value;
+                $units[] = $kind;
             }
             $unitOf[$node] = $setUnit[$key];
             $offset[$node] = 0;
@@ -141,6 +201,60 @@ final class DotRanking
         }
 
         return [$units, $unitOf, $offset];
+    }
+
+    /**
+     * What the merged groups held at the top and at the bottom of a scope become: one unit
+     * for every group at the top, alone there when any of them ends a source set, and likewise
+     * at the bottom; a group held at both ends ties the whole scope to one rank.
+     *
+     * @param array<int, int> $roots each node of the scope in a rank set, and its group
+     * @return array{?string, ?string} the kind of the top unit and of the bottom unit, null for none
+     */
+    private function bands(array $roots): array
+    {
+        $top = null;
+        $bottom = null;
+        foreach ($roots as $root) {
+            $kind = $this->kind[$root];
+            $high = \array_key_exists($root, $this->top);
+            $low = \array_key_exists($root, $this->bottom);
+            if ($high && $low) {
+                return ['both', 'both'];
+            }
+            if ($high) {
+                $top = 'source' === $top || RankKind::Source === $kind ? 'source' : 'min';
+            }
+            if ($low) {
+                $bottom = 'sink' === $bottom || RankKind::Sink === $kind ? 'sink' : 'max';
+            }
+        }
+
+        return [$top, $bottom];
+    }
+
+    /**
+     * The unit a node of the scope stands for, and its kind.
+     *
+     * @param array{?string, ?string} $bands
+     * @return array{string, string}
+     */
+    private function unit(int $node, ?int $root, array $bands): array
+    {
+        if (null === $root) {
+            return ['n'.$node, 'node'];
+        }
+        if ('both' === $bands[0]) {
+            return ['both', 'both'];
+        }
+        if (\array_key_exists($root, $this->top)) {
+            return ['top', (string) $bands[0]];
+        }
+        if (\array_key_exists($root, $this->bottom)) {
+            return ['bottom', (string) $bands[1]];
+        }
+
+        return ['g'.$root, 'same'];
     }
 
     /**
@@ -207,8 +321,8 @@ final class DotRanking
             }
             $gap = \in_array($kind, ['source', 'sink'], strict: true) ? 1 : 0;
             $top = \in_array($kind, ['min', 'source'], strict: true);
-            foreach ($units as $other => $otherKind) {
-                if ($other === $set || $otherKind === $kind) {
+            foreach (\array_keys($units) as $other) {
+                if ($other === $set) {
                     continue;
                 }
                 $edges[] = $top ? [$set, $other, $gap, 0] : [$other, $set, $gap, 0];
