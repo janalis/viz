@@ -17,9 +17,14 @@ namespace Janalis\Viz\Layout\Dot;
  *
  * Clusters stay contiguous: a scope, the top level or a cluster, orders its own nodes and one
  * block per child cluster and rank, then each child orders its block from inside, the nodes
- * around it fixed, from its initial order untransposed by the long pass alone. Every crossing
- * counts one, whatever the edges' weights, as `dot` is seen to count them where several
- * orders are equally good, once for each edge between the same two nodes.
+ * around it fixed, from its initial order untransposed by the long pass alone. As `dot` reports
+ * its passes, every component's top level is ordered first, then every cluster, outermost
+ * first, then the whole graph once more by the long pass, each node moving only among the
+ * nodes of its own cluster and only flat edges outside every cluster keeping an order. Until
+ * it is ordered from inside, a cluster counts as one node on each of its ranks (see
+ * {@see DotCrossings}). Every crossing counts one, whatever the edges' weights, as `dot` is
+ * seen to count them where several orders are equally good, once for each edge between the
+ * same two nodes.
  */
 final class DotOrdering
 {
@@ -28,13 +33,19 @@ final class DotOrdering
 
     /** @var list<int> each node's index in its rank */
     private array $position = [];
+    private readonly DotSlots $slots;
+    /** Whether the pass at hand orders the whole graph, after the clusters. */
+    private bool $whole = false;
     private readonly DotCrossings $crossings;
     /** @var list<int> each node's component */
     private array $component = [];
     /** @var list<int> each node's place in its component's visit order */
     private array $visit = [];
+    /** The component ordered, or -1 for all at once. */
     private int $active = 0;
     private readonly DotFlatOrder $flat;
+    /** The order flat edges keep in the pass over the whole graph: only those outside every cluster. */
+    private readonly DotFlatOrder $outside;
 
     /**
      * @param list<int> $loose the edges, by their index in the layers, that do not constrain ranks, whose flat ones keep no order
@@ -51,7 +62,9 @@ final class DotOrdering
         array $kept = [],
     ) {
         $this->crossings = new DotCrossings($layers);
+        $this->slots = new DotSlots($layers);
         $this->flat = new DotFlatOrder($layers, $turned, $loose, $kept);
+        $this->outside = new DotFlatOrder($layers, $turned, $loose, $kept, outside: true);
     }
 
     /** @return \Generator<int, null, mixed, void> */
@@ -64,10 +77,20 @@ final class DotOrdering
             $this->layers->ranks[$rank] = $nodes;
         }
         $this->index();
-        for ($component = 0; $component < $components; ++$component) {
-            $this->active = $component;
+        // As `dot` reports its passes: every component's top level, then every cluster from
+        // inside, then the whole graph once more.
+        foreach ([$this->scope(...), $this->clusters(...)] as $step) {
+            for ($component = 0; $component < $components; ++$component) {
+                $this->active = $component;
+                $work = $step(-1);
+                yield from $work;
+            }
+        }
+        if ($this->slots->opened()) {
+            [$this->active, $this->whole] = [-1, true];
             $work = $this->scope(-1);
             yield from $work;
+            $this->whole = false;
         }
         if ($this->turned) {
             foreach ($this->layers->ranks as $rank => $nodes) {
@@ -80,15 +103,17 @@ final class DotOrdering
     /** @return \Generator<int, null, mixed, void> */
     private function scope(int $scope): \Generator
     {
+        $this->index();
         $best = $this->layers->ranks;
-        $bestCross = \PHP_INT_MAX;
+        // The pass over the whole graph goes on from the order it is given, and counts from it.
+        $bestCross = $this->whole ? $this->total() : \PHP_INT_MAX;
         // The top level: two short passes from the two initial orders, each transposed first, then
         // a long one from the best seen. A cluster, as `dot` reports its passes: its initial order,
-        // transposed no time, then the long pass alone.
+        // transposed no time, then the long pass alone. The whole graph: the long pass alone.
         $short = \min(4, $this->maxIterations);
-        $passes = $scope >= 0
-            ? [[Side::Above, 0, 0], [null, $this->maxIterations, 0]]
-            : [[Side::Above, $short, self::ROUNDS], [Side::Below, $short, self::ROUNDS], [null, $this->maxIterations, 0]];
+        $long = [null, $this->maxIterations, 0];
+        $passes = $scope >= 0 ? [[Side::Above, 0, 0], $long] : [[Side::Above, $short, self::ROUNDS], [Side::Below, $short, self::ROUNDS], $long];
+        $passes = $this->whole ? [$long] : $passes;
         foreach ($passes as [$start, $limit, $rounds]) {
             $this->layers->ranks = $best;
             $this->index();
@@ -99,15 +124,15 @@ final class DotOrdering
                 // flat edges put their ends in order, which may cross edges the transposition uncrossed.
                 $this->transpose($scope, Ties::Keep, null, $rounds);
                 $this->flatten($scope);
-                $cross = $this->crossings->total($this->position);
+                $cross = $this->total();
                 [$best, $bestCross] = $cross <= $bestCross ? [$this->layers->ranks, $cross] : [$best, $bestCross];
             }
             $trying = 0;
             for ($iteration = 0; $iteration < $limit && $cross > 0 && $trying++ < $this->minQuit; ++$iteration) {
                 $ties = ($iteration % 4) < 2 ? Ties::Exchange : Ties::Keep;
                 $this->sweep($scope, 0 === ($iteration % 2) ? Side::Above : Side::Below, $ties);
-                $this->transpose($scope, $ties->other(), $this->flat);
-                $cross = $this->crossings->total($this->position);
+                $this->transpose($scope, $ties->other(), $this->flats());
+                $cross = $this->total();
                 if ($cross <= $bestCross) {
                     $trying = $cross < ($this->convergence * $bestCross) ? 0 : $trying;
                     [$best, $bestCross] = [$this->layers->ranks, $cross];
@@ -121,62 +146,47 @@ final class DotOrdering
         $this->layers->ranks = $best;
         $this->index();
         if ($bestCross > 0) {
-            $this->transpose($scope, Ties::Keep, $this->flat);
+            $this->transpose($scope, Ties::Keep, $this->flats());
         }
-        $this->consistent($scope);
-        foreach ($this->children($scope) as $child) {
-            if (!$this->holds($child)) {
-                continue;
-            }
-            $work = $this->scope($child);
-            yield from $work;
+        if (!$this->whole) {
+            $this->consistent($scope);
         }
     }
 
     /**
-     * Gives the scope's child clusters one left-to-right order on every rank, by their mean
-     * position, so that no two cluster boxes cross; plain nodes keep their slots.
+     * Orders each child cluster of a scope from inside, then its own children, in turn.
+     *
+     * @return \Generator<int, null, mixed, void>
      */
+    private function clusters(int $scope): \Generator
+    {
+        foreach (\array_filter($this->children($scope), $this->holds(...)) as $child) {
+            $this->slots->open($child);
+            $work = $this->scope($child);
+            yield from $work;
+            $work = $this->clusters($child);
+            yield from $work;
+        }
+    }
+
+    /** Every crossing, a cluster not yet ordered from inside counting as one node on each of its ranks. */
+    private function total(): int
+    {
+        return $this->crossings->total($this->slots->slot, $this->slots->collapsed, $this->slots->blocks);
+    }
+
+    /** The order flat edges keep in the pass at hand. */
+    private function flats(): DotFlatOrder
+    {
+        return $this->whole ? $this->outside : $this->flat;
+    }
+
+    /** Keeps the scope's child clusters from crossing one another, as {@see DotBlocks} orders them. */
     private function consistent(int $scope): void
     {
-        $ranks = \count($this->layers->ranks);
-        $sum = [];
-        $count = [];
-        for ($rank = 0; $rank < $ranks; ++$rank) {
-            foreach ($this->items($scope, $rank) as $slot => $item) {
-                $child = $this->layers->childOf($item[0], $scope);
-                if (-1 === $child) {
-                    continue;
-                }
-                $sum[$child] = ($sum[$child] ?? 0) + $slot;
-                $count[$child] = ($count[$child] ?? 0) + 1;
-            }
-        }
-        if (\count($sum) < 2) {
-            return;
-        }
-        $mean = [];
-        foreach ($sum as $child => $total) {
-            $mean[$child] = $total / $count[$child];
-        }
-        for ($rank = 0; $rank < $ranks; ++$rank) {
-            $items = $this->items($scope, $rank);
-            $slots = [];
-            $blocks = [];
-            foreach ($items as $slot => $item) {
-                $child = $this->layers->childOf($item[0], $scope);
-                if (-1 === $child) {
-                    continue;
-                }
-                $slots[] = $slot;
-                $blocks[] = [$mean[$child], $child, $item];
-            }
-            \usort($blocks, static fn (array $a, array $b): int => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
-            foreach ($slots as $index => $slot) {
-                $items[$slot] = $blocks[$index][2];
-            }
-            $this->write($scope, $rank, $items);
-        }
+        $itemsByRank = \array_map(fn (int $rank): array => $this->items($scope, $rank), \array_keys($this->layers->ranks));
+        $ordered = DotBlocks::consistent($itemsByRank, fn (int $node): int => $this->layers->childOf($node, $scope));
+        \array_walk($ordered, fn (array $items, int $rank) => $this->write($scope, $rank, $items));
     }
 
     private function holds(int $cluster): bool
@@ -207,10 +217,11 @@ final class DotOrdering
         $items = [];
         $blocks = [];
         foreach ($this->layers->ranks[$rank] as $node) {
-            if ($this->component[$node] !== $this->active || !$this->layers->inside($node, $scope)) {
+            if (!$this->active($node) || !$this->layers->inside($node, $scope)) {
                 continue;
             }
-            $child = $this->layers->childOf($node, $scope);
+            // The pass over the whole graph moves every node on its own.
+            $child = $this->whole ? -1 : $this->layers->childOf($node, $scope);
             if (-1 === $child) {
                 $items[] = [$node];
                 continue;
@@ -244,6 +255,7 @@ final class DotOrdering
         $this->layers->ranks[$rank][$slotA] = $b;
         $this->layers->ranks[$rank][$slotB] = $a;
         [$this->position[$a], $this->position[$b]] = [$slotB, $slotA];
+        $this->slots->swap($rank, $a, $b);
     }
 
     /**
@@ -256,13 +268,20 @@ final class DotOrdering
         $nodes = \array_merge([], ...$items);
         $index = 0;
         foreach ($this->layers->ranks[$rank] as $slot => $node) {
-            if ($this->component[$node] !== $this->active || !$this->layers->inside($node, $scope)) {
+            if (!$this->active($node) || !$this->layers->inside($node, $scope)) {
                 continue;
             }
             $this->layers->ranks[$rank][$slot] = $nodes[$index];
             $this->position[$nodes[$index]] = $slot;
             ++$index;
         }
+        $this->slots->refresh($rank);
+    }
+
+    /** Whether a node is in the component being ordered. */
+    private function active(int $node): bool
+    {
+        return -1 === $this->active || $this->component[$node] === $this->active;
     }
 
     /**
@@ -378,7 +397,7 @@ final class DotOrdering
         $sequence = \array_slice(Side::Above === $side ? $ranks : \array_reverse($ranks), offset: 1);
         foreach ($sequence as $rank) {
             $items = $this->items($scope, $rank);
-            $medians = \array_map(fn (array $item): float => $this->crossings->median($this->position, $item, $side), $items);
+            $medians = \array_map(fn (array $item): float => $this->crossings->median($this->slots->slot, $item, $side, $this->slots->collapsed, $this->slots->blocks), $items);
             $passes = \count($items);
             do {
                 $moved = $this->bubble($items, $medians, $ties);
@@ -423,15 +442,17 @@ final class DotOrdering
     }
 
     /**
-     * Whether a flat edge keeps two items in their order, or either in its place against those
-     * between them, which swapping them would jump over.
+     * Whether a flat edge keeps the left item before the right one or any it would jump over,
+     * as `dot`'s reported crossings show: one keeping a node it jumps over before the right
+     * one holds nothing. In the pass over the whole graph, jumping over a node of another
+     * cluster is held too.
      *
      * @param list<list<int>> $items
      */
     private function held(array $items, int $left, int $right): bool
     {
         for ($between = $left + 1; $between <= $right; ++$between) {
-            if ($this->flat->keeps($items[$left], $items[$between]) || $this->flat->keeps($items[$between - 1], $items[$right])) {
+            if ($this->flats()->keeps($items[$left], $items[$between]) || $this->apart($items[$left], $items[$between])) {
                 return true;
             }
         }
@@ -462,8 +483,13 @@ final class DotOrdering
                 $tried[$rank] = ++$clock;
                 $items = $this->items($scope, $rank);
                 for ($index = 0; ($index + 1) < \count($items); ++$index) {
-                    [$before, $after] = $this->crossings->both($this->position, $items[$index], $items[$index + 1]);
-                    if ($after > $before || ($after === $before && (Ties::Keep === $ties || 0 === $before)) || (null !== $kept && $kept->keeps($items[$index], $items[$index + 1]))) {
+                    [$before, $after] = $this->crossings->both($this->slots->slot, $items[$index], $items[$index + 1], $this->slots->collapsed, $this->slots->blocks);
+                    if (
+                        $after > $before
+                        || ($after === $before && (Ties::Keep === $ties || 0 === $before))
+                        || (null !== $kept && $kept->keeps($items[$index], $items[$index + 1]))
+                        || $this->apart($items[$index], $items[$index + 1])
+                    ) {
                         continue;
                     }
                     $this->swap($scope, $rank, $items, $index);
@@ -474,6 +500,18 @@ final class DotOrdering
         }
     }
 
+    /**
+     * Whether two items may not trade places: in the pass over the whole graph, nodes of
+     * different clusters.
+     *
+     * @param list<int> $left
+     * @param list<int> $right
+     */
+    private function apart(array $left, array $right): bool
+    {
+        return $this->whole && $this->layers->cluster[$left[0]] !== $this->layers->cluster[$right[0]];
+    }
+
     private function index(): void
     {
         $this->position = \array_fill(0, \count($this->layers->rank), value: 0);
@@ -482,5 +520,6 @@ final class DotOrdering
                 $this->position[$node] = $slot;
             }
         }
+        $this->slots->index();
     }
 }

@@ -8,7 +8,7 @@ namespace Janalis\Viz\Layout\Dot;
  * The connected components of a ranked graph, as crossing minimisation orders them: found by a
  * depth-first search from each real node in turn, following edges down, up, then flat, each
  * node numbered in the order its component's search meets it; the nodes of one outermost
- * cluster belong together, as if joined.
+ * cluster belong together, as if joined, and a flat edge into or out of a cluster joins nothing.
  */
 final class DotComponents
 {
@@ -21,6 +21,10 @@ final class DotComponents
         $count = \count($layers->rank);
         $flat = \array_fill(0, \max(0, $count), []);
         foreach ($layers->flat as [$tail, $head]) {
+            // As `dot` reports its components, a flat edge into or out of a cluster joins nothing.
+            if (self::outermost($layers, $tail) !== self::outermost($layers, $head)) {
+                continue;
+            }
             $flat[$tail][] = $head;
             $flat[$head][] = $tail;
         }

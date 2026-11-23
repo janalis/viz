@@ -25,6 +25,41 @@ final class DotMincrossTest extends TestCase
             'digraph { n1; n0; n3; n2; n4; n0 -> n1; n1 -> n3; n2 -> n3; n2 -> n4; n1 -> n2; subgraph cluster_a { subgraph cluster_b { n3; n4; n0 } n1; n2 } }',
             ['n3', 'n4', 'n0'],
         ];
+        // Below cluster a, n1's edges to n2 and n3 and n0's to n3 all end in cluster c, which counts as one node until ordered from inside: nothing crosses there, and the order the search meets them stands.
+        yield 'a cluster counted as one node until ordered from inside' => [
+            'digraph { nodesep=0.25; newrank=true; node [shape=rect, fixedsize=true, width=0.3, height=0.3]; n1 [width=1.0]; n3; n0 [width=1.0]; n2 [height=0.5]; n1 -> n2; n1 -> n3; n0 -> n3; subgraph cluster_a { subgraph cluster_c { n3; n2; n1 } subgraph cluster_d { n0 } } }',
+            ['n2', 'n3'],
+        ];
+        // n3 ahead of n0 would have n0's edge to n1 cross the run of cluster a from n3 to n2, a thousand crossings.
+        yield 'an edge across a cluster not yet ordered from inside costing a thousand' => [
+            'digraph { nodesep=0.486111; newrank=true; node [shape=rect, fixedsize=true, width=0.5, height=0.5]; n1; n0; n3 [width=1.0]; n2 [width=0.3]; n0 -> n2; n0 -> n1; n3 -> n1; subgraph cluster_a { n2; n3 } }',
+            ['n0', 'n3'],
+        ];
+        // Cluster b's run from n0 down to n1 counts in n1's median, which puts it before n2 inside cluster a.
+        yield 'the run of a cluster not yet ordered from inside counted in its median' => [
+            'digraph { nodesep=0.25; newrank=true; node [shape=rect, fixedsize=true, width=1.0, height=0.3]; n0; n1; n2 [width=0.5, height=0.5]; {rank=same; n2; n1} n2 -> n1; n0 -> n2 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="43" HEIGHT="17"><TR><TD></TD></TR></TABLE>>]; subgraph cluster_a { subgraph cluster_b { n1; n0 } subgraph cluster_d { } n2 } }',
+            ['n1', 'n2'],
+        ];
+        // The flat edges from n1 to n3 leave cluster a, which joins n3 to no component: n2 is met before cluster a's.
+        yield 'a flat edge out of a cluster joining no component' => [
+            'digraph { nodesep=0.486111; node [shape=rect, fixedsize=true, height=0.5]; n3 [width=0.75]; n2 [width=1.0]; n0 [width=0.75, height=0.3]; n1 [width=0.5, height=0.3]; n0 -> n1 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="17"><TR><TD></TD></TR></TABLE>>]; n1 -> n3 [minlen=0]; n1 -> n3 [minlen=0]; subgraph cluster_a { n0; n1 } }',
+            ['n2', 'n0'],
+        ];
+        // After the clusters, the whole graph is ordered once more, where the flat edge from n0 to n2 inside cluster b keeps no order.
+        yield 'the whole graph ordered once more, a flat edge inside a cluster keeping no order' => [
+            'digraph { nodesep=0.486111; newrank=true; node [shape=rect, fixedsize=true, width=0.5, height=0.3]; n1; n0 [height=0.5]; n2 [width=1.0]; n1 -> n2; {rank=same; n0; n2} n0 -> n2; n0 -> n1 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="43" HEIGHT="15"><TR><TD></TD></TR></TABLE>>]; n2 -> n0; subgraph cluster_a { subgraph cluster_b { n0; n2 } subgraph cluster_d { n1 } } }',
+            ['n2', 'n0'],
+        ];
+        // n1 and n4 trade places over n2, though the flat edge from n2 to n4 then points back.
+        yield 'a flat edge keeping a node jumped over before the other holding nothing' => [
+            'digraph { n5 -> n1; n0 -> n5; {rank=same; n0; n5} {rank=same; n2; n4} n2 -> n4; n0 -> n4 }',
+            ['n4', 'n2', 'n1'],
+        ];
+        // n0's edge to n2, in cluster c inside its own cluster a, is met before its edges to n1.
+        yield 'an edge into a cluster inside its tail cluster met first' => [
+            'digraph { nodesep=0.75; node [shape=rect, fixedsize=true, width=1.0, height=0.3]; n2; n1 [width=0.75]; n0; n0 -> n2 [minlen=0]; n0 -> n1; n0 -> n1; n0 -> n1; n0 -> n2 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="10" HEIGHT="15"><TR><TD></TD></TR></TABLE>>]; subgraph cluster_a { subgraph cluster_c { n2 } subgraph cluster_d { } n0; n1 } }',
+            ['n2', 'n1'],
+        ];
     }
 
     /** @param list<string> $expected */

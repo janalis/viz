@@ -12,9 +12,16 @@ namespace Janalis\Viz\Layout\Dot;
  * edge drawn again between the same nodes); the crossings of two neighbours in one
  * order or the other; and the weighted median of a node's neighbours on the rank above or
  * below, as Gansner et al. define it.
+ *
+ * A cluster not yet ordered from inside stands, on each of its ranks, as one slot: the edges
+ * inside it count nothing, and from each of its ranks to the next one edge runs, which crosses
+ * an edge at the cost of a thousand, as the crossings `dot` reports show.
  */
 final readonly class DotCrossings
 {
+    /** What an edge crossing the run of a cluster not yet ordered from inside costs. */
+    private const int THROUGH = 1000;
+
     /** @var list<list<int>> layered edges above each node */
     public array $up;
     /** @var list<list<int>> layered edges below each node */
@@ -62,13 +69,26 @@ final readonly class DotCrossings
      * position. As dot, an edge ends where its port puts it across its node, so two edges
      * from one node cross when their ports stand the other way round from their far ends.
      *
-     * @param list<int> $position each node's index in its rank
+     * @param list<int> $position each node's slot in its rank
+     * @param array<int, int> $collapsed the nodes in a cluster not yet ordered from inside, and that cluster
+     * @param array<int, array<int, int>> $blocks the slot of each such cluster on each of its ranks
      */
-    public function total(array $position): int
+    public function total(array $position, array $collapsed = [], array $blocks = []): int
     {
         $byRank = [];
         foreach ($this->layers->edges as $index => [$tail, $head, , , $tailPort, $headPort]) {
+            if (self::inside($collapsed, $tail, $head)) {
+                continue;
+            }
             $byRank[$this->layers->rank[$tail]][] = [$position[$tail] + $tailPort, $position[$head] + $headPort, $this->layers->counts[$index]];
+        }
+        foreach ($blocks as $slots) {
+            foreach ($slots as $rank => $slot) {
+                if (!\array_key_exists($rank + 1, $slots)) {
+                    continue;
+                }
+                $byRank[$rank][] = [(float) $slot, (float) $slots[$rank + 1], self::THROUGH];
+            }
         }
         $total = 0;
         foreach ($byRank as $edges) {
@@ -104,28 +124,22 @@ final readonly class DotCrossings
      * @param list<int> $position
      * @param list<int> $left
      * @param list<int> $right
+     * @param array<int, int> $collapsed
+     * @param array<int, array<int, int>> $blocks
      * @return array{int, int}
      */
-    public function both(array $position, array $left, array $right): array
+    public function both(array $position, array $left, array $right, array $collapsed = [], array $blocks = []): array
     {
         [$leftFirst, $rightFirst] = [0, 0];
-        for ($side = 0; $side < 2; ++$side) {
-            $leftEnds = [];
-            foreach ($left as $node) {
-                foreach ($this->ends[$side][$node] ?? [] as [$far, $port, $count]) {
-                    $leftEnds[] = [$position[$far] + $port, $count];
-                }
-            }
+        foreach ([Side::Above, Side::Below] as $side) {
+            $leftEnds = $this->ends($position, $left, $side, $collapsed, $blocks);
             if ([] === $leftEnds) {
                 continue;
             }
-            foreach ($right as $node) {
-                foreach ($this->ends[$side][$node] ?? [] as [$far, $port, $count]) {
-                    $end = $position[$far] + $port;
-                    foreach ($leftEnds as [$leftEnd, $leftCount]) {
-                        $leftFirst += $leftEnd > $end ? $count * $leftCount : 0;
-                        $rightFirst += $leftEnd < $end ? $count * $leftCount : 0;
-                    }
+            foreach ($this->ends($position, $right, $side, $collapsed, $blocks) as [$end, $count]) {
+                foreach ($leftEnds as [$leftEnd, $leftCount]) {
+                    $leftFirst += $leftEnd > $end ? $count * $leftCount : 0;
+                    $rightFirst += $leftEnd < $end ? $count * $leftCount : 0;
                 }
             }
         }
@@ -138,17 +152,13 @@ final readonly class DotCrossings
      *
      * @param list<int> $position
      * @param list<int> $item
+     * @param array<int, int> $collapsed
+     * @param array<int, array<int, int>> $blocks
      */
-    public function median(array $position, array $item, Side $side): float
+    public function median(array $position, array $item, Side $side, array $collapsed = [], array $blocks = []): float
     {
-        $positions = [];
-        $ends = $this->ends[Side::Above === $side ? 0 : 1];
-        foreach ($item as $node) {
-            // As dot, a neighbour counts where across it the edge ends, by its port.
-            foreach ($ends[$node] ?? [] as [$far, $port]) {
-                $positions[] = $position[$far] + $port;
-            }
-        }
+        // As dot, a neighbour counts where across it the edge ends, by its port.
+        $positions = \array_column($this->ends($position, $item, $side, $collapsed, $blocks), 0);
         \sort($positions);
         $count = \count($positions);
         $middle = \intdiv($count, num2: 2);
@@ -159,6 +169,46 @@ final readonly class DotCrossings
             2 === $count => ($positions[0] + $positions[1]) / 2,
             default => self::weighted($positions, $middle),
         };
+    }
+
+    /**
+     * Where an item's edges on one side end, and how many edges each stands for: a cluster not
+     * yet ordered from inside has no edges within it, but one to its own slot on the next rank.
+     *
+     * @param list<int> $position
+     * @param list<int> $item
+     * @param array<int, int> $collapsed
+     * @param array<int, array<int, int>> $blocks
+     * @return list<array{float, int}>
+     */
+    private function ends(array $position, array $item, Side $side, array $collapsed, array $blocks): array
+    {
+        $ends = [];
+        foreach ($item as $node) {
+            foreach ($this->ends[Side::Above === $side ? 0 : 1][$node] ?? [] as [$far, $port, $count]) {
+                if (self::inside($collapsed, $node, $far)) {
+                    continue;
+                }
+                $ends[] = [$position[$far] + $port, $count];
+            }
+        }
+        $cluster = $collapsed[$item[0] ?? -1] ?? -1;
+        $slot = $blocks[$cluster][$this->layers->rank[$item[0] ?? 0] + (Side::Above === $side ? -1 : 1)] ?? null;
+        if (null !== $slot) {
+            $ends[] = [(float) $slot, self::THROUGH];
+        }
+
+        return $ends;
+    }
+
+    /**
+     * Whether two nodes stand in one cluster not yet ordered from inside.
+     *
+     * @param array<int, int> $collapsed
+     */
+    private static function inside(array $collapsed, int $a, int $b): bool
+    {
+        return \array_key_exists($a, $collapsed) && ($collapsed[$b] ?? -1) === $collapsed[$a];
     }
 
     /**

@@ -26,8 +26,9 @@ final class DotFlatOrder
      *
      * @param list<int> $loose the edges, by their index in the layers, that do not constrain ranks
      * @param list<array{int, int}> $kept more pairs of nodes on one rank kept in order, as `ordering` asks
+     * @param bool $outside whether only flat edges between nodes outside every cluster keep an order
      */
-    public function __construct(DotLayers $layers, bool $turned, array $loose, array $kept = [])
+    public function __construct(DotLayers $layers, bool $turned, array $loose, array $kept = [], bool $outside = false)
     {
         $this->turned = $turned;
         $out = [];
@@ -36,7 +37,7 @@ final class DotFlatOrder
         }
         foreach ($layers->flat as [$tail, $head, $edge]) {
             // As `dot` is seen to, one between nodes of different clusters keeps none either.
-            if (\in_array($edge, $loose, strict: true) || $layers->cluster[$tail] !== $layers->cluster[$head]) {
+            if (\in_array($edge, $loose, strict: true) || $layers->cluster[$tail] !== $layers->cluster[$head] || ($outside && -1 !== $layers->cluster[$tail])) {
                 continue;
             }
             $out[$tail][] = $head;

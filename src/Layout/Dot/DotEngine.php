@@ -88,7 +88,7 @@ final readonly class DotEngine implements LayoutEngine
                 $labelSizes[$edge->index] = [$labelWidth, $labelHeight];
             }
         }
-        $edges = DotMeeting::order($edges, $owner, $ranks);
+        $edges = DotMeeting::order($edges, $owner, $ranks, $parents);
         $span = 0;
         foreach ($edges as [$tail, $head]) {
             $span += \max(0, \abs($ranks[$tail] - $ranks[$head]) - 1);
