@@ -36,6 +36,8 @@ final class DotLayers
     public array $cluster = [];
     /** @var list<array{int, int, int, int, float, float}> tail, head, weight, the paper's Ω factor for straightening it (8 between two virtual nodes, 2 with one, else 1; `DotHorizontal` reads only whether it is 8, `dot`'s output fitting 1 for the rest), and where across the tail and the head it ends (see {@see \Janalis\Viz\Layout\Engine\LayoutEdge::$tailPort}): every edge between neighbouring ranks, tail above */
     public array $edges = [];
+    /** @var list<int> how many edges between two nodes each layered edge stands for, which crossings count */
+    public array $counts = [];
     /** @var list<list<int>> the nodes of each rank, in order */
     public array $ranks = [];
     /** @var array<int, list<int>> each original edge's path through the ranks, tail to head as authored */
@@ -146,6 +148,7 @@ final class DotLayers
         // edges reach on their rank, as `dot` is seen to order them; the stretches made so far
         // move along with them.
         $this->edges = [...$fillers, ...$this->edges];
+        $this->counts = [...\array_fill(0, \count($fillers), value: 1), ...$this->counts];
         foreach ($this->stretches as $key => $edge) {
             $this->stretches[$key] = $edge + \count($fillers);
         }
@@ -177,6 +180,7 @@ final class DotLayers
             [$path, $layered] = $chains[$key];
             foreach ($layered as $edge) {
                 $this->edges[$edge][2] += $weight;
+                ++$this->counts[$edge];
             }
             foreach (\array_slice($path, offset: 1, length: -1) as $node) {
                 $this->left[$node] += $this->spread / 2;
@@ -279,6 +283,7 @@ final class DotLayers
             return;
         }
         $this->stretches[$key] = \count($this->edges);
+        $this->counts[] = 1;
         $virtual = (int) (self::REAL !== $this->kind[$tail]) + (int) (self::REAL !== $this->kind[$head]);
         // As Gansner et al.'s Ω: a stretch between virtual nodes pulls straightest, so long edges run straight.
         $this->edges[] = [

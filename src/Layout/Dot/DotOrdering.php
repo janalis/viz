@@ -9,18 +9,23 @@ namespace Janalis\Viz\Layout\Dot;
  * et al. Each connected component is ordered on its own, then the components stand side by
  * side in the order a depth-first search meets them. Within one, an initial order comes from
  * a breadth-first search from the nodes with nothing above, in that same visit order, or from
- * the nodes with nothing below, transposed once, as `dot` is seen to begin; sweeps then sort each rank by the weighted median position
+ * the nodes with nothing below, transposed once with no heed to flat edges, then put in the
+ * order its flat edges keep, as `dot` is seen to begin; sweeps then sort each rank by the weighted median position
  * of its neighbours on the rank before, nodes with none staying put, each sweep followed by
  * transposing neighbours while that removes crossings. Two short passes from the two initial
  * orders, then a long one from the best order seen.
  *
  * Clusters stay contiguous: a scope, the top level or a cluster, orders its own nodes and one
  * block per child cluster and rank, then each child orders its block from inside, the nodes
- * around it fixed. Every crossing counts one, as `dot` is seen to count them where several
- * orders are equally good.
+ * around it fixed, from its initial order untransposed by the long pass alone. Every crossing
+ * counts one, whatever the edges' weights, as `dot` is seen to count them where several
+ * orders are equally good, once for each edge between the same two nodes.
  */
 final class DotOrdering
 {
+    /** How many rounds transposition takes at most. */
+    private const int ROUNDS = 32;
+
     /** @var list<int> each node's index in its rank */
     private array $position = [];
     private readonly DotCrossings $crossings;
@@ -77,23 +82,31 @@ final class DotOrdering
     {
         $best = $this->layers->ranks;
         $bestCross = \PHP_INT_MAX;
-        foreach ([Side::Above, Side::Below, null] as $start) {
-            // Two short passes from the two initial orders, then a long one from the best seen.
+        // The top level: two short passes from the two initial orders, each transposed first, then
+        // a long one from the best seen. A cluster, as `dot` reports its passes: its initial order,
+        // transposed no time, then the long pass alone.
+        $short = \min(4, $this->maxIterations);
+        $passes = $scope >= 0
+            ? [[Side::Above, 0, 0], [null, $this->maxIterations, 0]]
+            : [[Side::Above, $short, self::ROUNDS], [Side::Below, $short, self::ROUNDS], [null, $this->maxIterations, 0]];
+        foreach ($passes as [$start, $limit, $rounds]) {
             $this->layers->ranks = $best;
             $this->index();
             $cross = $bestCross;
             if (null !== $start) {
                 $this->initial($scope, $start);
-                $this->transpose($scope, Ties::Keep);
+                // As `dot`'s reported crossings show, the initial order is transposed before its
+                // flat edges put their ends in order, which may cross edges the transposition uncrossed.
+                $this->transpose($scope, Ties::Keep, null, $rounds);
+                $this->flatten($scope);
                 $cross = $this->crossings->total($this->position);
                 [$best, $bestCross] = $cross <= $bestCross ? [$this->layers->ranks, $cross] : [$best, $bestCross];
             }
-            $limit = null === $start ? $this->maxIterations : \min(4, $this->maxIterations);
             $trying = 0;
             for ($iteration = 0; $iteration < $limit && $cross > 0 && $trying++ < $this->minQuit; ++$iteration) {
                 $ties = ($iteration % 4) < 2 ? Ties::Exchange : Ties::Keep;
                 $this->sweep($scope, 0 === ($iteration % 2) ? Side::Above : Side::Below, $ties);
-                $this->transpose($scope, $ties->other());
+                $this->transpose($scope, $ties->other(), $this->flat);
                 $cross = $this->crossings->total($this->position);
                 if ($cross <= $bestCross) {
                     $trying = $cross < ($this->convergence * $bestCross) ? 0 : $trying;
@@ -108,7 +121,7 @@ final class DotOrdering
         $this->layers->ranks = $best;
         $this->index();
         if ($bestCross > 0) {
-            $this->transpose($scope, Ties::Keep);
+            $this->transpose($scope, Ties::Keep, $this->flat);
         }
         $this->consistent($scope);
         foreach ($this->children($scope) as $child) {
@@ -305,8 +318,15 @@ final class DotOrdering
         // holding no other — and its order comes out mirrored, so such a cluster's own lies the other way.
         $reversed = $this->turned && ($scope < 0 || [] !== $this->children($scope));
         foreach (\array_keys($itemsByRank) as $rank) {
-            $this->write($scope, $rank, $this->flat->leftToRight($reversed ? \array_reverse($orders[$rank]) : $orders[$rank]));
+            $this->write($scope, $rank, $reversed ? \array_reverse($orders[$rank]) : $orders[$rank]);
         }
+    }
+
+    /** Puts each rank's items in an order every flat edge among them agrees with. */
+    private function flatten(int $scope): void
+    {
+        $ranks = \array_keys($this->layers->ranks);
+        \array_walk($ranks, fn (int $rank) => $this->write($scope, $rank, $this->flat->leftToRight($this->items($scope, $rank))));
     }
 
     /**
@@ -419,8 +439,12 @@ final class DotOrdering
         return false;
     }
 
-    /** Swaps neighbouring items wherever that removes crossings, or keeps them equal when exchanging ties, until no swap helps. */
-    private function transpose(int $scope, Ties $ties): void
+    /**
+     * Swaps neighbouring items wherever that removes crossings, or keeps them equal when
+     * exchanging ties, until no swap helps or the rounds run out; two items the flat order given
+     * keeps stay as they are, and with none given, flat edges hold nothing.
+     */
+    private function transpose(int $scope, Ties $ties, ?DotFlatOrder $kept, int $rounds = self::ROUNDS): void
     {
         $ranks = \count($this->layers->ranks);
         // A rank's swaps depend on it and its neighbours alone: one none of them changed in
@@ -429,7 +453,7 @@ final class DotOrdering
         $tried = \array_fill(0, \max(1, $ranks), value: -1);
         $clock = 0;
         $improved = true;
-        for ($passes = 0; $improved && $passes < 32; ++$passes) {
+        for ($passes = 0; $improved && $passes < $rounds; ++$passes) {
             $improved = false;
             for ($rank = 0; $rank < $ranks; ++$rank) {
                 if (\max($changed[$rank], $changed[$rank - 1] ?? 0, $changed[$rank + 1] ?? 0) < $tried[$rank]) {
@@ -439,7 +463,7 @@ final class DotOrdering
                 $items = $this->items($scope, $rank);
                 for ($index = 0; ($index + 1) < \count($items); ++$index) {
                     [$before, $after] = $this->crossings->both($this->position, $items[$index], $items[$index + 1]);
-                    if ($after > $before || ($after === $before && (Ties::Keep === $ties || 0 === $before)) || $this->flat->keeps($items[$index], $items[$index + 1])) {
+                    if ($after > $before || ($after === $before && (Ties::Keep === $ties || 0 === $before)) || (null !== $kept && $kept->keeps($items[$index], $items[$index + 1]))) {
                         continue;
                     }
                     $this->swap($scope, $rank, $items, $index);
