@@ -50,6 +50,16 @@ final class DotMincrossTest extends TestCase
             'digraph { nodesep=0.486111; newrank=true; node [shape=rect, fixedsize=true, width=0.5, height=0.3]; n1; n0 [height=0.5]; n2 [width=1.0]; n1 -> n2; {rank=same; n0; n2} n0 -> n2; n0 -> n1 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="43" HEIGHT="15"><TR><TD></TD></TR></TABLE>>]; n2 -> n0; subgraph cluster_a { subgraph cluster_b { n0; n2 } subgraph cluster_d { n1 } } }',
             ['n2', 'n0'],
         ];
+        // At the top, cluster a starts from n0 and goes on first along its own run to n1, met before the label node of n0's edge to n2.
+        yield 'a cluster not yet ordered from inside following its own run first' => [
+            'digraph { nodesep=0.486111; newrank=true; node [shape=rect, fixedsize=true, height=0.5]; n0 [width=1.0, height=0.3]; n1 [width=0.5]; n2 [width=0.3]; n0 -> n2 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="17"><TR><TD></TD></TR></TABLE>>]; n1 -> n2 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="15"><TR><TD></TD></TR></TABLE>>, minlen=0]; subgraph cluster_a { n1; n0 } }',
+            ['n1', 'n2'],
+        ];
+        // Cluster a's edges, all its nodes' together, are met in the order the graph meets them, not node by node in the order its nodes stand.
+        yield 'the edges of a cluster met in the order the graph meets them' => [
+            'digraph { nodesep=0.75; newrank=true; node [shape=rect, fixedsize=true, width=0.75, height=0.5]; n3 [height=0.3]; n1; n2 [width=0.5]; n0; n2 -> n0 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="43" HEIGHT="15"><TR><TD></TD></TR></TABLE>>]; n0 -> n3; {rank=same; n2; n3} n2 -> n3; subgraph cluster_a { subgraph cluster_c { n3; n1 } subgraph cluster_d { n2 } } }',
+            ['n2', 'n3', 'n1'],
+        ];
         // n1 and n4 trade places over n2, though the flat edge from n2 to n4 then points back.
         yield 'a flat edge keeping a node jumped over before the other holding nothing' => [
             'digraph { n5 -> n1; n0 -> n5; {rank=same; n0; n5} {rank=same; n2; n4} n2 -> n4; n0 -> n4 }',

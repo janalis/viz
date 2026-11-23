@@ -299,6 +299,7 @@ final class DotOrdering
         $ranks = \count($this->layers->ranks);
         $itemsByRank = [];
         $itemOf = [];
+        $blockAt = [];
         $seeds = [];
         for ($rank = 0; $rank < $ranks; ++$rank) {
             $itemsByRank[$rank] = $this->items($scope, $rank);
@@ -306,6 +307,7 @@ final class DotOrdering
                 foreach ($item as $node) {
                     $itemOf[$node] = [$rank, $index];
                 }
+                $blockAt[($this->slots->collapsed[$item[0]] ?? -1).':'.$rank] = [$rank, $index];
                 $seeds[] = [...$this->seed($scope, $item), $rank, $index];
             }
         }
@@ -321,19 +323,20 @@ final class DotOrdering
             for ($head = 0; $head < \count($queue); ++$head) {
                 [$itemRank, $itemIndex] = $queue[$head];
                 $orders[$itemRank][] = $itemsByRank[$itemRank][$itemIndex];
-                foreach ($itemsByRank[$itemRank][$itemIndex] as $node) {
-                    foreach ($this->crossings->edges($node, $from->other()) as $edge) {
-                        $other = $this->crossings->far($edge, $from->other());
-                        if (!\array_key_exists($other, $itemOf)) {
-                            continue;
-                        }
-                        $key = $itemOf[$other][0].':'.$itemOf[$other][1];
-                        if (\array_key_exists($key, $placed)) {
-                            continue;
-                        }
-                        $placed[$key] = true;
-                        $queue[] = $itemOf[$other];
+                $item = $itemsByRank[$itemRank][$itemIndex];
+                // A cluster not yet ordered from inside goes on first along its own run to the
+                // next rank; then the item's edges, all its nodes' together, in the order the
+                // graph meets them, as `dot`'s reported crossings show.
+                $edges = \array_merge([], ...\array_map(fn (int $node): array => $this->crossings->edges($node, $from->other()), $item));
+                \sort($edges);
+                $run = $blockAt[($this->slots->collapsed[$item[0]] ?? -2).':'.($itemRank + (Side::Above === $from ? 1 : -1))] ?? null;
+                $next = [...(null === $run ? [] : [$run]), ...\array_map(fn (int $edge): ?array => $itemOf[$this->crossings->far($edge, $from->other())] ?? null, $edges)];
+                foreach (\array_filter($next) as [$nextRank, $nextIndex]) {
+                    if (\array_key_exists($nextRank.':'.$nextIndex, $placed)) {
+                        continue;
                     }
+                    $placed[$nextRank.':'.$nextIndex] = true;
+                    $queue[] = [$nextRank, $nextIndex];
                 }
             }
         }
