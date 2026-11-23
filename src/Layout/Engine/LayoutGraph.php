@@ -41,5 +41,7 @@ final readonly class LayoutGraph
         public bool $emptied = false,
         /** @var ?array{float, float} the width and height a layout stretches its positions to fill, where it is smaller both ways, as dot's `ratio=fill` with a `size`; else it keeps to {@see $aspect} */
         public ?array $fill = null,
+        /** @var array<string, array{string, ?string}> each node a rank set took out of a cluster written before it: that cluster, which dot is seen to rank it in all the same, and the cluster the set is written in, null at the top */
+        public array $held = [],
     ) {}
 }

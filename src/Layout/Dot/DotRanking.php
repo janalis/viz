@@ -37,6 +37,7 @@ final class DotRanking
     private array $top = [];
     /** @var array<int, true> the groups any max or sink set reached */
     private array $bottom = [];
+    private readonly RankHolds $holds;
 
     /**
      * @param non-negative-int $nodes
@@ -45,6 +46,7 @@ final class DotRanking
      * @param list<int> $parents each cluster's parent cluster, -1 for none; a parent comes before its children
      * @param list<array{RankKind, list<int>}> $sets
      * @param RankSpread $spread how the top level spreads its nodes over ranks: none unless asked, as `of()` asks for a graph without clusters
+     * @param array<int, int> $held each node a rank set took out of a cluster written before it, which it is ranked in all the same: the cluster the set is written in, -1 for the top level
      */
     public function __construct(
         private readonly int $nodes,
@@ -53,6 +55,7 @@ final class DotRanking
         array $parents,
         array $sets = [],
         private readonly RankSpread $spread = RankSpread::None,
+        array $held = [],
     ) {
         $this->edges = $edges;
         foreach ($owner as $node => $cluster) {
@@ -66,6 +69,11 @@ final class DotRanking
         foreach ($sets as [$kind, $members]) {
             $this->merge($kind, $members);
         }
+        $roots = [];
+        foreach (\array_keys($this->group) as $node) {
+            $roots[$node] = $this->find($node);
+        }
+        $this->holds = new RankHolds($held, $roots, $edges);
     }
 
     /**
@@ -77,8 +85,9 @@ final class DotRanking
      * @param list<int> $owner
      * @param list<int> $parents
      * @param list<array{RankKind, list<int>}> $sets
+     * @param array<int, int> $held
      */
-    public static function of(LayoutGraph $graph, array $edges, array $owner, array $parents, array $sets): self
+    public static function of(LayoutGraph $graph, array $edges, array $owner, array $parents, array $sets, array $held = []): self
     {
         $nodes = \count($graph->nodes);
         if ($graph->newRank) {
@@ -87,7 +96,7 @@ final class DotRanking
         // A cluster written with no node leaves the spread on; one a rank set written after it emptied turns it off, as dot is seen to.
         $clustered = $graph->emptied || [] !== \array_filter($owner, static fn (int $cluster): bool => -1 !== $cluster);
 
-        return new self($nodes, $edges, $owner, $parents, $sets, $clustered ? RankSpread::None : RankSpread::Components);
+        return new self($nodes, $edges, $owner, $parents, $sets, $clustered ? RankSpread::None : RankSpread::Components, $held);
     }
 
     /**
@@ -165,8 +174,8 @@ final class DotRanking
             yield from $work;
             $inner[$child] = $work->getReturn();
         }
-        [$units, $unitOf, $offset] = $this->units($cluster, $inner);
-        [$hard, $soft] = $this->constraints($units, $unitOf, $offset);
+        [$units, $unitOf, $offset, $reach] = $this->units($cluster, $inner);
+        [$hard, $soft] = $this->constraints($units, $unitOf, $reach);
         $hard = $this->bounds($units, DotAcyclic::orient(\count($units), $this->extremes($units, $hard)));
         $balanced = -1 === $cluster ? $this->spread : RankSpread::None;
         $ranks = \in_array(RankUnit::Both, $units, strict: true) ? \array_fill(0, \count($units), value: 0) : $this->solve(\count($units), $hard, $soft, $balanced);
@@ -188,14 +197,15 @@ final class DotRanking
      * offset by its rank within the cluster.
      *
      * @param array<int, array<int, int>> $inner each child cluster's relative ranks
-     * @return array{list<RankUnit>, array<int, int>, array<int, int>} each unit's kind, and each node's unit and offset
+     * @return array{list<RankUnit>, array<int, int>, array<int, int>, array<int, int>} each unit's kind, and each node's unit, offset, and the offset its edges reach it at
      */
     private function units(int $cluster, array $inner): array
     {
         $members = $this->members[$cluster] ?? [];
         $roots = [];
         foreach ($members as $node) {
-            if (!\array_key_exists($node, $this->group)) {
+            // A held node is ranked in its cluster as a node of its own: its sets tie it in the scope they are written in.
+            if (!\array_key_exists($node, $this->group) || $this->holds->holds($node)) {
                 continue;
             }
             $roots[$node] = $this->find($node);
@@ -227,7 +237,7 @@ final class DotRanking
             }
         }
 
-        return [$units, $unitOf, $offset];
+        return $this->holds->tie($cluster, $units, $unitOf, $offset, $setUnit, $this->top + $this->bottom);
     }
 
     /**
@@ -296,6 +306,9 @@ final class DotRanking
             $from = $unitOf[$tail] ?? null;
             $to = $unitOf[$head] ?? null;
             if (null === $from || null === $to || $from === $to) {
+                continue;
+            }
+            if ($this->holds->level($tail, $head, $unitOf)) {
                 continue;
             }
             if (RankUnit::Cluster === $units[$from] || RankUnit::Cluster === $units[$to]) {

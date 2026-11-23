@@ -69,7 +69,9 @@ final readonly class DotEngine implements LayoutEngine
             }
             $sets[] = [$set->kind, $members];
         }
-        $ranking = DotRanking::of($graph, $constraints, $owner, $parents, $sets);
+        // A node a same set took out of a cluster written before it is ranked in that cluster all the same.
+        [$rankOwner, $held] = RankHolds::indexed($graph->held, $index, $clusterIndex, $owner);
+        $ranking = DotRanking::of($graph, $constraints, $rankOwner, $parents, $sets, $held);
         $work = $ranking->ranks();
         yield from $work;
         $ranks = $work->getReturn();

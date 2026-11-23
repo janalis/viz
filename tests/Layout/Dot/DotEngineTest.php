@@ -1103,6 +1103,29 @@ final class DotEngineTest extends TestCase
         $this->assertSame([['r'], ['a', 's'], ['b', 'c']], $ranks('newrank=true; r->s; s->b; r->a; a->c; subgraph cluster_x {a; c} {rank=same; b; c}'));
     }
 
+    public function testARankSetWrittenAfterAClusterRanksItsNodeInTheClusterAsDotDoes(): void
+    {
+        $ranks = static fn (string $body): array => \array_map(static function (array $row): array {
+            \sort($row);
+
+            return $row;
+        }, self::rows($body));
+
+        // Each as dot 16.1.0 ranks it, drawing n3, m1, a and the like outside their clusters. n0
+        // follows n3, ranked in its cluster, down beside n2.
+        $this->assertSame([['n1'], ['n0', 'n2', 'n3']], $ranks('subgraph cluster_a { n2; n3; } n0; n1; {rank=same; n0; n3} n1->n2;'));
+        // Held one before the cluster's last, m1 moves apart from m0 and m2; held with m2, both stay.
+        $this->assertSame([['m1', 't', 'x'], ['m0', 'm2']], $ranks('subgraph cluster_k { m0; m1; m2; } t->m0; {rank=same; x; m1}'));
+        $this->assertSame([['t'], ['m0', 'm1', 'm2', 'x', 'y']], $ranks('subgraph cluster_k { m0; m1; m2; } t->m0; {rank=same; x; m1} {rank=same; y; m2}'));
+        $this->assertSame([['m0', 'm2', 't'], ['m1', 'x']], $ranks('subgraph cluster_k { m0; m1; m2; } t->m1; {rank=same; x; m1}'));
+        // An edge between two nodes of one set lies level, unless it points to the earliest.
+        $this->assertSame([['a', 'b', 'c', 'x']], $ranks('subgraph cluster_k { a; b; c; } a->b; {rank=same; a; x} {rank=same; a; b}'));
+        $this->assertSame([['b', 'c', 'x'], ['a']], $ranks('subgraph cluster_k { a; b; c; } b->a; {rank=same; a; x} {rank=same; a; b}'));
+        $this->assertSame([['a', 'b']], $ranks('subgraph cluster_k { a; b; } b->a; {rank=same; a; b}'));
+        // The rest of a cluster its held node left is reached from its own top: n1 → n2 spans two ranks.
+        $this->assertSame([['n1', 'n4', 'n5'], ['n0', 'n3'], ['n2']], $ranks('subgraph cluster_a { n3; n2; } n2; n3; n0; n5; n1; n4; n3->n2; n1->n2; {rank=same; n0; n3}'));
+    }
+
     public function testUnderNewrankAClusterSpansTheRanksItSkipsAndOnlyClustersHoldingNodesAreDrawn(): void
     {
         $placed = static function (string $source): Placement {
