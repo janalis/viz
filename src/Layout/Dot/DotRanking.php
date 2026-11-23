@@ -279,7 +279,9 @@ final class DotRanking
 
     /**
      * The scope's edges between units: hard between plain units, soft where a cluster is at
-     * either end, as the span its nodes' offsets ask for.
+     * either end, as the span its nodes' offsets ask for. The soft edges come by their tails in
+     * node order, then as written: where ranks of equal cost differ in which soft edge points
+     * back, dot is measured to keep the earlier ones pointing forward.
      *
      * @param list<RankUnit> $units
      * @param array<int, int> $unitOf
@@ -297,13 +299,14 @@ final class DotRanking
                 continue;
             }
             if (RankUnit::Cluster === $units[$from] || RankUnit::Cluster === $units[$to]) {
-                $soft[] = [$from, $to, $minlen + $offset[$tail] - $offset[$head], $weight];
+                $soft[$tail][] = [$from, $to, $minlen + $offset[$tail] - $offset[$head], $weight];
                 continue;
             }
             $hard[] = [$from, $to, $minlen, $weight];
         }
+        \ksort($soft);
 
-        return [$hard, $soft];
+        return [$hard, [] === $soft ? [] : \array_merge(...$soft)];
     }
 
     /**
@@ -361,13 +364,15 @@ final class DotRanking
      */
     private function solve(int $units, array $hard, array $soft, RankSpread $balance): array
     {
-        $edges = $hard;
-        $count = $units;
-        foreach ($soft as [$from, $to, $span, $weight]) {
+        // The slack nodes come before the units, so the search for a tight tree starts from the
+        // first soft edge: ties then fall the way dot is measured to break them.
+        $slacks = \count($soft);
+        $edges = \array_map(static fn (array $edge): array => [$edge[0] + $slacks, $edge[1] + $slacks, $edge[2], $edge[3]], $hard);
+        $count = $slacks + $units;
+        foreach ($soft as $slack => [$from, $to, $span, $weight]) {
             // Pulling the tail back costs more, so the edge keeps its direction when it can.
-            $slack = $count++;
-            $edges[] = [$slack, $from, \max(0, -$span), self::BACK * $weight];
-            $edges[] = [$slack, $to, \max(0, $span), $weight];
+            $edges[] = [$slack, $from + $slacks, \max(0, -$span), self::BACK * $weight];
+            $edges[] = [$slack, $to + $slacks, \max(0, $span), $weight];
         }
         $ranks = \array_fill(0, \max(0, $count), value: 0);
         foreach (self::components($count, $edges) as $nodes) {
@@ -380,7 +385,7 @@ final class DotRanking
                 $localEdges[] = [$local[$tail], $local[$head], $minlen, $weight];
             }
             $solved = Work::run(new NetworkSimplex(\count($nodes), $localEdges)->solve(RankSpread::Components === $balance ? NetworkSimplex::BALANCE_RANKS : NetworkSimplex::BALANCE_NONE));
-            $own = \array_map(static fn (int $node): int => $solved[$local[$node]], \array_filter($nodes, static fn (int $node): bool => $node < $units));
+            $own = \array_map(static fn (int $node): int => $solved[$local[$node]], \array_filter($nodes, static fn (int $node): bool => $node >= $slacks));
             $least = [] === $own ? 0 : \min($own);
             foreach ($nodes as $position => $node) {
                 $ranks[$node] = $solved[$position] - $least;
@@ -390,7 +395,7 @@ final class DotRanking
             $ranks = RankBalance::spread($ranks, $edges);
         }
 
-        return \array_slice($ranks, offset: 0, length: $units);
+        return \array_slice($ranks, offset: $slacks, length: $units);
     }
 
     /**

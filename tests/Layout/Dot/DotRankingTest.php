@@ -72,6 +72,18 @@ final class DotRankingTest extends TestCase
         $this->assertSame([1, 0], self::rank(2, [[1, 0, 1, 1]], [0, 1], [-1, -1]));
     }
 
+    public function testRanksOfEqualCostKeepTheEarlierSoftEdgeForwardAsDotDoes(): void
+    {
+        // Measured on dot 16.1.0. x, cluster { a }, x → a, a → x: x is drawn above a; declared
+        // the other way round, a above x, the edges taken by their tails in node order.
+        $this->assertSame([0, 1], self::rank(2, [[0, 1, 1, 1], [1, 0, 1, 1]], [-1, 0], [-1]));
+        $this->assertSame([0, 1], self::rank(2, [[1, 0, 1, 1], [0, 1, 1, 1]], [0, -1], [-1]));
+        // n1, n3, n0 with cluster { n0, n1 }, n0 → n3, n3 → n1: n3 above the cluster, the edge out
+        // of n3 coming first; declared n0, n3, n1, the cluster above n3.
+        $this->assertSame([1, 0, 1], self::rank(3, [[2, 1, 1, 1], [1, 0, 1, 1]], [0, -1, 0], [-1]));
+        $this->assertSame([0, 1, 0], self::rank(3, [[0, 1, 1, 1], [1, 2, 1, 1]], [0, -1, 0], [-1]));
+    }
+
     public function testEveryRankingStepYields(): void
     {
         $steps = 0;
