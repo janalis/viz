@@ -8,7 +8,8 @@ namespace Janalis\Viz\Layout\Dot;
  * The connected components of a ranked graph, as crossing minimisation orders them: found by a
  * depth-first search from each real node in turn, following edges down, up, then flat, each
  * node numbered in the order its component's search meets it; the nodes of one outermost
- * cluster belong together, as if joined, and a flat edge into or out of a cluster joins nothing.
+ * cluster count as one node, met all at once, then their edges down, up and flat, each way in
+ * the order the graph meets them, and a flat edge into or out of a cluster joins nothing.
  */
 final class DotComponents
 {
@@ -50,13 +51,25 @@ final class DotComponents
                 if (-1 !== $component[$node]) {
                     continue;
                 }
-                $component[$node] = $current;
-                $visit[$node] = $visited++;
+                // An outermost cluster counts as one node: all its nodes are met at once, in the
+                // order they were made, then all their edges, each way in the order the graph meets them.
+                $group = $members[self::outermost($layers, $node)] ?? [$node];
+                $down = [];
+                $up = [];
+                $flats = [];
+                foreach ($group as $member) {
+                    $component[$member] = $current;
+                    $visit[$member] = $visited++;
+                    $down = [...$down, ...$crossings->down[$member]];
+                    $up = [...$up, ...$crossings->up[$member]];
+                    $flats = [...$flats, ...$flat[$member]];
+                }
+                \sort($down);
+                \sort($up);
                 $next = [
-                    ...\array_map(static fn (int $edge): int => $crossings->far($edge, Side::Below), $crossings->down[$node]),
-                    ...\array_map(static fn (int $edge): int => $crossings->far($edge, Side::Above), $crossings->up[$node]),
-                    ...$flat[$node],
-                    ...($members[self::outermost($layers, $node)] ?? []),
+                    ...\array_map(static fn (int $edge): int => $crossings->far($edge, Side::Below), $down),
+                    ...\array_map(static fn (int $edge): int => $crossings->far($edge, Side::Above), $up),
+                    ...$flats,
                 ];
                 foreach (\array_reverse($next) as $other) {
                     $stack[] = $other;

@@ -60,6 +60,11 @@ final class DotMincrossTest extends TestCase
             'digraph { nodesep=0.75; newrank=true; node [shape=rect, fixedsize=true, width=0.75, height=0.5]; n3 [height=0.3]; n1; n2 [width=0.5]; n0; n2 -> n0 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="43" HEIGHT="15"><TR><TD></TD></TR></TABLE>>]; n0 -> n3; {rank=same; n2; n3} n2 -> n3; subgraph cluster_a { subgraph cluster_c { n3; n1 } subgraph cluster_d { n2 } } }',
             ['n2', 'n3', 'n1'],
         ];
+        // Met from n2, cluster a counts as one node: n0 is met with n2, before n1 along n2's edges, so it starts the order first.
+        yield 'a cluster met all at once when its components are found' => [
+            'digraph { nodesep=0.75; newrank=true; node [shape=rect, fixedsize=true, width=0.3, height=0.3]; n2; n1 [height=0.5]; n0; n1 -> n2; n0 -> n2 [label=<<TABLE FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="17"><TR><TD></TD></TR></TABLE>>]; subgraph cluster_a { n0; n2 } }',
+            ['n0', 'n1'],
+        ];
         // n1 and n4 trade places over n2, though the flat edge from n2 to n4 then points back.
         yield 'a flat edge keeping a node jumped over before the other holding nothing' => [
             'digraph { n5 -> n1; n0 -> n5; {rank=same; n0; n5} {rank=same; n2; n4} n2 -> n4; n0 -> n4 }',

@@ -988,6 +988,20 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([164.0, 73.0], $size("package P {\n}\nnote right of P : on empty"));
     }
 
+    public function testANoteBesideAClassifierIsLaidOutWhereItWasMade(): void
+    {
+        $size = static function (string $lines): array {
+            $drawing = Work::run(PlantUmlPipeline::native()->drawing("@startuml\n".$lines."\n@enduml"));
+
+            return [$drawing->width / Units::POINT, $drawing->height / Units::POINT];
+        };
+
+        // As the jar lays them out with dot 16.1.0: a note beside a classifier made between classifiers, so ordered.
+        $this->assertSame([121.0, 178.0], $size("class A\nnote top of A : t\nclass B\nB --> A"));
+        $this->assertSame([155.0, 178.0], $size("class A\nnote left of A : l\nnote top of A : t\nclass B\nB --> A"));
+        $this->assertSame([198.0, 178.0], $size("class X\nnote top of X : t\nclass Y\nclass Z\nY --> X\nZ --> X"));
+    }
+
     public function testContainersStandAsTheirSymbolsDrawThem(): void
     {
         $size = static function (string $lines): array {

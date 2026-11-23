@@ -21,6 +21,7 @@ final readonly class PlantUmlClasses implements PlantUmlDiagram
      * @param list<PlantUmlNote> $notes
      * @param list<array{bool, ?string, bool, string}> $visibility each `show` or `hide`: shown, of what, only when empty, which part
      * @param list<string> $leaves the classifiers and floating notes, by id, in the order they were made
+     * @param list<string> $made the classifiers and all notes but those on links, by id, in the order they were made
      */
     public function __construct(
         public PlantUmlDocument $document,
@@ -31,6 +32,7 @@ final readonly class PlantUmlClasses implements PlantUmlDiagram
         public array $visibility = [],
         public Direction $direction = Direction::TopBottom,
         public array $leaves = [],
+        public array $made = [],
     ) {}
 
     #[\Override]

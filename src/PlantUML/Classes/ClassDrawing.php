@@ -142,12 +142,13 @@ final class ClassDrawing
         $document = $this->classes->document;
         $letter = $document->param('circledCharacterFontSize', $document->param('defaultFontSize'));
         $letter = 1 === \preg_match('/^\d+$/', $letter) && (int) $letter > 0 ? (int) $letter : 17;
-        // As svek, the classifiers and the floating notes in the order they were made, then the notes beside them.
+        // As svek, the classifiers and the notes but those on links in the order they were made, a
+        // note beside one among them, as the jar's layouts show; then any other.
         $notes = [];
         foreach ($this->classes->notes as $note) {
             $notes[$note->id] = $note;
         }
-        foreach (\array_unique([...$this->classes->leaves, ...\array_keys($this->classes->entities), ...\array_keys($notes)]) as $id) {
+        foreach (\array_unique([...$this->classes->made, ...$this->classes->leaves, ...\array_keys($this->classes->entities), ...\array_keys($notes)]) as $id) {
             \array_key_exists($id, $this->classes->entities) ? $this->classifier($svek, $this->classes->entities[$id], $portions, $linked, $icons, $letter) : $this->note($svek, $notes[$id]);
         }
         foreach (Svek::linkOrder($this->classes->links) as $index => $link) {

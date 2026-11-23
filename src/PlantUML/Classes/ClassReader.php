@@ -49,6 +49,8 @@ final class ClassReader
     private bool $mixing = false;
     /** @var list<string> the classifiers and floating notes, as PlantUML makes its leaves, in order */
     private array $leaves = [];
+    /** @var list<string> the classifiers and all notes but those on links, as PlantUML makes them, in order */
+    private array $made = [];
     /** @var array<string, true> the couples an association class stands on */
     private array $associated = [];
     /** The namespace separator; null where `set separator none` turned it off. */
@@ -95,7 +97,17 @@ final class ClassReader
             throw $unsupported;
         }
 
-        return new PlantUmlClasses($document, $reader->entities, self::across($reader->links), $reader->groups, $reader->notes, $reader->visibility, $reader->direction, $reader->leaves);
+        return new PlantUmlClasses(
+            $document,
+            $reader->entities,
+            self::across($reader->links),
+            $reader->groups,
+            $reader->notes,
+            $reader->visibility,
+            $reader->direction,
+            $reader->leaves,
+            $reader->made,
+        );
     }
 
     private function execute(PlantUmlCommand $command): void
@@ -368,6 +380,7 @@ final class ClassReader
         $point = 'apoint#'.\count($this->entities);
         $this->entities[$point] = new ClassEntity($point, [''], 'point', $group);
         $this->leaves[] = $point;
+        $this->made[] = $point;
         $toPoint = self::styledLike(new PlantUmlLink($existing->from, $point, $existing->fromDecor, LinkDecor::None, $existing->length), $existing);
         [$toPoint->label, $toPoint->labelArrow, $toPoint->firstLabel] = [$existing->label, $existing->labelArrow, $existing->firstLabel];
         $fromPoint = self::styledLike(new PlantUmlLink($point, $existing->to, LinkDecor::None, $existing->toDecor, $existing->length), $existing);
@@ -477,6 +490,7 @@ final class ClassReader
         $lines = 'CommandFactoryNote$1' === $command->name ? self::split((string) $command->get('DISPLAY')) : ActivityReader::columns($command->body());
         $this->notes[] = new PlantUmlNote((string) $command->get('CODE'), $lines, color: $command->get('COLOR'), group: $this->current());
         $this->leaves[] = (string) $command->get('CODE');
+        $this->made[] = (string) $command->get('CODE');
     }
 
     private function beside(PlantUmlCommand $command): void
@@ -496,6 +510,7 @@ final class ClassReader
             group: $this->current(),
             direction: $this->direction,
         );
+        $this->made[] = 'note#'.(\count($this->notes) - 1);
     }
 
     private function onLink(PlantUmlCommand $command): void
@@ -545,6 +560,7 @@ final class ClassReader
             $dotted = null !== $this->separator && \str_contains($id, $this->separator);
             $this->entities[$id] = new ClassEntity($id, self::split($display ?? ($dotted ? $this->last($id) : $id)), group: $dotted ? $this->within($id) : $this->current());
             $this->leaves[] = $id;
+            $this->made[] = $id;
             $this->entities[$id]->path = $dotted ? $id : $this->joined($this->context(), $id);
             $this->entityPaths[$this->entities[$id]->path] = $id;
         }
