@@ -817,6 +817,22 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta(54.8, $placement->labels[2][0] - $placement->endpoints['a']->x, 1.5);
     }
 
+    public function testLaidOutLeftToRightANodeBalancedAcrossAnOddSlackTakesTheLargerHalf(): void
+    {
+        $label = '<<TABLE FIXEDSIZE="TRUE" WIDTH="10" HEIGHT="50"><TR><TD></TD></TR></TABLE>>';
+        $graph = Work::run(new DotParser()->parse('digraph { rankdir=LR; nodesep=0.25; node [shape=rect, width=0.5, height=0.5, label=""]; a -> c; b -> c [label='.$label.']; }'));
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot(
+            $graph,
+            static fn ($node): array => DotNodes::size($graph, $node),
+            static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+        )));
+
+        // As dot 16.1.0 sets them: b 65 points below a, c 33 below a, not 32, its label 39 below a.
+        $a = $placement->endpoints['a']->y;
+        $this->assertEqualsWithDelta([65.0, 33.0], [$placement->endpoints['b']->y - $a, $placement->endpoints['c']->y - $a], 0.01);
+        $this->assertEqualsWithDelta(39.0, $placement->labels[1][1] - $a, 0.5);
+    }
+
     public function testEdgesAsLongAreRoutedInTheOrderTheGraphGivesThemWhateverOrderTheirLayersKeep(): void
     {
         // A table label of a width and a height, as `WxH`.

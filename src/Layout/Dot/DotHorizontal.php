@@ -77,7 +77,9 @@ final class DotHorizontal
         $this->anchor();
         // As `dot` is seen to, the subtrees holding real nodes are centred first, virtual nodes after.
         $movers = \array_map(static fn (): bool => true, \array_filter($this->layers->kind, static fn (int $kind): bool => DotLayers::REAL === $kind));
-        $solved = new NetworkSimplex($this->count, $this->edges, movers: $movers)->solve(NetworkSimplex::BALANCE_SIDES);
+        // Laid out to be turned, a subtree balanced across an odd slack takes the larger half of it,
+        // as measured on dot's output: mirrored, the smaller half dot takes in its own frame.
+        $solved = new NetworkSimplex($this->count, $this->edges, movers: $movers, roundUp: $this->layers->mirrored)->solve(NetworkSimplex::BALANCE_SIDES);
         yield from $solved;
         $values = new DotCentring($this->layers, $this->room(...))->centred($solved->getReturn());
         $this->sides = $this->sides($values);

@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Graphviz and PlantUML: laid out left to right, a node network simplex balances across an odd number of points takes the larger half of them, as `dot` sets it, so a node midway between two others whose distance is odd stands a point nearer the lower one, as in `dot`.
 - Graphviz: `ratio` stretches by the box the nodes and clusters take, not the room kept for edge labels and chains, and a curve or label beyond that box still bounds the drawing, as `dot` does; `ratio=fill` with a `size` bigger than the drawing both ways now fills it, and a drawing on a single rank is not stretched.
 - Graphviz and PlantUML: an edge routed beside an edge label's node, on the side away from the label, keeps a quarter of the node separation less 2 clear of that label's edge as drawn, of edges as long the labelled one being routed first, as `dot` routes them, so an unlabelled edge and a labelled one between the same two nodes are no longer drawn on top of each other.
 - Graphviz and PlantUML: laid out left to right, an edge label keeps a quarter of the node separation clear of the line of the labelled edge routed before it, as `dot` sets it, so labels of edges between the same two nodes stand together as `dot` stacks them, not as far apart as their label nodes.

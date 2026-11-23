@@ -85,6 +85,8 @@ final class NetworkSimplex
         private readonly int $maxIterations = -1,
         /** @var array<int, true> the nodes whose subtrees are balanced before the others; none when empty */
         private readonly array $movers = [],
+        /** Whether a subtree balanced across an odd slack moves the larger half of it, as dot moves it in a layout it turns across. */
+        private readonly bool $roundUp = false,
     ) {
         $this->adjacent = \array_fill(0, $nodes, []);
         $this->out = \array_fill(0, $nodes, []);
@@ -556,14 +558,14 @@ final class NetworkSimplex
         return $this->lim[$tail] < $this->lim[$head] ? $tail : $head;
     }
 
-    /** A zero-cut tree edge's subtree moved halfway across the slack it may take. */
+    /** A zero-cut tree edge's subtree moved halfway across the slack it may take, the smaller half of an odd one, or the larger rounding up. */
     private function balance(int $edge): void
     {
         $enter = $this->enterEdge($edge);
         if (null === $enter) {
             return;
         }
-        $delta = \intdiv($this->slack($enter), num2: 2);
+        $delta = \intdiv($this->slack($enter) + ($this->roundUp ? 1 : 0), num2: 2);
         if ($delta < 1) {
             return;
         }
