@@ -17,9 +17,33 @@ final class RankBalance
      */
     public static function spread(array $values, array $edges): array
     {
+        return self::level($values, $edges, bounded: []);
+    }
+
+    /**
+     * As {@see spread()}, but a node whose edges all weigh nothing, as a rank set's bounds, is
+     * moved too, as `dot` is measured to move one when it ranks component by component.
+     *
+     * @param list<int> $values each node's rank
+     * @param list<array{int, int, int, int}> $edges tail, head, minlen, weight
+     * @return list<int>
+     */
+    public static function spreadBounded(array $values, array $edges): array
+    {
+        return self::level($values, $edges, bounded: \array_keys($values));
+    }
+
+    /**
+     * @param list<int> $values
+     * @param list<array{int, int, int, int}> $edges
+     * @param list<int> $bounded the nodes moved even where no edge of theirs weighs anything
+     * @return list<int>
+     */
+    private static function level(array $values, array $edges, array $bounded): array
+    {
         $in = \array_fill(0, \count($values), []);
         $out = \array_fill(0, \count($values), []);
-        $weighted = [];
+        $weighted = \array_fill_keys($bounded, value: true);
         foreach ($edges as $edge) {
             $out[$edge[0]][] = $edge;
             $in[$edge[1]][] = $edge;
@@ -46,7 +70,7 @@ final class RankBalance
                 $weightOut += $weight;
                 $high = \min($high, $values[$head] - $minlen);
             }
-            // A node with no edges keeps its rank, as `dot` is seen to keep it; edges of no weight, as a rank set's bounds, do not count.
+            // A node with no edges keeps its rank, as `dot` is seen to keep it; edges of no weight, as a rank set's bounds, do not count, unless asked.
             if ($weightIn !== $weightOut || !\array_key_exists($node, $weighted)) {
                 continue;
             }

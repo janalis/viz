@@ -331,7 +331,7 @@ final class DotRanking
                 $at = RankUnit::Cluster === $units[$from] && RankUnit::Cluster === $units[$to] ? $offset : $reach;
                 // An edge into a cluster held at the top points away from it, as dot is measured to turn it; one out of a cluster held at the bottom is not turned.
                 if (($banded[$to] ?? RankUnit::Cluster)->top()) {
-                    $soft[$tail][] = [$to, $from, $minlen + $at[$head] - $at[$tail], $weight];
+                    $soft[$tail][] = [$to, $from, $minlen - $at[$tail], $weight];
                     continue;
                 }
                 $soft[$tail][] = [$from, $to, $minlen + $at[$tail] - $at[$head], $weight];

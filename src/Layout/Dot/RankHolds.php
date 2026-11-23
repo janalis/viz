@@ -75,6 +75,8 @@ final readonly class RankHolds
         /** @var array<int, RankUnit> $atEnds */
         $atEnds = [];
         $both = [];
+        /** @var array<int, array<int, true>> $sides */
+        $sides = [];
         foreach ($this->held as $node => $written) {
             if ($written !== $scope || !\array_key_exists($node, $unitOf) || RankUnit::Cluster !== $units[$unitOf[$node]]) {
                 continue;
@@ -88,8 +90,16 @@ final readonly class RankHolds
                     continue;
                 }
                 $atEnds[$node] = $end;
+                $sides[$unitOf[$node]][(int) $end->top()] = true;
             }
             $heldIn[$unitOf[$node]][] = $node;
+        }
+        // A cluster holding nodes of sets at both ends ties the whole scope to one rank, as one set at both ends does.
+        foreach ($sides as $unit => $side) {
+            if (2 !== \count($side)) {
+                continue;
+            }
+            $both[] = $unit;
         }
         /** @var array<int, array{int, int}> $joins */
         $joins = [];

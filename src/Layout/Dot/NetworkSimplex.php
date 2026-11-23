@@ -516,7 +516,8 @@ final class NetworkSimplex
         foreach ($this->tails as $edge => $tail) {
             $edges[] = [$tail, $this->heads[$edge], $this->minlens[$edge], $this->weights[$edge]];
         }
-        $this->value = RankBalance::spread($this->value, $edges);
+        // Ranked component by component, a node only a rank set's bounds hold is spread too, as `dot` is measured to.
+        $this->value = RankBalance::spreadBounded($this->value, $edges);
     }
 
     /**

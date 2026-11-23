@@ -1247,6 +1247,10 @@ final class DotEngineTest extends TestCase
         // Whatever order the sets come in, a node held at both ends leaves the others' sets alone.
         $this->assertSame([['a', 'b', 'c'], ['d', 'x']], $ranks('subgraph cluster_a { a; b; c; d; } c -> d; {rank=min; a} {rank=max; a} {rank=same; d; x}'));
         $this->assertSame([['a', 'b', 'c'], ['d', 'x']], $ranks('subgraph cluster_a { a; b; c; d; } c -> d; {rank=same; d; x} {rank=min; a} {rank=max; a}'));
+        // An edge turned into a cluster held at the top reaches it at its top.
+        $this->assertSame([['n0', 'n2'], ['n1', 'n3', 'n5']], $ranks('subgraph cluster_a { n0; n1; n2; } n5 -> n2; n3 -> n1; n0 -> n1; {rank=min; n2} {rank=min; n0}'));
+        // A cluster holding nodes of sets at both ends ties the whole graph to one rank.
+        $this->assertSame([['n0', 'n1', 'n2', 'n4']], $ranks('subgraph cluster_a { n0; n4; } n0 -> n2; n1 -> n2; {rank=max; n0} {rank=min; n4; n2}'));
         // Held at both ends, it ties the whole graph to one rank.
         $this->assertSame([['a', 'b', 'c', 'd']], $ranks('subgraph cluster_a { a; b; } c; c -> d; {rank=min; a} {rank=max; a}'));
         // Below the cluster's top, the node leaves for the set's end; one before the cluster's last moves apart.
@@ -1255,6 +1259,20 @@ final class DotEngineTest extends TestCase
         // A cluster of nothing but held nodes of one set breaks a cycle from its first node.
         $this->assertSame([['n0', 'n1'], ['n2']], $ranks('subgraph cluster_0 { n1; n0; } n2 -> n0; n2 -> n1; n1 -> n2; {rank=same; n1; n0}'));
         $this->assertSame([['n0', 'n2'], ['n1']], $ranks('subgraph cluster_0 { n2; n0; } n2 -> n1; n1 -> n0; {rank=same; n2; n0}'));
+    }
+
+    public function testANodeOnlyARankSetBoundsSpreadsOverTheRanksAsDotSpreadsIt(): void
+    {
+        $ranks = static fn (string $body): array => \array_map(static function (array $row): array {
+            \sort($row);
+
+            return $row;
+        }, self::rows($body));
+
+        // Each as dot 16.1.0 ranks it: y and z, held only by the set's bounds, move to the emptiest ranks.
+        $this->assertSame([['a'], ['y'], ['b']], $ranks('a -> b [minlen=3]; {rank=min; a} y'));
+        $this->assertSame([['a'], ['y'], ['b']], $ranks('a -> b [minlen=3]; {rank=max; b} y'));
+        $this->assertSame([['x'], ['y'], ['z'], ['e']], $ranks('e -> x [minlen=3]; {rank=min; x} y; z'));
     }
 
     public function testHeldNodesKeepTheirRanksAndSetsAsDotRanksThem(): void
