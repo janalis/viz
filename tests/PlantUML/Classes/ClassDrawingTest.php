@@ -1000,6 +1000,8 @@ final class ClassDrawingTest extends TestCase
         $this->assertSame([121.0, 178.0], $size("class A\nnote top of A : t\nclass B\nB --> A"));
         $this->assertSame([155.0, 178.0], $size("class A\nnote left of A : l\nnote top of A : t\nclass B\nB --> A"));
         $this->assertSame([198.0, 178.0], $size("class X\nnote top of X : t\nclass Y\nclass Z\nY --> X\nZ --> X"));
+        // A note beside a classifier removed is laid out no edge, nor drawn.
+        $this->assertEqualsWithDelta([62.0, 70.0], $size("class A\nclass B\nnote bottom of A : n\nB --> A\nremove A"), 1e-9);
     }
 
     public function testContainersStandAsTheirSymbolsDrawThem(): void

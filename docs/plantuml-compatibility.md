@@ -59,7 +59,7 @@ The diagrams laid out with svek — class, description, state, legacy activity a
 
 ### Class diagrams
 
-Laid out as PlantUML's svek lays them out, by the native dot engine: each classifier and note a box of its drawn size, made in the order they were written, a note beside a classifier or a package among them, a link's dashes less one its minimum length (`->` across, `-->` down, `-up->`, `-left->` and the like turned round), a label a box of its own, packages as clusters; 35 points between nodes and 60 between ranks unless `skinparam nodesep` or `ranksep` say.
+Laid out as PlantUML's svek lays them out, by the native dot engine: each classifier and note a box of its drawn size, made in the order they were written, a note beside a classifier or a package among them and its edge among the links, a link's dashes less one its minimum length (`->` across, `-->` down, `-up->`, `-left->` and the like turned round), a label a box of its own, packages as clusters; 35 points between nodes and 60 between ranks unless `skinparam nodesep` or `ranksep` say.
 
 | Drawn natively | Left to PlantUML |
 | --- | --- |

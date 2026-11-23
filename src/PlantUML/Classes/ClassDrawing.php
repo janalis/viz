@@ -148,10 +148,15 @@ final class ClassDrawing
         foreach ($this->classes->notes as $note) {
             $notes[$note->id] = $note;
         }
-        foreach (\array_unique([...$this->classes->made, ...$this->classes->leaves, ...\array_keys($this->classes->entities), ...\array_keys($notes)]) as $id) {
+        foreach (\array_unique([...$this->classes->made, ...\array_keys($this->classes->entities), ...\array_keys($notes)]) as $id) {
             \array_key_exists($id, $this->classes->entities) ? $this->classifier($svek, $this->classes->entities[$id], $portions, $linked, $icons, $letter) : $this->note($svek, $notes[$id]);
         }
-        foreach (Svek::linkOrder($this->classes->links) as $index => $link) {
+        foreach ($this->classes->linkOrder() as $index) {
+            if (\is_string($index)) {
+                $this->noteEdge($svek, $notes[$index], $held);
+                continue;
+            }
+            $link = $this->classes->links[$index];
             [$from, $to] = [$this->end($svek, $link->from, $held), $this->end($svek, $link->to, $held)];
             if (null === $from || null === $to) {
                 continue;
@@ -175,28 +180,25 @@ final class ClassDrawing
         }
         $drawn = \array_values(\array_filter($this->classes->leaves, fn (string $id): bool => \array_key_exists($id, $this->boxes) || \array_key_exists($id, $this->notes)));
         Squares::put($svek, $drawn, $groups, [null, ...\array_keys($this->classes->groups)], $this->classes->links, $this->classes->notes);
-        $this->noteEdges($svek, $held);
 
         return $svek;
     }
 
     /**
-     * Lays each note beside a classifier or a package out an edge from it or to it: as svek, a
+     * Lays a note beside a classifier or a package out an edge from it or to it: as svek, a
      * note beside a package stands beside a point inside its cluster.
      *
      * @param array<string, true> $held the groups holding something
      */
-    private function noteEdges(Svek $svek, array $held): void
+    private function noteEdge(Svek $svek, PlantUmlNote $note, array $held): void
     {
-        foreach ($this->classes->notes as $note) {
-            $end = null === $note->entity || !\array_key_exists($note->id, $this->notes) ? null : $this->end($svek, $note->entity, $held);
-            if (null === $end) {
-                continue;
-            }
-            $side = $note->side();
-            $across = \in_array($side, ['left', 'right'], strict: true) ? 1 : 2;
-            $this->noteEdges[$note->id] = \in_array($side, ['left', 'top'], strict: true) ? $svek->edge($note->id, $end, $across) : $svek->edge($end, $note->id, $across);
+        $end = null === $note->entity || !\array_key_exists($note->id, $this->notes) ? null : $this->end($svek, $note->entity, $held);
+        if (null === $end) {
+            return;
         }
+        $side = $note->side();
+        $across = \in_array($side, ['left', 'right'], strict: true) ? 1 : 2;
+        $this->noteEdges[$note->id] = \in_array($side, ['left', 'top'], strict: true) ? $svek->edge($note->id, $end, $across) : $svek->edge($end, $note->id, $across);
     }
 
     /**

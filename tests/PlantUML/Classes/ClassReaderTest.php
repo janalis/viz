@@ -16,6 +16,16 @@ use PHPUnit\Framework\TestCase;
 
 final class ClassReaderTest extends TestCase
 {
+    public function testNotesBesideClassifiersAreMadeAndLinkedWhereTheyWereWritten(): void
+    {
+        $classes = self::read("class A\nnote \"f\" as N\nnote bottom of A : n\nclass B\nN .. B\nA --> B");
+
+        // As the jar's svek writes them: the nodes A, N, the note, B; the note's edge first, then N .. B and A --> B.
+        $this->assertSame(['A', 'N', 'note#1', 'B'], $classes->made);
+        $this->assertSame(['A', 'N', 'B'], $classes->leaves);
+        $this->assertSame(['note#1', 0, 1], $classes->linkOrder());
+    }
+
     public function testClassifiersTakeTheirKindNameBodyAndDecorations(): void
     {
         $classes = self::read(<<<'PUML'

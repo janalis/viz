@@ -265,25 +265,39 @@ final class Svek
      */
     public static function linkOrder(array $links): array
     {
-        $ends = static fn (PlantUmlLink $link): array => [\min($link->from, $link->to), \max($link->from, $link->to)];
-        /** @var list<int> $order */
-        $order = [];
-        foreach ($links as $index => $link) {
-            $at = 0;
-            while ($at < \count($order) && $ends($links[$order[$at]]) !== $ends($link)) {
-                ++$at;
-            }
-            while ($at < \count($order) && $ends($links[$order[$at]]) === $ends($link)) {
-                ++$at;
-            }
-            $order = [...\array_slice($order, offset: 0, length: $at), $index, ...\array_slice($order, offset: $at)];
-        }
         $ordered = [];
-        foreach ($order as $index) {
+        foreach (self::order(\array_map(static fn (PlantUmlLink $link): array => [$link->from, $link->to], $links)) as $index) {
             $ordered[$index] = $links[$index];
         }
 
         return $ordered;
+    }
+
+    /**
+     * The order svek writes links in, given each one's two ends in the order they were written,
+     * as {@see self::linkOrder()} orders them.
+     *
+     * @template K of array-key
+     * @param array<K, array{string, string}> $ends
+     * @return list<K> the keys in that order
+     */
+    public static function order(array $ends): array
+    {
+        $pair = static fn (array $end): array => [\min($end[0], $end[1]), \max($end[0], $end[1])];
+        /** @var list<K> $order */
+        $order = [];
+        foreach ($ends as $key => $end) {
+            $at = 0;
+            while ($at < \count($order) && $pair($ends[$order[$at]]) !== $pair($end)) {
+                ++$at;
+            }
+            while ($at < \count($order) && $pair($ends[$order[$at]]) === $pair($end)) {
+                ++$at;
+            }
+            $order = [...\array_slice($order, offset: 0, length: $at), $key, ...\array_slice($order, offset: $at)];
+        }
+
+        return $order;
     }
 
     /** How much room svek leaves around a link's label, both sides together: 1 each side, 6 on a loop. */

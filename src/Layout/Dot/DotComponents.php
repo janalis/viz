@@ -30,8 +30,10 @@ final class DotComponents
             $flat[$head][] = $tail;
         }
         $members = [];
+        $groups = [];
         for ($node = 0; $node < $count; ++$node) {
             $outer = self::outermost($layers, $node);
+            $groups[$node] = $outer;
             if (-1 !== $outer) {
                 $members[$outer][] = $node;
             }
@@ -53,17 +55,14 @@ final class DotComponents
                 }
                 // An outermost cluster counts as one node: all its nodes are met at once, in the
                 // order they were made, then all their edges, each way in the order the graph meets them.
-                $group = $members[self::outermost($layers, $node)] ?? [$node];
-                $down = [];
-                $up = [];
-                $flats = [];
+                $group = $members[$groups[$node]] ?? [$node];
                 foreach ($group as $member) {
                     $component[$member] = $current;
                     $visit[$member] = $visited++;
-                    $down = [...$down, ...$crossings->down[$member]];
-                    $up = [...$up, ...$crossings->up[$member]];
-                    $flats = [...$flats, ...$flat[$member]];
                 }
+                $down = \array_merge([], ...\array_map(static fn (int $member): array => $crossings->down[$member], $group));
+                $up = \array_merge([], ...\array_map(static fn (int $member): array => $crossings->up[$member], $group));
+                $flats = \array_merge([], ...\array_map(static fn (int $member): array => $flat[$member], $group));
                 \sort($down);
                 \sort($up);
                 $next = [

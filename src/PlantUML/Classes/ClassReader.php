@@ -47,10 +47,10 @@ final class ClassReader
     private Direction $direction = Direction::TopBottom;
     private ?string $last = null;
     private bool $mixing = false;
-    /** @var list<string> the classifiers and floating notes, as PlantUML makes its leaves, in order */
-    private array $leaves = [];
     /** @var list<string> the classifiers and all notes but those on links, as PlantUML makes them, in order */
-    private array $made = [];
+    private array $written = [];
+    /** @var array<string, int> each note beside a classifier or a package, by id: how many links were written before it */
+    private array $besides = [];
     /** @var array<string, true> the couples an association class stands on */
     private array $associated = [];
     /** The namespace separator; null where `set separator none` turned it off. */
@@ -105,8 +105,10 @@ final class ClassReader
             $reader->notes,
             $reader->visibility,
             $reader->direction,
-            $reader->leaves,
-            $reader->made,
+            // PlantUML's leaves: the classifiers and floating notes.
+            \array_values(\array_filter($reader->written, static fn (string $id): bool => !\array_key_exists($id, $reader->besides))),
+            $reader->written,
+            $reader->besides,
         );
     }
 
@@ -379,8 +381,7 @@ final class ClassReader
         $group = $this->entities[$a]->group === $this->entities[$b]->group ? $this->entities[$a]->group : $this->current();
         $point = 'apoint#'.\count($this->entities);
         $this->entities[$point] = new ClassEntity($point, [''], 'point', $group);
-        $this->leaves[] = $point;
-        $this->made[] = $point;
+        $this->written[] = $point;
         $toPoint = self::styledLike(new PlantUmlLink($existing->from, $point, $existing->fromDecor, LinkDecor::None, $existing->length), $existing);
         [$toPoint->label, $toPoint->labelArrow, $toPoint->firstLabel] = [$existing->label, $existing->labelArrow, $existing->firstLabel];
         $fromPoint = self::styledLike(new PlantUmlLink($point, $existing->to, LinkDecor::None, $existing->toDecor, $existing->length), $existing);
@@ -489,8 +490,7 @@ final class ClassReader
     {
         $lines = 'CommandFactoryNote$1' === $command->name ? self::split((string) $command->get('DISPLAY')) : ActivityReader::columns($command->body());
         $this->notes[] = new PlantUmlNote((string) $command->get('CODE'), $lines, color: $command->get('COLOR'), group: $this->current());
-        $this->leaves[] = (string) $command->get('CODE');
-        $this->made[] = (string) $command->get('CODE');
+        $this->written[] = (string) $command->get('CODE');
     }
 
     private function beside(PlantUmlCommand $command): void
@@ -510,7 +510,9 @@ final class ClassReader
             group: $this->current(),
             direction: $this->direction,
         );
-        $this->made[] = 'note#'.(\count($this->notes) - 1);
+        $note = 'note#'.(\count($this->notes) - 1);
+        $this->written[] = $note;
+        $this->besides[$note] = \count($this->links);
     }
 
     private function onLink(PlantUmlCommand $command): void
@@ -559,8 +561,7 @@ final class ClassReader
         if (!\array_key_exists($id, $this->entities)) {
             $dotted = null !== $this->separator && \str_contains($id, $this->separator);
             $this->entities[$id] = new ClassEntity($id, self::split($display ?? ($dotted ? $this->last($id) : $id)), group: $dotted ? $this->within($id) : $this->current());
-            $this->leaves[] = $id;
-            $this->made[] = $id;
+            $this->written[] = $id;
             $this->entities[$id]->path = $dotted ? $id : $this->joined($this->context(), $id);
             $this->entityPaths[$this->entities[$id]->path] = $id;
         }
