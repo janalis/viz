@@ -74,6 +74,7 @@ final readonly class RankHolds
         $heldIn = [];
         /** @var array<int, RankUnit> $atEnds */
         $atEnds = [];
+        $both = [];
         foreach ($this->held as $node => $written) {
             if ($written !== $scope || !\array_key_exists($node, $unitOf) || RankUnit::Cluster !== $units[$unitOf[$node]]) {
                 continue;
@@ -83,7 +84,7 @@ final readonly class RankHolds
             if (null !== $end) {
                 // Held at both ends, it ties the whole scope to one rank, as such a set does.
                 if (RankUnit::Both === $end) {
-                    $units[$unitOf[$node]] = RankUnit::Both;
+                    $both[] = $unitOf[$node];
                     continue;
                 }
                 $atEnds[$node] = $end;
@@ -96,8 +97,8 @@ final readonly class RankHolds
         $groups = [];
         /** @var list<array{int, int, int}> $pending */
         $pending = [];
+        $endKeys = \array_map(static fn (RankUnit $end): string => $end->top() ? 'top' : 'bottom', $ends);
         foreach ($heldIn as $unit => $held) {
-            $endKeys = \array_map(static fn (RankUnit $end): string => $end->top() ? 'top' : 'bottom', $ends);
             $this->hold($unit, $held, $unitOf, $offset, $reach, $joins, $groups, $setUnit, $pending, $endKeys);
         }
         foreach ($pending as [$unit, $node, $at]) {
@@ -149,8 +150,71 @@ final readonly class RankHolds
         foreach ($atEnds as $node => $end) {
             $this->toEnd($node, $end, $units, $unitOf, $offset, $reach, $setUnit, $banded);
         }
+        $this->share(RankUnit::Min, RankUnit::Source, $units, $unitOf, $offset, $reach, $banded);
+        $this->share(RankUnit::Max, RankUnit::Sink, $units, $unitOf, $offset, $reach, $banded);
+        foreach ($both as $unit) {
+            $units[$unit] = RankUnit::Both;
+        }
 
         return [$units, $unitOf, $offset, $reach, $banded];
+    }
+
+    /**
+     * Puts every unit held at one end of the scope on one rank, as every set held there shares
+     * one: the units of sets and the clusters held there join the first cluster held there, or
+     * the first unit, at its top, which then keeps to that end as a source or sink would where any
+     * of them is one.
+     *
+     * @param RankUnit $shared the end's kind, min or max
+     * @param RankUnit $alone the end's kind alone on its rank, source or sink
+     * @param list<RankUnit> $units
+     * @param array<int, int> $unitOf
+     * @param array<int, int> $offset
+     * @param array<int, int> $reach
+     * @param array<int, RankUnit> $banded
+     */
+    private function share(RankUnit $shared, RankUnit $alone, array &$units, array &$unitOf, array &$offset, array &$reach, array &$banded): void
+    {
+        $held = [];
+        foreach ($units as $unit => $kind) {
+            $end = $banded[$unit] ?? $kind;
+            if ($end === $shared || $end === $alone) {
+                $held[$unit] = $end;
+            }
+        }
+        if (\count($held) < 2) {
+            return;
+        }
+        $clusters = \array_keys(\array_intersect_key($held, $banded));
+        $target = $clusters[0] ?? \array_key_first($held);
+        $kind = \in_array($alone, $held, strict: true) ? $alone : $shared;
+        $topOf = static function (int $unit) use ($unitOf, $offset): int {
+            $nodes = \array_keys($unitOf, $unit, strict: true);
+
+            return [] === $nodes ? 0 : \min(\array_map(static fn (int $node): int => $offset[$node], $nodes));
+        };
+        $there = $topOf($target);
+        foreach (\array_keys($held) as $unit) {
+            if ($unit === $target) {
+                continue;
+            }
+            $shift = $there - $topOf($unit);
+            foreach (\array_keys($unitOf, $unit, strict: true) as $node) {
+                $unitOf[$node] = $target;
+                $offset[$node] += $shift;
+                $reach[$node] += $shift;
+            }
+            unset($banded[$unit]);
+            if (RankUnit::Cluster !== $units[$unit]) {
+                $units[$unit] = RankUnit::Same;
+            }
+        }
+        if (RankUnit::Cluster === $units[$target]) {
+            $banded[$target] = $kind;
+
+            return;
+        }
+        $units[$target] = $kind;
     }
 
     /**
@@ -272,7 +336,7 @@ final readonly class RankHolds
             $group = $joins[$root][0] ?? $setUnit['set '.$root] ?? null;
             if (null === $group) {
                 $group = -1 - \count($groups);
-                $groups[$group] = $held[0];
+                $groups[$group] = \min($held);
             }
             $first = $this->earliest($held[0]);
             foreach ($held as $node) {

@@ -1238,6 +1238,15 @@ final class DotEngineTest extends TestCase
         $this->assertSame([['t'], ['a', 'b', 'c', 'x', 'y']], $ranks('subgraph cluster_a { a; b; c; } x -> y; t -> a; {rank=max; a; x}'));
         $this->assertSame([['t'], ['a', 'b', 'c', 'd', 'e']], $ranks('subgraph cluster_p { a; b; } subgraph cluster_q { c; d; e; } t -> b; {rank=max; a; c}'));
         $this->assertSame([['t'], ['a', 'b', 'c', 'd', 'e', 'x']], $ranks('subgraph cluster_p { a; b; } subgraph cluster_q { c; d; e; } t -> b; x; {rank=max; a; c; x}'));
+        // Every set and cluster held at one end shares its rank, and an edge into the top turns.
+        $this->assertSame([['a', 'b', 'c', 'x'], ['e']], $ranks('subgraph cluster_a { a; b; c; } {rank=min; a} {rank=min; x} e -> x [minlen=3];'));
+        $this->assertSame([['a', 'b', 'c', 'x'], ['e']], $ranks('subgraph cluster_a { a; b; c; } {rank=min; a} {rank=min; x} e -> x;'));
+        $this->assertSame([['b', 'p', 'q', 'r'], ['a', 'c'], ['e']], $ranks('subgraph cluster_a { a; b; c; } a -> b; {rank=min; b} subgraph cluster_q { p; q; r; } {rank=min; p} e -> b [minlen=2];'));
+        $this->assertSame([['a', 'b', 'c', 'e', 'x']], $ranks('subgraph cluster_a { a; b; c; } {rank=max; a} {rank=max; x} x -> e [minlen=3];'));
+        $this->assertSame([['a', 'b', 'c', 'd', 'e', 'f'], ['t']], $ranks('subgraph cluster_a { a; b; c; } subgraph cluster_d { d; e; f; } {rank=min; b} {rank=min; e} t -> e [minlen=2];'));
+        // Whatever order the sets come in, a node held at both ends leaves the others' sets alone.
+        $this->assertSame([['a', 'b', 'c'], ['d', 'x']], $ranks('subgraph cluster_a { a; b; c; d; } c -> d; {rank=min; a} {rank=max; a} {rank=same; d; x}'));
+        $this->assertSame([['a', 'b', 'c'], ['d', 'x']], $ranks('subgraph cluster_a { a; b; c; d; } c -> d; {rank=same; d; x} {rank=min; a} {rank=max; a}'));
         // Held at both ends, it ties the whole graph to one rank.
         $this->assertSame([['a', 'b', 'c', 'd']], $ranks('subgraph cluster_a { a; b; } c; c -> d; {rank=min; a} {rank=max; a}'));
         // Below the cluster's top, the node leaves for the set's end; one before the cluster's last moves apart.

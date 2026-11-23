@@ -38,6 +38,8 @@ final class DotRanking
     /** @var array<int, true> the groups any max or sink set reached */
     private array $bottom = [];
     private readonly RankHolds $holds;
+    /** @var array<int, RankUnit> each group held at an end: that end's kind, both ends' where it reached both */
+    private array $ends = [];
 
     /**
      * @param non-negative-int $nodes
@@ -74,6 +76,14 @@ final class DotRanking
             $roots[$node] = $this->find($node);
         }
         $this->holds = new RankHolds($held, $roots, $edges);
+        foreach ($this->top + $this->bottom as $root => $_) {
+            $kind = $this->kind[$root];
+            $this->ends[$root] = match (true) {
+                \array_key_exists($root, $this->top) && \array_key_exists($root, $this->bottom) => RankUnit::Both,
+                \array_key_exists($root, $this->top) => RankKind::Source === $kind ? RankUnit::Source : RankUnit::Min,
+                default => RankKind::Sink === $kind ? RankUnit::Sink : RankUnit::Max,
+            };
+        }
     }
 
     /**
@@ -175,7 +185,7 @@ final class DotRanking
             $inner[$child] = $work->getReturn();
         }
         [$units, $unitOf, $offset, $reach, $banded] = $this->units($cluster, $inner);
-        [$hard, $soft] = $this->constraints($units, $unitOf, $offset, $reach);
+        [$hard, $soft] = $this->constraints($units, $unitOf, $offset, $reach, $banded);
         $hard = $this->bounds($units, DotAcyclic::orient(\count($units), $this->extremes($units, $hard)), $banded);
         $balanced = -1 === $cluster ? $this->spread : RankSpread::None;
         $ranks = \in_array(RankUnit::Both, $units, strict: true) ? \array_fill(0, \count($units), value: 0) : $this->solve(\count($units), $hard, $soft, $balanced);
@@ -237,17 +247,7 @@ final class DotRanking
             }
         }
 
-        $ends = [];
-        foreach ($this->top + $this->bottom as $root => $_) {
-            $kind = $this->kind[$root];
-            $ends[$root] = match (true) {
-                \array_key_exists($root, $this->top) && \array_key_exists($root, $this->bottom) => RankUnit::Both,
-                \array_key_exists($root, $this->top) => RankKind::Source === $kind ? RankUnit::Source : RankUnit::Min,
-                default => RankKind::Sink === $kind ? RankUnit::Sink : RankUnit::Max,
-            };
-        }
-
-        return $this->holds->tie($cluster, $units, $unitOf, $offset, $setUnit, $ends);
+        return $this->holds->tie($cluster, $units, $unitOf, $offset, $setUnit, $this->ends);
     }
 
     /**
@@ -307,9 +307,10 @@ final class DotRanking
      * @param array<int, int> $unitOf
      * @param array<int, int> $offset each node's offset in its unit
      * @param array<int, int> $reach the offset an edge from a node of no cluster reaches each node at
+     * @param array<int, RankUnit> $banded clusters held at an end, whose edges are turned as a set's there are
      * @return array{list<array{int, int, int, int}>, list<array{int, int, int, int}>}
      */
-    private function constraints(array $units, array $unitOf, array $offset, array $reach): array
+    private function constraints(array $units, array $unitOf, array $offset, array $reach, array $banded = []): array
     {
         $hard = [];
         $soft = [];
@@ -328,6 +329,11 @@ final class DotRanking
             if (RankUnit::Cluster === $units[$from] || RankUnit::Cluster === $units[$to]) {
                 // Between two clusters, as dot is measured to rank them, an edge reaches both ends at their own offsets.
                 $at = RankUnit::Cluster === $units[$from] && RankUnit::Cluster === $units[$to] ? $offset : $reach;
+                // An edge into a cluster held at the top points away from it, as dot is measured to turn it; one out of a cluster held at the bottom is not turned.
+                if (($banded[$to] ?? RankUnit::Cluster)->top()) {
+                    $soft[$tail][] = [$to, $from, $minlen + $at[$head] - $at[$tail], $weight];
+                    continue;
+                }
                 $soft[$tail][] = [$from, $to, $minlen + $at[$tail] - $at[$head], $weight];
                 continue;
             }
@@ -374,8 +380,7 @@ final class DotRanking
                 continue;
             }
             foreach (\array_keys($units) as $other) {
-                // Two units held at the same end bound nothing of each other.
-                if ($other === $set || ($kind->top() === $kinds[$other]->top() && $kind->bottom() === $kinds[$other]->bottom())) {
+                if ($other === $set) {
                     continue;
                 }
                 $edges[] = $kind->top() ? [$set, $other, $kind->gap(), 0] : [$other, $set, $kind->gap(), 0];
