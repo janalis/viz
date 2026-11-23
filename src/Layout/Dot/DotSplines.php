@@ -41,12 +41,14 @@ final class DotSplines
     private array $place = [];
     /** @var array<int, float> where each label node's label was drawn, its near side across, once its edge is routed */
     private array $drawn = [];
-    /** @var array<int, float> where each label node's line, as drawn, reaches furthest right across its rank, once its edge is routed */
+    /** @var array<int, float> where each label or virtual node's line, as drawn, reaches furthest right across its rank, once its edge is routed */
     private array $back = [];
     /** @var array<int, float> where each virtual or label node's edge runs furthest left across its rank, once routed */
     private array $routed = [];
     /** @var array<int, string> the two nodes each label node's edge joins, in either order */
     private array $pairs = [];
+    /** @var array<int, int> how many edges run through each node between their ends */
+    private array $through = [];
 
     public function __construct(
         private readonly DotLayers $layers,
@@ -62,6 +64,11 @@ final class DotSplines
             $ends = [$layers->paths[$layered][0], $layers->paths[$layered][\count($layers->paths[$layered]) - 1]];
             \sort($ends);
             $this->pairs[$node] = \implode(',', $ends);
+        }
+        foreach ($layers->paths as $path) {
+            foreach (\array_slice($path, offset: 1, length: -1) as $node) {
+                $this->through[$node] = ($this->through[$node] ?? 0) + 1;
+            }
         }
         foreach ($layers->ranks as $nodes) {
             foreach ($nodes as $place => $node) {
@@ -100,7 +107,8 @@ final class DotSplines
 
     /**
      * Edges in the order `dot` is seen to route them: the shortest first, from end to end, of
-     * edges as long those given first, else in their order.
+     * edges as long those given first, else in the order the graph gives them, whatever order
+     * their layers keep them in.
      *
      * @param array<int, int> $edges each edge's original index, by its index in the layers
      * @param array<int, int> $first the edges to route first of those as long, by their index in the layers
@@ -119,7 +127,7 @@ final class DotSplines
                     $this->position->y[$this->layers->rank[$path[0]]] - $this->position->y[$this->layers->rank[$path[\count($path) - 1]]],
                 ), precision: 3);
         }
-        \uksort($edges, static fn (int $a, int $b): int => [$lengths[$a], !\array_key_exists($a, $first), $a] <=> [$lengths[$b], !\array_key_exists($b, $first), $b]);
+        \uksort($edges, static fn (int $a, int $b): int => [$lengths[$a], !\array_key_exists($a, $first), $edges[$a]] <=> [$lengths[$b], !\array_key_exists($b, $first), $edges[$b]]);
 
         return $edges;
     }
@@ -155,6 +163,11 @@ final class DotSplines
             $xs = self::across($drawn, $this->position->y[$rank] - $this->half[$rank], $this->position->y[$rank] + $this->half[$rank]);
             if ([] !== $xs) {
                 $this->routed[$node] = \min($this->routed[$node] ?? \INF, ...$xs);
+                // A label node's line is kept when its label is set; an edge's without one, here,
+                // where it runs alone through its virtual node, not spread with others.
+                if (DotLayers::VIRTUAL === $this->layers->kind[$node] && 1 === $this->through[$node]) {
+                    $this->back[$node] = \max(...$xs);
+                }
             }
         }
 
@@ -448,11 +461,19 @@ final class DotSplines
             // Its label stands on its right, or its left mirrored: the edge keeps to the other side.
             $at = \array_key_exists($node, $this->position->sides) ? $this->position->side($node) : $at + ($layers->mirrored ? -$layers->right[$node] : $layers->left[$node]);
             // Laid out to be turned, its label on its left keeps a quarter of the node separation, rounded
-            // down, clear of the far side of the line of its neighbour between the same two nodes where
-            // that was routed already, as `dot` is seen to route edges one after another, wherever
-            // network simplex set the node.
-            if ($layers->mirrored && null !== $previous && \array_key_exists($previous, $this->back) && $this->pairs[$previous] === $this->pairs[$node]) {
+            // down, clear of the far side of the line of its neighbour there, a labelled edge between the
+            // same two nodes or any edge without a label, where that was routed already, as `dot` is seen to route edges one after another, wherever network
+            // simplex set the node; pushed past the node, its line goes no further than leaves its label's
+            // far side 10 points past the node, as measured on dot's output.
+            if (
+                $layers->mirrored
+                && null !== $previous
+                && \array_key_exists($previous, $this->back)
+                && (DotLayers::VIRTUAL === $layers->kind[$previous] || $this->pairs[$previous] === $this->pairs[$node])
+            ) {
+                $x = $this->position->x[$node];
                 $at = \min($right, $this->back[$previous] + $this->quarter() + $layers->left[$node]);
+                $at = $at > $x ? \max($x, \min($at, $x + $layers->left[$node] - 10)) : $at;
             }
             [$left, $right] = $layers->mirrored ? [$at, $right] : [$left, $this->reach($node, $next, $at, $right)];
         }

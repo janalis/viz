@@ -753,6 +753,66 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([-37.5, 20.5], [$placement->labels[0][0] - $placement->endpoints['x']->x, $placement->labels[1][0] - $placement->endpoints['x']->x], 0.5);
     }
 
+    public function testLaidOutLeftToRightALabelRunsAsFarAsLeavesItAQuarterSeparationClearOfAnyLineRoutedBeforeIt(): void
+    {
+        // A table label of a width and a height, as `WxH`.
+        $label = static fn (string $size): string => '<<TABLE FIXEDSIZE="TRUE" WIDTH="'.\str_replace(search: 'x', replace: '" HEIGHT="', subject: $size).'"><TR><TD></TD></TR></TABLE>>';
+        $labels = static function (string $node, string $source): array {
+            $graph = Work::run(new DotParser()->parse('digraph { rankdir=LR; node [shape=rect, width=0.5, height=0.5, label=""]; '.$source.' }'));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot(
+                $graph,
+                static fn ($node): array => DotNodes::size($graph, $node),
+                static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+            )));
+
+            return \array_values(\array_map(static fn (array $at): float => $at[1] - $placement->endpoints[$node]->y, $placement->labels));
+        };
+
+        // As dot 16.1.0 sets them, down the page from the node: b -> c's label 18 points, a quarter
+        // separation, below the plain edge a -> c routed before it, though another two nodes' edge.
+        $this->assertEqualsWithDelta([9.0], $labels('c', 'nodesep=1; a -> c; b -> c [label='.$label('10x30').'];'), 0.5);
+        $this->assertEqualsWithDelta([19.0], $labels('c', 'nodesep=1; a -> c; b -> c [label='.$label('10x50').'];'), 0.5);
+        // Three labelled edges between the same two nodes: the middle one, pushed by the first, runs
+        // no further than leaves its label's top 10 points past its node, straight for a label 10 high.
+        $this->assertEqualsWithDelta([-16.5, -5.0, 15.0], $labels('a', 'nodesep=0.6; '.\str_repeat('a -> b [label='.$label('10x10').']; ', times: 3)), 0.5);
+        $this->assertEqualsWithDelta(
+            [-26.8, -1.0, 24.0],
+            $labels('a', 'nodesep=0.6; a -> b [label='.$label('10x10').']; a -> b [label='.$label('10x20').']; a -> b [label='.$label('10x10').'];'),
+            0.5,
+        );
+        // A plain edge written first is routed first, labelled edges as long not before it, and pushes the label beside it.
+        $this->assertEqualsWithDelta([-9.0, 24.0], $labels('a', 'nodesep=0.4; a -> b; a -> b [label='.$label('20x30').']; a -> b [label='.$label('10x20').'];'), 0.5);
+    }
+
+    public function testEdgesAsLongAreRoutedInTheOrderTheGraphGivesThemWhateverOrderTheirLayersKeep(): void
+    {
+        // A table label of a width and a height, as `WxH`.
+        $label = static fn (string $size): string => '<<TABLE FIXEDSIZE="TRUE" WIDTH="'.\str_replace(search: 'x', replace: '" HEIGHT="', subject: $size).'"><TR><TD></TD></TR></TABLE>>';
+        $graph = Work::run(new DotParser()->parse(
+            'digraph { nodesep=0.25; node [shape=rect, label=""]; n0 [width=0.75, height=0.5]; n1 [width=0.3, height=0.7]; '
+            .'n0 -> n1 [label='
+            .$label('20x20')
+            .']; n0 -> n1 [label='
+            .$label('10x20')
+            .']; n0 -> n1 [label='
+            .$label('20x10')
+            .']; '
+            .'n1 -> n0 [label='
+            .$label('43x30')
+            .']; n0 -> n1 [label='
+            .$label('30x10')
+            .']; }',
+        ));
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot(
+            $graph,
+            static fn ($node): array => DotNodes::size($graph, $node),
+            static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+        )));
+
+        // As dot 16.1.0 sets them across from n0: the reversed edge, written fourth, is routed fourth, not first.
+        $this->assertEqualsWithDelta([-65.0, -27.0, 10.0, 100.6, 38.5], \array_map(static fn (array $at): float => $at[0] - $placement->endpoints['n0']->x, $placement->labels), 0.5);
+    }
+
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void
     {
         // PlantUML's web --> app : REST, app --> data : SQL, web ..> data : cache, as svek writes it.
