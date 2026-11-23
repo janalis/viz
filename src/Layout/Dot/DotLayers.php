@@ -191,7 +191,8 @@ final class DotLayers
         }
         $first = \count($this->edges);
         $path = $this->chain($top, $bottom, $weight, $ports, null);
-        $chains[$key] = [$path, \range($first, \count($this->edges) - 1)];
+        // Merged into a chain already made, it makes no stretch of its own to raise.
+        $chains[$key] = [$path, $first < \count($this->edges) ? \range($first, \count($this->edges) - 1) : []];
 
         return $path;
     }

@@ -40,11 +40,13 @@ final class DotSplines
     /** @var array<int, int> each node's place in its rank */
     private array $place = [];
     /** @var array<int, float> where each label node's label was drawn, its near side across, once its edge is routed */
-    public array $drawn = [];
+    private array $drawn = [];
     /** @var array<int, float> where each label node's line, as drawn, reaches furthest right across its rank, once its edge is routed */
-    public array $back = [];
+    private array $back = [];
     /** @var array<int, float> where each virtual or label node's edge runs furthest left across its rank, once routed */
     private array $routed = [];
+    /** @var array<int, string> the two nodes each label node's edge joins, in either order */
+    private array $pairs = [];
 
     public function __construct(
         private readonly DotLayers $layers,
@@ -55,6 +57,11 @@ final class DotSplines
     ) {
         foreach ($layers->rank as $node => $rank) {
             $this->half[$rank] = \max($this->half[$rank] ?? 0.0, $layers->height[$node] / 2);
+        }
+        foreach ($layers->labels as $layered => $node) {
+            $ends = [$layers->paths[$layered][0], $layers->paths[$layered][\count($layers->paths[$layered]) - 1]];
+            \sort($ends);
+            $this->pairs[$node] = \implode(',', $ends);
         }
         foreach ($layers->ranks as $nodes) {
             foreach ($nodes as $place => $node) {
@@ -104,12 +111,13 @@ final class DotSplines
         $lengths = [];
         foreach (\array_keys($edges) as $layered) {
             $path = $this->layers->paths[$layered] ?? [];
+            // To the thousandth of a point, so edges as long tie whatever the rounding.
             $lengths[$layered] = [] === $path
                 ? 0.0
-                : \hypot(
+                : \round(\hypot(
                     $this->position->x[$path[0]] - $this->position->x[$path[\count($path) - 1]],
                     $this->position->y[$this->layers->rank[$path[0]]] - $this->position->y[$this->layers->rank[$path[\count($path) - 1]]],
-                );
+                ), precision: 3);
         }
         \uksort($edges, static fn (int $a, int $b): int => [$lengths[$a], !\array_key_exists($a, $first), $a] <=> [$lengths[$b], !\array_key_exists($b, $first), $b]);
 
@@ -443,8 +451,8 @@ final class DotSplines
             // down, clear of the far side of the line of its neighbour between the same two nodes where
             // that was routed already, as `dot` is seen to route edges one after another, wherever
             // network simplex set the node.
-            if ($layers->mirrored && null !== $previous && \array_key_exists($previous, $this->back) && $this->pair($previous) === $this->pair($node)) {
-                $at = $this->back[$previous] + $this->quarter() + $layers->left[$node];
+            if ($layers->mirrored && null !== $previous && \array_key_exists($previous, $this->back) && $this->pairs[$previous] === $this->pairs[$node]) {
+                $at = \min($right, $this->back[$previous] + $this->quarter() + $layers->left[$node]);
             }
             [$left, $right] = $layers->mirrored ? [$at, $right] : [$left, $this->reach($node, $next, $at, $right)];
         }
@@ -465,7 +473,7 @@ final class DotSplines
             return $at;
         }
 
-        return \max($at, \min($right, $this->routed[$next] - \floor(\round($this->nodeSeparation) / 4) - $this->layers->right[$node]));
+        return \max($at, \min($right, $this->routed[$next] - $this->quarter() - $this->layers->right[$node]));
     }
 
     /** Where the room beside a node ends on its left, at its neighbour there. */
@@ -484,14 +492,22 @@ final class DotSplines
         return $bound;
     }
 
-    /** The two nodes a label node's edge joins, in either order. */
-    private function pair(int $node): string
+    /**
+     * Where a label node's label was drawn, its near side across, and how far right its line
+     * reaches across its rank: the edges routed after it keep clear of them.
+     */
+    public function labelled(int $node, float $drawn, float $back): void
     {
-        $path = $this->layers->paths[\array_flip($this->layers->labels)[$node]];
-        $ends = [$path[0], $path[\count($path) - 1]];
-        \sort($ends);
+        $this->drawn[$node] = $drawn;
+        $this->back[$node] = $back;
+    }
 
-        return \implode(',', $ends);
+    /** Forgets every edge routed so far, as before routing them again. */
+    public function forget(): void
+    {
+        $this->drawn = [];
+        $this->back = [];
+        $this->routed = [];
     }
 
     /** A quarter of the node separation, to the point, rounded down. */

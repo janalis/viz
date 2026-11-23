@@ -530,6 +530,14 @@ final class DotDrawingTest extends TestCase
         $this->assertSame('#d3d3d3', $filled[2]->fill, 'without a list, a plain fill');
     }
 
+    public function testConcentratedEdgesFromOnePortMergeIntoTheChainBeforeThem(): void
+    {
+        // The second and third edges join one chain, made by the second, that the third may not raise as a stretch of its own.
+        $drawing = self::draw('digraph { concentrate=true; a -> b; a:e -> b; a:e -> b; }');
+
+        $this->assertNotEmpty(self::kinds($drawing, MarkKind::Polyline));
+    }
+
     public function testConcentratedEdgesDrawEachStretchOnceAndJoinWhereTheyBranch(): void
     {
         $graph = 'a -> b -> c -> d -> e; a -> c; a -> d; a -> e; a -> e';

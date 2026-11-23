@@ -307,8 +307,7 @@ final readonly class DotEngine implements LayoutEngine
         if ($graph->concentrate) {
             // Merged runs are routed once every label is drawn: none may keep clear of a label
             // drawn after its own edge's first route, so they keep their label nodes' room alone.
-            $router->drawn = [];
-            $router->back = [];
+            $router->forget();
             foreach (self::pieces($layers, $edgeIndexes) as $original => $runs) {
                 $pieces[$original] = \array_map(static function (array $run) use ($router, $point): array {
                     [$spline, $corners] = $router->route($run[0]);
@@ -403,8 +402,7 @@ final readonly class DotEngine implements LayoutEngine
             $x = $layers->mirrored ? \min($across) : \max($across);
             // The edges routed after it keep clear of the label as drawn, and, laid out to be turned,
             // the labels routed after it of its line's far side, as `dot` is seen to route them.
-            $router->drawn[$node] = $x;
-            $router->back[$node] = \max($across);
+            $router->labelled($node, $x, \max($across));
 
             return [$layers->mirrored ? $x - ($layers->left[$node] / 2) : $x + ($layers->right[$node] / 2), $y];
         }

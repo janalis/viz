@@ -14,6 +14,7 @@
 - Graphviz and PlantUML: where a cluster could stand on either of two ranks at equal cost, the edges into and out of clusters are weighed by their tails in the order the nodes were made, so the native `dot` layout keeps the same edge pointing down as `dot`, not the one written last.
 - Graphviz and PlantUML: the native `dot` layout orders ranks with fewer crossings, as `dot` does: a crossing counts once for each edge drawn between the same two nodes, the initial order is transposed before its flat edges put their ends in order, and a cluster is ordered from its initial order, untransposed, by the long pass alone, as `dot`'s reported crossings show.
 - Graphviz and PlantUML: edges are routed the shortest first, from end to end, as `dot` routes them, of edges as long those with labels first, and an edge label whose neighbour on its label's side was routed already may run as far towards it as leaves the label a quarter of the node separation clear of that neighbour's edge, as `dot` draws it, not held back at its label node.
+- Graphviz: `concentrate=true` with edges leaving one port no longer fails when a third such edge joins the chain the second one merged into.
 
 ## 0.2.6 — 2026-11-22
 

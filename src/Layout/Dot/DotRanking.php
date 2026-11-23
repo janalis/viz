@@ -306,7 +306,7 @@ final class DotRanking
         }
         \ksort($soft);
 
-        return [$hard, [] === $soft ? [] : \array_merge(...$soft)];
+        return [$hard, \array_merge(...$soft)];
     }
 
     /**
