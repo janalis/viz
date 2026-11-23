@@ -164,11 +164,6 @@ final class DotHorizontal
     }
 
     /**
-     * The room a labelled flat edge over the nodes between its ends keeps between them, as `dot`
-     * is seen to keep it: its label's width, and each end's side facing it, each half with a
-     * side rounded to the point.
-     */
-    /**
      * Hangs every part of the graph nothing joins to the rest off the graph's left bound, holding
      * nothing, as the first rank hangs: a rank of nodes with no edge, set apart by a rank set, is
      * then placed like the rest instead of left unconnected.
@@ -198,6 +193,11 @@ final class DotHorizontal
         }
     }
 
+    /**
+     * The room a labelled flat edge over the nodes between its ends keeps between them, as `dot`
+     * is seen to keep it: its label's width, and each end's side facing it, each half with a
+     * side rounded to the point.
+     */
     private function bridge(): void
     {
         $layers = $this->layers;
