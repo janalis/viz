@@ -65,22 +65,24 @@ final class DotPosition
     }
 
     /**
-     * Stretches the positions down and across from inside the padding, the nodes keeping
-     * their size: by a factor down and one across, each at least one.
+     * Stretches the positions down and across from a corner, the padding's inside unless
+     * given, the nodes keeping their size: by a factor down and one across, each at least one.
      */
-    public function stretch(float $across, float $down): void
+    public function stretch(float $across, float $down, ?float $left = null, ?float $top = null): void
     {
         $across = \max(1.0, $across);
         $down = \max(1.0, $down);
-        $this->x = \array_map(fn (float $x): float => $this->padding + (($x - $this->padding) * $across), $this->x);
-        $this->y = \array_map(fn (float $y): float => $this->padding + (($y - $this->padding) * $down), $this->y);
-        $this->boxes = \array_map(fn (array $box): array => [
-            $this->padding + (($box[0] - $this->padding) * $across),
-            $this->padding + (($box[1] - $this->padding) * $down),
-            $this->padding + (($box[2] - $this->padding) * $across),
-            $this->padding + (($box[3] - $this->padding) * $down),
+        $left ??= $this->padding;
+        $top ??= $this->padding;
+        $this->x = \array_map(static fn (float $x): float => $left + (($x - $left) * $across), $this->x);
+        $this->y = \array_map(static fn (float $y): float => $top + (($y - $top) * $down), $this->y);
+        $this->boxes = \array_map(static fn (array $box): array => [
+            $left + (($box[0] - $left) * $across),
+            $top + (($box[1] - $top) * $down),
+            $left + (($box[2] - $left) * $across),
+            $top + (($box[3] - $top) * $down),
         ], $this->boxes);
-        $this->width = (2 * $this->padding) + (($this->width - (2 * $this->padding)) * $across);
-        $this->height = (2 * $this->padding) + (($this->height - (2 * $this->padding)) * $down);
+        $this->width = $left + (($this->width - $this->padding - $left) * $across) + $this->padding;
+        $this->height = $top + (($this->height - $this->padding - $top) * $down) + $this->padding;
     }
 }

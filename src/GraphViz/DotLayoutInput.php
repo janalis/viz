@@ -82,7 +82,13 @@ final class DotLayoutInput
         // With `newrank`, dot is seen to rank across clusters and leave every node in its own.
         $newRank = \in_array(\strtolower($graph->attribute('newrank')), ['true', 'yes', '1'], strict: true);
         $emptied = false;
-        if (!$newRank && null !== $lift) {
+        // With `clusterrank` `global` or `none`, as spelt, dot is seen to lay out and draw no
+        // cluster, unless `newrank` is set.
+        $flat = !$newRank && null !== $lift && \in_array($graph->attribute('clusterrank'), ['global', 'none'], strict: true);
+        if ($flat) {
+            [$clusters, $clusterOf] = [[], []];
+        }
+        if (!$newRank && !$flat && null !== $lift) {
             [$clusterOf, $emptied] = $lift($clusters, $clusterOf, $written);
         }
         $order = 0;
@@ -136,7 +142,7 @@ final class DotLayoutInput
             );
         }
         $sets = [];
-        foreach ($graph->allSubgraphs() as $subgraph) {
+        foreach ($flat ? self::outside($graph->subgraphs) : $graph->allSubgraphs() as $subgraph) {
             $kind = RankKind::tryFrom(\strtolower($subgraph->attribute('rank')));
             // As `dot` is seen to, a cluster's own `rank` ties nothing.
             if (null === $kind || [] === $subgraph->nodes || $subgraph->cluster()) {
@@ -160,6 +166,7 @@ final class DotLayoutInput
             concentrate: \in_array(\strtolower($graph->attribute('concentrate')), ['true', 'yes', '1'], strict: true),
             newRank: $newRank,
             emptied: $emptied,
+            fill: self::fill($graph),
         );
     }
 
@@ -173,13 +180,26 @@ final class DotLayoutInput
         if (\is_numeric($ratio)) {
             return \max(0.01, \min(100.0, (float) $ratio));
         }
+        $fill = self::fill($graph);
+
+        return null === $fill ? null : \max(0.01, \min(100.0, $fill[1] / $fill[0]));
+    }
+
+    /**
+     * The size `ratio=fill` asks the drawing to fill, in points: `size`, where both its width
+     * and height are given or one stands for both; null for any other ratio, or no such size.
+     *
+     * @return ?array{float, float}
+     */
+    private static function fill(DotGraph $graph): ?array
+    {
         $size = \explode(',', \rtrim($graph->attribute('size'), characters: '!'));
         [$width, $height] = [\trim($size[0]), \trim($size[1] ?? $size[0])];
-        if ('fill' !== $ratio || !\is_numeric($width) || !\is_numeric($height) || (float) $width <= 0) {
+        if ('fill' !== \strtolower(\trim($graph->attribute('ratio'))) || !\is_numeric($width) || !\is_numeric($height) || (float) $width <= 0 || (float) $height <= 0) {
             return null;
         }
 
-        return \max(0.01, \min(100.0, (float) $height / (float) $width));
+        return [\min((float) $width, self::MAX_INCHES) * self::POINTS, \min((float) $height, self::MAX_INCHES) * self::POINTS];
     }
 
     /**
@@ -246,6 +266,27 @@ final class DotLayoutInput
             $inner = [];
             self::clusters($graph, $subgraph->subgraphs, $id, $members, $inner, $clusters, $clusterOf, $titles, $ranked);
         }
+    }
+
+    /**
+     * The subgraphs met from the top without going into a cluster, parents first: those whose
+     * `rank` dot is seen to keep when it lays out no cluster.
+     *
+     * @param list<DotSubgraph> $subgraphs
+     * @return list<DotSubgraph>
+     */
+    private static function outside(array $subgraphs): array
+    {
+        $met = [];
+        foreach ($subgraphs as $subgraph) {
+            if ($subgraph->cluster()) {
+                continue;
+            }
+            $met[] = $subgraph;
+            \array_push($met, ...self::outside($subgraph->subgraphs));
+        }
+
+        return $met;
     }
 
     /**

@@ -18,19 +18,25 @@ final class DotBounds
      * A placement moved to stand its padding in from what it draws, and as big as that, as
      * `dot` is seen to bound a drawing: by its nodes, the loops beside them, its clusters with 8
      * around them, its edges' labels and its edges themselves, out to whole points — not by the
-     * room the layout kept around them.
+     * room the layout kept around them; or, stretched to an aspect, by those and the box it was
+     * stretched to, unrounded.
      *
      * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
+     * @param list<array{float, float}> $frame the corners of the box stretched to an aspect, if any
      */
-    public static function bounded(LayoutGraph $graph, DotLayers $layers, Placement $placement, array $edgeIndexes): Placement
+    public static function bounded(LayoutGraph $graph, DotLayers $layers, Placement $placement, array $edgeIndexes, array $frame = []): Placement
     {
-        $lines = [...\array_diff_key($placement->routes, $placement->splines), ...$placement->splines];
+        $lines = [...\array_diff_key($placement->routes, $placement->splines), ...$placement->splines, $frame];
         foreach ($placement->pieces as $runs) {
             foreach ($runs as $run) {
                 $lines[] = $run[0];
             }
         }
-        [$dx, $dy, $width, $height] = self::bounds($graph, $layers, $edgeIndexes, $placement->graph->nodes, $placement->graph->clusters, $placement->labels, $lines);
+        $box = self::bounds($graph, $layers, $edgeIndexes, $placement->graph->nodes, $placement->graph->clusters, $placement->labels, $lines);
+        $padding = $graph->spacing->padding;
+        // As `dot` rounds the bounds of a drawing it did not stretch: across out to whole points; down from where they start, only its height up to a whole point.
+        $box = [] === $frame ? [\floor($box[0] + 1e-6), $box[1], \ceil($box[2] - 1e-6), $box[1] + \ceil($box[3] - $box[1] - 1e-6)] : $box;
+        [$dx, $dy, $width, $height] = [$padding - $box[0], $padding - $box[1], $box[2] - $box[0] + (2 * $padding), $box[3] - $box[1] + (2 * $padding)];
         $nodes = \array_map(static fn (GraphNode $node): GraphNode => $node->at($node->x + $dx, $node->y + $dy), $placement->graph->nodes);
         $endpoints = [];
         foreach ($graph->nodes as $id => $node) {
@@ -87,17 +93,17 @@ final class DotBounds
     }
 
     /**
-     * How far to move a drawing to stand its padding in from what it draws, and how big it then
-     * is, as `dot` is seen to bound a drawing: by its nodes, the loops beside them, its clusters,
-     * its edges' labels and its edges themselves, 8 around its clusters, out to whole points —
-     * not by the room the layout kept around them.
+     * The box a drawing's content takes, as `dot` is seen to bound a drawing: by its nodes, the
+     * loops beside them, its clusters, its edges' labels and its edges themselves, 8 around its
+     * clusters — not by the room the layout kept around them; a box at the padding where it
+     * draws nothing.
      *
      * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      * @param array<int, GraphNode> $nodes
      * @param list<GraphCluster> $clusters
      * @param array<int, array{float, float}> $labels each label's centre, by original index
      * @param array<array-key, list<array{float, float}>> $lines
-     * @return array{float, float, float, float}
+     * @return array{float, float, float, float} left, top, right and bottom
      */
     private static function bounds(LayoutGraph $graph, DotLayers $layers, array $edgeIndexes, array $nodes, array $clusters, array $labels, array $lines): array
     {
@@ -149,13 +155,7 @@ final class DotBounds
                 $take($x, $y, $x, $y);
             }
         }
-        $padding = $graph->spacing->padding;
-        if (!\is_finite($box[0])) {
-            return [0.0, 0.0, 2 * $padding, 2 * $padding];
-        }
-        // As `dot` rounds its bounds: across out to whole points; down from where they start, only its height up to a whole point.
-        $box = [\floor($box[0] + 1e-6), $box[1], \ceil($box[2] - 1e-6), $box[3]];
 
-        return [$padding - $box[0], $padding - $box[1], $box[2] - $box[0] + (2 * $padding), \ceil($box[3] - $box[1] - 1e-6) + (2 * $padding)];
+        return \is_finite($box[0]) ? $box : [$graph->spacing->padding, $graph->spacing->padding, $graph->spacing->padding, $graph->spacing->padding];
     }
 }

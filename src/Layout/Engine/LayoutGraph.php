@@ -39,5 +39,7 @@ final readonly class LayoutGraph
         public bool $newRank = false,
         /** Whether a rank set took a node out of a cluster written before it, which dot is seen to rank cluster by cluster all the same. */
         public bool $emptied = false,
+        /** @var ?array{float, float} the width and height a layout stretches its positions to fill, where it is smaller both ways, as dot's `ratio=fill` with a `size`; else it keeps to {@see $aspect} */
+        public ?array $fill = null,
     ) {}
 }

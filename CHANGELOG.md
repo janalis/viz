@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Graphviz: `clusterrank=global` and `clusterrank=none` lay out and draw no cluster, and drop the rank sets written inside clusters, as `dot` does unless `newrank` is set.
+
+### Fixed
+
+- Graphviz: `ratio` stretches by the box the nodes and clusters take, not the room kept for edge labels and chains, and a curve or label beyond that box still bounds the drawing, as `dot` does; `ratio=fill` with a `size` bigger than the drawing both ways now fills it, and a drawing on a single rank is not stretched.
+- Graphviz and PlantUML: an edge beside a labelled edge between the same two nodes, on the side away from its label, keeps a quarter of the node separation less 2 clear of it, the labelled edge routed first, as `dot` routes them, so the two are no longer drawn on top of each other: an unlabelled edge written before a labelled one, or laid out left to right after it.
+
 ## 0.2.6 — 2026-11-22
 
 ### Fixed

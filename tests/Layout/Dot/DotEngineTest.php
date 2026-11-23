@@ -680,6 +680,40 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([-105.5, -22.5, 24.7, 77.9], \array_map(static fn (array $at): float => $at[0] - $a, $placement->labels), 0.2);
     }
 
+    public function testAnEdgeBesideALabelledOneKeepsClearOfItAsDrawnOnTheSideAwayFromItsLabel(): void
+    {
+        $across = static function (string $body): array {
+            $graph = Work::run(new DotParser()->parse('digraph { nodesep=0.4; node [shape=rect, fixedsize=true, width=0.75, height=0.5, label=""]; '.$body.' }'));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot(
+                $graph,
+                static fn ($node): array => DotNodes::size($graph, $node),
+                static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+            )));
+            $turned = Direction::LeftRight === $placement->directions[''];
+            [$along, $axis] = $turned ? [0, 1] : [1, 0];
+            $label = \array_values($placement->labels)[0][$along];
+            $crossing = [];
+            foreach ($placement->splines as $edge => $line) {
+                foreach (\array_keys(\array_slice($line, offset: 1, preserve_keys: true)) as $at) {
+                    [$from, $to] = [$line[$at - 1], $line[$at]];
+                    if ((($from[$along] - $label) * ($to[$along] - $label)) <= 0 && $from[$along] !== $to[$along]) {
+                        $crossing[$edge] = \round($from[$axis] + ((($label - $from[$along]) / ($to[$along] - $from[$along])) * ($to[$axis] - $from[$axis])) - 4, precision: 1);
+                        break;
+                    }
+                }
+            }
+
+            return $crossing;
+        };
+        $label = '<<TABLE FIXEDSIZE="TRUE" WIDTH="10" HEIGHT="20"><TR><TD></TD></TR></TABLE>>';
+
+        // As dot 16.1.0 draws them where the label stands: the labelled edge routed first, straight,
+        // the plain one bowing 5.5 away from it, a quarter separation less 2 its bound.
+        $this->assertEqualsWithDelta([0 => 21.5, 1 => 27.0], $across("a->b; a->b [label={$label}]"), 0.2);
+        // Laid out left to right, its label above it, the plain edge bows below, not over it.
+        $this->assertEqualsWithDelta([0 => 20.0, 1 => 25.2], $across("rankdir=LR; a->b [label={$label}]; a->b"), 0.2);
+    }
+
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void
     {
         // PlantUML's web --> app : REST, app --> data : SQL, web ..> data : cache, as svek writes it.
@@ -977,6 +1011,41 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([900.0, 180.0], $size(Work::run(new DotEngine()->place($graph(Direction::TopBottom, aspect: 0.2)))), 1e-9);
         $this->assertEqualsWithDelta([234.0, 468.0], $size(Work::run(new DotEngine()->place($graph(Direction::LeftRight, aspect: 2.0)))), 1e-9);
         $this->assertSame([198.0, 180.0], $size(Work::run(new DotEngine()->place($graph(Direction::TopBottom, aspect: 0.0)))), 'no aspect at nought');
+    }
+
+    public function testAnAspectStretchesTheNodesBoxAndFillsASizeBiggerBothWays(): void
+    {
+        $size = static function (string $source): array {
+            // Nodes as big as dot's own, not their labels in the bundled font.
+            $graph = Work::run(new DotParser()->parse(\str_replace('digraph {', replace: 'digraph { node [fixedsize=true];', subject: $source)));
+            $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot(
+                $graph,
+                static fn ($node): array => DotNodes::size($graph, $node),
+                static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+            )));
+
+            return [\round($placement->graph->width - 8, precision: 2), \round($placement->graph->height - 8, precision: 2)];
+        };
+
+        // As dot 16.1.0 stretches them: by the nodes' box alone, 54 by 124.8, the label beside the edge left out, and bounded unrounded;
+        // the label, in the bundled font, keeps its ranks 0.8 further apart than dot's.
+        $this->assertEqualsWithDelta([62.4, 124.8], $size('digraph { ratio=2; a->b [label=x] }'), 1.0);
+        $this->assertSame([90.0, 180.0], $size('digraph { ratio=2; a->b->c; a->c }'), 'not the curve bowing past b');
+        // A curve past the nodes still bounds it, as the loop beside a: 72 by 144.
+        $this->assertSame([72.0, 144.0], $size('digraph { ratio=2; a->a; a->b }'));
+        // Asked to fill 4 by 6 inches, it fills them, laid out down or across; not 1 by 2, smaller than it: as dot 16.1.0 draws them.
+        $this->assertSame([288.0, 432.0], $size('digraph { ratio=fill; size="4,6"; a->b }'));
+        $this->assertSame([288.0, 432.0], $size('digraph { ratio=fill; size="4,6"; rankdir=LR; a->b }'));
+        $this->assertSame([270.0, 540.0], $size('digraph { ratio=fill; size="1,2"; a->b; a->c; a->d; a->e }'));
+        // Clusters count with their margin: 142 by 284, as dot 16.1.0 draws it.
+        $this->assertSame([142.0, 284.0], $size('digraph { ratio=2; subgraph cluster_x { a->b } c->b }'));
+        // On a single rank, dot 16.1.0 stretches nothing, whatever it is asked.
+        $this->assertSame([126.0, 36.0], $size('digraph { ratio=0.2; a; b }'));
+        $this->assertSame([126.0, 36.0], $size('digraph { ratio=fill; size="4,6"; a->b [constraint=false] }'));
+        $this->assertSame([54.0, 90.0], $size('digraph { ratio=0.2; rankdir=LR; a; b }'));
+        // Nodes of no size in a column leave nothing to stretch.
+        $flat = new LayoutGraph([new LayoutNode('a', 'a', 0, 0), new LayoutNode('b', 'b', 0, 0)], [new LayoutEdge(0, 'a', 'b')], spacing: new Spacing(36, 18, 4), aspect: 0.5);
+        $this->assertSame(0.0, Work::run(new DotEngine()->place($flat))->graph->width - 8);
     }
 
     public function testARankSetTakesItsNodesOutOfClustersAndNewrankRanksAcrossThemAsDotDoes(): void

@@ -152,6 +152,23 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame([true, 'cluster_c'], [$ranked->newRank, $ranked->nodes[0]->cluster]);
     }
 
+    public function testGlobalOrNoClusterRankLaysOutNoCluster(): void
+    {
+        $sets = static fn (LayoutGraph $input): array => \array_map(static fn ($set): array => [$set->kind, $set->nodes], $input->rankSets);
+        // Measured on dot 16.1.0: no cluster is drawn, and only sets written outside every cluster tie their nodes.
+        foreach (['global', 'none'] as $value) {
+            $input = self::input("digraph { clusterrank={$value}; subgraph cluster_a { rank=same; x; q; subgraph cluster_b { y } { rank=min; y } } { { rank=max; z } } x->q }");
+            $this->assertSame([], $input->clusters, $value);
+            $this->assertSame([null, null, null, null], \array_map(static fn ($node): ?string => $node->cluster, $input->nodes), $value);
+            $this->assertSame([[RankKind::Max, ['z']]], $sets($input), $value);
+        }
+        // dot 16.1.0 reads the value as spelt, and lays clusters out under newrank whatever it says.
+        $this->assertCount(1, self::input('digraph { clusterrank=GLOBAL; subgraph cluster_a { x } }')->clusters);
+        $this->assertCount(1, self::input('digraph { newrank=true; clusterrank=global; subgraph cluster_a { x } }')->clusters);
+        // The other layouts keep their clusters.
+        $this->assertCount(1, DotLayoutInput::from(Work::run(new DotParser()->parse('graph { clusterrank=global; subgraph cluster_a { x } }')))->clusters);
+    }
+
     public function testOrderingComesFromTheNodeOrTheGraph(): void
     {
         $input = DotLayoutInput::from(Work::run(new DotParser()->parse('digraph { ordering=out; a; b [ordering=in]; c [ordering=sideways]; }')));
@@ -200,6 +217,8 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame(100.0, self::input('digraph { ratio="1e9" }')->aspect);
         $this->assertSame(5.0, self::input('digraph { ratio=fill; size="1,5!" }')->aspect);
         $this->assertSame(1.0, self::input('digraph { ratio=fill; size="3" }')->aspect);
+        $this->assertSame([72.0, 360.0], self::input('digraph { ratio=fill; size="1,5!" }')->fill);
+        $this->assertNull(self::input('digraph { ratio=2; size="1,5" }')->fill);
         foreach (['ratio=fill', 'ratio=fill; size="0,1"', 'ratio=auto; size="1,5"', 'ratio=expand', ''] as $none) {
             $this->assertNull(self::input('digraph { '.$none.' }')->aspect, $none);
         }

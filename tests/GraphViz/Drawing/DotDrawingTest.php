@@ -116,6 +116,10 @@ final class DotDrawingTest extends TestCase
         $this->assertSame('#00ff00', $boxes[1]->stroke);
         $this->assertTrue($boxes[0]->dashed);
         $this->assertNotNull($boxes[2]->dashes);
+        // dot 16.1.0 draws no cluster, nor its label, under clusterrank global.
+        $flat = self::draw('digraph { clusterrank=global; subgraph cluster_a { label=gone; a } }');
+        $this->assertSame([], \array_map(static fn (Mark $mark): string => $mark->text, \array_filter(self::texts($flat), static fn (Mark $mark): bool => 'gone' === $mark->text)));
+        $this->assertCount(0, \array_filter(self::kinds($flat, MarkKind::Polygon), static fn (Mark $mark): bool => 4 === \count($mark->points)));
         $texts = self::texts($drawing);
         $this->assertSame(['left', 'right', 'again'], \array_map(static fn (Mark $mark): string => $mark->text, \array_slice($texts, offset: 0, length: 3)));
         $this->assertLessThan(($boxes[0]->points[0][0] + $boxes[0]->points[1][0]) / 2, $texts[0]->points[0][0]);

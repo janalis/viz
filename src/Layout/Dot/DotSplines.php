@@ -393,6 +393,11 @@ final class DotSplines
         $next = $rank[$place + 1] ?? null;
         if (null !== $next) {
             $right = \min($this->position->x[$next] - $layers->left[$next] - $this->clear($next, $node, $half), $this->apart($next, $node, side: 0));
+            // Where its edge was routed already, with its label on its far side, a quarter of the node
+            // separation, rounded down, less 2 short of it, as `dot` is seen to route edges one after another.
+            if (!$layers->mirrored && \array_key_exists($next, $this->drawn)) {
+                $right = \min($right, $this->drawn[$next] - $this->quarter() + 2);
+            }
         }
         $at = $this->position->x[$node];
         if (DotLayers::LABEL === $layers->kind[$node]) {
@@ -409,13 +414,21 @@ final class DotSplines
     {
         $bound = $this->position->x[$previous] + $this->layers->right[$previous] + $this->clear($previous, $node, $half);
         // Where its edge was routed already, no further than a quarter of the node separation, rounded
-        // down, past its label as drawn, as `dot` is seen to route edges one after another; laid out
-        // to be turned, as the node alone, not measured.
-        if (!$this->layers->mirrored && \array_key_exists($previous, $this->drawn)) {
-            $bound = \min($bound, $this->drawn[$previous] + $this->layers->right[$previous] + \floor(\round($this->nodeSeparation) / 4));
+        // down, past its label as drawn; laid out to be turned, its label on its far side, at least that
+        // less 2 past the edge as drawn: as `dot` is seen to route edges one after another.
+        if (\array_key_exists($previous, $this->drawn)) {
+            $bound = $this->layers->mirrored
+                ? \max($bound, $this->drawn[$previous] + $this->quarter() - 2)
+                : \min($bound, $this->drawn[$previous] + $this->layers->right[$previous] + $this->quarter());
         }
 
         return $bound;
+    }
+
+    /** A quarter of the node separation, to the point, rounded down. */
+    private function quarter(): float
+    {
+        return \floor(\round($this->nodeSeparation) / 4);
     }
 
     /**

@@ -124,9 +124,9 @@ final readonly class DotEngine implements LayoutEngine
         $position = new DotPosition($layers, $clusterLabels, $graph->spacing->nodeGap, $rankSeparation, $graph->spacing->padding, $bands, $lengths);
         $placing = $position->place();
         yield from $placing;
-        self::stretch($graph, $position);
+        $frame = DotAspect::stretch($graph, $layers, $position);
 
-        return $this->placement($graph, $layers, $position, \array_keys($edges), $labelSizes);
+        return $this->placement($graph, $layers, $position, \array_keys($edges), $labelSizes, $frame);
     }
 
     /**
@@ -183,29 +183,6 @@ final readonly class DotEngine implements LayoutEngine
         }
 
         return [$routes, $splines, $labels, $controls];
-    }
-
-    /**
-     * As dot's `ratio`, positions stretched until the drawing is as tall for its width as
-     * asked: down where it is too flat, else across; laid out to be turned, the other way.
-     */
-    private static function stretch(LayoutGraph $graph, DotPosition $position): void
-    {
-        $turned = \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true);
-        $padding = $graph->spacing->padding;
-        [$width, $height] = [$position->width - (2 * $padding), $position->height - (2 * $padding)];
-        [$width, $height] = $turned ? [$height, $width] : [$width, $height];
-        if (null === $graph->aspect || $graph->aspect <= 0 || $width <= 0 || $height <= 0) {
-            return;
-        }
-        $wanted = $graph->aspect * $width;
-        [$across, $down] = $height < $wanted ? [1.0, $wanted / $height] : [$height / $wanted, 1.0];
-        if ($turned) {
-            $position->stretch($down, $across);
-
-            return;
-        }
-        $position->stretch($across, $down);
     }
 
     /**
@@ -272,8 +249,9 @@ final readonly class DotEngine implements LayoutEngine
     /**
      * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      * @param array<int, array{float, float}> $labelSizes each labelled edge's label, by original index, as wide and tall as it is laid out
+     * @param list<array{float, float}> $frame the corners of the box stretched to an aspect, to bound the drawing by
      */
-    private function placement(LayoutGraph $graph, DotLayers $layers, DotPosition $position, array $edgeIndexes, array $labelSizes): Placement
+    private function placement(LayoutGraph $graph, DotLayers $layers, DotPosition $position, array $edgeIndexes, array $labelSizes, array $frame = []): Placement
     {
         $turned = \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true);
         $width = $turned ? $position->height : $position->width;
@@ -296,7 +274,9 @@ final readonly class DotEngine implements LayoutEngine
         $router = new DotSplines($layers, $position, $graph->spacing->nodeGap, \array_map(static fn ($node): Shape => $node->shape, $graph->nodes));
         // Merged, edges between the same two nodes are one line, none spread.
         $offsets = self::spread($layers, $graph->concentrate ? 0.0 : $graph->spacing->nodeGap * DotSplines::SPREAD);
-        foreach ($edgeIndexes as $layered => $original) {
+        // As `dot` is seen to route them: the edges with a label node first, each kept clear of by the edges routed after it.
+        $labelled = \array_intersect_key($edgeIndexes, $layers->labels);
+        foreach ($labelled + $edgeIndexes as $layered => $original) {
             $path = $layers->paths[$layered] ?? null;
             $spline = [];
             if (null !== $path) {
@@ -313,6 +293,12 @@ final readonly class DotEngine implements LayoutEngine
                 $labels[$original] = $point(...$label);
             }
         }
+        // Kept in the order the edges were written, whatever order they were routed in.
+        \ksort($routes);
+        \ksort($splines);
+        \ksort($polylines);
+        \ksort($controls);
+        \ksort($labels);
         [$routes, $splines, $labels, $arcs] = self::flat($layers, $position, $point, $edgeIndexes, $routes, $splines, $labels);
         $controls = $arcs + $controls;
 
@@ -342,8 +328,8 @@ final readonly class DotEngine implements LayoutEngine
         $labels += $loopLabels;
         $placement = new Placement(new GraphLayout($width, $height, $nodes, [], $clusters), $endpoints, ['' => $graph->direction], $routes, $labels, $splines, $polylines, $pieces, $controls);
 
-        // Stretched to an aspect, a drawing keeps the bounds it was stretched to.
-        return null !== $graph->aspect && $graph->aspect > 0 ? $placement : DotBounds::bounded($graph, $layers, $placement, $edgeIndexes);
+        // Stretched to an aspect, a drawing takes at least the box it was stretched to.
+        return DotBounds::bounded($graph, $layers, $placement, $edgeIndexes, \array_map(static fn (array $at): array => $point($at[0], $at[1]), $frame));
     }
 
     /**
