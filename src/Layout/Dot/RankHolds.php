@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Janalis\Viz\Layout\Dot;
 
 /**
- * The nodes a `rank=same` set takes out of a cluster written before it, which dot is measured
+ * The nodes a rank set takes out of a cluster written before it, which dot is measured
  * to draw outside the cluster but rank in it all the same: each is ranked there as a node of its
  * own, and its sets tie it only in the scope they are written in, by rules found on dot's output,
  * not in the paper.
@@ -65,16 +65,28 @@ final readonly class RankHolds
      * @param array<int, int> $unitOf
      * @param array<int, int> $offset
      * @param array<string, int> $setUnit each set group's unit in the scope, by `set` and its root
-     * @param array<int, true> $ends the groups held at the top or the bottom, which no cluster takes
-     * @return array{list<RankUnit>, array<int, int>, array<int, int>, array<int, int>}
+     * @param array<int, RankUnit> $ends the groups held at the top or the bottom, which no cluster takes, and the end's kind
+     * @return array{list<RankUnit>, array<int, int>, array<int, int>, array<int, int>, array<int, RankUnit>}
      */
     public function tie(int $scope, array $units, array $unitOf, array $offset, array $setUnit, array $ends): array
     {
         $reach = $offset;
         $heldIn = [];
+        /** @var array<int, RankUnit> $atEnds */
+        $atEnds = [];
         foreach ($this->held as $node => $written) {
             if ($written !== $scope || !\array_key_exists($node, $unitOf) || RankUnit::Cluster !== $units[$unitOf[$node]]) {
                 continue;
+            }
+            // A min, max, source or sink set holds the cluster to its end, as dot is measured to rank it.
+            $end = $ends[$this->roots[$node]] ?? null;
+            if (null !== $end) {
+                // Held at both ends, it ties the whole scope to one rank, as such a set does.
+                if (RankUnit::Both === $end) {
+                    $units[$unitOf[$node]] = RankUnit::Both;
+                    continue;
+                }
+                $atEnds[$node] = $end;
             }
             $heldIn[$unitOf[$node]][] = $node;
         }
@@ -85,7 +97,8 @@ final readonly class RankHolds
         /** @var list<array{int, int, int}> $pending */
         $pending = [];
         foreach ($heldIn as $unit => $held) {
-            $this->hold($unit, $held, $unitOf, $offset, $reach, $joins, $groups, $setUnit, $pending);
+            $endKeys = \array_map(static fn (RankUnit $end): string => $end->top() ? 'top' : 'bottom', $ends);
+            $this->hold($unit, $held, $unitOf, $offset, $reach, $joins, $groups, $setUnit, $pending, $endKeys);
         }
         foreach ($pending as [$unit, $node, $at]) {
             [$target, $there] = $joins[$this->roots[$node]] ?? [$unit, $at];
@@ -132,7 +145,58 @@ final readonly class RankHolds
             }
         }
 
-        return [$units, $unitOf, $offset, $reach];
+        $banded = [];
+        foreach ($atEnds as $node => $end) {
+            $this->toEnd($node, $end, $units, $unitOf, $offset, $reach, $setUnit, $banded);
+        }
+
+        return [$units, $unitOf, $offset, $reach, $banded];
+    }
+
+    /**
+     * Holds a node of a min, max, source or sink set written after its cluster at the set's end,
+     * as dot is measured to: a node moved apart takes its unit there; one at its cluster's top
+     * holds the whole cluster there, with the set's other nodes; one below leaves for the end alone.
+     *
+     * @param list<RankUnit> $units
+     * @param array<int, int> $unitOf
+     * @param array<int, int> $offset
+     * @param array<int, int> $reach
+     * @param array<string, int> $setUnit
+     * @param array<int, RankUnit> $banded
+     */
+    private function toEnd(int $node, RankUnit $end, array &$units, array &$unitOf, array &$offset, array &$reach, array &$setUnit, array &$banded): void
+    {
+        $unit = $unitOf[$node];
+        if (RankUnit::Cluster !== $units[$unit]) {
+            if (RankUnit::Same === $units[$unit]) {
+                $units[$unit] = $end;
+            }
+
+            return;
+        }
+        $key = $end->top() ? 'top' : 'bottom';
+        $top = \min(\array_map(static fn (int $member): int => $offset[$member], \array_keys($unitOf, $unit, strict: true)));
+        if ($offset[$node] === $top) {
+            $banded[$unit] = $end;
+            foreach (\array_keys($unitOf, $setUnit[$key] ?? -1, strict: true) as $member) {
+                if ($this->holds($member)) {
+                    continue;
+                }
+                $unitOf[$member] = $unit;
+                $offset[$member] = $offset[$node];
+                $reach[$member] = $offset[$node];
+            }
+
+            return;
+        }
+        if (!\array_key_exists($key, $setUnit)) {
+            $setUnit[$key] = \count($units);
+            $units[] = $end;
+        }
+        $unitOf[$node] = $setUnit[$key];
+        $offset[$node] = 0;
+        $reach[$node] = 0;
     }
 
     /**
@@ -172,7 +236,7 @@ final readonly class RankHolds
      * @param array<string, int> $setUnit
      * @param list<array{int, int, int}> $pending each cluster of held nodes alone whose set joins elsewhere: its unit, the node, and its offset
      */
-    private function hold(int $unit, array $held, array &$unitOf, array $offset, array &$reach, array &$joins, array &$groups, array $setUnit, array &$pending): void
+    private function hold(int $unit, array $held, array &$unitOf, array $offset, array &$reach, array &$joins, array &$groups, array $setUnit, array &$pending, array $endKeys = []): void
     {
         $inside = \array_keys($unitOf, $unit, strict: true);
         \sort($inside);
@@ -184,7 +248,7 @@ final readonly class RankHolds
                 $root = $this->roots[$node];
                 $group = $unit;
                 if (!$joined) {
-                    $group = $joins[$root][0] ?? $setUnit['set '.$root] ?? null;
+                    $group = $joins[$root][0] ?? $setUnit['set '.$root] ?? $setUnit[$endKeys[$root] ?? ''] ?? null;
                     if (null === $group) {
                         $group = -1 - \count($groups);
                         $groups[$group] = $node;
@@ -202,6 +266,22 @@ final readonly class RankHolds
             return;
         }
         $top = \min(\array_map(static fn (int $node): int => $offset[$node], $inside));
+        $roots = \array_unique(\array_map(fn (int $node): int => $this->roots[$node], $held));
+        if ([] === $rest && 1 === \count($roots) && \count($held) >= 2) {
+            $root = $roots[\array_key_first($roots)];
+            $group = $joins[$root][0] ?? $setUnit['set '.$root] ?? null;
+            if (null === $group) {
+                $group = -1 - \count($groups);
+                $groups[$group] = $held[0];
+            }
+            $first = $this->earliest($held[0]);
+            foreach ($held as $node) {
+                $unitOf[$node] = $group;
+            }
+            $joins[$root] ??= [$group, $first === $last ? $offset[$first] : $top];
+
+            return;
+        }
         foreach ($held as $node) {
             if ($this->earliest($node) !== $node) {
                 if ([] === $rest) {

@@ -1213,6 +1213,35 @@ final class DotEngineTest extends TestCase
         $this->assertSame([['n1', 'n4', 'n5'], ['n0', 'n3'], ['n2']], $ranks('subgraph cluster_a { n3; n2; } n2; n3; n0; n5; n1; n4; n3->n2; n1->n2; {rank=same; n0; n3}'));
     }
 
+    public function testAMinMaxSourceOrSinkSetWrittenAfterAClusterHoldsTheClusterToItsEndAsDotDoes(): void
+    {
+        $ranks = static fn (string $body): array => \array_map(static function (array $row): array {
+            \sort($row);
+
+            return $row;
+        }, self::rows($body));
+
+        // Each as dot 16.1.0 ranks it. A node alone on a rank of its own is placed, not left unconnected.
+        $this->assertSame([['a'], ['b']], $ranks('a; {rank=sink; b}'));
+        // The set's node stays in its cluster, and the cluster keeps to the set's end.
+        $this->assertSame([['c'], ['a', 'b']], $ranks('subgraph cluster_a { a; b; } c; {rank=sink; b}'));
+        $this->assertSame([['a', 'b'], ['c']], $ranks('subgraph cluster_a { a; b; } c; {rank=source; b}'));
+        $this->assertSame([['a', 'c'], ['b']], $ranks('subgraph cluster_a { a; b; } a -> b; c; {rank=max; a}'));
+        $this->assertSame([['c'], ['d'], ['a'], ['b']], $ranks('subgraph cluster_a { a; b; } a -> b; c -> d; {rank=sink; a}'));
+        $this->assertSame([['d'], ['a', 'b', 'c']], $ranks('subgraph cluster_a { a; b; } c -> d; {rank=max; a; c}'));
+        $this->assertSame([['t'], ['a', 'b', 'c', 'x', 'y']], $ranks('subgraph cluster_a { a; b; c; } x -> y; t -> a; {rank=max; a; x}'));
+        $this->assertSame([['t'], ['a', 'b', 'c', 'd', 'e']], $ranks('subgraph cluster_p { a; b; } subgraph cluster_q { c; d; e; } t -> b; {rank=max; a; c}'));
+        $this->assertSame([['t'], ['a', 'b', 'c', 'd', 'e', 'x']], $ranks('subgraph cluster_p { a; b; } subgraph cluster_q { c; d; e; } t -> b; x; {rank=max; a; c; x}'));
+        // Held at both ends, it ties the whole graph to one rank.
+        $this->assertSame([['a', 'b', 'c', 'd']], $ranks('subgraph cluster_a { a; b; } c; c -> d; {rank=min; a} {rank=max; a}'));
+        // Below the cluster's top, the node leaves for the set's end; one before the cluster's last moves apart.
+        $this->assertSame([['b'], ['a', 'c'], ['d']], $ranks('subgraph cluster_a { a; b; } a -> b; c -> d; {rank=source; b}'));
+        $this->assertSame([['n1', 'n2'], ['n3']], $ranks('subgraph cluster_a { n3; n2; } n3 -> n1; {rank=sink; n3}'));
+        // A cluster of nothing but held nodes of one set breaks a cycle from its first node.
+        $this->assertSame([['n0', 'n1'], ['n2']], $ranks('subgraph cluster_0 { n1; n0; } n2 -> n0; n2 -> n1; n1 -> n2; {rank=same; n1; n0}'));
+        $this->assertSame([['n0', 'n2'], ['n1']], $ranks('subgraph cluster_0 { n2; n0; } n2 -> n1; n1 -> n0; {rank=same; n2; n0}'));
+    }
+
     public function testHeldNodesKeepTheirRanksAndSetsAsDotRanksThem(): void
     {
         $ranks = static fn (string $body): array => \array_map(static function (array $row): array {

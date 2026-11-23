@@ -74,6 +74,7 @@ final class DotHorizontal
         }
         $this->contain();
         $this->straighten();
+        $this->anchor();
         // As `dot` is seen to, the subtrees holding real nodes are centred first, virtual nodes after.
         $movers = \array_map(static fn (): bool => true, \array_filter($this->layers->kind, static fn (int $kind): bool => DotLayers::REAL === $kind));
         $solved = new NetworkSimplex($this->count, $this->edges, movers: $movers)->solve(NetworkSimplex::BALANCE_SIDES);
@@ -167,6 +168,36 @@ final class DotHorizontal
      * is seen to keep it: its label's width, and each end's side facing it, each half with a
      * side rounded to the point.
      */
+    /**
+     * Hangs every part of the graph nothing joins to the rest off the graph's left bound, holding
+     * nothing, as the first rank hangs: a rank of nodes with no edge, set apart by a rank set, is
+     * then placed like the rest instead of left unconnected.
+     */
+    private function anchor(): void
+    {
+        $root = \range(0, $this->count - 1);
+        $find = static function (int $node) use (&$root): int {
+            while ($root[$node] !== $node) {
+                $root[$node] = $root[$root[$node]];
+                $node = $root[$node];
+            }
+
+            return $node;
+        };
+        foreach ($this->edges as [$tail, $head]) {
+            $root[$find($tail)] = $find($head);
+        }
+        foreach ($this->layers->ranks as $nodes) {
+            foreach ($nodes as $node) {
+                if ($find($node) === $find($this->rootLeft)) {
+                    continue;
+                }
+                $this->edges[] = [$this->rootLeft, $node, 0, 0];
+                $root[$find($node)] = $find($this->rootLeft);
+            }
+        }
+    }
+
     private function bridge(): void
     {
         $layers = $this->layers;

@@ -68,7 +68,7 @@ final class DotLayoutInput
      * @param ?\Closure(DotEdge): array{float, float} $labels
      * @param ?\Closure(DotSubgraph): array{float, float} $titles
      * @param ?\Closure(DotNode, string, float, float): ?array{float, float} $ports
-     * @param ?\Closure(list<LayoutCluster>, array<string, string>, list<array{?string, list<string>, int, RankKind}>): array{array<string, string>, bool, array<string, array{string, ?string}>} $lift how rank sets move nodes between clusters, null for not at all
+     * @param ?\Closure(list<LayoutCluster>, array<string, string>, list<array{?string, list<string>, int}>): array{array<string, string>, bool, array<string, array{string, ?string}>} $lift how rank sets move nodes between clusters, null for not at all
      */
     private static function build(DotGraph $graph, ?\Closure $measure, ?\Closure $labels, ?\Closure $titles, ?\Closure $ports, ?\Closure $lift): LayoutGraph
     {
@@ -241,15 +241,14 @@ final class DotLayoutInput
      * @param list<LayoutCluster> $clusters
      * @param array<string, string> $clusterOf
      * @param ?\Closure(DotSubgraph): array{float, float} $titles
-     * @param list<array{?string, list<string>, int, RankKind}> $ranked each rank set met: the cluster it is written in, null at the top, its nodes, how many clusters were made before it, and its kind
+     * @param list<array{?string, list<string>, int}> $ranked each rank set met: the cluster it is written in, null at the top, its nodes, and how many clusters were made before it
      */
     private static function clusters(DotGraph $graph, array $subgraphs, ?string $parent, ?array $allowed, array &$claimed, array &$clusters, array &$clusterOf, ?\Closure $titles, array &$ranked): void
     {
         foreach ($subgraphs as $subgraph) {
             if (!$subgraph->cluster()) {
-                $kind = RankKind::tryFrom(\strtolower($subgraph->attribute('rank')));
-                if (null !== $kind) {
-                    $ranked[] = [$parent, $graph->ordered($subgraph->nodes), \count($clusters), $kind];
+                if (null !== RankKind::tryFrom(\strtolower($subgraph->attribute('rank')))) {
+                    $ranked[] = [$parent, $graph->ordered($subgraph->nodes), \count($clusters)];
                 }
                 self::clusters($graph, $subgraph->subgraphs, $parent, $allowed, $claimed, $clusters, $clusterOf, $titles, $ranked);
                 continue;
@@ -300,14 +299,14 @@ final class DotLayoutInput
     /**
      * Each node's cluster once rank sets have taken theirs: a node in a rank set leaves any
      * cluster inside the one the set is written in, as `dot` is seen to draw it there, and to
-     * rank it there unless a `rank=same` set takes it out of a cluster written before the set;
-     * whether any left a cluster written before its set; and those a `rank=same` set took out of
+     * rank it there unless a rank set takes it out of a cluster written before the set;
+     * whether any left a cluster written before its set; and those a rank set took out of
      * a cluster written before it, which dot is seen to rank in that cluster all the same: with
      * the cluster, and the one the set is written in, null at the top.
      *
      * @param list<LayoutCluster> $clusters
      * @param array<string, string> $clusterOf
-     * @param list<array{?string, list<string>, int, RankKind}> $ranked
+     * @param list<array{?string, list<string>, int}> $ranked
      * @return array{array<string, string>, bool, array<string, array{string, ?string}>}
      */
     private static function lifted(array $clusters, array $clusterOf, array $ranked): array
@@ -320,7 +319,7 @@ final class DotLayoutInput
         }
         $emptied = false;
         $held = [];
-        foreach ($ranked as [$scope, $nodes, $before, $kind]) {
+        foreach ($ranked as [$scope, $nodes, $before]) {
             foreach ($nodes as $node) {
                 $inside = $clusterOf[$node] ?? null;
                 while (null !== $inside && $inside !== $scope) {
@@ -331,9 +330,7 @@ final class DotLayoutInput
                 }
                 if ($made[$clusterOf[$node]] < $before) {
                     $emptied = true;
-                    if (RankKind::Same === $kind) {
-                        $held[$node] ??= [$clusterOf[$node], $scope];
-                    }
+                    $held[$node] ??= [$clusterOf[$node], $scope];
                 }
                 if (null === $scope) {
                     unset($clusterOf[$node]);

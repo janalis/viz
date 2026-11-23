@@ -142,10 +142,10 @@ final class DotLayoutInputTest extends TestCase
         // A set written after the cluster it empties, unlike one written before, leaves dot 16.1.0 ranking cluster by cluster.
         $this->assertTrue(self::input('digraph { subgraph cluster_e { g } {rank=same; g} }')->emptied);
         $this->assertFalse(self::input('digraph { {rank=same; g} subgraph cluster_e { g } }')->emptied);
-        // Only a same set written after the cluster leaves its node ranked there, as dot 16.1.0 ranks it.
+        // A set written after the cluster, of any kind, leaves its node ranked there, as dot 16.1.0 ranks it.
         $this->assertSame(['g' => ['cluster_e', null]], self::input('digraph { subgraph cluster_e { g } {rank=same; g} }')->held);
         $this->assertSame([], self::input('digraph { {rank=same; g} subgraph cluster_e { g } }')->held);
-        $this->assertSame([], self::input('digraph { subgraph cluster_e { g } {rank=min; g} }')->held);
+        $this->assertSame(['g' => ['cluster_e', null]], self::input('digraph { subgraph cluster_e { g } {rank=min; g} }')->held);
         // A cluster's own rank ties nothing, as dot 16.1.0 draws a above b.
         $this->assertSame([], self::input('digraph { subgraph cluster_a { rank=same; a; b } a->b }')->rankSets);
         // A set written in cluster_y leaves p in cluster_x, which is not inside it, as dot 16.1.0 draws it.

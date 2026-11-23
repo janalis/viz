@@ -174,9 +174,9 @@ final class DotRanking
             yield from $work;
             $inner[$child] = $work->getReturn();
         }
-        [$units, $unitOf, $offset, $reach] = $this->units($cluster, $inner);
+        [$units, $unitOf, $offset, $reach, $banded] = $this->units($cluster, $inner);
         [$hard, $soft] = $this->constraints($units, $unitOf, $offset, $reach);
-        $hard = $this->bounds($units, DotAcyclic::orient(\count($units), $this->extremes($units, $hard)));
+        $hard = $this->bounds($units, DotAcyclic::orient(\count($units), $this->extremes($units, $hard)), $banded);
         $balanced = -1 === $cluster ? $this->spread : RankSpread::None;
         $ranks = \in_array(RankUnit::Both, $units, strict: true) ? \array_fill(0, \count($units), value: 0) : $this->solve(\count($units), $hard, $soft, $balanced);
         yield null;
@@ -197,7 +197,7 @@ final class DotRanking
      * offset by its rank within the cluster.
      *
      * @param array<int, array<int, int>> $inner each child cluster's relative ranks
-     * @return array{list<RankUnit>, array<int, int>, array<int, int>, array<int, int>} each unit's kind, and each node's unit, offset, and the offset its edges reach it at
+     * @return array{list<RankUnit>, array<int, int>, array<int, int>, array<int, int>, array<int, RankUnit>} each unit's kind, each node's unit, offset, and the offset its edges reach it at, and each cluster a min, max, source or sink set holds to an end of the scope, with that end's kind
      */
     private function units(int $cluster, array $inner): array
     {
@@ -237,7 +237,17 @@ final class DotRanking
             }
         }
 
-        return $this->holds->tie($cluster, $units, $unitOf, $offset, $setUnit, $this->top + $this->bottom);
+        $ends = [];
+        foreach ($this->top + $this->bottom as $root => $_) {
+            $kind = $this->kind[$root];
+            $ends[$root] = match (true) {
+                \array_key_exists($root, $this->top) && \array_key_exists($root, $this->bottom) => RankUnit::Both,
+                \array_key_exists($root, $this->top) => RankKind::Source === $kind ? RankUnit::Source : RankUnit::Min,
+                default => RankKind::Sink === $kind ? RankUnit::Sink : RankUnit::Max,
+            };
+        }
+
+        return $this->holds->tie($cluster, $units, $unitOf, $offset, $setUnit, $ends);
     }
 
     /**
@@ -353,16 +363,19 @@ final class DotRanking
      *
      * @param list<RankUnit> $units
      * @param list<array{int, int, int, int}> $edges
+     * @param array<int, RankUnit> $banded clusters held at an end as if they were sets of that kind
      * @return list<array{int, int, int, int}>
      */
-    private function bounds(array $units, array $edges): array
+    private function bounds(array $units, array $edges, array $banded = []): array
     {
-        foreach ($units as $set => $kind) {
+        $kinds = $banded + $units;
+        foreach ($kinds as $set => $kind) {
             if (!$kind->top() && !$kind->bottom()) {
                 continue;
             }
             foreach (\array_keys($units) as $other) {
-                if ($other === $set) {
+                // Two units held at the same end bound nothing of each other.
+                if ($other === $set || ($kind->top() === $kinds[$other]->top() && $kind->bottom() === $kinds[$other]->bottom())) {
                     continue;
                 }
                 $edges[] = $kind->top() ? [$set, $other, $kind->gap(), 0] : [$other, $set, $kind->gap(), 0];
