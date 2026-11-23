@@ -9,7 +9,7 @@
 ### Fixed
 
 - Graphviz: `ratio` stretches by the box the nodes and clusters take, not the room kept for edge labels and chains, and a curve or label beyond that box still bounds the drawing, as `dot` does; `ratio=fill` with a `size` bigger than the drawing both ways now fills it, and a drawing on a single rank is not stretched.
-- Graphviz and PlantUML: an edge beside a labelled edge between the same two nodes, on the side away from its label, keeps a quarter of the node separation less 2 clear of it, the labelled edge routed first, as `dot` routes them, so the two are no longer drawn on top of each other: an unlabelled edge written before a labelled one, or laid out left to right after it.
+- Graphviz and PlantUML: an edge routed beside an edge label's node, on the side away from the label, keeps a quarter of the node separation less 2 clear of that label's edge as drawn, edges with labels being routed first, as `dot` routes them, so an unlabelled edge and a labelled one between the same two nodes are no longer drawn on top of each other.
 
 ## 0.2.6 — 2026-11-22
 

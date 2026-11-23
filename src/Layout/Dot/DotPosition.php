@@ -65,15 +65,13 @@ final class DotPosition
     }
 
     /**
-     * Stretches the positions down and across from a corner, the padding's inside unless
-     * given, the nodes keeping their size: by a factor down and one across, each at least one.
+     * Stretches the positions down and across from a corner, the nodes keeping their size: by
+     * a factor down and one across, each at least one.
      */
-    public function stretch(float $across, float $down, ?float $left = null, ?float $top = null): void
+    public function stretch(float $across, float $down, float $left, float $top): void
     {
         $across = \max(1.0, $across);
         $down = \max(1.0, $down);
-        $left ??= $this->padding;
-        $top ??= $this->padding;
         $this->x = \array_map(static fn (float $x): float => $left + (($x - $left) * $across), $this->x);
         $this->y = \array_map(static fn (float $y): float => $top + (($y - $top) * $down), $this->y);
         $this->boxes = \array_map(static fn (array $box): array => [

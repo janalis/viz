@@ -24,7 +24,7 @@ final class DotBounds
      * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      * @param list<array{float, float}> $frame the corners of the box stretched to an aspect, if any
      */
-    public static function bounded(LayoutGraph $graph, DotLayers $layers, Placement $placement, array $edgeIndexes, array $frame = []): Placement
+    public static function bounded(LayoutGraph $graph, DotLayers $layers, Placement $placement, array $edgeIndexes, array $frame): Placement
     {
         $lines = [...\array_diff_key($placement->routes, $placement->splines), ...$placement->splines, $frame];
         foreach ($placement->pieces as $runs) {
@@ -95,8 +95,8 @@ final class DotBounds
     /**
      * The box a drawing's content takes, as `dot` is seen to bound a drawing: by its nodes, the
      * loops beside them, its clusters, its edges' labels and its edges themselves, 8 around its
-     * clusters — not by the room the layout kept around them; a box at the padding where it
-     * draws nothing.
+     * clusters — not by the room the layout kept around them; an empty box at the origin where
+     * it draws nothing.
      *
      * @param list<int> $edgeIndexes the original index of each edge the layers know, in their order
      * @param array<int, GraphNode> $nodes
@@ -156,6 +156,6 @@ final class DotBounds
             }
         }
 
-        return \is_finite($box[0]) ? $box : [$graph->spacing->padding, $graph->spacing->padding, $graph->spacing->padding, $graph->spacing->padding];
+        return \is_finite($box[0]) ? $box : [0.0, 0.0, 0.0, 0.0];
     }
 }

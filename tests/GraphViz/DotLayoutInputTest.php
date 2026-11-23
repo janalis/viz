@@ -219,6 +219,9 @@ final class DotLayoutInputTest extends TestCase
         $this->assertSame(1.0, self::input('digraph { ratio=fill; size="3" }')->aspect);
         $this->assertSame([72.0, 360.0], self::input('digraph { ratio=fill; size="1,5!" }')->fill);
         $this->assertNull(self::input('digraph { ratio=2; size="1,5" }')->fill);
+        // A size past the largest taken is held down whole, keeping its shape.
+        $huge = self::input('digraph { ratio=fill; size="2000,1500" }');
+        $this->assertSame([0.75, [72_000.0, 54_000.0]], [$huge->aspect, $huge->fill]);
         foreach (['ratio=fill', 'ratio=fill; size="0,1"', 'ratio=auto; size="1,5"', 'ratio=expand', ''] as $none) {
             $this->assertNull(self::input('digraph { '.$none.' }')->aspect, $none);
         }

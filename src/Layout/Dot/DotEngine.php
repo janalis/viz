@@ -251,7 +251,7 @@ final readonly class DotEngine implements LayoutEngine
      * @param array<int, array{float, float}> $labelSizes each labelled edge's label, by original index, as wide and tall as it is laid out
      * @param list<array{float, float}> $frame the corners of the box stretched to an aspect, to bound the drawing by
      */
-    private function placement(LayoutGraph $graph, DotLayers $layers, DotPosition $position, array $edgeIndexes, array $labelSizes, array $frame = []): Placement
+    private function placement(LayoutGraph $graph, DotLayers $layers, DotPosition $position, array $edgeIndexes, array $labelSizes, array $frame): Placement
     {
         $turned = \in_array($graph->direction, [Direction::LeftRight, Direction::RightLeft], strict: true);
         $width = $turned ? $position->height : $position->width;
@@ -293,12 +293,13 @@ final readonly class DotEngine implements LayoutEngine
                 $labels[$original] = $point(...$label);
             }
         }
-        // Kept in the order the edges were written, whatever order they were routed in.
-        \ksort($routes);
-        \ksort($splines);
-        \ksort($polylines);
-        \ksort($controls);
-        \ksort($labels);
+        // Kept in the edges' own order, whatever order they were routed in.
+        $order = \array_values($edgeIndexes);
+        $routes = self::inOrder($routes, $order);
+        $splines = self::inOrder($splines, $order);
+        $polylines = self::inOrder($polylines, $order);
+        $controls = self::inOrder($controls, $order);
+        $labels = self::inOrder($labels, $order);
         [$routes, $splines, $labels, $arcs] = self::flat($layers, $position, $point, $edgeIndexes, $routes, $splines, $labels);
         $controls = $arcs + $controls;
 
@@ -364,6 +365,21 @@ final readonly class DotEngine implements LayoutEngine
     }
 
     /**
+     * A map by edge put back in the edges' order.
+     *
+     * @template T
+     * @param array<int, T> $map
+     * @param list<int> $order
+     * @return array<int, T>
+     */
+    private static function inOrder(array $map, array $order): array
+    {
+        $keys = \array_values(\array_intersect($order, \array_keys($map)));
+
+        return \array_combine($keys, \array_map(static fn (int $key) => $map[$key], $keys)) + $map;
+    }
+
+    /**
      * Where a layered edge's label stands, as laid out before it is turned: just right of its
      * line, where the line reaches furthest right across its label node's rank, the rank's half
      * height above and below the label's middle, as `dot` is seen to set it, or of the label node;
@@ -384,7 +400,8 @@ final readonly class DotEngine implements LayoutEngine
             // A line that never reaches the rank leaves the label along its label node's side.
             $across = \array_pad(DotSplines::across($spline, $y - $half, $y + $half), length: 1, value: $position->side($node));
             $x = $layers->mirrored ? \min($across) : \max($across);
-            // The edges routed after it keep clear of the label as drawn.
+            // The edges routed after it keep clear of the label as drawn, on either side, as `dot` is
+            // seen to measure it, not of the line's other side.
             $router->drawn[$node] = $x;
 
             return [$layers->mirrored ? $x - ($layers->left[$node] / 2) : $x + ($layers->right[$node] / 2), $y];

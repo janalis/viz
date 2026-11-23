@@ -81,14 +81,14 @@ final class DotLayoutInput
         self::clusters($graph, $graph->subgraphs, null, null, $claimed, $clusters, $clusterOf, $titles, $written);
         // With `newrank`, dot is seen to rank across clusters and leave every node in its own.
         $newRank = \in_array(\strtolower($graph->attribute('newrank')), ['true', 'yes', '1'], strict: true);
-        $emptied = false;
         // With `clusterrank` `global` or `none`, as spelt, dot is seen to lay out and draw no
         // cluster, unless `newrank` is set.
         $flat = !$newRank && null !== $lift && \in_array($graph->attribute('clusterrank'), ['global', 'none'], strict: true);
+        $emptied = false;
         if ($flat) {
             [$clusters, $clusterOf] = [[], []];
         }
-        if (!$newRank && !$flat && null !== $lift) {
+        if (!$flat && !$newRank && null !== $lift) {
             [$clusterOf, $emptied] = $lift($clusters, $clusterOf, $written);
         }
         $order = 0;
@@ -151,6 +151,8 @@ final class DotLayoutInput
             $sets[] = new LayoutRankSet($kind, $graph->ordered($subgraph->nodes));
         }
 
+        $fill = self::fill($graph);
+
         return new LayoutGraph(
             $nodes,
             $edges,
@@ -162,11 +164,11 @@ final class DotLayoutInput
                 4.0,
             ),
             rankSets: $sets,
-            aspect: self::aspect($graph),
+            aspect: self::aspect($graph, $fill),
             concentrate: \in_array(\strtolower($graph->attribute('concentrate')), ['true', 'yes', '1'], strict: true),
             newRank: $newRank,
             emptied: $emptied,
-            fill: self::fill($graph),
+            fill: $fill,
         );
     }
 
@@ -174,13 +176,13 @@ final class DotLayoutInput
      * The height-to-width ratio `ratio` asks the drawing for: a number itself, or `fill` the
      * ratio of `size`; null for any other value, or none.
      */
-    private static function aspect(DotGraph $graph): ?float
+    /** @param ?array{float, float} $fill the size `ratio=fill` asks to fill, if any */
+    private static function aspect(DotGraph $graph, ?array $fill): ?float
     {
         $ratio = \strtolower(\trim($graph->attribute('ratio')));
         if (\is_numeric($ratio)) {
             return \max(0.01, \min(100.0, (float) $ratio));
         }
-        $fill = self::fill($graph);
 
         return null === $fill ? null : \max(0.01, \min(100.0, $fill[1] / $fill[0]));
     }
@@ -199,7 +201,10 @@ final class DotLayoutInput
             return null;
         }
 
-        return [\min((float) $width, self::MAX_INCHES) * self::POINTS, \min((float) $height, self::MAX_INCHES) * self::POINTS];
+        // Held down to the largest size taken, keeping its shape.
+        $scale = self::POINTS * \min(1.0, self::MAX_INCHES / \max((float) $width, (float) $height));
+
+        return [(float) $width * $scale, (float) $height * $scale];
     }
 
     /**
