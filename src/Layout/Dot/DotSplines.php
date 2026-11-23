@@ -539,12 +539,19 @@ final class DotSplines
 
     /**
      * How far a neighbour keeps clear of a node's side: a point past a label node's label on its
-     * label's side, as `dot` is seen to keep it; half the room otherwise.
+     * label's side, as `dot` is seen to keep it; an edge's virtual node, from a label node's edge,
+     * half the node separation; half the room otherwise.
      */
     private function clear(int $neighbour, int $node, float $half): float
     {
         // Its label faces the node from the left, or from the right mirrored.
         $facing = $this->place[$neighbour] > $this->place[$node] === $this->layers->mirrored;
+
+        // A label node's edge keeps as clear of an edge's virtual node as that node keeps room in the
+        // layout, half the node separation, rounded down, even on a label's rank, as measured on dot's output.
+        if (DotLayers::VIRTUAL === $this->layers->kind[$neighbour] && DotLayers::LABEL === $this->layers->kind[$node]) {
+            return \floor($this->nodeSeparation / 2);
+        }
 
         return DotLayers::LABEL === $this->layers->kind[$neighbour] && $facing ? 1.0 : $half;
     }

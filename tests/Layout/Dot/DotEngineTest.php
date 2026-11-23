@@ -784,6 +784,33 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([-9.0, 24.0], $labels('a', 'nodesep=0.4; a -> b; a -> b [label='.$label('20x30').']; a -> b [label='.$label('10x20').'];'), 0.5);
     }
 
+    public function testEdgesSharingAPathAndALabelBesideThemStandAsDotSpreadsThem(): void
+    {
+        $place = static function (string $source): Placement {
+            $graph = Work::run(new DotParser()->parse('digraph { nodesep=1; node [shape=rect, width=0.5, height=0.5, label=""]; '.$source.' }'));
+
+            return Work::run(new DotEngine()->place(DotLayoutInput::forDot(
+                $graph,
+                static fn ($node): array => DotNodes::size($graph, $node),
+                static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+            )));
+        };
+        $label = '<<TABLE FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><TR><TD></TD></TR></TABLE>>';
+
+        // As dot 16.1.0 spreads them, turned left to right: the first written bows furthest down, the last furthest up.
+        $placement = $place('rankdir=LR; a -> b; a -> b; a -> b;');
+        $a = $placement->endpoints['a']->y;
+        $this->assertGreaterThan(50.0, \max(\array_map(static fn (array $at): float => $at[1] - $a, $placement->splines[0])));
+        $this->assertLessThan(-50.0, \min(\array_map(static fn (array $at): float => $at[1] - $a, $placement->splines[2])));
+        // As dot 16.1.0 sets a label beside two edges sharing a path: its edge keeps half the node
+        // separation clear of their virtual node, not 2.5 points, its label 87 points right of a.
+        $placement = $place('a -> b; a -> b; a -> b [label='.$label.'];');
+        $this->assertEqualsWithDelta(87.2, $placement->labels[2][0] - $placement->endpoints['a']->x, 1.5);
+        // Turned, the label above them, 87 points above a.
+        $placement = $place('rankdir=LR; a -> b [label='.$label.']; a -> b; a -> b;');
+        $this->assertEqualsWithDelta(-87.3, $placement->labels[0][1] - $placement->endpoints['a']->y, 1.5);
+    }
+
     public function testEdgesAsLongAreRoutedInTheOrderTheGraphGivesThemWhateverOrderTheirLayersKeep(): void
     {
         // A table label of a width and a height, as `WxH`.

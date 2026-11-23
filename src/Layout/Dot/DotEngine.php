@@ -227,7 +227,8 @@ final readonly class DotEngine implements LayoutEngine
 
     /**
      * How far across each edge between ranks runs from the path it shares: edges sharing one
-     * spread evenly about it, in the order they were written.
+     * spread evenly about it, in the order they were written, or, laid out to be turned, in the
+     * reverse order, so that turned the first written runs lowest, as measured on `dot`'s output.
      *
      * @return array<int, float> by layered edge
      */
@@ -239,9 +240,10 @@ final readonly class DotEngine implements LayoutEngine
             $sharing[\implode(',', $top)][] = $edge;
         }
         $offsets = [];
+        $way = $layers->mirrored ? -1 : 1;
         foreach ($sharing as $edges) {
             foreach ($edges as $place => $edge) {
-                $offsets[$edge] = ($place - ((\count($edges) - 1) / 2)) * $apart;
+                $offsets[$edge] = ($place - ((\count($edges) - 1) / 2)) * $apart * $way;
             }
         }
 
