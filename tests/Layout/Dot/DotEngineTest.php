@@ -809,6 +809,12 @@ final class DotEngineTest extends TestCase
         // Turned, the label above them, 87 points above a.
         $placement = $place('rankdir=LR; a -> b [label='.$label.']; a -> b; a -> b;');
         $this->assertEqualsWithDelta(-87.3, $placement->labels[0][1] - $placement->endpoints['a']->y, 1.5);
+        // At a separation of 21.6 or 39.6 points, half of it taken to the point first, 11 and 20,
+        // not 10 and 19: as dot 16.1.0 sets the label, 36 and 54.8 points right of a.
+        $placement = $place('nodesep=0.3; a -> b; a -> b; a -> b [label='.$label.'];');
+        $this->assertEqualsWithDelta(36.0, $placement->labels[2][0] - $placement->endpoints['a']->x, 1.5);
+        $placement = $place('nodesep=0.55; a -> b; a -> b; a -> b [label='.$label.'];');
+        $this->assertEqualsWithDelta(54.8, $placement->labels[2][0] - $placement->endpoints['a']->x, 1.5);
     }
 
     public function testEdgesAsLongAreRoutedInTheOrderTheGraphGivesThemWhateverOrderTheirLayersKeep(): void

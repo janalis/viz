@@ -548,9 +548,9 @@ final class DotSplines
         $facing = $this->place[$neighbour] > $this->place[$node] === $this->layers->mirrored;
 
         // A label node's edge keeps as clear of an edge's virtual node as that node keeps room in the
-        // layout, half the node separation, rounded down, even on a label's rank, as measured on dot's output.
+        // layout, half the node separation, to the point, rounded down, even on a label's rank, as measured on dot's output.
         if (DotLayers::VIRTUAL === $this->layers->kind[$neighbour] && DotLayers::LABEL === $this->layers->kind[$node]) {
-            return \floor($this->nodeSeparation / 2);
+            return \floor(\round($this->nodeSeparation) / 2);
         }
 
         return DotLayers::LABEL === $this->layers->kind[$neighbour] && $facing ? 1.0 : $half;

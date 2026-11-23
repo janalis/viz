@@ -307,7 +307,10 @@ final class DotOrdering
                 foreach ($item as $node) {
                     $itemOf[$node] = [$rank, $index];
                 }
-                $blockAt[($this->slots->collapsed[$item[0]] ?? -1).':'.$rank] = [$rank, $index];
+                // Only a collapsed cluster's run is looked up, by that cluster.
+                if (\array_key_exists($item[0], $this->slots->collapsed)) {
+                    $blockAt[$this->slots->collapsed[$item[0]].':'.$rank] = [$rank, $index];
+                }
                 $seeds[] = [...$this->seed($scope, $item), $rank, $index];
             }
         }
@@ -329,7 +332,7 @@ final class DotOrdering
                 // graph meets them, as `dot`'s reported crossings show.
                 $edges = \array_merge([], ...\array_map(fn (int $node): array => $this->crossings->edges($node, $from->other()), $item));
                 \sort($edges);
-                $run = $blockAt[($this->slots->collapsed[$item[0]] ?? -2).':'.($itemRank + (Side::Above === $from ? 1 : -1))] ?? null;
+                $run = $blockAt[($this->slots->collapsed[$item[0]] ?? -1).':'.($itemRank + (Side::Above === $from ? 1 : -1))] ?? null;
                 $next = [...(null === $run ? [] : [$run]), ...\array_map(fn (int $edge): ?array => $itemOf[$this->crossings->far($edge, $from->other())] ?? null, $edges)];
                 foreach (\array_filter($next) as [$nextRank, $nextIndex]) {
                     if (\array_key_exists($nextRank.':'.$nextIndex, $placed)) {
