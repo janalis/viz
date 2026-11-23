@@ -14,6 +14,7 @@ final readonly class RankHolds
 {
     /** @var array<int, int> each merged set's earliest written node, by its root */
     private array $earliest;
+    private RankEnds $ends;
 
     /**
      * @param array<int, int> $held each held node: the cluster its set is written in, -1 for the top level
@@ -30,6 +31,7 @@ final readonly class RankHolds
             $earliest[$root] = \min($earliest[$root] ?? $node, $node);
         }
         $this->earliest = $earliest;
+        $this->ends = new RankEnds($held, $roots, $edges);
     }
 
     /**
@@ -71,36 +73,7 @@ final readonly class RankHolds
     public function tie(int $scope, array $units, array $unitOf, array $offset, array $setUnit, array $ends): array
     {
         $reach = $offset;
-        $heldIn = [];
-        /** @var array<int, RankUnit> $atEnds */
-        $atEnds = [];
-        $both = [];
-        /** @var array<int, array<int, true>> $sides */
-        $sides = [];
-        foreach ($this->held as $node => $written) {
-            if ($written !== $scope || !\array_key_exists($node, $unitOf) || RankUnit::Cluster !== $units[$unitOf[$node]]) {
-                continue;
-            }
-            // A min, max, source or sink set holds the cluster to its end, as dot is measured to rank it.
-            $end = $ends[$this->roots[$node]] ?? null;
-            if (null !== $end) {
-                // Held at both ends, it ties the whole scope to one rank, as such a set does.
-                if (RankUnit::Both === $end) {
-                    $both[] = $unitOf[$node];
-                    continue;
-                }
-                $atEnds[$node] = $end;
-                $sides[$unitOf[$node]][(int) $end->top()] = true;
-            }
-            $heldIn[$unitOf[$node]][] = $node;
-        }
-        // A cluster holding nodes of sets at both ends ties the whole scope to one rank, as one set at both ends does.
-        foreach ($sides as $unit => $side) {
-            if (2 !== \count($side)) {
-                continue;
-            }
-            $both[] = $unit;
-        }
+        [$heldIn, $atEnds, $both] = $this->met($scope, $units, $unitOf, $ends);
         /** @var array<int, array{int, int}> $joins */
         $joins = [];
         /** @var array<int, int> $groups */
@@ -158,119 +131,58 @@ final readonly class RankHolds
 
         $banded = [];
         foreach ($atEnds as $node => $end) {
-            $this->toEnd($node, $end, $units, $unitOf, $offset, $reach, $setUnit, $banded);
+            $this->ends->toEnd($node, $end, $units, $unitOf, $offset, $reach, $setUnit, $banded);
         }
-        $this->share(RankUnit::Min, RankUnit::Source, $units, $unitOf, $offset, $reach, $banded);
-        $this->share(RankUnit::Max, RankUnit::Sink, $units, $unitOf, $offset, $reach, $banded);
-        foreach ($both as $unit) {
-            $units[$unit] = RankUnit::Both;
+        $this->ends->share(RankUnit::Min, RankUnit::Source, $units, $unitOf, $offset, $reach, $banded);
+        $this->ends->share(RankUnit::Max, RankUnit::Sink, $units, $unitOf, $offset, $reach, $banded);
+        // By a node of each, as the units have moved since.
+        foreach ($both as $node) {
+            $units[$unitOf[$node]] = RankUnit::Both;
         }
 
         return [$units, $unitOf, $offset, $reach, $banded];
     }
 
     /**
-     * Puts every unit held at one end of the scope on one rank, as every set held there shares
-     * one: the units of sets and the clusters held there join the first cluster held there, or
-     * the first unit, at its top, which then keeps to that end as a source or sink would where any
-     * of them is one.
+     * The held nodes a scope meets, by their cluster's unit; those of min, max, source or sink sets
+     * with their end; and a node of each unit tied to one rank, as a set held at both ends ties it.
      *
-     * @param RankUnit $shared the end's kind, min or max
-     * @param RankUnit $alone the end's kind alone on its rank, source or sink
      * @param list<RankUnit> $units
      * @param array<int, int> $unitOf
-     * @param array<int, int> $offset
-     * @param array<int, int> $reach
-     * @param array<int, RankUnit> $banded
+     * @param array<int, RankUnit> $ends
+     * @return array{array<int, list<int>>, array<int, RankUnit>, list<int>}
      */
-    private function share(RankUnit $shared, RankUnit $alone, array &$units, array &$unitOf, array &$offset, array &$reach, array &$banded): void
+    private function met(int $scope, array $units, array $unitOf, array $ends): array
     {
-        $held = [];
-        foreach ($units as $unit => $kind) {
-            $end = $banded[$unit] ?? $kind;
-            if ($end === $shared || $end === $alone) {
-                $held[$unit] = $end;
-            }
-        }
-        if (\count($held) < 2) {
-            return;
-        }
-        $clusters = \array_keys(\array_intersect_key($held, $banded));
-        $target = $clusters[0] ?? \array_key_first($held);
-        $kind = \in_array($alone, $held, strict: true) ? $alone : $shared;
-        $topOf = static function (int $unit) use ($unitOf, $offset): int {
-            $nodes = \array_keys($unitOf, $unit, strict: true);
-
-            return [] === $nodes ? 0 : \min(\array_map(static fn (int $node): int => $offset[$node], $nodes));
-        };
-        $there = $topOf($target);
-        foreach (\array_keys($held) as $unit) {
-            if ($unit === $target) {
+        $heldIn = [];
+        $atEnds = [];
+        $both = [];
+        $sides = [];
+        foreach ($this->held as $node => $written) {
+            if ($written !== $scope || !\array_key_exists($node, $unitOf) || RankUnit::Cluster !== $units[$unitOf[$node]]) {
                 continue;
             }
-            $shift = $there - $topOf($unit);
-            foreach (\array_keys($unitOf, $unit, strict: true) as $node) {
-                $unitOf[$node] = $target;
-                $offset[$node] += $shift;
-                $reach[$node] += $shift;
+            // A min, max, source or sink set holds the cluster to its end, as dot is measured to rank it.
+            $end = $ends[$this->roots[$node]] ?? null;
+            if (RankUnit::Both === $end) {
+                // Held at both ends, it ties the whole scope to one rank, as such a set does.
+                $both[] = $node;
+                continue;
             }
-            unset($banded[$unit]);
-            if (RankUnit::Cluster !== $units[$unit]) {
-                $units[$unit] = RankUnit::Same;
+            if (null !== $end) {
+                $atEnds[$node] = $end;
+                $sides[$unitOf[$node]][(int) $end->top()] = true;
             }
+            $heldIn[$unitOf[$node]][] = $node;
         }
-        if (RankUnit::Cluster === $units[$target]) {
-            $banded[$target] = $kind;
-
-            return;
-        }
-        $units[$target] = $kind;
-    }
-
-    /**
-     * Holds a node of a min, max, source or sink set written after its cluster at the set's end,
-     * as dot is measured to: a node moved apart takes its unit there; one at its cluster's top
-     * holds the whole cluster there, with the set's other nodes; one below leaves for the end alone.
-     *
-     * @param list<RankUnit> $units
-     * @param array<int, int> $unitOf
-     * @param array<int, int> $offset
-     * @param array<int, int> $reach
-     * @param array<string, int> $setUnit
-     * @param array<int, RankUnit> $banded
-     */
-    private function toEnd(int $node, RankUnit $end, array &$units, array &$unitOf, array &$offset, array &$reach, array &$setUnit, array &$banded): void
-    {
-        $unit = $unitOf[$node];
-        if (RankUnit::Cluster !== $units[$unit]) {
-            if (RankUnit::Same === $units[$unit]) {
-                $units[$unit] = $end;
+        foreach ($sides as $unit => $side) {
+            if (2 !== \count($side)) {
+                continue;
             }
+            $this->ends->bothEnds($unit, $unitOf, $ends, $heldIn, $atEnds, $both);
+        }
 
-            return;
-        }
-        $key = $end->top() ? 'top' : 'bottom';
-        $top = \min(\array_map(static fn (int $member): int => $offset[$member], \array_keys($unitOf, $unit, strict: true)));
-        if ($offset[$node] === $top) {
-            $banded[$unit] = $end;
-            foreach (\array_keys($unitOf, $setUnit[$key] ?? -1, strict: true) as $member) {
-                if ($this->holds($member)) {
-                    continue;
-                }
-                $unitOf[$member] = $unit;
-                $offset[$member] = $offset[$node];
-                $reach[$member] = $offset[$node];
-            }
-
-            return;
-        }
-        if (!\array_key_exists($key, $setUnit)) {
-            $setUnit[$key] = \count($units);
-            $units[] = $end;
-        }
-        $unitOf[$node] = $setUnit[$key];
-        $offset[$node] = 0;
-        $reach[$node] = 0;
+        return [$heldIn, $atEnds, $both];
     }
 
     /**

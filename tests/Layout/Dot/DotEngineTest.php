@@ -1266,6 +1266,12 @@ final class DotEngineTest extends TestCase
         // An edge turned into a cluster held at the top reaches it at its top.
         $this->assertSame([['n0', 'n2'], ['n1', 'n3', 'n5']], $ranks('subgraph cluster_a { n0; n1; n2; } n5 -> n2; n3 -> n1; n0 -> n1; {rank=min; n2} {rank=min; n0}'));
         // A cluster holding nodes of sets at both ends ties the whole graph to one rank.
+        $this->assertSame([['d', 'e', 'm0', 'm1', 'm2']], $ranks('subgraph cluster_a { m0; m1; m2; } {rank=min; m0} {rank=max; m2} d -> e'));
+        // Unless the node before its last is held at one end and the last at the other: that node moves apart.
+        $this->assertSame([['b', 'd'], ['a', 'c', 'e']], $ranks('subgraph cluster_a { a; b; c; } {rank=min; b} {rank=max; c} d -> e'));
+        // Or an edge from outside enters it at its last node, held at neither end: it keeps no end.
+        $this->assertSame([['d'], ['a', 'b', 'c']], $ranks('subgraph cluster_a { a; b; c; } {rank=min; a} {rank=max; b} d -> c'));
+        $this->assertSame([['d'], ['m0', 'm1', 'm2']], $ranks('subgraph cluster_a { m0; m1; m2; } {rank=min; m1} {rank=max; m0} d -> m2'));
         $this->assertSame([['n0', 'n1', 'n2', 'n4']], $ranks('subgraph cluster_a { n0; n4; } n0 -> n2; n1 -> n2; {rank=max; n0} {rank=min; n4; n2}'));
         // Held at both ends, it ties the whole graph to one rank.
         $this->assertSame([['a', 'b', 'c', 'd']], $ranks('subgraph cluster_a { a; b; } c; c -> d; {rank=min; a} {rank=max; a}'));
@@ -1289,6 +1295,9 @@ final class DotEngineTest extends TestCase
         $this->assertSame([['a'], ['y'], ['b']], $ranks('a -> b [minlen=3]; {rank=min; a} y'));
         $this->assertSame([['a'], ['y'], ['b']], $ranks('a -> b [minlen=3]; {rank=max; b} y'));
         $this->assertSame([['x'], ['y'], ['z'], ['e']], $ranks('e -> x [minlen=3]; {rank=min; x} y; z'));
+        // As a node whose edges weigh nothing.
+        $this->assertSame([['x'], ['c', 'd'], ['b'], ['y']], $ranks('x -> y [minlen=3]; x -> b [weight=0]; x -> c; x -> d'));
+        $this->assertSame([['x'], ['b'], ['c', 'd'], ['y']], $ranks('x -> y [minlen=3]; b -> y [weight=0]; c -> y; d -> y'));
     }
 
     public function testHeldNodesKeepTheirRanksAndSetsAsDotRanksThem(): void
