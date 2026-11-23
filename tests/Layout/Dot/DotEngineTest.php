@@ -1186,6 +1186,30 @@ final class DotEngineTest extends TestCase
         $this->assertSame([['n1', 'n4', 'n5'], ['n0', 'n3'], ['n2']], $ranks('subgraph cluster_a { n3; n2; } n2; n3; n0; n5; n1; n4; n3->n2; n1->n2; {rank=same; n0; n3}'));
     }
 
+    public function testHeldNodesKeepTheirRanksAndSetsAsDotRanksThem(): void
+    {
+        $ranks = static fn (string $body): array => \array_map(static function (array $row): array {
+            \sort($row);
+
+            return $row;
+        }, self::rows($body));
+
+        // Each as dot 16.1.0 ranks it. A held node an edge keeps by the rest of its cluster is reached at its own rank.
+        $this->assertSame([['b'], ['a'], ['c']], $ranks('subgraph cluster_1 { a; b; } b -> a; a -> c; {rank=same; a}'));
+        $this->assertSame([['n3'], ['n5'], ['n0']], $ranks('subgraph cluster_1 { n5; n3; } n3 -> n5; n5 -> n0; {rank=same; n5}'));
+        // One set holding nodes of two clusters keeps them on one rank.
+        $this->assertSame([['b', 't'], ['a', 'c', 'd']], $ranks('subgraph cluster_p { a; b; } subgraph cluster_q { c; d; } {rank=same; a; c} t -> a; t -> d;'));
+        $this->assertSame([['t'], ['n0', 'n1', 'n2']], $ranks('subgraph cluster_0 { n1; n0; } subgraph cluster_1 { n2; } t -> n2; {rank=same; n0; n2}'));
+        $this->assertSame([['t'], ['n0', 'n1', 'n2']], $ranks('subgraph cluster_0 { n1; n0; } subgraph cluster_1 { n2; } t -> n1; {rank=same; n0; n2}'));
+        // The rest of the cluster reaches another cluster from its own ranks.
+        $this->assertSame([['n2', 'n4'], ['n0'], ['n1']], $ranks('subgraph cluster_0 { n2; n4; n0; } n2 -> n0; n0 -> n1; {rank=same; n2; n4} subgraph cluster_1 { n1; }'));
+        $this->assertSame([['n2', 'n4'], ['n0'], ['t']], $ranks('subgraph cluster_0 { n2; n4; n0; } n4 -> n0; n0 -> t; {rank=same; n4} subgraph cluster_1 { t; }'));
+        $this->assertSame([['n2', 'n4', 't'], ['n0']], $ranks('subgraph cluster_0 { n2; n4; n0; } n4 -> n0; t -> n0; {rank=same; n4} subgraph cluster_1 { t; }'));
+        // Held nodes moved apart stand where their first comes in node order, so cycles break as dot breaks them.
+        $this->assertSame([['n0', 'n1'], ['n2']], $ranks('subgraph cluster_0 { n1; n0; } n2 -> n1; n1 -> n2; {rank=same; n1}'));
+        $this->assertSame([['n2', 'n3'], ['n0', 'n1']], $ranks('subgraph cluster_0 { n2; n0; } n3 -> n0; n1 -> n3; n2 -> n1; {rank=same; n2; n3}'));
+    }
+
     public function testUnderNewrankAClusterSpansTheRanksItSkipsAndOnlyClustersHoldingNodesAreDrawn(): void
     {
         $placed = static function (string $source): Placement {

@@ -12,6 +12,9 @@ namespace Janalis\Viz\Layout\Dot;
  */
 final readonly class RankHolds
 {
+    /** @var array<int, int> each merged set's earliest written node, by its root */
+    private array $earliest;
+
     /**
      * @param array<int, int> $held each held node: the cluster its set is written in, -1 for the top level
      * @param array<int, int> $roots each node in a rank set: the node standing for its merged sets
@@ -21,7 +24,13 @@ final readonly class RankHolds
         private array $held,
         private array $roots,
         private array $edges,
-    ) {}
+    ) {
+        $earliest = [];
+        foreach ($roots as $node => $root) {
+            $earliest[$root] = \min($earliest[$root] ?? $node, $node);
+        }
+        $this->earliest = $earliest;
+    }
 
     /**
      * The clusters a graph's nodes are ranked in, and the held nodes by index.
@@ -69,9 +78,44 @@ final readonly class RankHolds
             }
             $heldIn[$unitOf[$node]][] = $node;
         }
+        /** @var array<int, array{int, int}> $joins */
         $joins = [];
+        /** @var array<int, int> $groups */
+        $groups = [];
+        /** @var list<array{int, int, int}> $pending */
+        $pending = [];
         foreach ($heldIn as $unit => $held) {
-            $this->hold($unit, $held, $units, $unitOf, $offset, $reach, $joins);
+            $this->hold($unit, $held, $unitOf, $offset, $reach, $joins, $groups, $setUnit, $pending);
+        }
+        foreach ($pending as [$unit, $node, $at]) {
+            [$target, $there] = $joins[$this->roots[$node]] ?? [$unit, $at];
+            if ($target === $unit || $target < 0) {
+                continue;
+            }
+            foreach (\array_keys($unitOf, $unit, strict: true) as $member) {
+                $unitOf[$member] = $target;
+                $offset[$member] += $there - $at;
+                $reach[$member] += $there - $at;
+            }
+        }
+        foreach ($groups as $placeholder => $first) {
+            $at = \count($units);
+            foreach ($units as $index => $kind) {
+                $nodes = \array_keys($unitOf, $index, strict: true);
+                if (RankUnit::Cluster === $kind || ([] !== $nodes && \min($nodes) > $first)) {
+                    $at = $index;
+                    break;
+                }
+            }
+            \array_splice($units, $at, length: 0, replacement: [RankUnit::Same]);
+            $shift = static fn (int $unit): int => match (true) {
+                $unit === $placeholder => $at,
+                $unit >= $at => $unit + 1,
+                default => $unit,
+            };
+            $unitOf = \array_map($shift, $unitOf);
+            $setUnit = \array_map($shift, $setUnit);
+            $joins = \array_map(static fn (array $join): array => [$shift($join[0]), $join[1]], $joins);
         }
         foreach ($joins as $root => [$unit, $at]) {
             $set = $setUnit['set '.$root] ?? null;
@@ -79,6 +123,9 @@ final readonly class RankHolds
                 continue;
             }
             foreach (\array_keys($unitOf, $set, strict: true) as $node) {
+                if ($this->holds($node)) {
+                    continue;
+                }
                 $unitOf[$node] = $unit;
                 $offset[$node] = $at;
                 $reach[$node] = $at;
@@ -93,9 +140,9 @@ final readonly class RankHolds
      * draw it: unless it points to the set's earliest written node, and then only where its ends
      * are the scope's last two nodes.
      *
-     * @param array<int, int> $unitOf every node of the scope
+     * @param list<int> $last the scope's last two nodes, in node order
      */
-    public function level(int $tail, int $head, array $unitOf): bool
+    public function level(int $tail, int $head, array $last): bool
     {
         if (!$this->holds($tail) || !$this->holds($head) || $this->roots[$tail] !== $this->roots[$head]) {
             return false;
@@ -103,9 +150,6 @@ final readonly class RankHolds
         if ($this->earliest($head) !== $head) {
             return true;
         }
-        $inside = \array_keys($unitOf);
-        \sort($inside);
-        $last = \array_slice($inside, -2);
 
         return \in_array($tail, $last, strict: true) && \in_array($head, $last, strict: true);
     }
@@ -120,32 +164,39 @@ final readonly class RankHolds
      * that node at the same offset.
      *
      * @param list<int> $held the cluster's held nodes
-     * @param list<RankUnit> $units
      * @param array<int, int> $unitOf
      * @param array<int, int> $offset
      * @param array<int, int> $reach
      * @param array<int, array{int, int}> $joins each set group to move, by its root: the unit it joins and its offset there
+     * @param array<int, int> $groups each unit still to make for held nodes moved apart, by a number below zero: its first node
+     * @param array<string, int> $setUnit
+     * @param list<array{int, int, int}> $pending each cluster of held nodes alone whose set joins elsewhere: its unit, the node, and its offset
      */
-    private function hold(int $unit, array $held, array &$units, array &$unitOf, array $offset, array &$reach, array &$joins): void
+    private function hold(int $unit, array $held, array &$unitOf, array $offset, array &$reach, array &$joins, array &$groups, array $setUnit, array &$pending): void
     {
         $inside = \array_keys($unitOf, $unit, strict: true);
         \sort($inside);
         $last = $inside[\count($inside) - 1];
         $rest = \array_values(\array_diff($inside, $held));
         if (\count($inside) >= 2 && \in_array($inside[\count($inside) - 2], $held, strict: true) && !\in_array($last, $held, strict: true)) {
-            $group = $unit;
-            if (!$this->joined($held, $rest)) {
-                $group = \count($units);
-                $units[] = RankUnit::Same;
-            }
+            $joined = $this->joined($held, $rest);
             foreach ($held as $node) {
+                $root = $this->roots[$node];
+                $group = $unit;
+                if (!$joined) {
+                    $group = $joins[$root][0] ?? $setUnit['set '.$root] ?? null;
+                    if (null === $group) {
+                        $group = -1 - \count($groups);
+                        $groups[$group] = $node;
+                    }
+                }
                 $unitOf[$node] = $group;
-                $reach[$node] = 0;
-                $joins[$this->roots[$node]] = [$group, $offset[$node]];
+                $reach[$node] = $joined ? $offset[$node] : 0;
+                $joins[$root] = [$group, $offset[$node]];
             }
             $top = \min(\array_map(static fn (int $node): int => $offset[$node], $rest));
             foreach ($rest as $node) {
-                $reach[$node] = $offset[$node] - $top;
+                $reach[$node] = $joined ? 0 : $offset[$node] - $top;
             }
 
             return;
@@ -153,6 +204,9 @@ final readonly class RankHolds
         $top = \min(\array_map(static fn (int $node): int => $offset[$node], $inside));
         foreach ($held as $node) {
             if ($this->earliest($node) !== $node) {
+                if ([] === $rest) {
+                    $pending[] = [$unit, $node, $node === $last ? $offset[$node] : $top];
+                }
                 continue;
             }
             $at = $node === $last ? $offset[$node] : $top;
@@ -169,8 +223,15 @@ final readonly class RankHolds
      */
     private function joined(array $held, array $rest): bool
     {
+        $side = [];
+        foreach ($held as $node) {
+            $side[$node] = 1;
+        }
+        foreach ($rest as $node) {
+            $side[$node] = 2;
+        }
         foreach ($this->edges as [$tail, $head]) {
-            if (\in_array($tail, $held, strict: true) ? \in_array($head, $rest, strict: true) : \in_array($tail, $rest, strict: true) && \in_array($head, $held, strict: true)) {
+            if (2 === (($side[$tail] ?? 0) * ($side[$head] ?? 0))) {
                 return true;
             }
         }
@@ -181,6 +242,6 @@ final readonly class RankHolds
     /** The earliest written node of a node's merged rank sets. */
     private function earliest(int $node): int
     {
-        return \min(\array_keys($this->roots, $this->roots[$node], strict: true));
+        return $this->earliest[$this->roots[$node]];
     }
 }

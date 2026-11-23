@@ -175,7 +175,7 @@ final class DotRanking
             $inner[$child] = $work->getReturn();
         }
         [$units, $unitOf, $offset, $reach] = $this->units($cluster, $inner);
-        [$hard, $soft] = $this->constraints($units, $unitOf, $reach);
+        [$hard, $soft] = $this->constraints($units, $unitOf, $offset, $reach);
         $hard = $this->bounds($units, DotAcyclic::orient(\count($units), $this->extremes($units, $hard)));
         $balanced = -1 === $cluster ? $this->spread : RankSpread::None;
         $ranks = \in_array(RankUnit::Both, $units, strict: true) ? \array_fill(0, \count($units), value: 0) : $this->solve(\count($units), $hard, $soft, $balanced);
@@ -295,24 +295,30 @@ final class DotRanking
      *
      * @param list<RankUnit> $units
      * @param array<int, int> $unitOf
-     * @param array<int, int> $offset
+     * @param array<int, int> $offset each node's offset in its unit
+     * @param array<int, int> $reach the offset an edge from a node of no cluster reaches each node at
      * @return array{list<array{int, int, int, int}>, list<array{int, int, int, int}>}
      */
-    private function constraints(array $units, array $unitOf, array $offset): array
+    private function constraints(array $units, array $unitOf, array $offset, array $reach): array
     {
         $hard = [];
         $soft = [];
+        $inside = \array_keys($unitOf);
+        \sort($inside);
+        $last = \array_slice($inside, -2);
         foreach ($this->edges as [$tail, $head, $minlen, $weight]) {
             $from = $unitOf[$tail] ?? null;
             $to = $unitOf[$head] ?? null;
             if (null === $from || null === $to || $from === $to) {
                 continue;
             }
-            if ($this->holds->level($tail, $head, $unitOf)) {
+            if ($this->holds->level($tail, $head, $last)) {
                 continue;
             }
             if (RankUnit::Cluster === $units[$from] || RankUnit::Cluster === $units[$to]) {
-                $soft[$tail][] = [$from, $to, $minlen + $offset[$tail] - $offset[$head], $weight];
+                // Between two clusters, as dot is measured to rank them, an edge reaches both ends at their own offsets.
+                $at = RankUnit::Cluster === $units[$from] && RankUnit::Cluster === $units[$to] ? $offset : $reach;
+                $soft[$tail][] = [$from, $to, $minlen + $at[$tail] - $at[$head], $weight];
                 continue;
             }
             $hard[] = [$from, $to, $minlen, $weight];
