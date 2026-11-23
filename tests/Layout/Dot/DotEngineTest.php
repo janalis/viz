@@ -714,6 +714,22 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([0 => 20.0, 1 => 25.2], $across("rankdir=LR; a->b [label={$label}]; a->b"), 0.2);
     }
 
+    public function testLaidOutLeftToRightALabelKeepsAQuarterSeparationClearOfTheLineRoutedBeforeIt(): void
+    {
+        $label = '<<TABLE FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><TR><TD></TD></TR></TABLE>>';
+        $graph = Work::run(new DotParser()->parse(
+            'digraph { rankdir=LR; nodesep=0.25; node [shape=rect, fixedsize=true, width=0.75, height=0.5, label=""]; '.\str_repeat('a -> b [label='.$label.']; ', times: 3).'}',
+        ));
+        $placement = Work::run(new DotEngine()->place(DotLayoutInput::forDot(
+            $graph,
+            static fn ($node): array => DotNodes::size($graph, $node),
+            static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+        )));
+
+        // As dot 16.1.0 sets them, down the page: each label's top 4 points, a quarter separation, below the line before it.
+        $this->assertEqualsWithDelta([10.0, 35.5, 59.5], \array_map(static fn (array $at): float => $at[1] - 4, \array_values($placement->labels)), 1.0);
+    }
+
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void
     {
         // PlantUML's web --> app : REST, app --> data : SQL, web ..> data : cache, as svek writes it.

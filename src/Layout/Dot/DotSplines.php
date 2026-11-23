@@ -41,6 +41,8 @@ final class DotSplines
     private array $place = [];
     /** @var array<int, float> where each label node's label was drawn, its near side across, once its edge is routed */
     public array $drawn = [];
+    /** @var array<int, float> where each label node's line, as drawn, reaches furthest right across its rank, once its edge is routed */
+    public array $back = [];
 
     public function __construct(
         private readonly DotLayers $layers,
@@ -403,6 +405,13 @@ final class DotSplines
         if (DotLayers::LABEL === $layers->kind[$node]) {
             // Its label stands on its right, or its left mirrored: the edge keeps to the other side.
             $at = \array_key_exists($node, $this->position->sides) ? $this->position->side($node) : $at + ($layers->mirrored ? -$layers->right[$node] : $layers->left[$node]);
+            // Laid out to be turned, its label on its left keeps a quarter of the node separation, rounded
+            // down, clear of the far side of the line of its neighbour between the same two nodes where
+            // that was routed already, as `dot` is seen to route edges one after another, wherever
+            // network simplex set the node.
+            if ($layers->mirrored && null !== $previous && \array_key_exists($previous, $this->back) && $this->pair($previous) === $this->pair($node)) {
+                $at = $this->back[$previous] + $this->quarter() + $layers->left[$node];
+            }
             [$left, $right] = $layers->mirrored ? [$at, $right] : [$left, $at];
         }
 
@@ -423,6 +432,16 @@ final class DotSplines
         }
 
         return $bound;
+    }
+
+    /** The two nodes a label node's edge joins, in either order. */
+    private function pair(int $node): string
+    {
+        $path = $this->layers->paths[\array_flip($this->layers->labels)[$node]];
+        $ends = [$path[0], $path[\count($path) - 1]];
+        \sort($ends);
+
+        return \implode(',', $ends);
     }
 
     /** A quarter of the node separation, to the point, rounded down. */
