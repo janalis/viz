@@ -274,9 +274,9 @@ final readonly class DotEngine implements LayoutEngine
         $router = new DotSplines($layers, $position, $graph->spacing->nodeGap, \array_map(static fn ($node): Shape => $node->shape, $graph->nodes));
         // Merged, edges between the same two nodes are one line, none spread.
         $offsets = self::spread($layers, $graph->concentrate ? 0.0 : $graph->spacing->nodeGap * DotSplines::SPREAD);
-        // As `dot` is seen to route them: the edges with a label node first, each kept clear of by the edges routed after it.
-        $labelled = \array_intersect_key($edgeIndexes, $layers->labels);
-        foreach ($labelled + $edgeIndexes as $layered => $original) {
+        // As `dot` is seen to route them: the shortest from end to end first, of edges as long those with a label node first.
+        $routing = $router->order($edgeIndexes, \array_intersect_key($edgeIndexes, $layers->labels));
+        foreach ($routing as $layered => $original) {
             $path = $layers->paths[$layered] ?? null;
             $spline = [];
             if (null !== $path) {

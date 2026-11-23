@@ -9,10 +9,11 @@
 ### Fixed
 
 - Graphviz: `ratio` stretches by the box the nodes and clusters take, not the room kept for edge labels and chains, and a curve or label beyond that box still bounds the drawing, as `dot` does; `ratio=fill` with a `size` bigger than the drawing both ways now fills it, and a drawing on a single rank is not stretched.
-- Graphviz and PlantUML: an edge routed beside an edge label's node, on the side away from the label, keeps a quarter of the node separation less 2 clear of that label's edge as drawn, edges with labels being routed first, as `dot` routes them, so an unlabelled edge and a labelled one between the same two nodes are no longer drawn on top of each other.
+- Graphviz and PlantUML: an edge routed beside an edge label's node, on the side away from the label, keeps a quarter of the node separation less 2 clear of that label's edge as drawn, of edges as long the labelled one being routed first, as `dot` routes them, so an unlabelled edge and a labelled one between the same two nodes are no longer drawn on top of each other.
 - Graphviz and PlantUML: laid out left to right, an edge label keeps a quarter of the node separation clear of the line of the labelled edge routed before it, as `dot` sets it, so labels of edges between the same two nodes stand together as `dot` stacks them, not as far apart as their label nodes.
 - Graphviz and PlantUML: where a cluster could stand on either of two ranks at equal cost, the edges into and out of clusters are weighed by their tails in the order the nodes were made, so the native `dot` layout keeps the same edge pointing down as `dot`, not the one written last.
 - Graphviz and PlantUML: the native `dot` layout orders ranks with fewer crossings, as `dot` does: a crossing counts once for each edge drawn between the same two nodes, the initial order is transposed before its flat edges put their ends in order, and a cluster is ordered from its initial order, untransposed, by the long pass alone, as `dot`'s reported crossings show.
+- Graphviz and PlantUML: edges are routed the shortest first, from end to end, as `dot` routes them, of edges as long those with labels first, and an edge label whose neighbour on its label's side was routed already may run as far towards it as leaves the label a quarter of the node separation clear of that neighbour's edge, as `dot` draws it, not held back at its label node.
 
 ## 0.2.6 — 2026-11-22
 

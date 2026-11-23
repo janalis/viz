@@ -43,6 +43,8 @@ final class DotSplines
     public array $drawn = [];
     /** @var array<int, float> where each label node's line, as drawn, reaches furthest right across its rank, once its edge is routed */
     public array $back = [];
+    /** @var array<int, float> where each virtual or label node's edge runs furthest left across its rank, once routed */
+    private array $routed = [];
 
     public function __construct(
         private readonly DotLayers $layers,
@@ -90,6 +92,31 @@ final class DotSplines
     }
 
     /**
+     * Edges in the order `dot` is seen to route them: the shortest first, from end to end, of
+     * edges as long those given first, else in their order.
+     *
+     * @param array<int, int> $edges each edge's original index, by its index in the layers
+     * @param array<int, int> $first the edges to route first of those as long, by their index in the layers
+     * @return array<int, int> the same, reordered
+     */
+    public function order(array $edges, array $first = []): array
+    {
+        $lengths = [];
+        foreach (\array_keys($edges) as $layered) {
+            $path = $this->layers->paths[$layered] ?? [];
+            $lengths[$layered] = [] === $path
+                ? 0.0
+                : \hypot(
+                    $this->position->x[$path[0]] - $this->position->x[$path[\count($path) - 1]],
+                    $this->position->y[$this->layers->rank[$path[0]]] - $this->position->y[$this->layers->rank[$path[\count($path) - 1]]],
+                );
+        }
+        \uksort($edges, static fn (int $a, int $b): int => [$lengths[$a], !\array_key_exists($a, $first), $a] <=> [$lengths[$b], !\array_key_exists($b, $first), $b]);
+
+        return $edges;
+    }
+
+    /**
      * The spline along a path through the ranks, from its first node's centre to its last's,
      * and the shortest path it is fitted to, corner to corner; each moved across by an offset,
      * for one of several edges sharing the path, the full offset along its middle and no
@@ -114,6 +141,13 @@ final class DotSplines
             $drawn = $this->spread($drawn, $offset, $path[0], $path[\count($path) - 1]);
             $points = $this->spread($points, $offset, $path[0], $path[\count($path) - 1]);
             $controls = 1 === \count($curves) ? $this->spreadCurve($curves[0], $offset, $path[0], $path[\count($path) - 1]) : [];
+        }
+        foreach (\array_slice($path, offset: 1, length: -1) as $node) {
+            $rank = $this->layers->rank[$node];
+            $xs = self::across($drawn, $this->position->y[$rank] - $this->half[$rank], $this->position->y[$rank] + $this->half[$rank]);
+            if ([] !== $xs) {
+                $this->routed[$node] = \min($this->routed[$node] ?? \INF, ...$xs);
+            }
         }
 
         return $down ? [$drawn, $points, $controls] : [\array_reverse($drawn), \array_reverse($points), \array_reverse($controls)];
@@ -412,10 +446,26 @@ final class DotSplines
             if ($layers->mirrored && null !== $previous && \array_key_exists($previous, $this->back) && $this->pair($previous) === $this->pair($node)) {
                 $at = $this->back[$previous] + $this->quarter() + $layers->left[$node];
             }
-            [$left, $right] = $layers->mirrored ? [$at, $right] : [$left, $at];
+            [$left, $right] = $layers->mirrored ? [$at, $right] : [$left, $this->reach($node, $next, $at, $right)];
         }
 
         return [\min($left, $at), \max($right, $at)];
+    }
+
+    /**
+     * How far right a label node's edge may run, its label on its right: to its label's near
+     * side; or, where the edge of its neighbour there was routed already, as far as leaves its
+     * label a quarter of the node separation, rounded down, clear of that edge where it runs
+     * furthest left across the rank, as `dot` is seen to route edges one after another ({@see
+     * order()}), no further than the room beside it.
+     */
+    private function reach(int $node, ?int $next, float $at, float $right): float
+    {
+        if (null === $next || !\array_key_exists($next, $this->routed)) {
+            return $at;
+        }
+
+        return \max($at, \min($right, $this->routed[$next] - \floor(\round($this->nodeSeparation) / 4) - $this->layers->right[$node]));
     }
 
     /** Where the room beside a node ends on its left, at its neighbour there. */

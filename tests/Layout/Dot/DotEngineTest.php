@@ -730,6 +730,29 @@ final class DotEngineTest extends TestCase
         $this->assertEqualsWithDelta([10.0, 35.5, 59.5], \array_map(static fn (array $at): float => $at[1] - 4, \array_values($placement->labels)), 1.0);
     }
 
+    public function testALabelRoutedAfterItsNeighbourRunsAsFarAsLeavesItAQuarterSeparationClearOfIt(): void
+    {
+        $label = '<<TABLE FIXEDSIZE="TRUE" WIDTH="47" HEIGHT="17"><TR><TD></TD></TR></TABLE>>';
+        $place = static function (string $edges): Placement {
+            $graph = Work::run(new DotParser()->parse('digraph { nodesep=0.486111; node [shape=box, width=0.3, height=0.3, label=""]; '.$edges.' }'));
+
+            return Work::run(new DotEngine()->place(DotLayoutInput::from(
+                $graph,
+                static fn ($node): array => DotNodes::size($graph, $node),
+                static fn ($edge): array => DotNodes::edgeText($graph, $edge)->size(),
+            )));
+        };
+
+        // As `dot` sets them: x's edges down to b, the shortest, routed first, x -> a's label pressed
+        // against them no longer stands at its label node but runs right until it is 8 points, a
+        // quarter separation rounded down, clear of the edge beside it: of a plain edge, then of
+        // another label's edge, itself back from the edge after it.
+        $placement = $place('x -> a [label='.$label.']; x -> b [weight=2];');
+        $this->assertEqualsWithDelta(-31.5, $placement->labels[0][0] - $placement->endpoints['x']->x, 0.5);
+        $placement = $place('x -> a [label='.$label.']; x -> b [label='.$label.']; x -> b;');
+        $this->assertEqualsWithDelta([-37.5, 20.5], [$placement->labels[0][0] - $placement->endpoints['x']->x, $placement->labels[1][0] - $placement->endpoints['x']->x], 0.5);
+    }
+
     public function testAnEdgesOneChainNodeStandsMidwayBetweenItsEnds(): void
     {
         // PlantUML's web --> app : REST, app --> data : SQL, web ..> data : cache, as svek writes it.
