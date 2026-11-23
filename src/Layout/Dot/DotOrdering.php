@@ -20,7 +20,7 @@ namespace Janalis\Viz\Layout\Dot;
  * around it fixed, from its initial order untransposed by the long pass alone. As `dot` reports
  * its passes, every component's top level is ordered first, then every cluster, outermost
  * first, then the whole graph once more by the long pass, each node moving only among the
- * nodes of its own cluster and only flat edges outside every cluster keeping an order. Until
+ * nodes of its own cluster, only flat edges outside every cluster and `ordering` keeping an order. Until
  * it is ordered from inside, a cluster counts as one node on each of its ranks (see
  * {@see DotCrossings}). Every crossing counts one, whatever the edges' weights, as `dot` is
  * seen to count them where several orders are equally good, once for each edge between the
@@ -44,7 +44,7 @@ final class DotOrdering
     /** The component ordered, or -1 for all at once. */
     private int $active = 0;
     private readonly DotFlatOrder $flat;
-    /** The order flat edges keep in the pass over the whole graph: only those outside every cluster. */
+    /** The order kept in the pass over the whole graph: flat edges outside every cluster, and `ordering` everywhere. */
     private readonly DotFlatOrder $outside;
 
     /**
@@ -115,8 +115,11 @@ final class DotOrdering
         $passes = $scope >= 0 ? [[Side::Above, 0, 0], $long] : [[Side::Above, $short, self::ROUNDS], [Side::Below, $short, self::ROUNDS], $long];
         $passes = $this->whole ? [$long] : $passes;
         foreach ($passes as [$start, $limit, $rounds]) {
-            $this->layers->ranks = $best;
-            $this->index();
+            // The first pass starts from the order just counted.
+            if ($this->layers->ranks !== $best) {
+                $this->layers->ranks = $best;
+                $this->index();
+            }
             $cross = $bestCross;
             if (null !== $start) {
                 $this->initial($scope, $start);
@@ -186,7 +189,9 @@ final class DotOrdering
     {
         $itemsByRank = \array_map(fn (int $rank): array => $this->items($scope, $rank), \array_keys($this->layers->ranks));
         $ordered = DotBlocks::consistent($itemsByRank, fn (int $node): int => $this->layers->childOf($node, $scope));
-        \array_walk($ordered, fn (array $items, int $rank) => $this->write($scope, $rank, $items));
+        // Only the ranks whose blocks moved are written back.
+        $moved = \array_filter($ordered, static fn (array $items, int $rank): bool => $items !== $itemsByRank[$rank], \ARRAY_FILTER_USE_BOTH);
+        \array_walk($moved, fn (array $items, int $rank) => $this->write($scope, $rank, $items));
     }
 
     private function holds(int $cluster): bool

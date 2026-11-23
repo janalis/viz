@@ -71,7 +71,7 @@ final readonly class DotCrossings
      *
      * @param list<int> $position each node's slot in its rank
      * @param array<int, int> $collapsed the nodes in a cluster not yet ordered from inside, and that cluster
-     * @param array<int, array<int, int>> $blocks the slot of each such cluster on each of its ranks
+     * @param array<int, array<int, int>> $blocks on each rank, the slot of each such cluster there
      */
     public function total(array $position, array $collapsed = [], array $blocks = []): int
     {
@@ -82,12 +82,12 @@ final readonly class DotCrossings
             }
             $byRank[$this->layers->rank[$tail]][] = [$position[$tail] + $tailPort, $position[$head] + $headPort, $this->layers->counts[$index]];
         }
-        foreach ($blocks as $slots) {
-            foreach ($slots as $rank => $slot) {
-                if (!\array_key_exists($rank + 1, $slots)) {
+        foreach ($blocks as $rank => $slots) {
+            foreach ($slots as $cluster => $slot) {
+                if (!\array_key_exists($cluster, $blocks[$rank + 1] ?? [])) {
                     continue;
                 }
-                $byRank[$rank][] = [(float) $slot, (float) $slots[$rank + 1], self::THROUGH];
+                $byRank[$rank][] = [(float) $slot, (float) $blocks[$rank + 1][$cluster], self::THROUGH];
             }
         }
         $total = 0;
@@ -193,7 +193,7 @@ final readonly class DotCrossings
             }
         }
         $cluster = $collapsed[$item[0] ?? -1] ?? -1;
-        $slot = $blocks[$cluster][$this->layers->rank[$item[0] ?? 0] + (Side::Above === $side ? -1 : 1)] ?? null;
+        $slot = $blocks[$this->layers->rank[$item[0] ?? 0] + (Side::Above === $side ? -1 : 1)][$cluster] ?? null;
         if (null !== $slot) {
             $ends[] = [(float) $slot, self::THROUGH];
         }

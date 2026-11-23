@@ -15,10 +15,12 @@ final class DotSlots
     public private(set) array $slot = [];
     /** @var array<int, int> the nodes in a cluster not yet ordered from inside, and the outermost such cluster */
     public private(set) array $collapsed = [];
-    /** @var array<int, array<int, int>> the slot of each cluster not yet ordered from inside on each of its ranks */
+    /** @var array<int, array<int, int>> on each rank, the slot of each cluster not yet ordered from inside there */
     public private(set) array $blocks = [];
     /** @var array<int, true> the clusters ordered from inside so far */
     private array $ordered = [];
+    /** @var array<int, int> each node's outermost cluster not yet ordered from inside, or -1, as far as worked out since a cluster was last opened */
+    private array $outer = [];
 
     public function __construct(
         private readonly DotLayers $layers,
@@ -28,6 +30,7 @@ final class DotSlots
     public function open(int $cluster): void
     {
         $this->ordered[$cluster] = true;
+        $this->outer = [];
     }
 
     /** Whether any cluster has been ordered from inside. */
@@ -61,9 +64,7 @@ final class DotSlots
     /** Recounts a rank's slots. */
     public function refresh(int $rank): void
     {
-        foreach (\array_keys($this->blocks) as $cluster) {
-            unset($this->blocks[$cluster][$rank]);
-        }
+        unset($this->blocks[$rank]);
         $slot = -1;
         $last = -1;
         foreach ($this->layers->ranks[$rank] as $node) {
@@ -78,18 +79,21 @@ final class DotSlots
             $slot += (int) ($outer !== $last);
             $last = $outer;
             $this->slot[$node] = $slot;
-            $this->blocks[$outer][$rank] = $slot;
+            $this->blocks[$rank][$outer] = $slot;
         }
     }
 
     /** The outermost cluster holding a node not yet ordered from inside, or -1 for none. */
     private function outer(int $node): int
     {
+        if (\array_key_exists($node, $this->outer)) {
+            return $this->outer[$node];
+        }
         $outer = -1;
         for ($cluster = $this->layers->cluster[$node]; -1 !== $cluster; $cluster = $this->layers->parents[$cluster]) {
             $outer = \array_key_exists($cluster, $this->ordered) ? $outer : $cluster;
         }
 
-        return $outer;
+        return $this->outer[$node] = $outer;
     }
 }
